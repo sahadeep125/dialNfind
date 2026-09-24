@@ -14,7 +14,7 @@ export const env = {
   databaseUrl: required("DATABASE_URL"),
   jwtSecret: required("JWT_SECRET", process.env.NODE_ENV === "production" ? undefined : "dev-secret"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "30d",
-  corsOrigins: (process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:5173")
+  corsOrigins: (process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:5173,http://localhost:5174")
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean),

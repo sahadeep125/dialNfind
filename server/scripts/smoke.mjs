@@ -120,9 +120,54 @@ await call("PATCH", `/admin/flags/${flags[0].id}`, { token: admin, body: { statu
 await call("GET", "/admin/flags?status=dismissed", { token: admin });
 await call("PATCH", `/admin/reviews/${r0.id}`, { token: admin, body: { status: "published" } });
 await call("GET", "/admin/settings", { token: admin });
-await call("PUT", "/admin/settings/sponsored_cpc", { token: admin, body: { value: "5" } });
-const msgs = (await call("GET", "/admin/contact-messages", { token: admin })).messages;
-await call("PATCH", `/admin/contact-messages/${msgs[0].id}`, { token: admin, body: { status: "closed" } });
+await call("PUT", "/admin/settings", { token: admin, body: { values: { sponsored_cpc: "5", "plugin.razorpay.key_secret": "smoke-secret-1234" } } });
+const plugins = (await call("GET", "/admin/settings", { token: admin })).plugins;
+results.push(`     razorpay secret comes back masked: ${plugins.find((p) => p.key === "razorpay").fields.find((f) => f.key.endsWith("key_secret")).value}`);
+await call("PUT", "/admin/settings", { token: admin, body: { values: { "plugin.razorpay.key_secret": null } } });
+await call("PUT", "/admin/settings", { token: admin, body: { values: { not_a_setting: "x" } }, expect: 400, label: "unknown setting rejected" });
+await call("GET", "/admin/contact-messages", { token: admin });
+
+// admin console: team, roles, tickets, operations
+await call("GET", "/admin/me", { token: admin });
+await call("GET", "/admin/me", { token: cust, expect: 403, label: "customer blocked from admin" });
+const roles = (await call("GET", "/admin/roles", { token: admin })).roles;
+const role = (await call("POST", "/admin/roles", { token: admin, body: { name: "Smoke Role", permissions: ["support"] } })).role;
+await call("POST", "/admin/roles", { token: admin, body: { name: "Escalate", permissions: ["team"] }, expect: 400, label: "team module not assignable" });
+const invited = await call("POST", "/admin/team", { token: admin, body: { name: "Smoke Staff", email: "smoke.staff@example.com", roleId: role.id } });
+const staff = (await call("POST", "/auth/login", { body: { email: "smoke.staff@example.com", password: invited.temporaryPassword } })).token;
+await call("GET", "/admin/tickets", { token: staff, label: "staff with support can list tickets" });
+await call("GET", "/admin/providers", { token: staff, expect: 403, label: "staff without providers blocked" });
+await call("GET", "/admin/team", { token: staff, expect: 403, label: "staff cannot open team" });
+await call("PATCH", `/admin/team/${invited.member.id}`, { token: admin, body: { roleId: roles[0].id } });
+await call("POST", `/admin/team/${invited.member.id}/reset-password`, { token: admin });
+await call("DELETE", `/admin/roles/${role.id}`, { token: admin });
+await call("DELETE", `/admin/team/${invited.member.id}`, { token: admin });
+await call("GET", "/admin/team", { token: admin });
+const tickets = await call("GET", "/admin/tickets?status=active", { token: admin });
+await call("GET", "/admin/tickets/assignees", { token: admin });
+const tk = tickets.tickets[0];
+await call("GET", `/admin/tickets/${tk.id}`, { token: admin });
+await call("PATCH", `/admin/tickets/${tk.id}`, { token: admin, body: { priority: "high", assignedToId: null } });
+await call("POST", `/admin/tickets/${tk.id}/messages`, { token: admin, body: { body: "Internal smoke note", isInternal: true } });
+await call("POST", `/admin/tickets/${tk.id}/messages`, { token: admin, body: { body: "Smoke reply to the customer" } });
+await call("GET", "/admin/analytics?days=30", { token: admin });
+await call("GET", "/admin/leads?days=30", { token: admin });
+await call("GET", "/admin/reviews?status=published", { token: admin });
+await call("GET", `/admin/providers/${me.provider.id}`, { token: admin });
+await call("GET", "/admin/subscriptions", { token: admin });
+await call("GET", "/admin/categories", { token: admin });
+await call("POST", "/admin/notifications/preview", { token: admin, body: { audience: "providers" } });
+await call("GET", "/admin/notifications/broadcasts", { token: admin });
+
+// help desk as a customer
+const myTicket = (await call("POST", "/support/tickets", { token: cust, body: { subject: "Smoke ticket", category: "account", message: "Testing the help desk from the smoke test." } })).ticket;
+await call("GET", "/support/tickets", { token: cust });
+const seen = await call("GET", `/support/tickets/${myTicket.id}`, { token: cust });
+await call("POST", `/support/tickets/${myTicket.id}/messages`, { token: cust, body: { body: "Adding more detail." } });
+await call("GET", `/support/tickets/${myTicket.id}`, { token: prov, expect: 404, label: "other users cannot read a ticket" });
+await call("POST", `/support/tickets/${myTicket.id}/close`, { token: cust });
+await call("POST", `/support/tickets/${myTicket.id}/messages`, { token: cust, body: { body: "After close" }, expect: 400, label: "closed ticket rejects replies" });
+results.push(`     customer sees ${seen.messages.length} message(s) on a new ticket`);
 const users = await call("GET", "/admin/users?role=customer&q=a", { token: admin });
 const victim = users.users.find((u) => u.email !== "demo@dialnfind.com");
 await call("PATCH", `/admin/users/${victim.id}`, { token: admin, body: { status: "suspended" } });

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Heart, History, LayoutDashboard, MessageSquare, Settings } from "lucide-react";
+import { Bell, Heart, History, LayoutDashboard, LifeBuoy, MessageSquare, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
@@ -11,6 +11,7 @@ const ITEMS = [
   { href: "/dashboard/contacts", label: "Recent contacts", icon: History },
   { href: "/dashboard/reviews", label: "My reviews", icon: MessageSquare },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
+  { href: "/dashboard/support", label: "Help and support", icon: LifeBuoy },
   { href: "/dashboard/account", label: "Account", icon: Settings },
 ];
 

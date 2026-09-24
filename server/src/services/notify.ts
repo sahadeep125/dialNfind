@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 
-export type NotificationType = "lead" | "review" | "review_reply" | "claim" | "verification" | "listing" | "subscription" | "sponsored" | "system";
+export type NotificationType = "lead" | "review" | "review_reply" | "claim" | "verification" | "listing" | "subscription" | "sponsored" | "support" | "system";
 
 /**
  * Creates an in-app notification. Never throws: a failed notification must not fail the request

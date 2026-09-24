@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -24,8 +25,8 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 
-export function ContactForm({ defaultName = "", defaultEmail = "" }: { defaultName?: string; defaultEmail?: string }) {
-  const [sent, setSent] = useState(false);
+export function ContactForm({ defaultName = "", defaultEmail = "", signedIn = false }: { defaultName?: string; defaultEmail?: string; signedIn?: boolean }) {
+  const [sent, setSent] = useState<{ id: number; reference: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const defaults: Values = { name: defaultName, email: defaultEmail, phone: "", subject: TOPICS[0], message: "" };
   const { register, control, handleSubmit, reset, watch, formState } = useForm<Values>({ resolver: zodResolver(schema), mode: "onTouched", defaultValues: defaults });
@@ -35,11 +36,11 @@ export function ContactForm({ defaultName = "", defaultEmail = "" }: { defaultNa
   const onSubmit = handleSubmit(async (v) => {
     setError(null);
     try {
-      await clientApi("/contact", {
+      const result = await clientApi<{ id: number; reference: string }>("/contact", {
         method: "POST",
         body: JSON.stringify({ name: v.name.trim(), email: v.email.trim(), phone: v.phone ? normalizePhone(v.phone) : "", subject: v.subject, message: v.message.trim() }),
       });
-      setSent(true);
+      setSent(result);
       reset(defaults);
     } catch (err) {
       setError(err instanceof ClientApiError ? err.message : "Could not send your message");
@@ -53,8 +54,15 @@ export function ContactForm({ defaultName = "", defaultEmail = "" }: { defaultNa
           <CheckCircle2 className="size-7" />
         </span>
         <h3 className="mt-4 text-xl font-bold">Message sent</h3>
-        <p className="mt-2 max-w-sm text-sm text-muted-foreground">Thanks for reaching out. Our support team replies within one working day.</p>
-        <Button variant="outline" className="mt-6" onClick={() => setSent(false)}>
+        <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+          Thanks for reaching out. Your reference is <span className="font-semibold text-foreground">{sent.reference}</span>. Our support team replies within one working day{signedIn ? "." : " by email."}
+        </p>
+        {signedIn && (
+          <Button asChild className="mt-6">
+            <Link href={`/dashboard/support/${sent.id}`}>Follow the conversation</Link>
+          </Button>
+        )}
+        <Button variant="outline" className="mt-3" onClick={() => setSent(null)}>
           Send another message
         </Button>
       </div>

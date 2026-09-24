@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage/index.js";
+import { pluginEnabled } from "../services/settings.js";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { email, optionalPhone, optionalUrl, password, personName } from "../lib/rules.js";
@@ -64,6 +65,7 @@ authRouter.post("/login", async (req, res) => {
     throw unauthorized("Incorrect email or password");
   }
   if (user.status !== "active") throw unauthorized("This account is not active");
+  await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
   const profile = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: publicUser });
   res.json({ token: signToken(user.id, user.role), user: profile });
 });
@@ -110,12 +112,12 @@ const oauthSchema = z.object({ idToken: z.string().min(10), role: z.enum(["custo
 // endpoints validate input and answer 501 so the frontends can show a clear message.
 authRouter.post("/oauth/google", async (req, res) => {
   parse(oauthSchema, req.body);
-  if (!env.googleClientId) throw notConfigured("Google sign-in is not configured yet");
+  if (!env.googleClientId && !(await pluginEnabled("google_oauth"))) throw notConfigured("Google sign-in is not configured yet");
   throw notConfigured("Google token verification is not implemented yet");
 });
 
 authRouter.post("/oauth/apple", async (req, res) => {
   parse(oauthSchema, req.body);
-  if (!env.appleClientId) throw notConfigured("Apple sign-in is not configured yet");
+  if (!env.appleClientId && !(await pluginEnabled("apple_oauth"))) throw notConfigured("Apple sign-in is not configured yet");
   throw notConfigured("Apple token verification is not implemented yet");
 });

@@ -4,38 +4,40 @@ import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { badRequest, notFound } from "../lib/errors.js";
 import { pageMeta, paginationSchema } from "../lib/pagination.js";
-import { currentUser, requireRole } from "../middleware/auth.js";
+import { currentUser } from "../middleware/auth.js";
+import { guardAdminPath, requireStaff } from "../lib/permissions.js";
+import { adminOpsRouter } from "./admin/operations.js";
+import { adminSettingsRouter } from "./admin/settings.js";
+import { adminSupportRouter } from "./admin/support.js";
+import { adminTeamRouter } from "./admin/team.js";
 import { logAdmin } from "../services/audit.js";
 import { notify } from "../services/notify.js";
 import { recalculateCategoryCounts, recalculateProvider } from "../services/ranking.js";
 
-/** Super-admin moderation endpoints. Every write is recorded in admin_activity_logs. */
+/**
+ * Admin endpoints for the super admin and their team. Each path is guarded by the module it
+ * belongs to (lib/permissions.ts). Every write is recorded in admin_activity_logs.
+ */
 export const adminRouter = Router();
-adminRouter.use(requireRole("super_admin"));
-
-adminRouter.get("/overview", async (_req, res) => {
-  const [providers, pendingProviders, pendingClaims, pendingVerifications, openFlags, users, leads30] = await Promise.all([
-    prisma.provider.count(),
-    prisma.provider.count({ where: { status: "pending" } }),
-    prisma.providerClaim.count({ where: { status: "pending" } }),
-    prisma.verification.count({ where: { status: "pending" } }),
-    prisma.reportFlag.count({ where: { status: "open" } }),
-    prisma.user.count(),
-    prisma.lead.count({ where: { createdAt: { gte: new Date(Date.now() - 30 * 864e5) } } }),
-  ]);
-  res.json({ providers, pendingProviders, pendingClaims, pendingVerifications, openFlags, users, leads30 });
-});
+adminRouter.use(requireStaff, guardAdminPath);
+adminRouter.use(adminTeamRouter, adminSupportRouter, adminSettingsRouter, adminOpsRouter);
 
 const providerQuery = paginationSchema.extend({
   status: z.enum(["pending", "active", "rejected", "suspended"]).optional(),
-  q: z.string().optional(),
+  verification: z.enum(["none", "partial", "verified"]).optional(),
+  claimed: z.enum(["yes", "no"]).optional(),
+  city: z.string().trim().max(60).optional(),
+  q: z.string().trim().max(100).optional(),
 });
 
 adminRouter.get("/providers", async (req, res) => {
   const q = parse(providerQuery, req.query);
   const where = {
     ...(q.status ? { status: q.status } : {}),
-    ...(q.q ? { businessName: { contains: q.q, mode: "insensitive" as const } } : {}),
+    ...(q.verification ? { verificationStatus: q.verification } : {}),
+    ...(q.claimed ? { userId: q.claimed === "yes" ? { not: null } : null } : {}),
+    ...(q.city ? { city: { equals: q.city, mode: "insensitive" as const } } : {}),
+    ...(q.q ? { OR: [{ businessName: { contains: q.q, mode: "insensitive" as const } }, { phone: { contains: q.q } }] } : {}),
   };
   const [providers, total] = await Promise.all([
     prisma.provider.findMany({
@@ -43,7 +45,24 @@ adminRouter.get("/providers", async (req, res) => {
       orderBy: { createdAt: "desc" },
       skip: (q.page - 1) * q.pageSize,
       take: q.pageSize,
-      select: { id: true, slug: true, businessName: true, city: true, status: true, verificationStatus: true, userId: true, avgRating: true, totalReviews: true, createdAt: true },
+      select: {
+        id: true,
+        slug: true,
+        businessName: true,
+        city: true,
+        locality: true,
+        phone: true,
+        logoUrl: true,
+        status: true,
+        verificationStatus: true,
+        userId: true,
+        avgRating: true,
+        totalReviews: true,
+        profileCompletenessPct: true,
+        createdAt: true,
+        user: { select: { name: true, email: true } },
+        services: { where: { isPrimary: true }, take: 1, select: { category: { select: { name: true } } } },
+      },
     }),
     prisma.provider.count({ where }),
   ]);
@@ -76,16 +95,20 @@ adminRouter.patch("/providers/:id", async (req, res) => {
   res.json({ provider: { id: provider.id, status: provider.status, verificationStatus: provider.verificationStatus } });
 });
 
-adminRouter.get("/claims", async (_req, res) => {
+const queueQuery = z.object({ status: z.enum(["pending", "approved", "rejected"]).default("pending") });
+
+adminRouter.get("/claims", async (req, res) => {
+  const { status } = parse(queueQuery, req.query);
   const claims = await prisma.providerClaim.findMany({
-    where: { status: "pending" },
-    orderBy: { createdAt: "asc" },
+    where: { status },
+    orderBy: { createdAt: status === "pending" ? "asc" : "desc" },
+    take: 200,
     include: { provider: { select: { id: true, businessName: true, city: true } }, user: { select: { id: true, name: true, email: true } } },
   });
   res.json({ claims });
 });
 
-const decisionSchema = z.object({ decision: z.enum(["approved", "rejected"]) });
+const decisionSchema = z.object({ decision: z.enum(["approved", "rejected"]), notes: z.string().trim().max(300).optional() });
 
 adminRouter.patch("/claims/:id", async (req, res) => {
   const { decision } = parse(decisionSchema, req.body);
@@ -116,22 +139,25 @@ adminRouter.patch("/claims/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
-adminRouter.get("/verifications", async (_req, res) => {
+adminRouter.get("/verifications", async (req, res) => {
+  const { status } = parse(queueQuery, req.query);
   const verifications = await prisma.verification.findMany({
-    where: { status: "pending" },
-    orderBy: { createdAt: "asc" },
-    include: { provider: { select: { id: true, businessName: true, city: true } } },
+    where: { status },
+    orderBy: { createdAt: status === "pending" ? "asc" : "desc" },
+    take: 200,
+    include: { provider: { select: { id: true, businessName: true, city: true, slug: true, verificationStatus: true } }, verifier: { select: { name: true } } },
   });
   res.json({ verifications });
 });
 
 adminRouter.patch("/verifications/:id", async (req, res) => {
-  const { decision } = parse(decisionSchema, req.body);
+  const { decision, notes } = parse(decisionSchema, req.body);
   const admin = currentUser(req);
   const id = idParam(req.params.id as string);
+  if (decision === "rejected" && !notes) throw badRequest("Tell the provider why the document was not accepted");
   const verification = await prisma.verification.update({
     where: { id },
-    data: { status: decision, verifiedBy: admin.id, verifiedAt: new Date() },
+    data: { status: decision, verifiedBy: admin.id, verifiedAt: new Date(), ...(notes !== undefined ? { notes } : {}) },
   });
   // verified = phone + business (or ID) approved; partial = anything approved.
   const approved = await prisma.verification.findMany({ where: { providerId: verification.providerId, status: "approved" }, select: { type: true } });
@@ -146,7 +172,7 @@ adminRouter.patch("/verifications/:id", async (req, res) => {
     owner?.userId,
     "verification",
     decision === "approved" ? `${label} verified` : `${label} document not accepted`,
-    decision === "approved" ? "Your verification badge on DialNFind has been updated." : "Please upload a clearer or valid document from the Verification page.",
+    decision === "approved" ? "Your verification badge on DialNFind has been updated." : `${notes} Please upload a new document from the Verification page.`,
     { verificationId: Number(id) },
   );
   res.json({ verification, verificationStatus: status });
@@ -160,7 +186,21 @@ adminRouter.get("/flags", async (req, res) => {
     take: 200,
     include: { reporter: { select: { id: true, name: true, email: true } } },
   });
-  res.json({ flags });
+  // Attach a short description of what was reported so the queue can be worked without lookups.
+  const ids = (t: "review" | "provider") => flags.filter((f) => f.targetType === t).map((f) => f.targetId);
+  const [reviews, providers] = await Promise.all([
+    prisma.review.findMany({ where: { id: { in: ids("review") } }, select: { id: true, rating: true, reviewText: true, status: true, provider: { select: { id: true, businessName: true } }, user: { select: { name: true } } } }),
+    prisma.provider.findMany({ where: { id: { in: ids("provider") } }, select: { id: true, businessName: true, city: true, status: true } }),
+  ]);
+  const reviewMap = new Map(reviews.map((r) => [r.id.toString(), r]));
+  const providerMap = new Map(providers.map((p) => [p.id.toString(), p]));
+  res.json({
+    flags: flags.map((f) => ({
+      ...f,
+      review: f.targetType === "review" ? (reviewMap.get(f.targetId.toString()) ?? null) : null,
+      provider: f.targetType === "provider" ? (providerMap.get(f.targetId.toString()) ?? null) : null,
+    })),
+  });
 });
 
 adminRouter.patch("/flags/:id", async (req, res) => {
@@ -186,18 +226,6 @@ adminRouter.patch("/reviews/:id", async (req, res) => {
   res.json({ review });
 });
 
-adminRouter.get("/settings", async (_req, res) => {
-  res.json({ settings: await prisma.setting.findMany({ orderBy: { key: "asc" } }) });
-});
-
-adminRouter.put("/settings/:key", async (req, res) => {
-  const { value } = parse(z.object({ value: z.string().max(500) }), req.body);
-  const key = req.params.key as string;
-  const setting = await prisma.setting.upsert({ where: { key }, create: { key, value }, update: { value } });
-  await logAdmin(currentUser(req).id, "setting.update", "setting", setting.id, { key, value });
-  res.json({ setting });
-});
-
 adminRouter.get("/contact-messages", async (_req, res) => {
   res.json({ messages: await prisma.contactMessage.findMany({ orderBy: { createdAt: "desc" }, take: 100 }) });
 });
@@ -214,7 +242,7 @@ adminRouter.patch("/contact-messages/:id", async (req, res) => {
 
 const usersQuery = paginationSchema.extend({
   q: z.string().trim().optional(),
-  role: z.enum(["super_admin", "provider", "customer"]).optional(),
+  role: z.enum(["super_admin", "admin", "provider", "customer"]).optional(),
   status: z.enum(["active", "suspended", "deleted"]).optional(),
 });
 
@@ -241,6 +269,8 @@ adminRouter.get("/users", async (req, res) => {
         role: true,
         status: true,
         createdAt: true,
+        lastLoginAt: true,
+        profilePhotoUrl: true,
         provider: { select: { id: true, businessName: true, slug: true } },
         _count: { select: { reviews: true, leads: true } },
       },
@@ -251,10 +281,14 @@ adminRouter.get("/users", async (req, res) => {
 });
 
 adminRouter.patch("/users/:id", async (req, res) => {
-  const body = parse(z.object({ status: z.enum(["active", "suspended", "deleted"]).optional(), role: z.enum(["super_admin", "provider", "customer"]).optional() }), req.body);
+  // Admin and super admin access is managed from Team, not here.
+  const body = parse(z.object({ status: z.enum(["active", "suspended", "deleted"]).optional() }), req.body);
   const admin = currentUser(req);
   const id = idParam(req.params.id as string);
   if (id === admin.id) throw badRequest("You cannot change your own account here");
+  const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+  if (!target) throw notFound("User not found");
+  if (target.role === "super_admin" || target.role === "admin") throw badRequest("Manage team members from Team");
   const user = await prisma.user.update({ where: { id }, data: body, select: { id: true, role: true, status: true } });
   await logAdmin(admin.id, "user.update", "user", id, body);
   res.json({ user });

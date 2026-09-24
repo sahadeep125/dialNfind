@@ -9,6 +9,7 @@ import { currentUser } from "../../middleware/auth.js";
 import { uniqueProviderSlug } from "../../lib/slug.js";
 import { signToken } from "../../lib/jwt.js";
 import { env, isProduction } from "../../env.js";
+import { getSetting } from "../../services/settings.js";
 import { recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "./shared.js";
 
@@ -90,6 +91,7 @@ onboardingRouter.post("/onboarding", async (req, res) => {
   const slug = await uniqueProviderSlug(body.businessName, body.city);
   const { services, serviceAreas, hours, ...profile } = body;
 
+  const autoApprove = ((await getSetting("auto_approve_listings")) ?? String(!isProduction)) === "true";
   const provider = await prisma.$transaction(async (tx) => {
     const created = await tx.provider.create({
       data: {
@@ -99,8 +101,8 @@ onboardingRouter.post("/onboarding", async (req, res) => {
         slug,
         userId: user.id,
         claimedAt: new Date(),
-        // New listings go live immediately in development; production waits for admin approval.
-        status: isProduction ? "pending" : "active",
+        // Controlled by the auto_approve_listings setting in the admin app.
+        status: autoApprove ? "active" : "pending",
       },
     });
     await replaceServices(tx, created.id, services);

@@ -2,6 +2,7 @@ packages:
   - server
   - web
   - provider
+  - super-admin
 
 onlyBuiltDependencies:
   - "@prisma/client"

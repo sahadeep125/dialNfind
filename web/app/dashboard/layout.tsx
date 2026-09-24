@@ -7,7 +7,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="container-page py-8 md:py-12">
       <div className="grid gap-8 lg:grid-cols-[15rem_1fr]">
-        <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+        <aside className="min-w-0 space-y-6 lg:sticky lg:top-24 lg:self-start">
           <div className="flex items-center gap-3 rounded-2xl border bg-card p-4">
             <span className="flex size-11 items-center justify-center rounded-full bg-accent font-semibold text-accent-foreground">{initials(user.name)}</span>
             <div className="min-w-0">

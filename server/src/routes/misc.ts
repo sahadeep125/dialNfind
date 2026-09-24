@@ -4,6 +4,8 @@ import { email, optionalPhone } from "../lib/rules.js";
 import { prisma } from "../lib/prisma.js";
 import { parse } from "../lib/validate.js";
 import { optionalAuth } from "../middleware/auth.js";
+import { notify } from "../services/notify.js";
+import { supportStaffIds, ticketRef } from "../services/tickets.js";
 
 export const miscRouter = Router();
 
@@ -15,12 +17,31 @@ const contactSchema = z.object({
   message: z.string().trim().min(10).max(3000),
 });
 
+const CONTACT_TOPICS: Record<string, string> = {
+  "Problem with a provider": "report",
+  "Listing my business": "listing",
+  "Report wrong information": "report",
+};
+
+/** The public contact form opens a support ticket so the team answers it from the help desk. */
 miscRouter.post("/contact", optionalAuth, async (req, res) => {
   const body = parse(contactSchema, req.body);
-  const message = await prisma.contactMessage.create({
-    data: { ...body, phone: body.phone || null, userId: req.user?.id ?? null },
+  const provider = req.user ? await prisma.provider.findUnique({ where: { userId: req.user.id }, select: { id: true } }) : null;
+  const ticket = await prisma.supportTicket.create({
+    data: {
+      userId: req.user?.id ?? null,
+      providerId: provider?.id ?? null,
+      name: body.name,
+      email: body.email,
+      phone: body.phone || null,
+      subject: body.subject || "Message from the contact form",
+      category: CONTACT_TOPICS[body.subject ?? ""] ?? "general",
+      source: "contact_form",
+      messages: { create: { authorId: req.user?.id ?? null, body: body.message, attachments: [] } },
+    },
   });
-  res.status(201).json({ ok: true, id: message.id });
+  for (const id of await supportStaffIds(null)) void notify(id, "support", `New ticket ${ticketRef(ticket.id)}`, ticket.subject, { ticketId: Number(ticket.id) });
+  res.status(201).json({ ok: true, id: ticket.id, reference: ticketRef(ticket.id) });
 });
 
 miscRouter.get("/plans", async (_req, res) => {

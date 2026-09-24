@@ -1,7 +1,7 @@
 # DialNFind build plan
 
 DialNFind is a local service directory: tell us what you need, pick your location, see nearby
-providers, call the one you prefer. This repository holds three independent apps that share one
+providers, call the one you prefer. This repository holds four independent apps that share one
 PostgreSQL + PostGIS database through the API server.
 
 ```
@@ -9,10 +9,11 @@ dialNfind/
   server/     Node + Express + TypeScript + Prisma + PostgreSQL/PostGIS   (port 4000)
   web/        Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui (port 3000)
   provider/   React (Vite) + TypeScript + Tailwind CSS + shadcn/ui         (port 5173)
+  super-admin/ React (Vite) + TypeScript + Tailwind CSS + shadcn/ui        (port 5174)
   docs/       plan, API reference
 ```
 
-The root is a pnpm workspace so `pnpm install` once installs all three, but each app has its own
+The root is a pnpm workspace so `pnpm install` once installs all four, but each app has its own
 `package.json`, build, and deploy target and never imports code from another app.
 
 ## Build order
@@ -22,6 +23,7 @@ The root is a pnpm workspace so `pnpm install` once installs all three, but each
 3. **Seed data** — realistic demo directory so the web app is presentable on first run.
 4. **Web** — customer-facing Next.js site.
 5. **Provider** — provider onboarding and dashboard SPA.
+6. **Super admin** — admin console for the DialNFind team, with roles per staff member.
 
 ## 1. Schema
 
@@ -40,7 +42,9 @@ Small additions the pages need, which the brief does not cover:
 | `providers.user_id` nullable | seeded or imported listings exist before the owner claims them |
 | `providers.location geography(Point,4326)` | PostGIS column, kept in sync from lat/lng by a trigger; GiST index powers radius search and distance sort |
 | `provider_claims` | "Claim business" flow: who claimed which listing, how it was verified, status |
-| `contact_messages` | Contact page form submissions |
+| `contact_messages` | Contact page submissions from before the help desk; new ones become support tickets |
+| `admin_roles`, `users.admin_role_id` | staff roles: `super_admin` sees everything, `admin` users see the sections listed on their role |
+| `support_tickets`, `ticket_messages` | help desk for customers, providers and the contact form; messages can be internal notes |
 | `provider_daily_stats` | profile views and search impressions per day for the provider dashboard |
 | `leads.user_id` nullable | guests can tap Call without logging in; the lead is still counted |
 
@@ -57,7 +61,8 @@ input, but return `501 not configured` until client ids are supplied.
 - **reviews**: create, edit own, delete own; provider reply; report
 - **me**: favorites, addresses, my reviews, recent contacts, notifications (with unread count), device tokens (add, remove)
 - **provider (role=provider, own rows only)**: onboarding (create listing), claim search + claim start + OTP verify, profile, hours, service areas, services, portfolio, verification submissions, service details (category attribute values, asked once per category), leads, reviews + reply, dashboard stats, plans, subscription checkout (payment stubbed), sponsored campaigns (buy, pause, resume; payment stubbed)
-- **admin (super_admin)**: overview, providers moderation, claims, verifications, reviews moderation, report flags (resolve, dismiss), users (role, suspend), activity log, search insights, badges (CRUD, award, revoke), subscription plans, transactions, sponsored listings, contact messages, settings; subcategory and attribute edit/delete under **categories**
+- **support (signed in)**: my tickets, open a ticket, reply, close
+- **admin (super_admin, or admin with the section on their role)**: me and permissions, team and roles, support tickets (filter, assign, reply, internal notes), overview and analytics, leads, providers moderation and detail, grant plan, claims, verifications, reviews moderation, report flags (resolve, dismiss), users (role, suspend), activity log, search insights, badges (CRUD, award, revoke), subscription plans, transactions, subscriptions, sponsored listings, announcements, settings and plugins (secrets masked); subcategory and attribute edit/delete under **categories**
 - **notifications** are created for new leads and reviews, review replies, claim and verification decisions, listing status changes, badges and plan changes
 - **contact**, **plans**, **health**
 
@@ -74,6 +79,7 @@ services with prices, reviews with text, badges, plans, and demo logins:
 - customer `demo@dialnfind.com` / `password123`
 - provider `provider@dialnfind.com` / `password123`
 - admin `admin@dialnfind.com` / `password123`
+- admin team `ops@`, `support.agent@`, `finance@dialnfind.com` / `password123`
 
 ## 4. Web (Next.js)
 
@@ -97,6 +103,15 @@ views, rating, completeness, ranking tips, chart), Leads, Reviews (reply), Servi
 Hours, Service areas, Portfolio, Verification, Promote (sponsored campaigns), Subscription, and a
 notifications bell.
 
+## 6. Super admin (React + Vite)
+
+Only `super_admin` and `admin` accounts can sign in. Sections: Dashboard (queues and trends),
+Analytics, Providers (detail, status, badges, grant plan), Listing claims, Verification,
+Categories (subcategories, attributes, icons), Badges, Reviews and reports, Leads, Plans and
+billing (plans, subscribers, payments), Promotions, Users, Support tickets, Announcements,
+Settings, Plugins, Team and roles, Audit log, My account. The sidebar only shows the sections
+the member's role allows, and the API checks the same permission on every `/admin` path.
+
 ## Stubbed until credentials exist
 
 Google/Apple sign-in, payment gateway (checkout returns a simulated success in development),
@@ -111,5 +126,5 @@ File uploads are live: files are stored on the API server's disk behind a `Stora
 pnpm install
 cp server/.env.example server/.env        # set DATABASE_URL (needs PostGIS)
 pnpm --filter server db:migrate && pnpm --filter server db:seed
-pnpm dev                                    # runs all three
+pnpm dev                                    # runs all four
 ```

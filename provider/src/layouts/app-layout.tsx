@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Images,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   MapPinned,
   Megaphone,
@@ -64,6 +65,10 @@ const NAV = [
       { to: "/promote", label: "Promote", icon: Megaphone },
       { to: "/subscription", label: "Plan and billing", icon: CreditCard },
     ],
+  },
+  {
+    title: "Help",
+    items: [{ to: "/support", label: "Help and support", icon: LifeBuoy }],
   },
 ];
 

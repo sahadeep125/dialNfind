@@ -3,7 +3,8 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { notFound } from "../lib/errors.js";
-import { currentUser, requireRole } from "../middleware/auth.js";
+import { currentUser } from "../middleware/auth.js";
+import { requirePermission } from "../lib/permissions.js";
 import { slugify } from "../lib/slug.js";
 import { logAdmin } from "../services/audit.js";
 
@@ -44,7 +45,7 @@ const categorySchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-categoriesRouter.post("/", requireRole("super_admin"), async (req, res) => {
+categoriesRouter.post("/", requirePermission("categories"), async (req, res) => {
   const body = parse(categorySchema, req.body);
   const admin = currentUser(req);
   const category = await prisma.category.create({
@@ -54,7 +55,7 @@ categoriesRouter.post("/", requireRole("super_admin"), async (req, res) => {
   res.status(201).json({ category });
 });
 
-categoriesRouter.patch("/:id", requireRole("super_admin"), async (req, res) => {
+categoriesRouter.patch("/:id", requirePermission("categories"), async (req, res) => {
   const body = parse(categorySchema.partial(), req.body);
   const admin = currentUser(req);
   const id = idParam(req.params.id);
@@ -63,7 +64,7 @@ categoriesRouter.patch("/:id", requireRole("super_admin"), async (req, res) => {
   res.json({ category });
 });
 
-categoriesRouter.delete("/:id", requireRole("super_admin"), async (req, res) => {
+categoriesRouter.delete("/:id", requirePermission("categories"), async (req, res) => {
   const admin = currentUser(req);
   const id = idParam(req.params.id);
   // Soft delete keeps provider_services referentially valid.
@@ -80,7 +81,7 @@ const subcategorySchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-categoriesRouter.post("/:id/subcategories", requireRole("super_admin"), async (req, res) => {
+categoriesRouter.post("/:id/subcategories", requirePermission("categories"), async (req, res) => {
   const body = parse(subcategorySchema, req.body);
   const admin = currentUser(req);
   const categoryId = idParam(req.params.id);
@@ -91,7 +92,7 @@ categoriesRouter.post("/:id/subcategories", requireRole("super_admin"), async (r
   res.status(201).json({ subcategory });
 });
 
-categoriesRouter.patch("/subcategories/:id", requireRole("super_admin"), async (req, res) => {
+categoriesRouter.patch("/subcategories/:id", requirePermission("categories"), async (req, res) => {
   const body = parse(subcategorySchema.partial(), req.body);
   const admin = currentUser(req);
   const id = idParam(req.params.id);
@@ -110,7 +111,7 @@ const attributeSchema = z.object({
   displayOrder: z.number().int().optional(),
 });
 
-categoriesRouter.post("/:id/attributes", requireRole("super_admin"), async (req, res) => {
+categoriesRouter.post("/:id/attributes", requirePermission("categories"), async (req, res) => {
   const body = parse(attributeSchema, req.body);
   const admin = currentUser(req);
   const categoryId = idParam(req.params.id);
@@ -131,7 +132,7 @@ categoriesRouter.post("/:id/attributes", requireRole("super_admin"), async (req,
   res.status(201).json({ attribute });
 });
 
-categoriesRouter.delete("/subcategories/:id", requireRole("super_admin"), async (req, res) => {
+categoriesRouter.delete("/subcategories/:id", requirePermission("categories"), async (req, res) => {
   const admin = currentUser(req);
   const id = idParam(req.params.id as string);
   // Soft delete, like categories, so existing provider services stay valid.
@@ -140,7 +141,7 @@ categoriesRouter.delete("/subcategories/:id", requireRole("super_admin"), async 
   res.json({ ok: true });
 });
 
-categoriesRouter.patch("/attributes/:id", requireRole("super_admin"), async (req, res) => {
+categoriesRouter.patch("/attributes/:id", requirePermission("categories"), async (req, res) => {
   const body = parse(attributeSchema.partial(), req.body);
   const admin = currentUser(req);
   const id = idParam(req.params.id as string);
@@ -158,7 +159,7 @@ categoriesRouter.patch("/attributes/:id", requireRole("super_admin"), async (req
 });
 
 /** Hard delete: attribute_values cascade with it. */
-categoriesRouter.delete("/attributes/:id", requireRole("super_admin"), async (req, res) => {
+categoriesRouter.delete("/attributes/:id", requirePermission("categories"), async (req, res) => {
   const admin = currentUser(req);
   const id = idParam(req.params.id as string);
   await prisma.categoryAttribute.delete({ where: { id } });

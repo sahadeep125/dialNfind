@@ -18,7 +18,7 @@ export default async function ContactPage() {
       </div>
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_22rem]">
         <div className="rounded-3xl border bg-card p-6 shadow-[var(--shadow-soft)] md:p-8">
-          <ContactForm defaultName={user?.name} defaultEmail={user?.email} />
+          <ContactForm defaultName={user?.name} defaultEmail={user?.email} signedIn={!!user} />
         </div>
         <aside className="space-y-4">
           {[

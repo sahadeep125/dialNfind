@@ -167,6 +167,8 @@ async function main() {
       { key: "support_email", value: "support@dialnfind.com" },
       { key: "support_phone", value: "+918001234567" },
       { key: "default_search_radius_km", value: "15" },
+      { key: "support_hours", value: "Mon to Sat, 9 AM to 7 PM" },
+      { key: "plugin.google_analytics.enabled", value: "false" },
     ],
   });
 
@@ -516,6 +518,77 @@ async function main() {
   }
   if (attrRows.length) await prisma.attributeValue.createMany({ data: attrRows });
 
+  // Admin team and help desk ------------------------------------------------------------------
+  const roles = {
+    operations: await prisma.adminRole.create({
+      data: { name: "Operations", description: "Approves listings, checks documents and keeps categories tidy.", permissions: ["providers", "verifications", "categories", "reviews", "support", "leads"] },
+    }),
+    support: await prisma.adminRole.create({
+      data: { name: "Support agent", description: "Answers tickets and helps customers and providers with their accounts.", permissions: ["support", "users", "reviews"] },
+    }),
+    finance: await prisma.adminRole.create({
+      data: { name: "Finance", description: "Plans, payments, promotions and revenue reports.", permissions: ["plans", "promotions", "analytics"] },
+    }),
+  };
+  const opsUser = await prisma.user.create({
+    data: { role: "admin", adminRoleId: roles.operations.id, name: "Rohit Das", email: "ops@dialnfind.com", phone: "+919800055501", passwordHash, emailVerifiedAt: new Date(), termsAcceptedAt: new Date(), lastLoginAt: daysAgo(1) },
+  });
+  const supportUser = await prisma.user.create({
+    data: { role: "admin", adminRoleId: roles.support.id, name: "Priya Ghosh", email: "support.agent@dialnfind.com", passwordHash, emailVerifiedAt: new Date(), termsAcceptedAt: new Date(), lastLoginAt: daysAgo(0) },
+  });
+  await prisma.user.create({
+    data: { role: "admin", adminRoleId: roles.finance.id, name: "Karan Mehta", email: "finance@dialnfind.com", passwordHash, emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
+  });
+
+  const ticketSeeds: {
+    by: "customer" | "provider" | "guest";
+    subject: string;
+    category: string;
+    priority: "low" | "normal" | "high" | "urgent";
+    status: "open" | "pending" | "resolved" | "closed";
+    assignee?: bigint;
+    age: number;
+    thread: [boolean, string][];
+  }[] = [
+    { by: "provider", subject: "Lead count looks lower than my call log", category: "listing", priority: "high", status: "open", age: 0, thread: [[false, "I got 9 calls yesterday but the dashboard shows 6 leads. Can you check?"]] },
+    { by: "customer", subject: "Technician did not show up", category: "report", priority: "normal", status: "pending", assignee: 0n, age: 2, thread: [[false, "Booked AC service on call for Saturday morning, nobody came and the number is switched off now."], [true, "Sorry about this. We have contacted the provider and will update you within a day. Could you share the time you called?"]] },
+    { by: "provider", subject: "Invoice needed for Pro plan payment", category: "billing", priority: "low", status: "resolved", assignee: 1n, age: 6, thread: [[false, "Please send a GST invoice for last month's Pro plan."], [true, "The invoice is now under Plan and billing in your dashboard."], [false, "Got it, thanks."]] },
+    { by: "guest", subject: "Wrong phone number on a listing", category: "report", priority: "normal", status: "open", age: 1, thread: [[false, "The number for Metro Electronics on Hill Cart Road belongs to someone else."]] },
+    { by: "customer", subject: "Cannot change my email address", category: "account", priority: "low", status: "closed", assignee: 1n, age: 12, thread: [[false, "I want to use a new email for my account."], [true, "For security we change emails on request. Done, please sign in with the new address."]] },
+    { by: "provider", subject: "Verification document rejected twice", category: "verification", priority: "urgent", status: "open", age: 0, thread: [[false, "My trade licence was rejected again. It is valid until 2027. What is wrong with it?"]] },
+  ];
+  const staffIds = [supportUser.id, opsUser.id];
+  for (const t of ticketSeeds) {
+    const requester = t.by === "provider" ? demoProviderUser : t.by === "customer" ? demoCustomer : null;
+    const created = daysAgo(t.age);
+    const ticket = await prisma.supportTicket.create({
+      data: {
+        userId: requester?.id ?? null,
+        providerId: t.by === "provider" ? demoProviderId : null,
+        name: requester?.name ?? "Sanjay Roy",
+        email: requester?.email ?? "sanjay.roy@example.com",
+        subject: t.subject,
+        category: t.category,
+        priority: t.priority,
+        status: t.status,
+        source: t.by === "guest" ? "contact_form" : t.by === "provider" ? "provider_app" : "web",
+        assignedToId: t.assignee !== undefined ? staffIds[Number(t.assignee)] : null,
+        createdAt: created,
+        lastActivityAt: new Date(created.getTime() + (t.thread.length - 1) * 3 * 3600e3),
+      },
+    });
+    await prisma.ticketMessage.createMany({
+      data: t.thread.map(([staff, body], i) => ({
+        ticketId: ticket.id,
+        authorId: staff ? staffIds[Number(t.assignee ?? 0n)] : (requester?.id ?? null),
+        fromStaff: staff,
+        body,
+        attachments: [],
+        createdAt: new Date(created.getTime() + i * 3 * 3600e3),
+      })),
+    });
+  }
+
   await prisma.notification.createMany({
     data: [
       { userId: demoCustomer.id, type: "review_reply", title: "Sharma TV & Electronics Care replied to your review", body: "Thank you for trusting us. Happy to help any time.", createdAt: daysAgo(2) },
@@ -542,6 +615,7 @@ async function main() {
   };
   console.log("Seed complete", counts);
   console.log("Logins (password123): demo@dialnfind.com, provider@dialnfind.com, newprovider@dialnfind.com, admin@dialnfind.com");
+  console.log("Admin team (password123): ops@dialnfind.com, support.agent@dialnfind.com, finance@dialnfind.com");
 }
 
 main()

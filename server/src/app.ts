@@ -16,6 +16,7 @@ import { reviewsRouter } from "./routes/reviews.js";
 import { meRouter } from "./routes/me.js";
 import { miscRouter } from "./routes/misc.js";
 import { adminRouter } from "./routes/admin.js";
+import { supportRouter } from "./routes/support.js";
 import { uploadsRouter } from "./routes/uploads.js";
 import { UPLOAD_ROUTE, uploadDir } from "./storage/index.js";
 import { onboardingRouter } from "./routes/provider/onboarding.js";
@@ -51,6 +52,7 @@ export function createApp() {
   api.use("/me", meRouter);
   api.use("/admin", adminRouter);
   api.use("/uploads", uploadsRouter);
+  api.use("/support", supportRouter);
 
   const providerPortal = Router();
   providerPortal.use(requireAuth);

@@ -16,6 +16,7 @@ import { PortfolioPage } from "@/pages/portfolio";
 import { VerificationPage } from "@/pages/verification";
 import { SubscriptionPage } from "@/pages/subscription";
 import { PromotePage } from "@/pages/promote";
+import { SupportPage, SupportTicketPage } from "@/pages/support";
 
 function FullScreenLoader() {
   return (
@@ -73,6 +74,8 @@ export function App() {
             <Route path="/verification" element={<VerificationPage />} />
             <Route path="/promote" element={<PromotePage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />
+            <Route path="/support" element={<SupportPage />} />
+            <Route path="/support/:id" element={<SupportTicketPage />} />
           </Route>
         </Route>
       </Route>
