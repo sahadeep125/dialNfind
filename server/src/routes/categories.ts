@@ -130,3 +130,38 @@ categoriesRouter.post("/:id/attributes", requireRole("super_admin"), async (req,
   await logAdmin(admin.id, "attribute.create", "category_attribute", attribute.id, body);
   res.status(201).json({ attribute });
 });
+
+categoriesRouter.delete("/subcategories/:id", requireRole("super_admin"), async (req, res) => {
+  const admin = currentUser(req);
+  const id = idParam(req.params.id as string);
+  // Soft delete, like categories, so existing provider services stay valid.
+  await prisma.subcategory.update({ where: { id }, data: { isActive: false, updatedBy: admin.id } });
+  await logAdmin(admin.id, "subcategory.deactivate", "subcategory", id);
+  res.json({ ok: true });
+});
+
+categoriesRouter.patch("/attributes/:id", requireRole("super_admin"), async (req, res) => {
+  const body = parse(attributeSchema.partial(), req.body);
+  const admin = currentUser(req);
+  const id = idParam(req.params.id as string);
+  const { options, subcategoryId, ...rest } = body;
+  const attribute = await prisma.categoryAttribute.update({
+    where: { id },
+    data: {
+      ...rest,
+      ...(options !== undefined ? { optionsJson: options } : {}),
+      ...(subcategoryId !== undefined ? { subcategoryId: subcategoryId ? BigInt(subcategoryId) : null } : {}),
+    },
+  });
+  await logAdmin(admin.id, "attribute.update", "category_attribute", id, body);
+  res.json({ attribute });
+});
+
+/** Hard delete: attribute_values cascade with it. */
+categoriesRouter.delete("/attributes/:id", requireRole("super_admin"), async (req, res) => {
+  const admin = currentUser(req);
+  const id = idParam(req.params.id as string);
+  await prisma.categoryAttribute.delete({ where: { id } });
+  await logAdmin(admin.id, "attribute.delete", "category_attribute", id);
+  res.json({ ok: true });
+});

@@ -65,18 +65,38 @@ export async function replaceServices(tx: Tx, providerId: bigint, services: z.in
     }
   }
   const hasPrimary = services.some((s) => s.isPrimary);
-  await tx.providerService.deleteMany({ where: { providerId } });
-  await tx.providerService.createMany({
-    data: services.map((s, i) => ({
-      providerId,
-      categoryId: BigInt(s.categoryId),
-      subcategoryId: s.subcategoryId ? BigInt(s.subcategoryId) : null,
-      startingPrice: s.startingPrice ?? null,
-      priceUnit: s.priceUnit,
-      isPrimary: hasPrimary ? s.isPrimary : i === 0,
-    })),
-    skipDuplicates: true,
-  });
+  // Diff instead of delete-all so provider_service ids (and their attribute values) survive a save.
+  const key = (c: bigint, sub: bigint | null) => `${c}:${sub ?? ""}`;
+  const existing = await tx.providerService.findMany({ where: { providerId }, select: { id: true, categoryId: true, subcategoryId: true } });
+  const existingByKey = new Map(existing.map((e) => [key(e.categoryId, e.subcategoryId), e.id]));
+  const wanted = new Set<string>();
+  for (const [i, s] of services.entries()) {
+    const categoryId = BigInt(s.categoryId);
+    const subcategoryId = s.subcategoryId ? BigInt(s.subcategoryId) : null;
+    const k = key(categoryId, subcategoryId);
+    if (wanted.has(k)) continue;
+    wanted.add(k);
+    const data = { startingPrice: s.startingPrice ?? null, priceUnit: s.priceUnit, isPrimary: hasPrimary ? s.isPrimary : i === 0 };
+    const id = existingByKey.get(k);
+    if (id) await tx.providerService.update({ where: { id }, data });
+    else await tx.providerService.create({ data: { ...data, providerId, categoryId, subcategoryId } });
+  }
+  const removed = existing.filter((e) => !wanted.has(key(e.categoryId, e.subcategoryId))).map((e) => e.id);
+  if (removed.length) {
+    // Category-wide answers move to a remaining service in the same category instead of being lost.
+    const remaining = await tx.providerService.findMany({ where: { providerId, id: { notIn: removed } }, orderBy: [{ isPrimary: "desc" }, { id: "asc" }] });
+    for (const r of existing.filter((e) => removed.includes(e.id))) {
+      const heir = remaining.find((x) => x.categoryId === r.categoryId);
+      if (heir) {
+        await tx.attributeValue.updateMany({
+          where: { entityType: "provider_service", entityId: r.id, attribute: { subcategoryId: null } },
+          data: { entityId: heir.id },
+        });
+      }
+    }
+    await tx.attributeValue.deleteMany({ where: { entityType: "provider_service", entityId: { in: removed } } });
+    await tx.providerService.deleteMany({ where: { id: { in: removed } } });
+  }
 }
 
 export async function replaceServiceAreas(tx: Tx, providerId: bigint, areas: z.infer<typeof serviceAreaSchema>[]) {

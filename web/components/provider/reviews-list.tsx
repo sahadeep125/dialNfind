@@ -9,6 +9,7 @@ import { clientApi } from "@/lib/client";
 import { formatRelative, initials } from "@/lib/format";
 import type { Paged, Review } from "@/lib/types";
 import { RatingStars } from "./rating";
+import { ReportReview } from "./share-report";
 
 export function ReviewsList({ slug, initial, providerName }: { slug: string; initial: { reviews: Review[] } & Paged; providerName: string }) {
   const [reviews, setReviews] = useState(initial.reviews);
@@ -73,6 +74,9 @@ export function ReviewsList({ slug, initial, providerName }: { slug: string; ini
                 <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                   <RatingStars value={r.rating} />
                   <span>{formatRelative(r.createdAt)}</span>
+                  <span className="ml-auto">
+                    <ReportReview reviewId={r.id} />
+                  </span>
                 </div>
                 {r.reviewText && <p className="mt-2.5 text-sm leading-relaxed text-foreground/90">{r.reviewText}</p>}
                 {r.providerReply && (

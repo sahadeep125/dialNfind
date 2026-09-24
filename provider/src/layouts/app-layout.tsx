@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   MapPinned,
+  Megaphone,
   Menu,
   MessageSquare,
   PhoneIncoming,
@@ -24,6 +25,7 @@ import { initials } from "@/lib/format";
 import type { ProviderProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
+import { NotificationBell } from "@/components/notifications";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -56,7 +58,13 @@ const NAV = [
       { to: "/verification", label: "Verification", icon: BadgeCheck },
     ],
   },
-  { title: "Account", items: [{ to: "/subscription", label: "Plan and billing", icon: CreditCard }] },
+  {
+    title: "Grow",
+    items: [
+      { to: "/promote", label: "Promote", icon: Megaphone },
+      { to: "/subscription", label: "Plan and billing", icon: CreditCard },
+    ],
+  },
 ];
 
 export function useProfile() {
@@ -156,8 +164,9 @@ export function AppLayout() {
             <div className="truncate font-semibold">{provider?.businessName}</div>
             {provider?.status === "pending" && <div className="text-xs text-warning">Waiting for approval</div>}
           </div>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
             <AvailabilityToggle />
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger className="flex size-9 cursor-pointer items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground outline-none">
                 {initials(user?.name ?? "")}

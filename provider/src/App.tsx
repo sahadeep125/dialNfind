@@ -15,6 +15,7 @@ import { AreasPage, HoursPage, ServicesPage } from "@/pages/editors";
 import { PortfolioPage } from "@/pages/portfolio";
 import { VerificationPage } from "@/pages/verification";
 import { SubscriptionPage } from "@/pages/subscription";
+import { PromotePage } from "@/pages/promote";
 
 function FullScreenLoader() {
   return (
@@ -70,6 +71,7 @@ export function App() {
             <Route path="/areas" element={<AreasPage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
             <Route path="/verification" element={<VerificationPage />} />
+            <Route path="/promote" element={<PromotePage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />
           </Route>
         </Route>

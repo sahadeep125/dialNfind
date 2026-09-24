@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { displayAttributeValue, loadAttributeValues } from "../services/attributes.js";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { parse } from "../lib/validate.js";
@@ -61,6 +62,7 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
   ]);
   void recordProfileView(id);
 
+  const serviceValues = await loadAttributeValues(prisma, "provider_service", provider.services.map((s) => s.id));
   const { day } = localNow();
   const hours = DAY_NAMES.map((name, dayOfWeek) => {
     const row = provider.businessHours.find((h) => h.dayOfWeek === dayOfWeek);
@@ -100,6 +102,7 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
         startingPrice: num(s.startingPrice),
         priceUnit: s.priceUnit,
         isPrimary: s.isPrimary,
+        details: (serviceValues.get(s.id) ?? []).map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
       })),
       portfolio: provider.portfolio.map((p) => ({
         id: p.id,
@@ -108,6 +111,11 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
         imageUrl: p.imageUrl,
         category: p.category?.name ?? null,
       })),
+      // Answers to the category's provider questions, one line per question.
+      serviceDetails: [...serviceValues.values()]
+        .flat()
+        .filter((v, i, all) => all.findIndex((x) => x.attribute.id === v.attribute.id) === i)
+        .map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
       verifications: provider.verifications,
       ratingBreakdown,
       myReview,

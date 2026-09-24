@@ -71,3 +71,4 @@ These have their schema and endpoints in place but no live integration yet:
 | `pnpm typecheck` | Type-checks all apps |
 | `pnpm --filter server db:migrate` | Creates a new migration after schema changes |
 | `pnpm --filter server db:seed` | Reloads demo data |
+| `pnpm --filter server smoke` | Calls every API endpoint as each role against the running server (reseed afterwards) |

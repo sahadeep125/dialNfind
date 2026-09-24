@@ -30,14 +30,40 @@ export function ShareButton({ title }: { title: string }) {
 }
 
 export function ReportListing({ slug }: { slug: string }) {
+  return (
+    <ReportDialog
+      endpoint={`/providers/${slug}/report`}
+      trigger="Report this listing"
+      title="Report this listing"
+      description="Wrong number, closed business, or something unsafe? Tell us and we will check it."
+      placeholder="What is wrong with this listing?"
+      done="Thanks. Our team will review this listing."
+    />
+  );
+}
+
+export function ReportReview({ reviewId }: { reviewId: number }) {
+  return (
+    <ReportDialog
+      endpoint={`/reviews/${reviewId}/report`}
+      trigger="Report"
+      title="Report this review"
+      description="Fake, abusive or not about this business? Tell us and our team will check it."
+      placeholder="What is wrong with this review?"
+      done="Thanks. Our team will review it."
+    />
+  );
+}
+
+function ReportDialog({ endpoint, trigger, title, description, placeholder, done }: { endpoint: string; trigger: string; title: string; description: string; placeholder: string; done: string }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   async function submit() {
     setSaving(true);
     try {
-      await clientApi(`/providers/${slug}/report`, { method: "POST", body: JSON.stringify({ reason }) });
-      toast.success("Thanks. Our team will review this listing.");
+      await clientApi(endpoint, { method: "POST", body: JSON.stringify({ reason }) });
+      toast.success(done);
       setOpen(false);
       setReason("");
     } catch {
@@ -50,15 +76,15 @@ export function ReportListing({ slug }: { slug: string }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <button type="button" className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-          <Flag className="size-3.5" /> Report this listing
+          <Flag className="size-3.5" /> {trigger}
         </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Report this listing</DialogTitle>
-          <DialogDescription>Wrong number, closed business, or something unsafe? Tell us and we will check it.</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={4} placeholder="What is wrong with this listing?" />
+        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={4} placeholder={placeholder} />
         <DialogFooter>
           <Button onClick={submit} disabled={saving || reason.trim().length < 5}>
             {saving && <Loader2 className="animate-spin" />} Send report

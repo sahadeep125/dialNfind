@@ -184,13 +184,18 @@ export async function searchProviders(params: SearchParams) {
     categoryId && ids.length
       ? prisma.sponsoredListing.findMany({
           where: { providerId: { in: ids }, categoryId, status: "active", startDate: { lte: new Date() }, endDate: { gte: new Date() } },
-          select: { providerId: true },
+          select: { id: true, providerId: true },
         })
       : Promise.resolve([]),
   ]);
   const byId = new Map(providers.map((p) => [p.id, p]));
   const favSet = new Set(favorites.map((f) => f.providerId));
   const sponsoredSet = new Set(sponsored.map((s) => s.providerId));
+  if (sponsored.length) {
+    void prisma.sponsoredListing
+      .updateMany({ where: { id: { in: sponsored.map((s) => s.id) } }, data: { impressions: { increment: 1 } } })
+      .catch(() => undefined);
+  }
 
   const results = rows
     .map((r) => {

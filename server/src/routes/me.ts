@@ -165,12 +165,12 @@ meRouter.get("/contacts", async (req, res) => {
 // Notifications -------------------------------------------------------------
 
 meRouter.get("/notifications", async (req, res) => {
-  const notifications = await prisma.notification.findMany({
-    where: { userId: currentUser(req).id },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
-  res.json({ notifications });
+  const userId = currentUser(req).id;
+  const [notifications, unread] = await Promise.all([
+    prisma.notification.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 50 }),
+    prisma.notification.count({ where: { userId, isRead: false } }),
+  ]);
+  res.json({ notifications, unread });
 });
 
 meRouter.post("/notifications/read", async (req, res) => {
@@ -193,4 +193,9 @@ meRouter.post("/device-tokens", async (req, res) => {
   if (existing && existing.userId !== userId) throw forbidden();
   await prisma.deviceToken.upsert({ where: { token: body.token }, create: { ...body, userId }, update: { platform: body.platform } });
   res.status(201).json({ ok: true });
+});
+
+meRouter.delete("/device-tokens/:token", async (req, res) => {
+  await prisma.deviceToken.deleteMany({ where: { token: req.params.token as string, userId: currentUser(req).id } });
+  res.json({ ok: true });
 });

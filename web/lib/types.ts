@@ -85,6 +85,7 @@ export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
     priceUnit: "per_visit" | "per_hour" | "fixed";
     isPrimary: boolean;
   }[];
+  serviceDetails: { label: string; value: string }[];
   portfolio: { id: number; title: string; description: string | null; imageUrl: string; category: string | null }[];
   verifications: { type: string; verifiedAt: string | null }[];
   ratingBreakdown: { rating: number; count: number }[];

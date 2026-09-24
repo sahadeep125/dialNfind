@@ -2,10 +2,11 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
-import { notFound } from "../../lib/errors.js";
+import { badRequest, notFound } from "../../lib/errors.js";
 import { num } from "../../lib/serialize.js";
 import { uniqueProviderSlug } from "../../lib/slug.js";
 import { completenessChecklist, recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
+import { applicableAttributes, attributeOptions, decodeAttributeValue, encodeAttributeValue, loadAttributeValues } from "../../services/attributes.js";
 import { ownProvider } from "./common.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "./shared.js";
 
@@ -94,6 +95,83 @@ profileRouter.put("/services", async (req, res) => {
   await recalculateProvider(provider.id);
   await recalculateCategoryCounts();
   res.json({ provider: await loadProfile(provider.id) });
+});
+
+// Service details (category attributes that apply to providers) -------------------------------
+
+/**
+ * GET /provider/attributes — the "service details" form. Category-wide questions are asked once per
+ * category (stored on that category's anchor service); subcategory questions once per service.
+ */
+profileRouter.get("/attributes", async (req, res) => {
+  const provider = await ownProvider(req);
+  const services = await prisma.providerService.findMany({
+    where: { providerId: provider.id },
+    include: { category: { select: { id: true, name: true } }, subcategory: { select: { id: true, name: true } } },
+    orderBy: [{ isPrimary: "desc" }, { id: "asc" }],
+  });
+  const categoryIds = [...new Set(services.map((s) => s.categoryId))];
+  const [attrs, values] = await Promise.all([
+    prisma.categoryAttribute.findMany({ where: { appliesTo: "provider", categoryId: { in: categoryIds } }, orderBy: [{ displayOrder: "asc" }, { id: "asc" }] }),
+    loadAttributeValues(prisma, "provider_service", services.map((s) => s.id)),
+  ]);
+  const shape = (a: (typeof attrs)[number], serviceIds: bigint[]) => {
+    const saved = serviceIds.flatMap((id) => values.get(id) ?? []).find((x) => x.attribute.id === a.id);
+    return { id: a.id, label: a.label, fieldType: a.fieldType, options: attributeOptions(a), isRequired: a.isRequired, value: saved ? decodeAttributeValue(a, saved.value) : null };
+  };
+  const groups = [];
+  for (const categoryId of categoryIds) {
+    const inCategory = services.filter((s) => s.categoryId === categoryId);
+    const wide = attrs.filter((a) => a.categoryId === categoryId && !a.subcategoryId);
+    if (wide.length) {
+      groups.push({
+        providerServiceId: inCategory[0].id,
+        title: inCategory[0].category.name,
+        attributes: wide.map((a) => shape(a, inCategory.map((s) => s.id))),
+      });
+    }
+    for (const s of inCategory) {
+      const specific = attrs.filter((a) => a.subcategoryId && a.subcategoryId === s.subcategoryId);
+      if (specific.length) groups.push({ providerServiceId: s.id, title: s.subcategory?.name ?? s.category.name, attributes: specific.map((a) => shape(a, [s.id])) });
+    }
+  }
+  res.json({ groups });
+});
+
+const attributeValuesSchema = z.object({
+  values: z
+    .array(
+      z.object({
+        providerServiceId: z.number().int().positive(),
+        attributeId: z.number().int().positive(),
+        value: z.union([z.string().max(300), z.number(), z.boolean(), z.array(z.string().max(80)).max(50), z.null()]),
+      }),
+    )
+    .max(200),
+});
+
+/** PUT /provider/attributes — upserts values; null clears one. Only the provider's own services are accepted. */
+profileRouter.put("/attributes", async (req, res) => {
+  const provider = await ownProvider(req);
+  const { values } = parse(attributeValuesSchema, req.body);
+  const services = await prisma.providerService.findMany({ where: { providerId: provider.id } });
+  const serviceById = new Map(services.map((s) => [s.id, s]));
+  await prisma.$transaction(async (tx) => {
+    for (const v of values) {
+      const service = serviceById.get(BigInt(v.providerServiceId));
+      if (!service) throw notFound("Service not found on your profile");
+      const allowed = await applicableAttributes(tx, "provider", service.categoryId, service.subcategoryId);
+      const attr = allowed.find((a) => a.id === BigInt(v.attributeId));
+      if (!attr) throw badRequest("That detail does not apply to this service");
+      const encoded = encodeAttributeValue(attr, v.value);
+      const scope = attr.subcategoryId ? [service.id] : services.filter((x) => x.categoryId === service.categoryId).map((x) => x.id);
+      await tx.attributeValue.deleteMany({ where: { attributeId: attr.id, entityType: "provider_service", entityId: { in: scope } } });
+      if (encoded !== null) {
+        await tx.attributeValue.create({ data: { attributeId: attr.id, entityType: "provider_service", entityId: service.id, value: encoded } });
+      }
+    }
+  });
+  res.json({ ok: true });
 });
 
 // Portfolio ---------------------------------------------------------------------------------

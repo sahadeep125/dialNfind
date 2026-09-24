@@ -53,11 +53,12 @@ input, but return `501 not configured` until client ids are supplied.
 - **categories**: list (with subcategories and counts), get by slug with attributes; super_admin CRUD with audit logging
 - **search**: provider search (text, category, lat/lng + radius, min rating, open now, verified, sort by relevance/distance/rating/reviews), autocomplete suggestions, location lookup; every search logged to `search_queries`
 - **providers**: public profile by slug (hours, open-now, areas, services, portfolio, badges, rating breakdown), reviews (paged), similar providers, profile-view tracking
-- **leads**: create call/WhatsApp lead (guest or user), "did they respond?" follow-up
+- **leads**: create call/WhatsApp lead (guest or user) with optional answers to the category's lead questions, "did they respond?" follow-up; a contact in a promoted category counts as a sponsored click
 - **reviews**: create, edit own, delete own; provider reply; report
-- **me**: favorites, addresses, my reviews, recent contacts, notifications
-- **provider (role=provider, own rows only)**: onboarding (create listing), claim search + claim start + OTP verify, profile, hours, service areas, services, portfolio, verification submissions, leads, reviews + reply, dashboard stats, plans, subscription checkout (payment stubbed)
-- **admin (super_admin)**: providers moderation, claims, verifications, reviews moderation, settings
+- **me**: favorites, addresses, my reviews, recent contacts, notifications (with unread count), device tokens (add, remove)
+- **provider (role=provider, own rows only)**: onboarding (create listing), claim search + claim start + OTP verify, profile, hours, service areas, services, portfolio, verification submissions, service details (category attribute values, asked once per category), leads, reviews + reply, dashboard stats, plans, subscription checkout (payment stubbed), sponsored campaigns (buy, pause, resume; payment stubbed)
+- **admin (super_admin)**: overview, providers moderation, claims, verifications, reviews moderation, report flags (resolve, dismiss), users (role, suspend), activity log, search insights, badges (CRUD, award, revoke), subscription plans, transactions, sponsored listings, contact messages, settings; subcategory and attribute edit/delete under **categories**
+- **notifications** are created for new leads and reviews, review replies, claim and verification decisions, listing status changes, badges and plan changes
 - **contact**, **plans**, **health**
 
 Ranking: `ranking_score` = Bayesian-smoothed rating + review volume + profile completeness +
@@ -93,7 +94,8 @@ Pages: Login/Register, Get started (claim existing vs create new), Claim flow (f
 verify with a code sent to the listed number, stubbed as `123456` in development), Onboarding
 wizard (business, services, location + areas, hours, contact preferences), Dashboard (leads,
 views, rating, completeness, ranking tips, chart), Leads, Reviews (reply), Services, Profile,
-Hours, Service areas, Portfolio, Verification, Subscription.
+Hours, Service areas, Portfolio, Verification, Promote (sponsored campaigns), Subscription, and a
+notifications bell.
 
 ## Stubbed until credentials exist
 

@@ -20,6 +20,7 @@ interface Lead {
   service: string | null;
   customerReportedResponse: boolean | null;
   reviewRating: number | null;
+  details: { label: string; value: string }[];
 }
 
 interface LeadsResponse {
@@ -91,6 +92,9 @@ export function LeadsPage() {
                 <div className="text-sm">
                   {l.service ?? <span className="text-muted-foreground">General enquiry</span>}
                   {l.description && <div className="line-clamp-1 hidden text-xs text-muted-foreground md:block">{l.description}</div>}
+                  {l.details.length > 0 && (
+                    <div className="text-xs text-muted-foreground">{l.details.map((d) => `${d.label}: ${d.value}`).join(" · ")}</div>
+                  )}
                 </div>
                 <div className="text-sm text-muted-foreground">{SOURCE_LABEL[l.source] ?? l.source}</div>
                 <div>

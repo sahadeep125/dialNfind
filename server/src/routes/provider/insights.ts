@@ -2,11 +2,13 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
-import { badRequest, notFound } from "../../lib/errors.js";
+import { badRequest, conflict, notFound } from "../../lib/errors.js";
 import { pageMeta, paginationSchema } from "../../lib/pagination.js";
 import { num } from "../../lib/serialize.js";
 import { env } from "../../env.js";
 import { completenessChecklist, recalculateProvider } from "../../services/ranking.js";
+import { displayAttributeValue, loadAttributeValues } from "../../services/attributes.js";
+import { notify } from "../../services/notify.js";
 import { ownProvider } from "./common.js";
 
 export const insightsRouter = Router();
@@ -156,6 +158,7 @@ insightsRouter.get("/leads", async (req, res) => {
     }),
     prisma.lead.count({ where }),
   ]);
+  const details = await loadAttributeValues(prisma, "lead", leads.map((l) => l.id));
   res.json({
     leads: leads.map((l) => ({
       id: l.id,
@@ -168,6 +171,7 @@ insightsRouter.get("/leads", async (req, res) => {
       service: l.subcategory?.name ?? l.category?.name ?? null,
       customerReportedResponse: l.customerReportedResponse,
       reviewRating: l.review?.rating ?? null,
+      details: (details.get(l.id) ?? []).map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
     })),
     ...pageMeta(q.page, q.pageSize, total),
   });
@@ -231,6 +235,9 @@ insightsRouter.put("/reviews/:id/reply", async (req, res) => {
     where: { id },
     data: { providerReply: reply, providerReplyAt: reply ? new Date() : null },
   });
+  if (reply && !review.providerReply) {
+    void notify(review.userId, "review_reply", `${provider.businessName} replied to your review`, reply.slice(0, 120), { providerSlug: provider.slug, reviewId: Number(id) });
+  }
   res.json({ review: updated });
 });
 
@@ -295,6 +302,7 @@ insightsRouter.post("/subscription/checkout", async (req, res) => {
     return { subscription, transaction };
   });
   await recalculateProvider(provider.id);
+  void notify(req.user?.id, "subscription", `You are on the ${plan.name} plan`, num(plan.price) ? `Active until ${end.toDateString()}.` : "Your listing stays free to find.", { planId });
   res.status(201).json({ ...result, simulated: !env.paymentGatewayKey });
 });
 
@@ -305,4 +313,83 @@ insightsRouter.post("/subscription/cancel", async (req, res) => {
     data: { autoRenew: false },
   });
   res.json({ ok: true });
+});
+
+// Sponsored listings ---------------------------------------------------------------------------
+
+async function sponsoredPricing() {
+  const rows = await prisma.setting.findMany({ where: { key: { in: ["sponsored_cpc", "sponsored_min_budget"] } } });
+  const get = (k: string, d: number) => Number(rows.find((r) => r.key === k)?.value ?? d) || d;
+  return { costPerClick: get("sponsored_cpc", 5), minBudget: get("sponsored_min_budget", 500) };
+}
+
+insightsRouter.get("/sponsored", async (req, res) => {
+  const provider = await ownProvider(req);
+  const [listings, services, pricing] = await Promise.all([
+    prisma.sponsoredListing.findMany({
+      where: { providerId: provider.id },
+      orderBy: { startDate: "desc" },
+      include: { category: { select: { id: true, name: true, slug: true } } },
+    }),
+    prisma.providerService.findMany({ where: { providerId: provider.id }, distinct: ["categoryId"], include: { category: { select: { id: true, name: true } } } }),
+    sponsoredPricing(),
+  ]);
+  res.json({
+    listings: listings.map((l) => ({
+      ...l,
+      budget: num(l.budget),
+      amountSpent: num(l.amountSpent),
+      ctrPct: l.impressions ? Math.round((l.clicks / l.impressions) * 1000) / 10 : null,
+    })),
+    categories: services.map((s) => s.category),
+    pricing: { ...pricing, city: provider.city },
+  });
+});
+
+const sponsorSchema = z.object({
+  categoryId: z.number().int().positive(),
+  days: z.union([z.literal(7), z.literal(14), z.literal(30)]),
+  budget: z.number().int().positive().max(1_000_000),
+});
+
+/** POST /provider/sponsored — buys a campaign. Payment is simulated until a gateway is configured. */
+insightsRouter.post("/sponsored", async (req, res) => {
+  const provider = await ownProvider(req);
+  const body = parse(sponsorSchema, req.body);
+  if (provider.status !== "active") throw badRequest("Your listing must be live before you can promote it");
+  const { minBudget } = await sponsoredPricing();
+  if (body.budget < minBudget) throw badRequest(`The minimum budget is Rs ${minBudget}`);
+  const offers = await prisma.providerService.count({ where: { providerId: provider.id, categoryId: BigInt(body.categoryId) } });
+  if (!offers) throw badRequest("You can only promote a category you offer");
+  if (!env.paymentGatewayKey && env.nodeEnv === "production") throw badRequest("Payments are not configured yet");
+  const running = await prisma.sponsoredListing.count({
+    where: { providerId: provider.id, categoryId: BigInt(body.categoryId), status: { in: ["active", "paused"] }, endDate: { gte: new Date() } },
+  });
+  if (running) throw conflict("You already have a campaign running in this category");
+
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + body.days - 1);
+  const result = await prisma.$transaction(async (tx) => {
+    const listing = await tx.sponsoredListing.create({
+      data: { providerId: provider.id, categoryId: BigInt(body.categoryId), targetLocation: provider.city, startDate: start, endDate: end, budget: body.budget },
+    });
+    const transaction = await tx.transaction.create({
+      data: { providerId: provider.id, type: "sponsored_ad", amount: body.budget, status: "success", gatewayTxnId: `sim_${Date.now().toString(36)}` },
+    });
+    return { listing, transaction };
+  });
+  res.status(201).json({ ...result, simulated: !env.paymentGatewayKey });
+});
+
+insightsRouter.patch("/sponsored/:id", async (req, res) => {
+  const provider = await ownProvider(req);
+  const { status } = parse(z.object({ status: z.enum(["active", "paused"]) }), req.body);
+  const id = idParam(req.params.id as string);
+  const listing = await prisma.sponsoredListing.findUnique({ where: { id } });
+  if (!listing || listing.providerId !== provider.id) throw notFound("Campaign not found");
+  if (listing.status === "completed") throw badRequest("This campaign has ended");
+  const updated = await prisma.sponsoredListing.update({ where: { id }, data: { status } });
+  res.json({ listing: updated });
 });

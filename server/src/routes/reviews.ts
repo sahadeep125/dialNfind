@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
 import { currentUser, optionalAuth, requireAuth } from "../middleware/auth.js";
+import { notify } from "../services/notify.js";
 import { recalculateProvider } from "../services/ranking.js";
 
 export const reviewsRouter = Router();
@@ -43,19 +44,7 @@ reviewsRouter.post("/", requireAuth, async (req, res) => {
   });
   await recalculateProvider(providerId);
 
-  if (provider.userId) {
-    void prisma.notification
-      .create({
-        data: {
-          userId: provider.userId,
-          type: "review",
-          title: `New ${body.rating}-star review`,
-          body: body.reviewText.slice(0, 120),
-          dataJson: { reviewId: Number(review.id) },
-        },
-      })
-      .catch(() => undefined);
-  }
+  void notify(provider.userId, "review", `New ${body.rating}-star review`, body.reviewText.slice(0, 120), { reviewId: Number(review.id) });
   res.status(201).json({ review });
 });
 

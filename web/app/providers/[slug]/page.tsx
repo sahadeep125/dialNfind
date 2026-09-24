@@ -198,6 +198,16 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
                   </li>
                 ))}
               </ul>
+              {p.serviceDetails.length > 0 && (
+                <dl className="mt-4 grid gap-3 rounded-xl bg-muted/50 p-4 sm:grid-cols-2">
+                  {p.serviceDetails.map((d) => (
+                    <div key={d.label}>
+                      <dt className="text-xs text-muted-foreground">{d.label}</dt>
+                      <dd className="mt-0.5 text-sm font-medium">{d.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
               <p className="mt-3 text-xs text-muted-foreground">Prices are indicative starting rates set by the provider. Confirm the final price on the call.</p>
             </Section>
 

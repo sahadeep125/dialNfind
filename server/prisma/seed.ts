@@ -162,6 +162,8 @@ async function main() {
   await prisma.setting.createMany({
     data: [
       { key: "lead_fee_amount", value: "10" },
+      { key: "sponsored_cpc", value: "5" },
+      { key: "sponsored_min_budget", value: "500" },
       { key: "support_email", value: "support@dialnfind.com" },
       { key: "support_phone", value: "+918001234567" },
       { key: "default_search_radius_km", value: "15" },
@@ -417,6 +419,9 @@ async function main() {
         clicks: 188,
       },
     });
+    await prisma.transaction.create({
+      data: { providerId: demoProviderId, type: "sponsored_ad", amount: 2000, status: "success", gatewayTxnId: "sim_demo_ads", createdAt: daysAgo(10) },
+    });
     await prisma.notification.createMany({
       data: [
         { userId: demoProviderUser.id, type: "lead", title: "New call from DialNFind", body: "A customer near Sevoke Road tapped to call you.", createdAt: daysAgo(0) },
@@ -484,6 +489,40 @@ async function main() {
   });
 
   // Unclaimed listing the "new provider" demo account can claim.
+  // Service details (provider attributes) for most providers, fully filled for the demo provider.
+  const providerAttrs = await prisma.categoryAttribute.findMany({ where: { appliesTo: "provider" } });
+  const allServices = await prisma.providerService.findMany({ select: { id: true, providerId: true, categoryId: true, subcategoryId: true } });
+  const attrRows: { attributeId: bigint; entityType: "provider_service"; entityId: bigint; value: string }[] = [];
+  const seenProviderCategory = new Set<string>();
+  for (const svc of allServices) {
+    const k = `${svc.providerId}:${svc.categoryId}`;
+    if (seenProviderCategory.has(k)) continue; // one set of details per provider and category, on its first service
+    seenProviderCategory.add(k);
+    if (svc.providerId !== demoProviderId && !chance(0.7)) continue;
+    for (const a of providerAttrs.filter((x) => x.categoryId === svc.categoryId && (!x.subcategoryId || x.subcategoryId === svc.subcategoryId))) {
+      const opts = Array.isArray(a.optionsJson) ? (a.optionsJson as string[]) : [];
+      const value =
+        a.fieldType === "boolean"
+          ? String(svc.providerId === demoProviderId || chance(0.6))
+          : a.fieldType === "multiselect"
+            ? JSON.stringify(svc.providerId === demoProviderId ? opts.slice(0, 5) : sample(opts, int(2, Math.max(2, opts.length - 1))))
+            : a.fieldType === "select"
+              ? pick(opts)
+              : a.fieldType === "number"
+                ? String(int(1, 20))
+                : `WB-${int(10000, 99999)}`;
+      attrRows.push({ attributeId: a.id, entityType: "provider_service", entityId: svc.id, value });
+    }
+  }
+  if (attrRows.length) await prisma.attributeValue.createMany({ data: attrRows });
+
+  await prisma.notification.createMany({
+    data: [
+      { userId: demoCustomer.id, type: "review_reply", title: "Sharma TV & Electronics Care replied to your review", body: "Thank you for trusting us. Happy to help any time.", createdAt: daysAgo(2) },
+      { userId: demoCustomer.id, type: "system", title: "Welcome to DialNFind", body: "Save providers you like and we will keep them here for you.", isRead: true, createdAt: daysAgo(40) },
+    ],
+  });
+
   console.log("Recalculating rankings...");
   for (const id of providerIds) await recalculateProvider(id);
   await recalculateCategoryCounts();
