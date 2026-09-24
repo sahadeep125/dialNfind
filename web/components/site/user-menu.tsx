@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Heart, LayoutDashboard, LogOut, MessageSquare, Settings, History } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { initials } from "@/lib/format";
 
-export function UserMenu({ user }: { user: { name: string; email: string; role: string } }) {
+export function UserMenu({ user }: { user: { name: string; email: string; role: string; profilePhotoUrl?: string | null } }) {
   const router = useRouter();
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -25,6 +25,7 @@ export function UserMenu({ user }: { user: { name: string; email: string; role: 
     <DropdownMenu>
       <DropdownMenuTrigger className="cursor-pointer rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
         <Avatar className="size-9 border">
+          {user.profilePhotoUrl && <AvatarImage src={user.profilePhotoUrl} alt="" className="object-cover" />}
           <AvatarFallback>{initials(user.name)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>

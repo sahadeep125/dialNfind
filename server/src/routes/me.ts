@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { pincode } from "../lib/rules.js";
 import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { forbidden, notFound } from "../lib/errors.js";
@@ -77,7 +78,7 @@ const addressSchema = z.object({
   addressLine: z.string().trim().min(3).max(200),
   city: z.string().trim().min(2).max(60),
   state: z.string().trim().min(2).max(60),
-  pincode: z.string().trim().min(4).max(10),
+  pincode,
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
   isDefault: z.boolean().default(false),

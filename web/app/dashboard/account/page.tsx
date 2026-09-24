@@ -16,7 +16,7 @@ export default async function AccountPage() {
         <p className="mt-1 text-muted-foreground">Manage your profile, saved addresses and password.</p>
       </div>
       <Panel title="Profile" description="Your name is shown on reviews you write.">
-        <ProfileForm name={user.name} email={user.email} phone={user.phone} />
+        <ProfileForm name={user.name} email={user.email} phone={user.phone} profilePhotoUrl={user.profilePhotoUrl} />
       </Panel>
       <Panel title="Saved addresses" description="Used as a starting point when searching for providers.">
         <AddressManager addresses={addresses} />

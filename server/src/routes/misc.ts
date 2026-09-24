@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { email, optionalPhone } from "../lib/rules.js";
 import { prisma } from "../lib/prisma.js";
 import { parse } from "../lib/validate.js";
 import { optionalAuth } from "../middleware/auth.js";
@@ -7,9 +8,9 @@ import { optionalAuth } from "../middleware/auth.js";
 export const miscRouter = Router();
 
 const contactSchema = z.object({
-  name: z.string().trim().min(2).max(80),
-  email: z.string().trim().email(),
-  phone: z.string().trim().max(20).optional().or(z.literal("")),
+  name: z.string().trim().min(2, "Enter your name").max(80),
+  email,
+  phone: optionalPhone,
   subject: z.string().trim().max(120).optional(),
   message: z.string().trim().min(10).max(3000),
 });

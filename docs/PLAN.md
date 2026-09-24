@@ -100,8 +100,10 @@ notifications bell.
 ## Stubbed until credentials exist
 
 Google/Apple sign-in, payment gateway (checkout returns a simulated success in development),
-push notifications (tokens stored, nothing sent), SMS OTP (fixed dev code), file uploads (image
-URLs accepted as text).
+push notifications (tokens stored, nothing sent), SMS OTP (fixed dev code).
+
+File uploads are live: files are stored on the API server's disk behind a `Storage` interface
+(`server/src/storage`) so an S3 implementation can replace it without touching routes or apps.
 
 ## Running locally
 

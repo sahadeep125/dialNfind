@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "@/components/page-header";
 import { PageSkeleton } from "@/components/common";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { FileUpload } from "@/components/file-upload";
 
 type VType = "business" | "location" | "id_proof";
 
@@ -69,6 +69,8 @@ export function VerificationPage() {
 function VerificationCard({ def, latest }: { def: (typeof TYPES)[number]; latest?: Verification }) {
   const qc = useQueryClient();
   const [url, setUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const mutation = useMutation({
     mutationFn: () => api("/provider/verifications", { method: "POST", json: { type: def.type, documentUrl: url.trim() } }),
     onSuccess: () => {
@@ -115,13 +117,32 @@ function VerificationCard({ def, latest }: { def: (typeof TYPES)[number]; latest
       {canSubmit && (
         <form
           className="mt-4 space-y-2"
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
+            if (!url) return setError("Upload a document before submitting");
             mutation.mutate();
           }}
         >
-          <Input type="url" required value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Link to document (Drive, Dropbox...)" />
-          <Button type="submit" variant="outline" className="w-full" disabled={mutation.isPending || !url}>
+          <FileUpload
+            id={`doc-${def.type}`}
+            purpose="document"
+            value={url}
+            onChange={(v) => {
+              setUrl(v);
+              if (v) setError(null);
+            }}
+            invalid={!!error}
+            describedBy={error ? `doc-${def.type}-error` : undefined}
+            onUploadingChange={setUploading}
+            previewClassName="aspect-[4/3]"
+          />
+          {error && (
+            <p id={`doc-${def.type}-error`} role="alert" className="text-xs font-medium text-destructive">
+              {error}
+            </p>
+          )}
+          <Button type="submit" variant="outline" className="w-full" disabled={mutation.isPending || uploading}>
             {mutation.isPending && <Loader2 className="animate-spin" />} {latest ? "Submit again" : "Submit for review"}
           </Button>
         </form>

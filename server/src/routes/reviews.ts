@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
+import { httpUrl } from "../lib/rules.js";
 import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
 import { currentUser, optionalAuth, requireAuth } from "../middleware/auth.js";
 import { notify } from "../services/notify.js";
 import { recalculateProvider } from "../services/ranking.js";
+import { storage } from "../storage/index.js";
 
 export const reviewsRouter = Router();
 
@@ -13,7 +15,7 @@ const createSchema = z.object({
   providerId: z.coerce.number().int().positive(),
   rating: z.number().int().min(1).max(5),
   reviewText: z.string().trim().min(10, "Tell others a little more (at least 10 characters)").max(2000),
-  photos: z.array(z.string().url()).max(6).optional(),
+  photos: z.array(httpUrl).max(6).optional(),
 });
 
 /** POST /reviews — one review per customer per provider; linked to their latest lead if any. */
@@ -50,7 +52,8 @@ reviewsRouter.post("/", requireAuth, async (req, res) => {
 
 const updateSchema = z.object({
   rating: z.number().int().min(1).max(5).optional(),
-  reviewText: z.string().trim().min(10).max(2000).optional(),
+  reviewText: z.string().trim().min(10, "Tell others a little more (at least 10 characters)").max(2000).optional(),
+  photos: z.array(httpUrl).max(6).optional(),
 });
 
 reviewsRouter.patch("/:id", requireAuth, async (req, res) => {
@@ -58,7 +61,17 @@ reviewsRouter.patch("/:id", requireAuth, async (req, res) => {
   const review = await prisma.review.findUnique({ where: { id: idParam(req.params.id as string) } });
   if (!review) throw notFound("Review not found");
   if (review.userId !== currentUser(req).id) throw forbidden();
-  const updated = await prisma.review.update({ where: { id: review.id }, data: body });
+  const { photos, ...fields } = body;
+  const old = photos ? await prisma.reviewPhoto.findMany({ where: { reviewId: review.id }, select: { photoUrl: true } }) : [];
+  const updated = await prisma.$transaction(async (tx) => {
+    if (photos) {
+      await tx.reviewPhoto.deleteMany({ where: { reviewId: review.id } });
+      if (photos.length) await tx.reviewPhoto.createMany({ data: photos.map((photoUrl) => ({ reviewId: review.id, photoUrl })) });
+    }
+    return tx.review.update({ where: { id: review.id }, data: fields, include: { photos: true } });
+  });
+  // Files the customer took out of the review are no longer referenced anywhere.
+  for (const o of old) if (!photos!.includes(o.photoUrl)) void storage.remove(o.photoUrl);
   await recalculateProvider(review.providerId);
   res.json({ review: updated });
 });
@@ -68,7 +81,9 @@ reviewsRouter.delete("/:id", requireAuth, async (req, res) => {
   if (!review) throw notFound("Review not found");
   const user = currentUser(req);
   if (review.userId !== user.id && user.role !== "super_admin") throw forbidden();
+  const photos = await prisma.reviewPhoto.findMany({ where: { reviewId: review.id }, select: { photoUrl: true } });
   await prisma.review.delete({ where: { id: review.id } });
+  for (const p of photos) void storage.remove(p.photoUrl);
   await recalculateProvider(review.providerId);
   res.json({ ok: true });
 });

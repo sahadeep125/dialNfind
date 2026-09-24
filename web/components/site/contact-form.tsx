@@ -1,42 +1,50 @@
 "use client";
 
 import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { clientApi, ClientApiError } from "@/lib/client";
+import { email, normalizePhone, optionalPhone } from "@/lib/validation";
+
+const TOPICS = ["General question", "Problem with a provider", "Listing my business", "Report wrong information", "Partnerships"];
+
+const schema = z.object({
+  name: z.string().trim().min(2, "Enter your name").max(80, "Keep it under 80 characters"),
+  email,
+  phone: optionalPhone,
+  subject: z.string().min(1, "Choose a topic"),
+  message: z.string().trim().min(10, "Tell us a little more, at least 10 characters").max(3000, "Keep the message under 3,000 characters"),
+});
+type Values = z.infer<typeof schema>;
 
 export function ContactForm({ defaultName = "", defaultEmail = "" }: { defaultName?: string; defaultEmail?: string }) {
-  const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [subject, setSubject] = useState("General question");
+  const [error, setError] = useState<string | null>(null);
+  const defaults: Values = { name: defaultName, email: defaultEmail, phone: "", subject: TOPICS[0], message: "" };
+  const { register, control, handleSubmit, reset, watch, formState } = useForm<Values>({ resolver: zodResolver(schema), mode: "onTouched", defaultValues: defaults });
+  const { errors, isSubmitting } = formState;
+  const messageLength = watch("message").length;
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    setSending(true);
+  const onSubmit = handleSubmit(async (v) => {
+    setError(null);
     try {
       await clientApi("/contact", {
         method: "POST",
-        body: JSON.stringify({
-          name: form.get("name"),
-          email: form.get("email"),
-          phone: form.get("phone"),
-          subject,
-          message: form.get("message"),
-        }),
+        body: JSON.stringify({ name: v.name.trim(), email: v.email.trim(), phone: v.phone ? normalizePhone(v.phone) : "", subject: v.subject, message: v.message.trim() }),
       });
       setSent(true);
+      reset(defaults);
     } catch (err) {
-      toast.error(err instanceof ClientApiError ? err.message : "Could not send your message");
-    } finally {
-      setSending(false);
+      setError(err instanceof ClientApiError ? err.message : "Could not send your message");
     }
-  }
+  });
 
   if (sent) {
     return (
@@ -54,41 +62,47 @@ export function ContactForm({ defaultName = "", defaultEmail = "" }: { defaultNa
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-2">
-      <div className="space-y-2">
-        <Label htmlFor="name">Full name</Label>
-        <Input id="name" name="name" required minLength={2} defaultValue={defaultName} placeholder="Your name" />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" required defaultValue={defaultEmail} placeholder="you@example.com" />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="phone">Phone (optional)</Label>
-        <Input id="phone" name="phone" type="tel" placeholder="+91 98xxx xxxxx" />
-      </div>
-      <div className="space-y-2">
-        <Label>Topic</Label>
-        <Select value={subject} onValueChange={setSubject}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {["General question", "Problem with a provider", "Listing my business", "Report wrong information", "Partnerships"].map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="message">Message</Label>
-        <Textarea id="message" name="message" required minLength={10} rows={6} placeholder="How can we help?" />
-      </div>
+    <form onSubmit={onSubmit} noValidate className="grid gap-5 sm:grid-cols-2">
+      {error && (
+        <div className="sm:col-span-2">
+          <FormAlert message={error} />
+        </div>
+      )}
+      <Field id="name" label="Full name" error={errors.name} required>
+        <Input {...fieldA11y("name", errors.name)} autoComplete="name" maxLength={80} placeholder="Your name" {...register("name")} />
+      </Field>
+      <Field id="email" label="Email" error={errors.email} required>
+        <Input {...fieldA11y("email", errors.email)} type="email" autoComplete="email" inputMode="email" maxLength={254} placeholder="you@example.com" {...register("email")} />
+      </Field>
+      <Field id="phone" label="Phone" error={errors.phone} optional>
+        <Input {...fieldA11y("phone", errors.phone)} type="tel" autoComplete="tel" inputMode="tel" maxLength={16} placeholder="98xxx xxxxx" {...register("phone")} />
+      </Field>
+      <Field id="subject" label="Topic" error={errors.subject} required>
+        <Controller
+          control={control}
+          name="subject"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="subject" className="w-full" aria-invalid={errors.subject ? true : undefined}>
+                <SelectValue placeholder="Choose a topic" />
+              </SelectTrigger>
+              <SelectContent>
+                {TOPICS.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </Field>
+      <Field id="message" label="Message" error={errors.message} hint={`${messageLength} of 3,000 characters`} required className="sm:col-span-2">
+        <Textarea {...fieldA11y("message", errors.message, true)} rows={6} maxLength={3000} placeholder="How can we help?" {...register("message")} />
+      </Field>
       <div className="sm:col-span-2">
-        <Button type="submit" size="lg" disabled={sending}>
-          {sending ? <Loader2 className="animate-spin" /> : <Send />} Send message
+        <Button type="submit" size="lg" disabled={isSubmitting}>
+          {isSubmitting ? <Loader2 className="animate-spin" /> : <Send />} Send message
         </Button>
       </div>
     </form>

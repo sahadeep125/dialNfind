@@ -23,6 +23,9 @@ export const env = {
   appleClientId: process.env.APPLE_CLIENT_ID ?? "",
   paymentGatewayKey: process.env.PAYMENT_GATEWAY_KEY ?? "",
   timezone: process.env.APP_TIMEZONE ?? "Asia/Kolkata",
+  /** Public origin of this API, used to build URLs for uploaded files. */
+  publicUrl: (process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 4000}`).replace(/\/$/, ""),
+  uploadDir: process.env.UPLOAD_DIR ?? "uploads",
 };
 
 export const isProduction = env.nodeEnv === "production";

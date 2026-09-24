@@ -58,7 +58,7 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
   const [breakdownRows, favorite, myReview] = await Promise.all([
     prisma.review.groupBy({ by: ["rating"], where: { providerId: id, status: "published" }, _count: true }),
     req.user ? prisma.favorite.findUnique({ where: { userId_providerId: { userId: req.user.id, providerId: id } } }) : null,
-    req.user ? prisma.review.findUnique({ where: { providerId_userId: { providerId: id, userId: req.user.id } } }) : null,
+    req.user ? prisma.review.findUnique({ where: { providerId_userId: { providerId: id, userId: req.user.id } }, include: { photos: { select: { photoUrl: true } } } }) : null,
   ]);
   void recordProfileView(id);
 
@@ -118,7 +118,7 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
         .map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
       verifications: provider.verifications,
       ratingBreakdown,
-      myReview,
+      myReview: myReview && { ...myReview, photos: myReview.photos.map((p) => p.photoUrl) },
     },
   });
 });

@@ -16,14 +16,18 @@ export function ClaimSearch({ providerAppUrl }: { providerAppUrl: string }) {
   const [city, setCity] = useState("Siliguri");
   const [results, setResults] = useState<ProviderCard[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function search(e: React.FormEvent) {
     e.preventDefault();
-    if (q.trim().length < 2) return;
+    if (q.trim().length < 2) return setError("Enter at least 2 characters of your business name");
+    setError(null);
     setLoading(true);
     try {
-      const data = await clientApi<SearchResponse>(`/search/providers?q=${encodeURIComponent(q)}&city=${encodeURIComponent(city)}&pageSize=8&log=false`);
+      const data = await clientApi<SearchResponse>(`/search/providers?q=${encodeURIComponent(q.trim())}&city=${encodeURIComponent(city)}&pageSize=8&log=false`);
       setResults(data.results);
+    } catch {
+      setError("Search is not available right now. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -31,10 +35,29 @@ export function ClaimSearch({ providerAppUrl }: { providerAppUrl: string }) {
 
   return (
     <div>
-      <form onSubmit={search} className="flex flex-col gap-2 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Business name, e.g. Metro Electronics" className="h-12 pl-9" />
+      <form onSubmit={search} noValidate className="flex flex-col gap-2 sm:flex-row sm:items-start">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={q}
+              maxLength={100}
+              aria-label="Business name"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? "claim-q-error" : undefined}
+              onChange={(e) => {
+                setQ(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="Business name, e.g. Metro Electronics"
+              className="h-12 pl-9"
+            />
+          </div>
+          {error && (
+            <p id="claim-q-error" role="alert" className="mt-1.5 text-xs font-medium text-destructive">
+              {error}
+            </p>
+          )}
         </div>
         <Select value={city} onValueChange={setCity}>
           <SelectTrigger className="h-12 sm:w-40">

@@ -9,12 +9,41 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { z } from "zod";
+import { normalizePhone, optionalEmail, optionalInt, optionalPhone, optionalUrl, phone as phoneRule } from "@/lib/validation";
+import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { AreasEditor, DEFAULT_HOURS, HoursEditor, ServicesEditor } from "@/components/editors";
-import { LocationFields, type LocationValue } from "@/components/location-fields";
+import { AreasEditor, DEFAULT_HOURS, HoursEditor, ServicesEditor, validateHours, validateServices } from "@/components/editors";
+import { LocationFields, validateLocation, type LocationErrors, type LocationValue } from "@/components/location-fields";
 
 const STEPS = ["Business", "Services", "Location", "Hours", "Contact"];
+
+const businessSchema = z.object({
+  businessName: z.string().trim().min(2, "Enter your business name").max(100, "Keep the name under 100 characters"),
+  businessType: z.enum(["individual", "company"]),
+  yearsExperience: optionalInt(0, 80, "Years of experience"),
+  description: z.string().trim().max(2000, "Keep the description under 2,000 characters"),
+});
+
+const contactSchema = z
+  .object({
+    phone: phoneRule,
+    whatsappNumber: optionalPhone,
+    email: optionalEmail,
+    website: optionalUrl,
+    acceptsCalls: z.boolean(),
+    acceptsWhatsapp: z.boolean(),
+  })
+  .refine((c) => c.acceptsCalls || c.acceptsWhatsapp, { message: "Turn on at least one way for customers to reach you", path: ["acceptsCalls"] });
+
+type Errors = Record<string, string>;
+
+function collect(result: z.SafeParseReturnType<unknown, unknown>): Errors {
+  const out: Errors = {};
+  if (!result.success) for (const i of result.error.issues) out[String(i.path[0])] ??= i.message;
+  return out;
+}
 
 export function OnboardingPage() {
   const { user, providerState, signIn, refresh } = useAuth();
@@ -37,23 +66,43 @@ export function OnboardingPage() {
   const [areas, setAreas] = useState<ServiceArea[]>([]);
   const [hours, setHours] = useState<Hours[]>(DEFAULT_HOURS);
   const [contact, setContact] = useState({ phone: user?.phone ?? "", whatsappNumber: "", email: user?.email ?? "", website: "", acceptsCalls: true, acceptsWhatsapp: true });
+  const [errors, setErrors] = useState<Errors>({});
+  const [locationErrors, setLocationErrors] = useState<LocationErrors | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const clear = (key: string) => errors[key] && setErrors(({ [key]: _, ...rest }) => rest);
 
   if (providerState?.provider) return <Navigate to="/" replace />;
 
-  function validate(): string | null {
-    if (step === 0 && business.businessName.trim().length < 2) return "Enter your business name";
-    if (step === 1 && services.length === 0) return "Pick at least one service";
-    if (step === 2 && (!location.city || !location.state)) return "Enter your city and state";
-    if (step === 4 && contact.phone.replace(/\D/g, "").length < 8) return "Enter a phone number customers can call";
-    return null;
+  /** Validates the current step, shows its errors inline, and returns true when it can move on. */
+  function validate(): boolean {
+    setFormError(null);
+    if (step === 0) {
+      const e = collect(businessSchema.safeParse(business));
+      setErrors(e);
+      return !Object.keys(e).length;
+    }
+    if (step === 1) {
+      const msg = validateServices(services);
+      setErrors(msg ? { services: msg } : {});
+      return !msg;
+    }
+    if (step === 2) {
+      const e = validateLocation(location);
+      setLocationErrors(e);
+      return !e;
+    }
+    if (step === 3) {
+      const bad = validateHours(hours);
+      setErrors(bad ? { hours: "Fix the highlighted days" } : {});
+      return !bad;
+    }
+    const e = collect(contactSchema.safeParse(contact));
+    setErrors(e);
+    return !Object.keys(e).length;
   }
 
   function next() {
-    const err = validate();
-    if (err) {
-      toast.error(err);
-      return;
-    }
+    if (!validate()) return;
     if (step < STEPS.length - 1) setStep(step + 1);
     else void submit();
   }
@@ -64,18 +113,18 @@ export function OnboardingPage() {
       const res = await api<{ token: string | null }>("/provider/onboarding", {
         method: "POST",
         json: {
-          businessName: business.businessName,
+          businessName: business.businessName.trim(),
           businessType: business.businessType,
-          yearsExperience: business.yearsExperience === "" ? null : Number(business.yearsExperience),
-          description: business.description || undefined,
+          yearsExperience: business.yearsExperience.trim() === "" ? null : Number(business.yearsExperience),
+          description: business.description.trim() || undefined,
           ...location,
           addressLine: location.addressLine || undefined,
           locality: location.locality || undefined,
           pincode: location.pincode || undefined,
-          phone: contact.phone,
-          whatsappNumber: contact.whatsappNumber || contact.phone,
-          email: contact.email,
-          website: contact.website,
+          phone: normalizePhone(contact.phone),
+          whatsappNumber: normalizePhone(contact.whatsappNumber || contact.phone),
+          email: contact.email.trim(),
+          website: contact.website.trim(),
           acceptsCalls: contact.acceptsCalls,
           acceptsWhatsapp: contact.acceptsWhatsapp,
           services: services.map(({ categoryId, subcategoryId, startingPrice, priceUnit, isPrimary }) => ({ categoryId, subcategoryId, startingPrice, priceUnit, isPrimary })),
@@ -88,7 +137,7 @@ export function OnboardingPage() {
       toast.success("Your business is live on DialNFind");
       navigate("/", { replace: true });
     } catch (err) {
-      toast.error(errorMessage(err));
+      setFormError(errorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -122,10 +171,19 @@ export function OnboardingPage() {
         {step === 0 && (
           <div className="space-y-5">
             <StepTitle title="Tell us about your business" subtitle="This is what customers see first." />
-            <div className="space-y-2">
-              <Label htmlFor="businessName">Business name</Label>
-              <Input id="businessName" value={business.businessName} onChange={(e) => setBusiness({ ...business, businessName: e.target.value })} placeholder="e.g. Sharma TV & Electronics Care" autoFocus />
-            </div>
+            <Field id="businessName" label="Business name" error={errors.businessName} required>
+              <Input
+                {...fieldA11y("businessName", errors.businessName)}
+                maxLength={100}
+                value={business.businessName}
+                onChange={(e) => {
+                  setBusiness({ ...business, businessName: e.target.value });
+                  clear("businessName");
+                }}
+                placeholder="e.g. Sharma TV & Electronics Care"
+                autoFocus
+              />
+            </Field>
             <div className="space-y-2">
               <Label>You are</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -142,35 +200,69 @@ export function OnboardingPage() {
                 ))}
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="years">Years of experience</Label>
-              <Input id="years" type="number" min={0} max={80} value={business.yearsExperience} onChange={(e) => setBusiness({ ...business, yearsExperience: e.target.value })} className="w-32" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+            <Field id="years" label="Years of experience" error={errors.yearsExperience} optional>
+              <Input
+                {...fieldA11y("years", errors.yearsExperience)}
+                inputMode="numeric"
+                value={business.yearsExperience}
+                onChange={(e) => {
+                  setBusiness({ ...business, yearsExperience: e.target.value.replace(/\D/g, "").slice(0, 2) });
+                  clear("yearsExperience");
+                }}
+                className="w-32"
+              />
+            </Field>
+            <Field
+              id="description"
+              label="Description"
+              error={errors.description}
+              hint={`${business.description.length} of 2,000 characters. 80 or more helps you rank higher.`}
+              optional
+            >
               <Textarea
-                id="description"
+                {...fieldA11y("description", errors.description, true)}
                 rows={5}
+                maxLength={2000}
                 value={business.description}
-                onChange={(e) => setBusiness({ ...business, description: e.target.value })}
+                onChange={(e) => {
+                  setBusiness({ ...business, description: e.target.value });
+                  clear("description");
+                }}
                 placeholder="What do you fix or offer, which brands, what makes you reliable, warranty..."
               />
-              <p className="text-xs text-muted-foreground">{business.description.length} characters. 80 or more helps you rank higher.</p>
-            </div>
+            </Field>
           </div>
         )}
 
         {step === 1 && (
           <div className="space-y-5">
             <StepTitle title="What services do you offer?" subtitle="Customers find you through these. Add a starting price so they know what to expect." />
-            <ServicesEditor value={services} onChange={setServices} />
+            <ServicesEditor
+              value={services}
+              onChange={(v) => {
+                setServices(v);
+                clear("services");
+              }}
+            />
+            {errors.services && (
+              <p role="alert" className="text-sm font-medium text-destructive">
+                {errors.services}
+              </p>
+            )}
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-8">
             <StepTitle title="Where are you based?" subtitle="We show you to customers within your travel distance." />
-            <LocationFields value={location} onChange={setLocation} />
+            <LocationFields
+              value={location}
+              errors={locationErrors}
+              onChange={(v) => {
+                setLocation(v);
+                if (locationErrors) setLocationErrors(validateLocation(v));
+              }}
+            />
             <div className="space-y-3">
               <Label>Localities you serve (optional)</Label>
               <AreasEditor value={areas} onChange={setAreas} />
@@ -182,6 +274,11 @@ export function OnboardingPage() {
           <div className="space-y-5">
             <StepTitle title="When can customers call you?" subtitle="We show an Open now label during these hours." />
             <HoursEditor value={hours} onChange={setHours} />
+            {errors.hours && validateHours(hours) && (
+              <p role="alert" className="text-sm font-medium text-destructive">
+                {errors.hours}
+              </p>
+            )}
           </div>
         )}
 
@@ -189,32 +286,89 @@ export function OnboardingPage() {
           <div className="space-y-5">
             <StepTitle title="How should customers reach you?" subtitle="Your number is shown on your profile so customers can call directly." />
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Business phone</Label>
-                <Input id="phone" type="tel" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} placeholder="+91 98xxx xxxxx" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp number</Label>
-                <Input id="whatsapp" type="tel" value={contact.whatsappNumber} onChange={(e) => setContact({ ...contact, whatsappNumber: e.target.value })} placeholder="Same as phone" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Business email</Label>
-                <Input id="email" type="email" value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="website">Website (optional)</Label>
-                <Input id="website" type="url" value={contact.website} onChange={(e) => setContact({ ...contact, website: e.target.value })} placeholder="https://" />
-              </div>
+              <Field id="phone" label="Business phone" error={errors.phone} required>
+                <Input
+                  {...fieldA11y("phone", errors.phone)}
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  maxLength={16}
+                  value={contact.phone}
+                  onChange={(e) => {
+                    setContact({ ...contact, phone: e.target.value });
+                    clear("phone");
+                  }}
+                  placeholder="98xxx xxxxx"
+                />
+              </Field>
+              <Field id="whatsapp" label="WhatsApp number" error={errors.whatsappNumber} hint="Leave empty to use your business phone" optional>
+                <Input
+                  {...fieldA11y("whatsapp", errors.whatsappNumber, true)}
+                  type="tel"
+                  inputMode="tel"
+                  maxLength={16}
+                  value={contact.whatsappNumber}
+                  onChange={(e) => {
+                    setContact({ ...contact, whatsappNumber: e.target.value });
+                    clear("whatsappNumber");
+                  }}
+                  placeholder="Same as phone"
+                />
+              </Field>
+              <Field id="email" label="Business email" error={errors.email} optional>
+                <Input
+                  {...fieldA11y("email", errors.email)}
+                  type="email"
+                  autoComplete="email"
+                  maxLength={254}
+                  value={contact.email}
+                  onChange={(e) => {
+                    setContact({ ...contact, email: e.target.value });
+                    clear("email");
+                  }}
+                />
+              </Field>
+              <Field id="website" label="Website" error={errors.website} optional>
+                <Input
+                  {...fieldA11y("website", errors.website)}
+                  type="url"
+                  inputMode="url"
+                  maxLength={500}
+                  value={contact.website}
+                  onChange={(e) => {
+                    setContact({ ...contact, website: e.target.value });
+                    clear("website");
+                  }}
+                  placeholder="https://"
+                />
+              </Field>
             </div>
             <div className="space-y-3 rounded-xl border p-4">
               <label className="flex items-center justify-between">
                 <span className="text-sm font-medium">Show a Call button</span>
-                <Switch checked={contact.acceptsCalls} onCheckedChange={(v) => setContact({ ...contact, acceptsCalls: v })} />
+                <Switch
+                  checked={contact.acceptsCalls}
+                  onCheckedChange={(v) => {
+                    setContact({ ...contact, acceptsCalls: v });
+                    clear("acceptsCalls");
+                  }}
+                />
               </label>
               <label className="flex items-center justify-between">
                 <span className="text-sm font-medium">Show a WhatsApp button</span>
-                <Switch checked={contact.acceptsWhatsapp} onCheckedChange={(v) => setContact({ ...contact, acceptsWhatsapp: v })} />
+                <Switch
+                  checked={contact.acceptsWhatsapp}
+                  onCheckedChange={(v) => {
+                    setContact({ ...contact, acceptsWhatsapp: v });
+                    clear("acceptsCalls");
+                  }}
+                />
               </label>
+              {errors.acceptsCalls && (
+                <p role="alert" className="text-xs font-medium text-destructive">
+                  {errors.acceptsCalls}
+                </p>
+              )}
             </div>
             <div className="rounded-xl bg-accent p-4 text-sm">
               <div className="font-semibold text-accent-foreground">Ready to go live</div>
@@ -226,8 +380,21 @@ export function OnboardingPage() {
           </div>
         )}
 
+        {formError && (
+          <div className="mt-6">
+            <FormAlert message={formError} />
+          </div>
+        )}
         <div className="mt-8 flex items-center justify-between border-t pt-6">
-          <Button variant="ghost" onClick={() => (step === 0 ? navigate("/start") : setStep(step - 1))}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setErrors({});
+              setFormError(null);
+              if (step === 0) navigate("/start");
+              else setStep(step - 1);
+            }}
+          >
             <ArrowLeft /> Back
           </Button>
           <Button onClick={next} disabled={saving} size="lg">

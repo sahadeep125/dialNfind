@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { email, httpUrl, optionalPhone, optionalUrl, phone, pincode } from "../../lib/rules.js";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, notFound } from "../../lib/errors.js";
@@ -7,6 +8,7 @@ import { num } from "../../lib/serialize.js";
 import { uniqueProviderSlug } from "../../lib/slug.js";
 import { completenessChecklist, recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
 import { applicableAttributes, attributeOptions, decodeAttributeValue, encodeAttributeValue, loadAttributeValues } from "../../services/attributes.js";
+import { storage } from "../../storage/index.js";
 import { ownProvider } from "./common.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "./shared.js";
 
@@ -43,17 +45,17 @@ const profileSchema = z.object({
   businessType: z.enum(["individual", "company"]),
   yearsExperience: z.number().int().min(0).max(80).nullable(),
   selfReportedCompletedJobs: z.number().int().min(0).max(1_000_000).nullable(),
-  phone: z.string().trim().min(8).max(20),
-  whatsappNumber: z.string().trim().max(20).nullable(),
-  email: z.string().email().nullable().or(z.literal("").transform(() => null)),
-  website: z.string().url().nullable().or(z.literal("").transform(() => null)),
-  logoUrl: z.string().url().nullable().or(z.literal("").transform(() => null)),
-  coverUrl: z.string().url().nullable().or(z.literal("").transform(() => null)),
+  phone,
+  whatsappNumber: optionalPhone,
+  email: z.union([z.literal(""), z.null(), email]).transform((v) => v || null),
+  website: optionalUrl,
+  logoUrl: optionalUrl,
+  coverUrl: optionalUrl,
   addressLine: z.string().trim().max(200).nullable(),
   locality: z.string().trim().max(80).nullable(),
   city: z.string().trim().min(2).max(60),
   state: z.string().trim().min(2).max(60),
-  pincode: z.string().trim().max(10).nullable(),
+  pincode: z.union([z.null(), z.union([z.literal(""), pincode]).transform((v) => v || null)]),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   serviceRadiusKm: z.number().int().min(1).max(100),
@@ -68,6 +70,10 @@ profileRouter.patch("/profile", async (req, res) => {
   const renamed = (body.businessName && body.businessName !== provider.businessName) || (body.city && body.city !== provider.city);
   const slug = renamed ? await uniqueProviderSlug(body.businessName ?? provider.businessName, body.city ?? provider.city, provider.id) : undefined;
   await prisma.provider.update({ where: { id: provider.id }, data: { ...body, ...(slug ? { slug } : {}) } });
+  // Replaced or cleared images are deleted from storage.
+  for (const key of ["logoUrl", "coverUrl"] as const) {
+    if (body[key] !== undefined && provider[key] && body[key] !== provider[key]) void storage.remove(provider[key]!);
+  }
   await recalculateProvider(provider.id);
   res.json({ provider: await loadProfile(provider.id) });
 });
@@ -179,7 +185,7 @@ profileRouter.put("/attributes", async (req, res) => {
 const portfolioSchema = z.object({
   title: z.string().trim().min(2).max(100),
   description: z.string().trim().max(500).nullable().optional(),
-  imageUrl: z.string().url(),
+  imageUrl: httpUrl,
   categoryId: z.number().int().positive().nullable().optional(),
 });
 
@@ -199,6 +205,7 @@ profileRouter.patch("/portfolio/:id", async (req, res) => {
   const id = idParam(req.params.id as string);
   const existing = await prisma.providerPortfolio.findUnique({ where: { id } });
   if (!existing || existing.providerId !== provider.id) throw notFound("Portfolio item not found");
+  if (body.imageUrl && body.imageUrl !== existing.imageUrl) void storage.remove(existing.imageUrl);
   const item = await prisma.providerPortfolio.update({
     where: { id },
     data: { ...body, categoryId: body.categoryId === undefined ? undefined : body.categoryId ? BigInt(body.categoryId) : null },
@@ -212,6 +219,7 @@ profileRouter.delete("/portfolio/:id", async (req, res) => {
   const existing = await prisma.providerPortfolio.findUnique({ where: { id } });
   if (!existing || existing.providerId !== provider.id) throw notFound("Portfolio item not found");
   await prisma.providerPortfolio.delete({ where: { id } });
+  void storage.remove(existing.imageUrl);
   await recalculateProvider(provider.id);
   res.json({ ok: true });
 });
@@ -226,7 +234,7 @@ profileRouter.get("/verifications", async (req, res) => {
 
 const verificationSchema = z.object({
   type: z.enum(["business", "location", "id_proof"]),
-  documentUrl: z.string().url(),
+  documentUrl: httpUrl,
   notes: z.string().trim().max(500).optional(),
 });
 

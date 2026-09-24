@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { Flag, Loader2, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { Field, fieldA11y } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { clientApi } from "@/lib/client";
+import { clientApi, ClientApiError } from "@/lib/client";
 
 export function ShareButton({ title }: { title: string }) {
   async function share() {
@@ -58,22 +59,36 @@ export function ReportReview({ reviewId }: { reviewId: number }) {
 function ReportDialog({ endpoint, trigger, title, description, placeholder, done }: { endpoint: string; trigger: string; title: string; description: string; placeholder: string; done: string }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  async function submit() {
+  const fieldId = `report-${endpoint.replace(/\W+/g, "-")}`;
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const text = reason.trim();
+    const problem = text.length < 5 ? "Describe the problem in at least 5 characters" : text.length > 500 ? "Keep it under 500 characters" : null;
+    setError(problem);
+    if (problem) return;
     setSaving(true);
     try {
-      await clientApi(endpoint, { method: "POST", body: JSON.stringify({ reason }) });
+      await clientApi(endpoint, { method: "POST", body: JSON.stringify({ reason: text }) });
       toast.success(done);
       setOpen(false);
       setReason("");
-    } catch {
-      toast.error("Please describe the problem in a few words");
+    } catch (err) {
+      setError(err instanceof ClientApiError ? err.message : "Could not send the report. Please try again.");
     } finally {
       setSaving(false);
     }
   }
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setError(null);
+      }}
+    >
       <DialogTrigger asChild>
         <button type="button" className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
           <Flag className="size-3.5" /> {trigger}
@@ -84,12 +99,29 @@ function ReportDialog({ endpoint, trigger, title, description, placeholder, done
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={4} placeholder={placeholder} />
-        <DialogFooter>
-          <Button onClick={submit} disabled={saving || reason.trim().length < 5}>
-            {saving && <Loader2 className="animate-spin" />} Send report
-          </Button>
-        </DialogFooter>
+        <form onSubmit={submit} noValidate className="space-y-4">
+          <Field id={fieldId} label="What is wrong?" error={error ?? undefined} hint={`${reason.length} of 500 characters`} required>
+            <Textarea
+              {...fieldA11y(fieldId, error ?? undefined, true)}
+              value={reason}
+              maxLength={500}
+              onChange={(e) => {
+                setReason(e.target.value);
+                if (error) setError(null);
+              }}
+              rows={4}
+              placeholder={placeholder}
+            />
+          </Field>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="animate-spin" />} Send report
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

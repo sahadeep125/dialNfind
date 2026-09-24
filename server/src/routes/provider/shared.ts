@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { pincode } from "../../lib/rules.js";
 import { badRequest } from "../../lib/errors.js";
 
 type Tx = Prisma.TransactionClient;
@@ -13,6 +14,10 @@ export const hoursSchema = z
       openTime: time.nullable(),
       closeTime: time.nullable(),
       is24x7: z.boolean().default(false),
+    }).superRefine((h, ctx) => {
+      if (h.is24x7) return;
+      if (!h.openTime !== !h.closeTime) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Set both opening and closing times, or mark the day closed" });
+      else if (h.openTime && h.closeTime && h.closeTime <= h.openTime) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Closing time must be after opening time" });
     }),
   )
   .max(7);
@@ -27,7 +32,7 @@ export const serviceSchema = z.object({
 
 export const serviceAreaSchema = z.object({
   areaName: z.string().trim().min(2).max(80),
-  pincode: z.string().trim().max(10).nullable().optional(),
+  pincode: z.union([z.literal(""), z.null(), pincode]).transform((v) => v || null).optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
 });

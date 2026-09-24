@@ -3,66 +3,73 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FormAlert, fieldA11y } from "@/components/form";
+import { email } from "@/lib/validation";
 import { OrDivider, SocialButtons } from "./social-buttons";
+
+const schema = z.object({
+  email,
+  password: z.string().min(1, "Enter your password"),
+});
+type Values = z.infer<typeof schema>;
 
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/dashboard";
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [show, setShow] = useState(false);
+  const { register, handleSubmit, formState } = useForm<Values>({ resolver: zodResolver(schema), mode: "onTouched", defaultValues: { email: "", password: "" } });
+  const { errors, isSubmitting } = formState;
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    setLoading(true);
+  const onSubmit = handleSubmit(async (values) => {
     setError(null);
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
+      body: JSON.stringify({ email: values.email.trim(), password: values.password }),
     });
     const body = await res.json().catch(() => null);
-    setLoading(false);
     if (!res.ok) {
       setError(body?.error?.message ?? "Could not log in");
       return;
     }
     router.push(next.startsWith("/") ? next : "/dashboard");
     router.refresh();
-  }
+  });
 
   return (
     <>
       <SocialButtons />
       <OrDivider />
-      <form onSubmit={onSubmit} className="space-y-5">
+      <form onSubmit={onSubmit} noValidate className="space-y-5">
+        <FormAlert message={error} />
+        <Field id="email" label="Email" error={errors.email}>
+          <Input {...fieldA11y("email", errors.email)} type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" {...register("email")} />
+        </Field>
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" />
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Link href="/contact" className="text-xs font-medium text-primary hover:underline">
+          <div className="flex justify-end">
+            <Link href="/contact" className="-mb-7 text-xs font-medium text-primary hover:underline">
               Forgot password?
             </Link>
           </div>
-          <div className="relative">
-            <Input id="password" name="password" type={show ? "text" : "password"} autoComplete="current-password" required className="pr-10" />
-            <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer p-1 text-muted-foreground" aria-label={show ? "Hide password" : "Show password"}>
-              {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </button>
-          </div>
+          <Field id="password" label="Password" error={errors.password}>
+            <div className="relative">
+              <Input {...fieldA11y("password", errors.password)} type={show ? "text" : "password"} autoComplete="current-password" className="pr-10" {...register("password")} />
+              <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer p-1 text-muted-foreground" aria-label={show ? "Hide password" : "Show password"}>
+                {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
+          </Field>
         </div>
-        {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-        <Button type="submit" size="lg" className="w-full" disabled={loading}>
-          {loading && <Loader2 className="animate-spin" />} Log in
+        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="animate-spin" />} Log in
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">

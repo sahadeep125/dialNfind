@@ -60,7 +60,19 @@ These have their schema and endpoints in place but no live integration yet:
 - **Payments**: plan checkout is simulated outside production when `PAYMENT_GATEWAY_KEY` is empty, recording a transaction with a `sim_` reference.
 - **SMS**: claim codes are not sent; the development code is returned by the API and shown in the UI.
 - **Push notifications**: device tokens are stored (`/me/device-tokens`) but nothing is sent.
-- **Image uploads**: logos, covers, portfolio photos and verification documents take URLs until cloud storage is connected.
+
+## File uploads
+
+Every image or document field (profile photo, business logo and cover, portfolio photos, review photos, verification and claim documents) is an upload field. The browser checks type and size, sends the file to `POST /api/v1/uploads?purpose=...`, and the returned URL is saved with the form.
+
+- The server checks the file's real type from its first bytes, not its name. Images must be JPG, PNG or WebP; documents may also be PDF. Limits are 5 MB for avatars, logos and review photos, 8 MB for covers and portfolio photos, and 10 MB for documents.
+- Files are written to `server/uploads/` (`UPLOAD_DIR`) and served from `PUBLIC_URL/uploads/...`. Replaced or deleted logos, covers, portfolio and review photos are removed from disk.
+- Storage sits behind the small `Storage` interface in `server/src/storage/index.ts`. Moving to S3 or another object store means adding one class with `put` and `remove` and returning it from `createStorage()`.
+- In production set `PUBLIC_URL` to the API's public origin so stored links resolve for customers.
+
+## Form validation
+
+All forms validate in the browser with the same rules the API enforces (`server/src/lib/rules.ts`, mirrored in `web/lib/validation.ts` and `provider/src/lib/validation.ts`): Indian mobile numbers (saved as `+91XXXXXXXXXX`), 6-digit PIN codes, full `https://` links, passwords of 8 or more characters with a letter and a number, and length limits on every text field. Errors show under each field as the user leaves it, and server errors show at the top of the form.
 
 ## Useful scripts
 

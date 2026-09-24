@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BadgeCheck, Loader2, MessageSquareReply } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { clientApi } from "@/lib/client";
 import { formatRelative, initials } from "@/lib/format";
@@ -60,6 +60,7 @@ export function ReviewsList({ slug, initial, providerName }: { slug: string; ini
           <li key={r.id} className="py-5 first:pt-0">
             <div className="flex items-start gap-3">
               <Avatar className="size-10">
+                {r.author.photoUrl && <AvatarImage src={r.author.photoUrl} alt="" className="object-cover" />}
                 <AvatarFallback>{initials(r.author.name)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
@@ -79,6 +80,15 @@ export function ReviewsList({ slug, initial, providerName }: { slug: string; ini
                   </span>
                 </div>
                 {r.reviewText && <p className="mt-2.5 text-sm leading-relaxed text-foreground/90">{r.reviewText}</p>}
+                {r.photos.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {r.photos.map((url, i) => (
+                      <a key={url} href={url} target="_blank" rel="noreferrer" className="block size-20 overflow-hidden rounded-lg border bg-muted">
+                        <img src={url} alt={`Photo ${i + 1} from ${r.author.name}`} loading="lazy" className="size-full object-cover transition-transform hover:scale-105" />
+                      </a>
+                    ))}
+                  </div>
+                )}
                 {r.providerReply && (
                   <div className="mt-3 rounded-xl bg-muted/70 p-3.5">
                     <div className="flex items-center gap-1.5 text-xs font-semibold">

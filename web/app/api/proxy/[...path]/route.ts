@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { API_URL, TOKEN_COOKIE } from "@/lib/config";
 
-/** Same-origin proxy so client components can call the API with the httpOnly session token. */
+/** Same-origin proxy so client components can call the API with the httpOnly session token. Bodies pass through as bytes so file uploads survive. */
 async function handle(request: Request, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
   const url = new URL(request.url);
@@ -14,7 +14,7 @@ async function handle(request: Request, { params }: { params: Promise<{ path: st
   if (token) headers.set("authorization", `Bearer ${token}`);
 
   const hasBody = !["GET", "HEAD"].includes(request.method);
-  const res = await fetch(target, { method: request.method, headers, body: hasBody ? await request.text() : undefined, cache: "no-store" });
+  const res = await fetch(target, { method: request.method, headers, body: hasBody ? await request.arrayBuffer() : undefined, cache: "no-store" });
   const text = await res.text();
   return new NextResponse(text, { status: res.status, headers: { "content-type": res.headers.get("content-type") ?? "application/json" } });
 }

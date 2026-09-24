@@ -16,6 +16,8 @@ import { reviewsRouter } from "./routes/reviews.js";
 import { meRouter } from "./routes/me.js";
 import { miscRouter } from "./routes/misc.js";
 import { adminRouter } from "./routes/admin.js";
+import { uploadsRouter } from "./routes/uploads.js";
+import { UPLOAD_ROUTE, uploadDir } from "./storage/index.js";
 import { onboardingRouter } from "./routes/provider/onboarding.js";
 import { profileRouter } from "./routes/provider/profile.js";
 import { insightsRouter } from "./routes/provider/insights.js";
@@ -23,7 +25,7 @@ import { insightsRouter } from "./routes/provider/insights.js";
 export function createApp() {
   const app = express();
   app.set("trust proxy", 1);
-  app.use(helmet());
+  app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
   app.use(cors({ origin: env.corsOrigins, credentials: true }));
   app.use(express.json({ limit: "1mb" }));
   if (env.nodeEnv !== "test") app.use(morgan("dev"));
@@ -35,6 +37,9 @@ export function createApp() {
     next();
   });
 
+  // Uploaded files. Keys are random UUIDs, so they can be cached forever.
+  app.use(UPLOAD_ROUTE, express.static(uploadDir, { immutable: true, maxAge: "365d", index: false, dotfiles: "deny" }));
+
   const api = Router();
   api.use("/auth", authRouter);
   api.use("/categories", categoriesRouter);
@@ -45,6 +50,7 @@ export function createApp() {
   api.use("/reviews", reviewsRouter);
   api.use("/me", meRouter);
   api.use("/admin", adminRouter);
+  api.use("/uploads", uploadsRouter);
 
   const providerPortal = Router();
   providerPortal.use(requireAuth);

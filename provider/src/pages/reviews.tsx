@@ -97,6 +97,14 @@ function ReviewCard({ review }: { review: Review }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(review.providerReply ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const publish = () => {
+    const t = text.trim();
+    const problem = t.length < 2 ? "Write a reply of at least 2 characters" : t.length > 1000 ? "Keep the reply under 1,000 characters" : null;
+    setError(problem);
+    if (!problem) mutation.mutate(t);
+  };
+  const replyId = `reply-${review.id}`;
   const mutation = useMutation({
     mutationFn: (reply: string | null) => api(`/provider/reviews/${review.id}/reply`, { method: "PUT", json: { reply } }),
     onSuccess: () => {
@@ -145,7 +153,30 @@ function ReviewCard({ review }: { review: Review }) {
 
           {editing && (
             <div className="mt-4 space-y-2">
-              <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} placeholder="Thank the customer and address any concern, politely and briefly." autoFocus />
+              <Textarea
+                id={replyId}
+                aria-label="Your reply"
+                aria-invalid={!!error || undefined}
+                aria-describedby={error ? `${replyId}-error` : `${replyId}-count`}
+                maxLength={1000}
+                value={text}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  if (error) setError(null);
+                }}
+                rows={3}
+                placeholder="Thank the customer and address any concern, politely and briefly."
+                autoFocus
+              />
+              {error ? (
+                <p id={`${replyId}-error`} role="alert" className="text-xs font-medium text-destructive">
+                  {error}
+                </p>
+              ) : (
+                <p id={`${replyId}-count`} className="text-right text-xs text-muted-foreground">
+                  {text.length} / 1,000
+                </p>
+              )}
               <div className="flex justify-end gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
                   Cancel
@@ -155,7 +186,7 @@ function ReviewCard({ review }: { review: Review }) {
                     Remove reply
                   </Button>
                 )}
-                <Button size="sm" onClick={() => mutation.mutate(text.trim())} disabled={mutation.isPending || text.trim().length < 2}>
+                <Button size="sm" onClick={publish} disabled={mutation.isPending}>
                   {mutation.isPending && <Loader2 className="animate-spin" />} Publish reply
                 </Button>
               </div>

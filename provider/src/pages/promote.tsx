@@ -10,6 +10,7 @@ import { EmptyState, PageSkeleton } from "@/components/common";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Field, fieldA11y } from "@/components/form";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -42,6 +43,7 @@ export function PromotePage() {
   const [categoryId, setCategoryId] = useState<string>("");
   const [days, setDays] = useState<(typeof DURATIONS)[number]>(14);
   const [budget, setBudget] = useState("1500");
+  const [budgetError, setBudgetError] = useState<string | null>(null);
 
   const create = useMutation({
     mutationFn: () => api<{ simulated: boolean }>("/provider/sponsored", { method: "POST", json: { categoryId: Number(categoryId || data!.categories[0].id), days, budget: Number(budget) } }),
@@ -60,6 +62,14 @@ export function PromotePage() {
   if (isLoading || !data) return <PageSkeleton />;
   const { pricing } = data;
   const estClicks = Math.floor(Number(budget || 0) / pricing.costPerClick);
+  const budgetProblem = (): string | null => {
+    if (budget.trim() === "") return "Enter a budget";
+    if (!/^\d+$/.test(budget.trim())) return "Use whole rupees";
+    const n = Number(budget);
+    if (n < pricing.minBudget) return `The minimum budget is ${formatPrice(pricing.minBudget)}`;
+    if (n > 1_000_000) return "Keep the budget under Rs 10,00,000";
+    return null;
+  };
 
   return (
     <>
@@ -111,9 +121,12 @@ export function PromotePage() {
           ) : (
             <form
               className="space-y-5"
+              noValidate
               onSubmit={(e) => {
                 e.preventDefault();
-                create.mutate();
+                const problem = budgetProblem();
+                setBudgetError(problem);
+                if (!problem) create.mutate();
               }}
             >
               <div className="space-y-2">
@@ -146,14 +159,25 @@ export function PromotePage() {
                   ))}
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="budget">Budget (Rs)</Label>
-                <Input id="budget" type="number" min={pricing.minBudget} step={100} value={budget} onChange={(e) => setBudget(e.target.value)} />
-                <p className="text-xs text-muted-foreground">
-                  Minimum {formatPrice(pricing.minBudget)}. At {formatPrice(pricing.costPerClick)} per contact, that is up to {estClicks.toLocaleString("en-IN")} customer contacts.
-                </p>
-              </div>
-              <Button type="submit" className="w-full" disabled={create.isPending || Number(budget) < pricing.minBudget}>
+              <Field
+                id="budget"
+                label="Budget (Rs)"
+                required
+                error={budgetError ?? undefined}
+                hint={`Minimum ${formatPrice(pricing.minBudget)}. At ${formatPrice(pricing.costPerClick)} per contact, that is up to ${estClicks.toLocaleString("en-IN")} customer contacts.`}
+              >
+                <Input
+                  {...fieldA11y("budget", budgetError ?? undefined, true)}
+                  inputMode="numeric"
+                  value={budget}
+                  onChange={(e) => {
+                    setBudget(e.target.value.replace(/\D/g, "").slice(0, 7));
+                    setBudgetError(null);
+                  }}
+                  onBlur={() => setBudgetError(budgetProblem())}
+                />
+              </Field>
+              <Button type="submit" className="w-full" disabled={create.isPending}>
                 {create.isPending && <Loader2 className="animate-spin" />} Pay {formatPrice(Number(budget) || 0)} and start
               </Button>
             </form>

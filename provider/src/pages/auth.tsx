@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { BarChart3, BadgeCheck, Loader2, PhoneCall } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
+import { email, normalizePhone, optionalPhone, password, personName } from "@/lib/validation";
+import { Field, fieldA11y, FormAlert } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
 import { BusinessIllustration } from "@/components/illustrations";
 
@@ -42,44 +46,41 @@ function Shell({ title, subtitle, children }: { title: string; subtitle: string;
   );
 }
 
+const loginSchema = z.object({ email, password: z.string().min(1, "Enter your password") });
+type LoginValues = z.infer<typeof loginSchema>;
+
 export function LoginPage() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get("next") ?? "/";
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { register, handleSubmit, formState } = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: "", password: "" } });
+  const { errors, isSubmitting } = formState;
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    setLoading(true);
+  const onSubmit = handleSubmit(async (values) => {
     setError(null);
     try {
-      const res = await api<{ token: string; user: User }>("/auth/login", { method: "POST", json: { email: form.get("email"), password: form.get("password") } });
+      const res = await api<{ token: string; user: User }>("/auth/login", { method: "POST", json: values });
       await signIn(res.token);
       navigate(next, { replace: true });
     } catch (err) {
       setError(errorMessage(err));
-    } finally {
-      setLoading(false);
     }
-  }
+  });
 
   return (
     <Shell title="Log in to your business" subtitle="Manage your listing, leads and reviews.">
-      <form onSubmit={onSubmit} className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" required autoComplete="email" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input id="password" name="password" type="password" required autoComplete="current-password" />
-        </div>
-        {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-        <Button type="submit" size="lg" className="w-full" disabled={loading}>
-          {loading && <Loader2 className="animate-spin" />} Log in
+      <form onSubmit={onSubmit} noValidate className="space-y-5">
+        <FormAlert message={error} />
+        <Field id="email" label="Email" error={errors.email}>
+          <Input type="email" autoComplete="email" inputMode="email" {...fieldA11y("email", errors.email)} {...register("email")} />
+        </Field>
+        <Field id="password" label="Password" error={errors.password}>
+          <Input type="password" autoComplete="current-password" {...fieldA11y("password", errors.password)} {...register("password")} />
+        </Field>
+        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="animate-spin" />} Log in
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
@@ -103,64 +104,84 @@ export function LoginPage() {
   );
 }
 
+const registerSchema = z.object({
+  name: personName,
+  email,
+  phone: optionalPhone,
+  password,
+  acceptTerms: z.literal(true, { errorMap: () => ({ message: "Accept the terms to continue" }) }),
+});
+type RegisterValues = z.input<typeof registerSchema>;
+
 export function RegisterPage() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get("next") ?? "/start";
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [accept, setAccept] = useState(false);
+  const { register, handleSubmit, control, formState } = useForm<RegisterValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { name: "", email: "", phone: "", password: "", acceptTerms: false as unknown as true },
+    mode: "onTouched",
+  });
+  const { errors, isSubmitting } = formState;
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!accept) {
-      setError("Please accept the terms to continue");
-      return;
-    }
-    const form = new FormData(e.currentTarget);
-    setLoading(true);
+  const onSubmit = handleSubmit(async (values) => {
     setError(null);
     try {
       const res = await api<{ token: string }>("/auth/register", {
         method: "POST",
-        json: { name: form.get("name"), email: form.get("email"), phone: form.get("phone") || undefined, password: form.get("password"), role: "provider", acceptTerms: true },
+        json: { ...values, phone: values.phone ? normalizePhone(values.phone) : undefined, role: "provider" },
       });
       await signIn(res.token);
       navigate(next, { replace: true });
     } catch (err) {
       setError(errorMessage(err));
-    } finally {
-      setLoading(false);
     }
-  }
+  });
 
   return (
     <Shell title="Create your business account" subtitle="Free to join. Takes about three minutes to get listed.">
-      <form onSubmit={onSubmit} className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="name">Your name</Label>
-          <Input id="name" name="name" required minLength={2} autoComplete="name" />
+      <form onSubmit={onSubmit} noValidate className="space-y-5">
+        <FormAlert message={error} />
+        <Field id="name" label="Your name" error={errors.name} required>
+          <Input autoComplete="name" {...fieldA11y("name", errors.name)} {...register("name")} />
+        </Field>
+        <Field id="email" label="Email" error={errors.email} required>
+          <Input type="email" autoComplete="email" inputMode="email" {...fieldA11y("email", errors.email)} {...register("email")} />
+        </Field>
+        <Field id="phone" label="Mobile number" error={errors.phone} optional hint="10-digit Indian mobile number">
+          <Input type="tel" autoComplete="tel" inputMode="tel" placeholder="98xxx xxxxx" {...fieldA11y("phone", errors.phone, true)} {...register("phone")} />
+        </Field>
+        <Field id="password" label="Password" error={errors.password} required hint="At least 8 characters with a letter and a number">
+          <Input type="password" autoComplete="new-password" {...fieldA11y("password", errors.password, true)} {...register("password")} />
+        </Field>
+        <div className="space-y-1.5">
+          <label className="flex items-start gap-3 text-sm text-muted-foreground">
+            <Controller
+              control={control}
+              name="acceptTerms"
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value === true}
+                  onCheckedChange={(v) => field.onChange(v === true)}
+                  onBlur={field.onBlur}
+                  aria-invalid={errors.acceptTerms ? true : undefined}
+                  aria-describedby={errors.acceptTerms ? "terms-error" : undefined}
+                  className="mt-0.5"
+                />
+              )}
+            />
+            <span>I agree to the provider terms and consent to my business phone number being shown to customers.</span>
+          </label>
+          {errors.acceptTerms && (
+            <p id="terms-error" role="alert" className="pl-7 text-xs font-medium text-destructive">
+              {errors.acceptTerms.message}
+            </p>
+          )}
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" required autoComplete="email" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="phone">Mobile number</Label>
-          <Input id="phone" name="phone" type="tel" placeholder="+91 98xxx xxxxx" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" placeholder="At least 8 characters" />
-        </div>
-        <label className="flex items-start gap-3 text-sm text-muted-foreground">
-          <Checkbox checked={accept} onCheckedChange={(v) => setAccept(v === true)} className="mt-0.5" />
-          <span>I agree to the provider terms and consent to my business phone number being shown to customers.</span>
-        </label>
-        {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-        <Button type="submit" size="lg" className="w-full" disabled={loading}>
-          {loading && <Loader2 className="animate-spin" />} Create account
+        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="animate-spin" />} Create account
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">

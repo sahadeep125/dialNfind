@@ -10,3 +10,4 @@ out/
 coverage/
 *.tsbuildinfo
 next-env.d.ts
+server/uploads/

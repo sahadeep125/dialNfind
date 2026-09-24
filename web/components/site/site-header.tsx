@@ -34,7 +34,7 @@ export async function SiteHeader() {
             </Link>
           </Button>
           {user ? (
-            <UserMenu user={{ name: user.name, email: user.email, role: user.role }} />
+            <UserMenu user={{ name: user.name, email: user.email, role: user.role, profilePhotoUrl: user.profilePhotoUrl }} />
           ) : (
             <div className="hidden items-center gap-2 sm:flex">
               <Button asChild variant="ghost" size="sm">

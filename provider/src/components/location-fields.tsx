@@ -1,5 +1,8 @@
 import { Input } from "@/components/ui/input";
+import { z } from "zod";
 import { Label } from "@/components/ui/label";
+import { optionalPincode } from "@/lib/validation";
+import { Field, fieldA11y } from "./form";
 import { Slider } from "@/components/ui/slider";
 import { LocateButton, LocationSearch } from "./editors";
 import { MapPicker } from "./map-picker";
@@ -15,7 +18,29 @@ export interface LocationValue {
   serviceRadiusKm: number;
 }
 
-export function LocationFields({ value, onChange }: { value: LocationValue; onChange: (v: LocationValue) => void }) {
+export const locationSchema = z.object({
+  addressLine: z.string().trim().max(200, "Keep the address under 200 characters"),
+  locality: z.string().trim().max(80, "Keep the locality under 80 characters"),
+  city: z.string().trim().min(2, "Enter your city").max(60),
+  state: z.string().trim().min(2, "Enter your state").max(60),
+  pincode: optionalPincode,
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  serviceRadiusKm: z.number().int().min(1).max(100),
+});
+
+export type LocationErrors = Partial<Record<keyof LocationValue, string>>;
+
+/** Runs locationSchema and returns messages keyed by field, or null when valid. */
+export function validateLocation(value: LocationValue): LocationErrors | null {
+  const result = locationSchema.safeParse(value);
+  if (result.success) return null;
+  const errors: LocationErrors = {};
+  for (const issue of result.error.issues) errors[issue.path[0] as keyof LocationValue] ??= issue.message;
+  return errors;
+}
+
+export function LocationFields({ value, onChange, errors }: { value: LocationValue; onChange: (v: LocationValue) => void; errors?: LocationErrors | null }) {
   const set = (patch: Partial<LocationValue>) => onChange({ ...value, ...patch });
   return (
     <div className="space-y-5">
@@ -42,26 +67,28 @@ export function LocationFields({ value, onChange }: { value: LocationValue; onCh
         Drag the pin to your exact shop or base location ({value.latitude.toFixed(4)}, {value.longitude.toFixed(4)}).
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="addressLine">Street address</Label>
-          <Input id="addressLine" value={value.addressLine} onChange={(e) => set({ addressLine: e.target.value })} placeholder="Shop number, building, street" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="locality">Locality</Label>
-          <Input id="locality" value={value.locality} onChange={(e) => set({ locality: e.target.value })} placeholder="e.g. Sevoke Road" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="city">City</Label>
-          <Input id="city" value={value.city} onChange={(e) => set({ city: e.target.value })} required />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="state">State</Label>
-          <Input id="state" value={value.state} onChange={(e) => set({ state: e.target.value })} required />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="pincode">Pincode</Label>
-          <Input id="pincode" value={value.pincode} onChange={(e) => set({ pincode: e.target.value })} />
-        </div>
+        <Field id="addressLine" label="Street address" error={errors?.addressLine} optional className="sm:col-span-2">
+          <Input value={value.addressLine} onChange={(e) => set({ addressLine: e.target.value })} placeholder="Shop number, building, street" autoComplete="street-address" {...fieldA11y("addressLine", errors?.addressLine)} />
+        </Field>
+        <Field id="locality" label="Locality" error={errors?.locality} optional>
+          <Input value={value.locality} onChange={(e) => set({ locality: e.target.value })} placeholder="e.g. Sevoke Road" {...fieldA11y("locality", errors?.locality)} />
+        </Field>
+        <Field id="city" label="City" error={errors?.city} required>
+          <Input value={value.city} onChange={(e) => set({ city: e.target.value })} autoComplete="address-level2" {...fieldA11y("city", errors?.city)} />
+        </Field>
+        <Field id="state" label="State" error={errors?.state} required>
+          <Input value={value.state} onChange={(e) => set({ state: e.target.value })} autoComplete="address-level1" {...fieldA11y("state", errors?.state)} />
+        </Field>
+        <Field id="pincode" label="PIN code" error={errors?.pincode} optional>
+          <Input
+            value={value.pincode}
+            onChange={(e) => set({ pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+            inputMode="numeric"
+            autoComplete="postal-code"
+            placeholder="734001"
+            {...fieldA11y("pincode", errors?.pincode)}
+          />
+        </Field>
       </div>
       <div className="space-y-3">
         <div className="flex items-center justify-between">

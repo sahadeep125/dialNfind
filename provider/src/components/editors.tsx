@@ -25,8 +25,20 @@ export function normalizeHours(hours: Hours[]): Hours[] {
   return DAYS.map((_, d) => hours.find((h) => h.dayOfWeek === d) ?? { dayOfWeek: d, openTime: null, closeTime: null, is24x7: false });
 }
 
+/** Per-day problems keyed by dayOfWeek, or null when every open day has a valid range. */
+export function validateHours(value: Hours[]): Record<number, string> | null {
+  const errors: Record<number, string> = {};
+  for (const h of value) {
+    if (h.is24x7) continue;
+    if (!h.openTime !== !h.closeTime) errors[h.dayOfWeek] = "Set both opening and closing times";
+    else if (h.openTime && h.closeTime && h.closeTime <= h.openTime) errors[h.dayOfWeek] = "Closing time must be after opening time";
+  }
+  return Object.keys(errors).length ? errors : null;
+}
+
 export function HoursEditor({ value, onChange }: { value: Hours[]; onChange: (h: Hours[]) => void }) {
   const hours = normalizeHours(value);
+  const errors = validateHours(hours) ?? {};
   const allDay = hours.some((h) => h.is24x7);
   const set = (d: number, patch: Partial<Hours>) => onChange(hours.map((h) => (h.dayOfWeek === d ? { ...h, ...patch } : h)));
   const order = [1, 2, 3, 4, 5, 6, 0];
@@ -44,7 +56,7 @@ export function HoursEditor({ value, onChange }: { value: Hours[]; onChange: (h:
         <div className="divide-y rounded-xl border">
           {order.map((d) => {
             const h = hours[d];
-            const open = !!h.openTime;
+            const open = !!h.openTime || !!h.closeTime;
             return (
               <div key={d} className="flex flex-wrap items-center gap-3 px-4 py-3">
                 <div className="flex w-36 items-center gap-3">
@@ -53,9 +65,25 @@ export function HoursEditor({ value, onChange }: { value: Hours[]; onChange: (h:
                 </div>
                 {open ? (
                   <div className="flex items-center gap-2">
-                    <Input type="time" value={h.openTime ?? ""} onChange={(e) => set(d, { openTime: e.target.value })} className="h-9 w-32" />
+                    <Input
+                      type="time"
+                      aria-label={`${DAYS[d]} opening time`}
+                      aria-invalid={!!errors[d] || undefined}
+                      aria-describedby={errors[d] ? `hours-${d}-error` : undefined}
+                      value={h.openTime ?? ""}
+                      onChange={(e) => set(d, { openTime: e.target.value || null })}
+                      className="h-9 w-32"
+                    />
                     <span className="text-sm text-muted-foreground">to</span>
-                    <Input type="time" value={h.closeTime ?? ""} onChange={(e) => set(d, { closeTime: e.target.value })} className="h-9 w-32" />
+                    <Input
+                      type="time"
+                      aria-label={`${DAYS[d]} closing time`}
+                      aria-invalid={!!errors[d] || undefined}
+                      aria-describedby={errors[d] ? `hours-${d}-error` : undefined}
+                      value={h.closeTime ?? ""}
+                      onChange={(e) => set(d, { closeTime: e.target.value || null })}
+                      className="h-9 w-32"
+                    />
                   </div>
                 ) : (
                   <span className="text-sm text-muted-foreground">Closed</span>
@@ -71,6 +99,11 @@ export function HoursEditor({ value, onChange }: { value: Hours[]; onChange: (h:
                     <Copy /> Copy to Tue to Sat
                   </Button>
                 )}
+                {errors[d] && (
+                  <p id={`hours-${d}-error`} role="alert" className="w-full text-xs font-medium text-destructive sm:pl-39">
+                    {errors[d]}
+                  </p>
+                )}
               </div>
             );
           })}
@@ -81,6 +114,23 @@ export function HoursEditor({ value, onChange }: { value: Hours[]; onChange: (h:
 }
 
 // Services -----------------------------------------------------------------------------------
+
+export const MAX_PRICE = 1_000_000;
+
+function priceError(p: number | null | undefined): string | null {
+  if (p == null) return null;
+  if (!Number.isFinite(p) || p < 0) return "Enter a price of 0 or more";
+  if (!Number.isInteger(p)) return "Use whole rupees";
+  if (p > MAX_PRICE) return "Keep the price under Rs 10,00,000";
+  return null;
+}
+
+/** First problem with the service list, or null. */
+export function validateServices(value: ProviderService[]): string | null {
+  if (value.length === 0) return "Pick at least one service";
+  for (const s of value) if (priceError(s.startingPrice)) return "Fix the highlighted starting prices";
+  return null;
+}
 
 export function ServicesEditor({ value, onChange }: { value: ProviderService[]; onChange: (s: ProviderService[]) => void }) {
   const { data: categories = [] } = useCategories();
@@ -146,7 +196,10 @@ export function ServicesEditor({ value, onChange }: { value: ProviderService[]; 
         <div className="space-y-2">
           <Label>Starting prices</Label>
           <div className="divide-y rounded-xl border">
-            {value.map((s) => (
+            {value.map((s) => {
+              const rowId = `price-${s.categoryId}-${s.subcategoryId ?? "all"}`;
+              const err = priceError(s.startingPrice);
+              return (
               <div key={`${s.categoryId}-${s.subcategoryId}`} className="flex flex-wrap items-center gap-3 p-3">
                 <button type="button" onClick={() => makePrimary(s.subcategoryId)} title="Set as main service" className="cursor-pointer">
                   <Star className={cn("size-4", s.isPrimary ? "fill-warning text-warning" : "text-muted-foreground")} />
@@ -158,7 +211,13 @@ export function ServicesEditor({ value, onChange }: { value: ProviderService[]; 
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Rs</span>
                   <Input
                     type="number"
+                    inputMode="numeric"
                     min={0}
+                    max={MAX_PRICE}
+                    step={1}
+                    aria-label={`Starting price for ${nameOf(s)}`}
+                    aria-invalid={!!err || undefined}
+                    aria-describedby={err ? rowId : undefined}
                     value={s.startingPrice ?? ""}
                     onChange={(e) => update(s.subcategoryId, { startingPrice: e.target.value === "" ? null : Number(e.target.value) })}
                     placeholder="Price"
@@ -177,11 +236,17 @@ export function ServicesEditor({ value, onChange }: { value: ProviderService[]; 
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" variant="ghost" size="icon-sm" onClick={() => onChange(value.filter((x) => x !== s))} aria-label="Remove">
+                <Button type="button" variant="ghost" size="icon-sm" onClick={() => onChange(value.filter((x) => x !== s))} aria-label={`Remove ${nameOf(s)}`}>
                   <Trash2 />
                 </Button>
+                {err && (
+                  <p id={rowId} role="alert" className="w-full text-xs font-medium text-destructive">
+                    {err}
+                  </p>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
           <p className="text-xs text-muted-foreground">The star marks your main service. It decides which category you appear under first.</p>
         </div>
@@ -251,28 +316,56 @@ export function LocateButton({ onLocate }: { onLocate: (lat: number, lng: number
 
 // Service areas -----------------------------------------------------------------------------
 
+export const MAX_AREAS = 50;
+
 export function AreasEditor({ value, onChange }: { value: ServiceArea[]; onChange: (a: ServiceArea[]) => void }) {
   const [custom, setCustom] = useState("");
-  const add = (area: ServiceArea) => {
-    if (value.some((a) => a.areaName.toLowerCase() === area.areaName.toLowerCase())) return;
-    onChange([...value, area]);
+  const [error, setError] = useState<string | null>(null);
+  const add = (area: ServiceArea): boolean => {
+    const name = area.areaName.trim();
+    if (name.length < 2) return setError("Enter at least 2 characters"), false;
+    if (name.length > 80) return setError("Keep the area name under 80 characters"), false;
+    if (value.some((a) => a.areaName.toLowerCase() === name.toLowerCase())) return setError(`${name} is already in your list`), false;
+    if (value.length >= MAX_AREAS) return setError(`You can list up to ${MAX_AREAS} areas`), false;
+    setError(null);
+    onChange([...value, { ...area, areaName: name }]);
+    return true;
+  };
+  const addCustom = () => {
+    if (add({ areaName: custom })) setCustom("");
   };
   return (
     <div className="space-y-4">
       <LocationSearch placeholder="Add a locality you serve" onPick={(l) => add({ areaName: l.name, latitude: l.latitude, longitude: l.longitude })} />
-      <div className="flex gap-2">
-        <Input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Or type an area name" />
-        <Button
-          type="button"
-          variant="outline"
-          disabled={custom.trim().length < 2}
-          onClick={() => {
-            add({ areaName: custom.trim() });
-            setCustom("");
-          }}
-        >
-          <Plus /> Add
-        </Button>
+      <div>
+        <div className="flex gap-2">
+          <Input
+            value={custom}
+            maxLength={80}
+            aria-label="Area name"
+            aria-invalid={!!error || undefined}
+            aria-describedby={error ? "area-error" : undefined}
+            onChange={(e) => {
+              setCustom(e.target.value);
+              if (error) setError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustom();
+              }
+            }}
+            placeholder="Or type an area name"
+          />
+          <Button type="button" variant="outline" onClick={addCustom}>
+            <Plus /> Add
+          </Button>
+        </div>
+        {error && (
+          <p id="area-error" role="alert" className="mt-1.5 text-xs font-medium text-destructive">
+            {error}
+          </p>
+        )}
       </div>
       {value.length ? (
         <div className="flex flex-wrap gap-2">

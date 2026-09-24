@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FileUpload } from "@/components/file-upload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Listing {
@@ -36,6 +37,8 @@ export function ClaimPage() {
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState("");
   const [docUrl, setDocUrl] = useState("");
+  const [docUploading, setDocUploading] = useState(false);
+  const [errors, setErrors] = useState<{ q?: string; code?: string; doc?: string }>({});
 
   useEffect(() => {
     const id = params.get("listing");
@@ -47,6 +50,8 @@ export function ClaimPage() {
 
   async function search(e: React.FormEvent) {
     e.preventDefault();
+    if (q.trim().length < 2) return setErrors({ q: "Enter at least 2 characters of the business name or phone" });
+    setErrors({});
     setBusy(true);
     try {
       const data = await api<{ results: Listing[] }>(`/provider/claims/search?q=${encodeURIComponent(q)}&city=${encodeURIComponent(city)}`);
@@ -59,6 +64,8 @@ export function ClaimPage() {
   }
 
   async function start(listing: Listing, method: "phone_otp" | "document") {
+    if (method === "document" && !docUrl) return setErrors({ doc: "Upload a document before submitting" });
+    setErrors({});
     setBusy(true);
     try {
       const res = await api<{ claim: { id: number }; sentTo: string | null; devCode?: string; token: string | null }>("/provider/claims", {
@@ -78,6 +85,8 @@ export function ClaimPage() {
   async function verify(e: React.FormEvent) {
     e.preventDefault();
     if (step.kind !== "otp") return;
+    if (!/^\d{6}$/.test(code)) return setErrors({ code: "Enter the 6-digit code" });
+    setErrors({});
     setBusy(true);
     try {
       await api(`/provider/claims/${step.claimId}/verify`, { method: "POST", json: { code } });
@@ -102,10 +111,29 @@ export function ClaimPage() {
       <div className="mt-8 rounded-2xl border bg-card p-6 shadow-[var(--shadow-soft)]">
         {step.kind === "search" && (
           <>
-            <form onSubmit={search} className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input value={q} onChange={(e) => setQ(e.target.value)} required minLength={2} placeholder="Business name or phone number" className="pl-9" />
+            <form onSubmit={search} noValidate className="flex flex-col gap-2 sm:flex-row sm:items-start">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={q}
+                    onChange={(e) => {
+                      setQ(e.target.value);
+                      if (errors.q) setErrors({});
+                    }}
+                    maxLength={100}
+                    aria-label="Business name or phone number"
+                    aria-invalid={!!errors.q || undefined}
+                    aria-describedby={errors.q ? "q-error" : undefined}
+                    placeholder="Business name or phone number"
+                    className="pl-9"
+                  />
+                </div>
+                {errors.q && (
+                  <p id="q-error" role="alert" className="mt-1.5 text-xs font-medium text-destructive">
+                    {errors.q}
+                  </p>
+                )}
               </div>
               <Select value={city} onValueChange={setCity}>
                 <SelectTrigger className="sm:w-36">
@@ -161,10 +189,26 @@ export function ClaimPage() {
                   <div className="flex items-center gap-2 font-semibold">
                     <FileText className="size-4 text-primary" /> No access to that number?
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">Share a link to a trade licence, GST certificate or shop registration. Our team reviews it within two working days.</p>
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                    <Input value={docUrl} onChange={(e) => setDocUrl(e.target.value)} placeholder="https://drive.google.com/..." />
-                    <Button variant="outline" disabled={busy || !docUrl} onClick={() => start(step.listing, "document")}>
+                  <p className="mt-1 text-sm text-muted-foreground">Upload a trade licence, GST certificate or shop registration. Our team reviews it within two working days.</p>
+                  <div className="mt-3 space-y-3">
+                    <FileUpload
+                      id="claim-doc"
+                      purpose="document"
+                      value={docUrl}
+                      onChange={(v) => {
+                        setDocUrl(v);
+                        if (v) setErrors({});
+                      }}
+                      invalid={!!errors.doc}
+                      describedBy={errors.doc ? "claim-doc-error" : undefined}
+                      onUploadingChange={setDocUploading}
+                    />
+                    {errors.doc && (
+                      <p id="claim-doc-error" role="alert" className="text-xs font-medium text-destructive">
+                        {errors.doc}
+                      </p>
+                    )}
+                    <Button variant="outline" disabled={busy || docUploading} onClick={() => start(step.listing, "document")}>
                       Submit document
                     </Button>
                   </div>
@@ -178,14 +222,33 @@ export function ClaimPage() {
         )}
 
         {step.kind === "otp" && (
-          <form onSubmit={verify} className="space-y-5">
+          <form onSubmit={verify} noValidate className="space-y-5">
             <ListingRow listing={step.listing} />
             <div className="space-y-2">
               <Label htmlFor="code">Enter the code sent to {step.sentTo}</Label>
-              <Input id="code" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" placeholder="6-digit code" className="h-12 text-center font-mono text-xl tracking-[0.5em]" autoFocus />
+              <Input
+                id="code"
+                value={code}
+                onChange={(e) => {
+                  setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  if (errors.code) setErrors({});
+                }}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                aria-invalid={!!errors.code || undefined}
+                aria-describedby={errors.code ? "code-error" : undefined}
+                placeholder="6-digit code"
+                className="h-12 text-center font-mono text-xl tracking-[0.5em]"
+                autoFocus
+              />
+              {errors.code && (
+                <p id="code-error" role="alert" className="text-xs font-medium text-destructive">
+                  {errors.code}
+                </p>
+              )}
               {step.devCode && <p className="text-xs text-muted-foreground">Development mode: SMS is not connected yet, use code {step.devCode}.</p>}
             </div>
-            <Button type="submit" size="lg" className="w-full" disabled={busy || code.length < 4}>
+            <Button type="submit" size="lg" className="w-full" disabled={busy}>
               {busy && <Loader2 className="animate-spin" />} Verify and claim
             </Button>
           </form>

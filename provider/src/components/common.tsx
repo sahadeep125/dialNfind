@@ -39,11 +39,11 @@ export function SaveBar({ dirty, saving, onSave, onReset }: { dirty: boolean; sa
       <div className="flex items-center justify-end gap-3">
         <span className="mr-auto text-sm text-muted-foreground">{dirty ? "You have unsaved changes" : "All changes saved"}</span>
         {onReset && dirty && (
-          <Button variant="ghost" onClick={onReset} disabled={saving}>
+          <Button type="button" variant="ghost" onClick={onReset} disabled={saving}>
             Discard
           </Button>
         )}
-        <Button onClick={onSave} disabled={!dirty || saving}>
+        <Button type="button" onClick={onSave} disabled={!dirty || saving}>
           {saving && <Loader2 className="animate-spin" />} Save changes
         </Button>
       </div>

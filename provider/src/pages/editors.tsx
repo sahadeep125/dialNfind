@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { AreasEditor, DEFAULT_HOURS, HoursEditor, normalizeHours, ServicesEditor } from "@/components/editors";
+import { AreasEditor, DEFAULT_HOURS, HoursEditor, normalizeHours, ServicesEditor, validateHours, validateServices } from "@/components/editors";
 
 /**
  * Shared shape for the list editors (services, hours, areas): load from the profile, edit locally,
@@ -62,7 +62,8 @@ export function ServicesPage() {
         saving={e.saving}
         onReset={() => e.setValue(e.initial)}
         onSave={() => {
-          if (e.value!.length === 0) return toast.error("Keep at least one service");
+          const problem = validateServices(e.value!);
+          if (problem) return toast.error(problem);
           void e.save(e.value!.map(({ categoryId, subcategoryId, startingPrice, priceUnit, isPrimary }) => ({ categoryId, subcategoryId, startingPrice, priceUnit, isPrimary })));
         }}
       />
@@ -79,7 +80,15 @@ export function HoursPage() {
       <Panel>
         <HoursEditor value={e.value} onChange={e.setValue} />
       </Panel>
-      <SaveBar dirty={e.dirty} saving={e.saving} onReset={() => e.setValue(e.initial)} onSave={() => void e.save(e.value)} />
+      <SaveBar
+        dirty={e.dirty}
+        saving={e.saving}
+        onReset={() => e.setValue(e.initial)}
+        onSave={() => {
+          if (validateHours(e.value!)) return toast.error("Fix the highlighted days before saving");
+          void e.save(e.value);
+        }}
+      />
     </>
   );
 }
@@ -124,14 +133,32 @@ function ServiceDetails() {
   const { data } = useQuery({ queryKey: ["attributes"], queryFn: () => api<{ groups: AttrGroup[] }>("/provider/attributes") });
   const [edits, setEdits] = useState<Record<string, AttrValue>>({});
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   if (!data?.groups.length) return null;
 
   const k = (g: AttrGroup, a: Attr) => `${g.providerServiceId}:${a.id}`;
   const valueOf = (g: AttrGroup, a: Attr) => (k(g, a) in edits ? edits[k(g, a)] : a.value);
-  const set = (g: AttrGroup, a: Attr, v: AttrValue) => setEdits({ ...edits, [k(g, a)]: v });
+  const set = (g: AttrGroup, a: Attr, v: AttrValue) => {
+    setEdits({ ...edits, [k(g, a)]: v });
+    if (errors[k(g, a)]) setErrors(({ [k(g, a)]: _, ...rest }) => rest);
+  };
+  const problem = (a: Attr, v: AttrValue): string | null => {
+    const empty = v === null || v === undefined || v === "" || (Array.isArray(v) && v.length === 0);
+    if (empty) return a.isRequired ? (a.fieldType === "select" || a.fieldType === "multiselect" ? "Choose an option" : "This answer is required") : null;
+    if (a.fieldType === "number" && (typeof v !== "number" || !Number.isFinite(v) || v < 0)) return "Enter a number of 0 or more";
+    if (a.fieldType === "text" && String(v).trim().length > 300) return "Keep it under 300 characters";
+    return null;
+  };
   const dirty = Object.keys(edits).length > 0;
 
   async function save() {
+    const found: Record<string, string> = {};
+    for (const g of data!.groups) for (const a of g.attributes) {
+      const msg = problem(a, valueOf(g, a));
+      if (msg) found[k(g, a)] = msg;
+    }
+    setErrors(found);
+    if (Object.keys(found).length) return toast.error("Answer the highlighted questions");
     setSaving(true);
     try {
       const values = Object.entries(edits).map(([key, value]) => {
@@ -167,6 +194,7 @@ function ServiceDetails() {
             {g.attributes.map((a) => {
               const v = valueOf(g, a);
               const id = `attr-${g.providerServiceId}-${a.id}`;
+              const err = errors[k(g, a)];
               return (
                 <div key={a.id} className="space-y-2">
                   <Label htmlFor={id}>
@@ -181,7 +209,7 @@ function ServiceDetails() {
                   )}
                   {a.fieldType === "select" && (
                     <Select value={typeof v === "string" ? v : ""} onValueChange={(x) => set(g, a, x)}>
-                      <SelectTrigger id={id} className="w-full sm:w-72">
+                      <SelectTrigger id={id} className="w-full sm:w-72" aria-invalid={!!err || undefined}>
                         <SelectValue placeholder="Choose one" />
                       </SelectTrigger>
                       <SelectContent>
@@ -219,10 +247,19 @@ function ServiceDetails() {
                     <Input
                       id={id}
                       type={a.fieldType === "number" ? "number" : "text"}
+                      min={a.fieldType === "number" ? 0 : undefined}
+                      maxLength={a.fieldType === "text" ? 300 : undefined}
+                      aria-invalid={!!err || undefined}
+                      aria-describedby={err ? `${id}-error` : undefined}
                       className="sm:w-72"
                       value={v === null || v === undefined ? "" : String(v)}
                       onChange={(e) => set(g, a, a.fieldType === "number" && e.target.value !== "" ? Number(e.target.value) : e.target.value)}
                     />
+                  )}
+                  {err && (
+                    <p id={`${id}-error`} role="alert" className="text-xs font-medium text-destructive">
+                      {err}
+                    </p>
                   )}
                 </div>
               );

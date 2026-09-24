@@ -1,6 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { email, httpUrl, optionalPhone, optionalUrl, phone, pincode } from "../../lib/rules.js";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, conflict, forbidden, notFound } from "../../lib/errors.js";
@@ -59,15 +60,15 @@ const onboardingSchema = z.object({
   description: z.string().trim().max(2000).optional(),
   businessType: z.enum(["individual", "company"]).default("individual"),
   yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
-  phone: z.string().trim().min(8).max(20),
-  whatsappNumber: z.string().trim().max(20).nullable().optional(),
-  email: z.string().email().nullable().optional().or(z.literal("")),
-  website: z.string().url().nullable().optional().or(z.literal("")),
+  phone,
+  whatsappNumber: optionalPhone,
+  email: z.union([z.literal(""), z.null(), email]).optional(),
+  website: optionalUrl.optional(),
   addressLine: z.string().trim().max(200).optional(),
   locality: z.string().trim().max(80).optional(),
   city: z.string().trim().min(2).max(60),
   state: z.string().trim().min(2).max(60),
-  pincode: z.string().trim().max(10).optional(),
+  pincode: z.union([z.literal(""), pincode]).transform((v) => v || null).optional(),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   serviceRadiusKm: z.number().int().min(1).max(100).default(10),
@@ -197,7 +198,7 @@ onboardingRouter.get("/claims/listing/:id", async (req, res) => {
 const startClaimSchema = z.object({
   providerId: z.number().int().positive(),
   method: z.enum(["phone_otp", "document"]).default("phone_otp"),
-  documentUrl: z.string().url().optional(),
+  documentUrl: httpUrl.optional(),
 });
 
 /**

@@ -26,6 +26,10 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     res.status(400).json({ error: { code: "bad_request", message: "Malformed JSON body" } });
     return;
   }
+  if (err && typeof err === "object" && "type" in err && (err as { type: string }).type === "entity.too.large") {
+    res.status(413).json({ error: { code: "payload_too_large", message: "The file or request is too large" } });
+    return;
+  }
   console.error(err);
   res.status(500).json({ error: { code: "internal", message: "Something went wrong" } });
 }

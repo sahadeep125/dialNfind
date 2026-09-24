@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImagePlus, Images, Loader2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -10,11 +13,18 @@ import { EmptyState, PageSkeleton } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Field, fieldA11y } from "@/components/form";
+import { FileUpload } from "@/components/file-upload";
 
 type Item = ProviderProfile["portfolio"][number];
-type Draft = { id?: number; title: string; description: string; imageUrl: string };
+const photoSchema = z.object({
+  imageUrl: z.string().min(1, "Upload a photo"),
+  title: z.string().trim().min(2, "Give the photo a short title").max(100, "Keep the title under 100 characters"),
+  description: z.string().trim().max(500, "Keep the description under 500 characters"),
+});
+type PhotoValues = z.infer<typeof photoSchema>;
+type Draft = PhotoValues & { id?: number };
 
 const EMPTY: Draft = { title: "", description: "", imageUrl: "" };
 
@@ -101,42 +111,46 @@ export function PortfolioPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{draft?.id ? "Edit photo" : "Add a photo"}</DialogTitle>
-            <DialogDescription>Paste a link to a hosted image. Direct uploads arrive with cloud storage.</DialogDescription>
+            <DialogDescription>Show a finished job, your shop or your team. Clear, well-lit photos work best.</DialogDescription>
           </DialogHeader>
-          {draft && (
-            <form
-              id="portfolio-form"
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                save.mutate(draft);
-              }}
-            >
-              <div className="space-y-2">
-                <Label htmlFor="imageUrl">Image URL</Label>
-                <Input id="imageUrl" type="url" required value={draft.imageUrl} onChange={(e) => setDraft({ ...draft, imageUrl: e.target.value })} placeholder="https://" />
-                {draft.imageUrl && <img src={draft.imageUrl} alt="" className="aspect-video w-full rounded-xl border object-cover" />}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" required minLength={2} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="e.g. 55 inch LED panel replacement" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="desc">Description (optional)</Label>
-                <Textarea id="desc" rows={3} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
-              </div>
-            </form>
-          )}
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDraft(null)}>
-              Cancel
-            </Button>
-            <Button type="submit" form="portfolio-form" disabled={save.isPending}>
-              {save.isPending && <Loader2 className="animate-spin" />} Save
-            </Button>
-          </DialogFooter>
+          {draft && <PhotoForm draft={draft} saving={save.isPending} onCancel={() => setDraft(null)} onSubmit={(v) => save.mutate({ ...v, id: draft.id })} />}
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function PhotoForm({ draft, saving, onCancel, onSubmit }: { draft: Draft; saving: boolean; onCancel: () => void; onSubmit: (v: PhotoValues) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const { register, control, handleSubmit, reset, formState } = useForm<PhotoValues>({ resolver: zodResolver(photoSchema), defaultValues: draft, mode: "onTouched" });
+  const { errors } = formState;
+  useEffect(() => reset(draft), [draft, reset]);
+
+  return (
+    <form className="space-y-4" noValidate onSubmit={handleSubmit(onSubmit)}>
+      <Field id="imageUrl" label="Photo" error={errors.imageUrl} required>
+        <Controller
+          control={control}
+          name="imageUrl"
+          render={({ field }) => (
+            <FileUpload id="imageUrl" purpose="portfolio" value={field.value} onChange={field.onChange} invalid={!!errors.imageUrl} describedBy={errors.imageUrl ? "imageUrl-error" : undefined} onUploadingChange={setUploading} />
+          )}
+        />
+      </Field>
+      <Field id="title" label="Title" error={errors.title} required>
+        <Input placeholder="e.g. 55 inch LED panel replacement" {...fieldA11y("title", errors.title)} {...register("title")} />
+      </Field>
+      <Field id="desc" label="Description" error={errors.description} optional>
+        <Textarea rows={3} {...fieldA11y("desc", errors.description)} {...register("description")} />
+      </Field>
+      <DialogFooter>
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={saving || uploading}>
+          {saving && <Loader2 className="animate-spin" />} Save photo
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }

@@ -89,7 +89,7 @@ export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
   portfolio: { id: number; title: string; description: string | null; imageUrl: string; category: string | null }[];
   verifications: { type: string; verifiedAt: string | null }[];
   ratingBreakdown: { rating: number; count: number }[];
-  myReview: { id: number; rating: number; reviewText: string | null } | null;
+  myReview: { id: number; rating: number; reviewText: string | null; photos: string[] } | null;
 }
 
 export interface Review {

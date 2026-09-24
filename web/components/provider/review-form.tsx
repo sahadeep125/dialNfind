@@ -1,17 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Loader2, PenLine, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Field, FormAlert, fieldA11y } from "@/components/form";
+import { PhotoListUpload } from "@/components/file-upload";
 import { clientApi, ClientApiError } from "@/lib/client";
 import { cn } from "@/lib/utils";
 
 const LABELS = ["", "Poor", "Below average", "Good", "Very good", "Excellent"];
+const MAX_PHOTOS = 6;
+
+const schema = z.object({
+  rating: z.number().int().min(1, "Pick a star rating").max(5),
+  reviewText: z.string().trim().min(10, "Tell others a little more, at least 10 characters").max(2000, "Keep the review under 2,000 characters"),
+  photos: z.array(z.string()).max(MAX_PHOTOS),
+});
+type Values = z.infer<typeof schema>;
 
 export function ReviewForm({
   providerId,
@@ -22,15 +34,26 @@ export function ReviewForm({
   providerId: number;
   providerName: string;
   signedIn: boolean;
-  existing: { id: number; rating: number; reviewText: string | null } | null;
+  existing: { id: number; rating: number; reviewText: string | null; photos?: string[] } | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [rating, setRating] = useState(existing?.rating ?? 0);
   const [hover, setHover] = useState(0);
-  const [text, setText] = useState(existing?.reviewText ?? "");
-  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const defaults: Values = { rating: existing?.rating ?? 0, reviewText: existing?.reviewText ?? "", photos: existing?.photos ?? [] };
+  const { register, control, handleSubmit, reset, watch, formState } = useForm<Values>({ resolver: zodResolver(schema), mode: "onTouched", defaultValues: defaults });
+  const { errors, isSubmitting } = formState;
+  const rating = watch("rating");
+  const textLength = watch("reviewText").length;
+
+  useEffect(() => {
+    if (open) {
+      reset(defaults);
+      setError(null);
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!signedIn) {
     return (
@@ -40,27 +63,19 @@ export function ReviewForm({
     );
   }
 
-  async function submit() {
-    if (!rating) {
-      toast.error("Pick a star rating");
-      return;
-    }
-    setSaving(true);
+  const onSubmit = handleSubmit(async (v) => {
+    setError(null);
+    const body = { rating: v.rating, reviewText: v.reviewText.trim(), photos: v.photos };
     try {
-      if (existing) {
-        await clientApi(`/reviews/${existing.id}`, { method: "PATCH", body: JSON.stringify({ rating, reviewText: text }) });
-      } else {
-        await clientApi("/reviews", { method: "POST", body: JSON.stringify({ providerId, rating, reviewText: text }) });
-      }
+      if (existing) await clientApi(`/reviews/${existing.id}`, { method: "PATCH", body: JSON.stringify(body) });
+      else await clientApi("/reviews", { method: "POST", body: JSON.stringify({ providerId, ...body }) });
       toast.success(existing ? "Review updated" : "Thanks for sharing your experience");
       setOpen(false);
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof ClientApiError ? err.message : "Could not save your review");
-    } finally {
-      setSaving(false);
+      setError(err instanceof ClientApiError ? err.message : "Could not save your review");
     }
-  }
+  });
 
   const shown = hover || rating;
 
@@ -71,41 +86,59 @@ export function ReviewForm({
           <PenLine /> {existing ? "Edit your review" : "Write a review"}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{existing ? "Edit your review" : `Review ${providerName}`}</DialogTitle>
           <DialogDescription>Honest reviews help your neighbours pick the right professional.</DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
-          <Label>Your rating</Label>
-          <div className="flex items-center gap-1" onMouseLeave={() => setHover(0)}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <button key={i} type="button" onMouseEnter={() => setHover(i)} onClick={() => setRating(i)} className="cursor-pointer p-0.5" aria-label={`${i} stars`}>
-                <Star className={cn("size-8 transition-colors", i <= shown ? "fill-warning text-warning" : "text-[oklch(0.88_0.02_85)]")} strokeWidth={1.5} />
-              </button>
-            ))}
-            <span className="ml-2 text-sm font-medium text-muted-foreground">{LABELS[shown]}</span>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="review-text">Your experience</Label>
-          <Textarea
+        <form onSubmit={onSubmit} noValidate className="space-y-5">
+          <FormAlert message={error} />
+          <Field id="rating" label="Your rating" error={errors.rating} required>
+            <Controller
+              control={control}
+              name="rating"
+              render={({ field }) => (
+                <div id="rating" role="radiogroup" aria-invalid={errors.rating ? true : undefined} aria-describedby={errors.rating ? "rating-error" : undefined} className="flex items-center gap-1" onMouseLeave={() => setHover(0)}>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      role="radio"
+                      aria-checked={field.value === i}
+                      onMouseEnter={() => setHover(i)}
+                      onClick={() => field.onChange(i)}
+                      className="cursor-pointer p-0.5"
+                      aria-label={`${i} star${i > 1 ? "s" : ""}, ${LABELS[i]}`}
+                    >
+                      <Star className={cn("size-8 transition-colors", i <= shown ? "fill-warning text-warning" : "text-[oklch(0.88_0.02_85)]")} strokeWidth={1.5} />
+                    </button>
+                  ))}
+                  <span className="ml-2 text-sm font-medium text-muted-foreground">{LABELS[shown]}</span>
+                </div>
+              )}
+            />
+          </Field>
+          <Field
             id="review-text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={5}
-            placeholder="What did they fix? Were they on time? Was the price fair?"
-          />
-          <p className="text-xs text-muted-foreground">At least 10 characters. Do not share personal phone numbers or addresses.</p>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={submit} disabled={saving}>
-            {saving && <Loader2 className="animate-spin" />} {existing ? "Save changes" : "Post review"}
-          </Button>
-        </DialogFooter>
+            label="Your experience"
+            error={errors.reviewText}
+            hint={`${textLength} of 2,000 characters. Do not share personal phone numbers or addresses.`}
+            required
+          >
+            <Textarea {...fieldA11y("review-text", errors.reviewText, true)} rows={5} maxLength={2000} placeholder="What did they fix? Were they on time? Was the price fair?" {...register("reviewText")} />
+          </Field>
+          <Field id="review-photos" label="Photos" optional>
+            <Controller control={control} name="photos" render={({ field }) => <PhotoListUpload id="review-photos" purpose="review" max={MAX_PHOTOS} value={field.value} onChange={field.onChange} onUploadingChange={setUploading} />} />
+          </Field>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting || uploading}>
+              {isSubmitting && <Loader2 className="animate-spin" />} {existing ? "Save changes" : "Post review"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
