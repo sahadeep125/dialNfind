@@ -1,0 +1,821 @@
+// DialNFind database schema (v2 architecture).
+// One shared schema serves the web app, the provider dashboard and future mobile apps.
+// BIGSERIAL primary keys, snake_case columns (mapped), `xxx_id` = FK to `xxx.id`.
+// Spatial search uses PostGIS: providers.location is a geography(Point, 4326) column kept in
+// sync with latitude/longitude by a trigger (see the init migration).
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  super_admin
+  provider
+  customer
+}
+
+enum UserStatus {
+  active
+  suspended
+  deleted
+}
+
+enum OAuthProvider {
+  google
+  apple
+}
+
+enum BusinessType {
+  individual
+  company
+}
+
+enum VerificationStatus {
+  none
+  partial
+  verified
+}
+
+enum ProviderStatus {
+  pending
+  active
+  rejected
+  suspended
+}
+
+enum VerificationType {
+  phone
+  business
+  location
+  id_proof
+}
+
+enum ReviewableStatus {
+  pending
+  approved
+  rejected
+}
+
+enum AttributeAppliesTo {
+  lead
+  provider
+}
+
+enum AttributeFieldType {
+  text
+  number
+  select
+  multiselect
+  boolean
+}
+
+enum AttributeEntityType {
+  lead
+  provider_service
+}
+
+enum PriceUnit {
+  per_visit
+  per_hour
+  fixed
+}
+
+enum LeadChannel {
+  call
+  whatsapp
+}
+
+enum LeadSource {
+  search
+  ai_match
+  category_browse
+  profile
+}
+
+enum ReviewStatus {
+  published
+  flagged
+  removed
+}
+
+enum BillingCycle {
+  monthly
+  yearly
+}
+
+enum SubscriptionStatus {
+  active
+  expired
+  cancelled
+}
+
+enum TransactionType {
+  subscription
+  lead_fee
+  sponsored_ad
+}
+
+enum TransactionStatus {
+  success
+  failed
+  pending
+  refunded
+}
+
+enum SponsoredStatus {
+  active
+  paused
+  completed
+}
+
+enum FlagTargetType {
+  provider
+  review
+}
+
+enum FlagStatus {
+  open
+  resolved
+  dismissed
+}
+
+enum ClaimStatus {
+  pending
+  approved
+  rejected
+}
+
+enum ClaimMethod {
+  phone_otp
+  document
+}
+
+enum ContactMessageStatus {
+  new
+  in_progress
+  closed
+}
+
+// ---------------------------------------------------------------------------
+// 1. Users & identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id              BigInt     @id @default(autoincrement())
+  role            UserRole   @default(customer)
+  name            String
+  email           String     @unique
+  passwordHash    String?    @map("password_hash")
+  phone           String?
+  emailVerifiedAt DateTime?  @map("email_verified_at")
+  status          UserStatus @default(active)
+  profilePhotoUrl String?    @map("profile_photo_url")
+  termsAcceptedAt DateTime?  @map("terms_accepted_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  oauthAccounts        UserOAuthAccount[]
+  addresses            UserAddress[]
+  provider             Provider?
+  leads                Lead[]
+  reviews              Review[]
+  favorites            Favorite[]
+  searchQueries        SearchQuery[]
+  notifications        Notification[]
+  deviceTokens         DeviceToken[]
+  adminActivityLogs    AdminActivityLog[]
+  reportsFiled         ReportFlag[]         @relation("ReportReporter")
+  reportsResolved      ReportFlag[]         @relation("ReportResolver")
+  verificationsDone    Verification[]       @relation("VerificationVerifier")
+  categoriesCreated    Category[]           @relation("CategoryCreatedBy")
+  categoriesUpdated    Category[]           @relation("CategoryUpdatedBy")
+  subcategoriesCreated Subcategory[]        @relation("SubcategoryCreatedBy")
+  subcategoriesUpdated Subcategory[]        @relation("SubcategoryUpdatedBy")
+  attributesCreated    CategoryAttribute[]
+  claims               ProviderClaim[]      @relation("ClaimClaimant")
+  claimsReviewed       ProviderClaim[]      @relation("ClaimReviewer")
+  contactMessages      ContactMessage[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model UserOAuthAccount {
+  id                BigInt        @id @default(autoincrement())
+  userId            BigInt        @map("user_id")
+  provider          OAuthProvider
+  providerUserId    String        @map("provider_user_id")
+  emailFromProvider String?       @map("email_from_provider")
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("user_oauth_accounts")
+}
+
+model UserAddress {
+  id          BigInt   @id @default(autoincrement())
+  userId      BigInt   @map("user_id")
+  label       String   @default("Home")
+  addressLine String   @map("address_line")
+  city        String
+  state       String
+  pincode     String
+  latitude    Decimal? @db.Decimal(9, 6)
+  longitude   Decimal? @db.Decimal(9, 6)
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_addresses")
+}
+
+// ---------------------------------------------------------------------------
+// 2. Provider profile
+// ---------------------------------------------------------------------------
+
+model Provider {
+  id                        BigInt                   @id @default(autoincrement())
+  // Nullable: seeded/imported listings exist before their owner claims them.
+  userId                    BigInt?                  @unique @map("user_id")
+  slug                      String                   @unique
+  businessName              String                   @map("business_name")
+  description               String?
+  logoUrl                   String?                  @map("logo_url")
+  coverUrl                  String?                  @map("cover_url")
+  businessType              BusinessType             @default(individual) @map("business_type")
+  yearsExperience           Int?                     @map("years_experience")
+  // Business contact number shown on the profile and dialled by "Call Now".
+  phone                     String
+  email                     String?
+  website                   String?
+  addressLine               String?                  @map("address_line")
+  locality                  String?
+  city                      String
+  state                     String
+  pincode                   String?
+  latitude                  Decimal                  @db.Decimal(9, 6)
+  longitude                 Decimal                  @db.Decimal(9, 6)
+  // PostGIS point maintained by trigger from latitude/longitude; GiST indexed.
+  location                  Unsupported("geography(Point, 4326)")?
+  serviceRadiusKm           Int                      @default(10) @map("service_radius_km")
+  whatsappNumber            String?                  @map("whatsapp_number")
+  acceptsCalls              Boolean                  @default(true) @map("accepts_calls")
+  acceptsWhatsapp           Boolean                  @default(true) @map("accepts_whatsapp")
+  isAvailable               Boolean                  @default(true) @map("is_available")
+  avgRating                 Decimal                  @default(0) @map("avg_rating") @db.Decimal(2, 1)
+  totalReviews              Int                      @default(0) @map("total_reviews")
+  // Provider-entered, labelled "as reported", excluded from ranking.
+  selfReportedCompletedJobs Int?                     @map("self_reported_completed_jobs")
+  // Derived from leads.customer_reported_response; null until enough data.
+  responseSignal            Decimal?                 @map("response_signal") @db.Decimal(4, 3)
+  profileCompletenessPct    Int                      @default(0) @map("profile_completeness_pct")
+  rankingScore              Decimal                  @default(0) @map("ranking_score") @db.Decimal(8, 4)
+  verificationStatus        VerificationStatus       @default(none) @map("verification_status")
+  status                    ProviderStatus           @default(pending)
+  claimedAt                 DateTime?                @map("claimed_at")
+  createdAt                 DateTime                 @default(now()) @map("created_at")
+  updatedAt                 DateTime                 @updatedAt @map("updated_at")
+
+  user              User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  businessHours     ProviderBusinessHour[]
+  serviceAreas      ProviderServiceArea[]
+  portfolio         ProviderPortfolio[]
+  verifications     Verification[]
+  badges            ProviderBadge[]
+  services          ProviderService[]
+  leads             Lead[]
+  reviews           Review[]
+  favorites         Favorite[]
+  subscriptions     ProviderSubscription[]
+  transactions      Transaction[]
+  sponsoredListings SponsoredListing[]
+  claims            ProviderClaim[]
+  dailyStats        ProviderDailyStat[]
+
+  @@index([status, rankingScore])
+  @@index([city])
+  @@map("providers")
+}
+
+model ProviderBusinessHour {
+  id         BigInt   @id @default(autoincrement())
+  providerId BigInt   @map("provider_id")
+  // 0 = Sunday ... 6 = Saturday
+  dayOfWeek  Int      @map("day_of_week") @db.SmallInt
+  // "HH:MM" 24h; null open/close = closed that day
+  openTime   String?  @map("open_time") @db.VarChar(5)
+  closeTime  String?  @map("close_time") @db.VarChar(5)
+  is24x7     Boolean  @default(false) @map("is_24x7")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, dayOfWeek])
+  @@map("provider_business_hours")
+}
+
+model ProviderServiceArea {
+  id         BigInt   @id @default(autoincrement())
+  providerId BigInt   @map("provider_id")
+  areaName   String   @map("area_name")
+  pincode    String?
+  latitude   Decimal? @db.Decimal(9, 6)
+  longitude  Decimal? @db.Decimal(9, 6)
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([areaName])
+  @@map("provider_service_areas")
+}
+
+model ProviderPortfolio {
+  id          BigInt   @id @default(autoincrement())
+  providerId  BigInt   @map("provider_id")
+  categoryId  BigInt?  @map("category_id")
+  title       String
+  description String?
+  imageUrl    String   @map("image_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  provider Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([providerId])
+  @@map("provider_portfolio")
+}
+
+model Verification {
+  id          BigInt           @id @default(autoincrement())
+  providerId  BigInt           @map("provider_id")
+  type        VerificationType
+  status      ReviewableStatus @default(pending)
+  documentUrl String?          @map("document_url")
+  notes       String?
+  verifiedBy  BigInt?          @map("verified_by")
+  verifiedAt  DateTime?        @map("verified_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  verifier User?    @relation("VerificationVerifier", fields: [verifiedBy], references: [id], onDelete: SetNull)
+
+  @@index([providerId])
+  @@index([status])
+  @@map("verifications")
+}
+
+model Badge {
+  id                  BigInt   @id @default(autoincrement())
+  name                String   @unique
+  iconUrl             String?  @map("icon_url")
+  criteriaDescription String?  @map("criteria_description")
+
+  providers ProviderBadge[]
+  plans     SubscriptionPlan[]
+
+  @@map("badges")
+}
+
+model ProviderBadge {
+  id         BigInt   @id @default(autoincrement())
+  providerId BigInt   @map("provider_id")
+  badgeId    BigInt   @map("badge_id")
+  awardedAt  DateTime @default(now()) @map("awarded_at")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, badgeId])
+  @@map("provider_badges")
+}
+
+// Claim-a-business flow: a provider-role user asserts ownership of an existing listing.
+model ProviderClaim {
+  id          BigInt      @id @default(autoincrement())
+  providerId  BigInt      @map("provider_id")
+  userId      BigInt      @map("user_id")
+  method      ClaimMethod @default(phone_otp)
+  status      ClaimStatus @default(pending)
+  documentUrl String?     @map("document_url")
+  otpHash     String?     @map("otp_hash")
+  otpExpires  DateTime?   @map("otp_expires_at")
+  reviewedBy  BigInt?     @map("reviewed_by")
+  reviewedAt  DateTime?   @map("reviewed_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user     User     @relation("ClaimClaimant", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User?    @relation("ClaimReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([providerId])
+  @@index([userId])
+  @@map("provider_claims")
+}
+
+// Per-day counters powering the provider dashboard.
+model ProviderDailyStat {
+  id                BigInt   @id @default(autoincrement())
+  providerId        BigInt   @map("provider_id")
+  date              DateTime @db.Date
+  profileViews      Int      @default(0) @map("profile_views")
+  searchImpressions Int      @default(0) @map("search_impressions")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, date])
+  @@map("provider_daily_stats")
+}
+
+// ---------------------------------------------------------------------------
+// 3. Categories & services (super-admin owned; providers only select)
+// ---------------------------------------------------------------------------
+
+model Category {
+  id            BigInt   @id @default(autoincrement())
+  name          String
+  slug          String   @unique
+  description   String?
+  iconUrl       String?  @map("icon_url")
+  // Frontend picks a component from this key, e.g. repair_appliance, tutor.
+  uiTemplate    String   @default("default") @map("ui_template")
+  displayOrder  Int      @default(0) @map("display_order")
+  isActive      Boolean  @default(true) @map("is_active")
+  providerCount Int      @default(0) @map("provider_count")
+  createdBy     BigInt?  @map("created_by")
+  updatedBy     BigInt?  @map("updated_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  creator           User?               @relation("CategoryCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updater           User?               @relation("CategoryUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+  subcategories     Subcategory[]
+  attributes        CategoryAttribute[]
+  providerServices  ProviderService[]
+  portfolio         ProviderPortfolio[]
+  searchQueries     SearchQuery[]
+  leads             Lead[]
+  sponsoredListings SponsoredListing[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id           BigInt   @id @default(autoincrement())
+  categoryId   BigInt   @map("category_id")
+  name         String
+  slug         String   @unique
+  iconUrl      String?  @map("icon_url")
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdBy    BigInt?  @map("created_by")
+  updatedBy    BigInt?  @map("updated_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  category         Category            @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  creator          User?               @relation("SubcategoryCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updater          User?               @relation("SubcategoryUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+  attributes       CategoryAttribute[]
+  providerServices ProviderService[]
+  searchQueries    SearchQuery[]
+  leads            Lead[]
+
+  @@index([categoryId])
+  @@map("subcategories")
+}
+
+model CategoryAttribute {
+  id            BigInt             @id @default(autoincrement())
+  categoryId    BigInt             @map("category_id")
+  subcategoryId BigInt?            @map("subcategory_id")
+  appliesTo     AttributeAppliesTo @map("applies_to")
+  label         String
+  fieldType     AttributeFieldType @map("field_type")
+  optionsJson   Json?              @map("options_json")
+  isRequired    Boolean            @default(false) @map("is_required")
+  displayOrder  Int                @default(0) @map("display_order")
+  createdBy     BigInt?            @map("created_by")
+
+  category    Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  subcategory Subcategory?     @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  creator     User?            @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  values      AttributeValue[]
+
+  @@index([categoryId])
+  @@map("category_attributes")
+}
+
+model ProviderService {
+  id            BigInt    @id @default(autoincrement())
+  providerId    BigInt    @map("provider_id")
+  categoryId    BigInt    @map("category_id")
+  subcategoryId BigInt?   @map("subcategory_id")
+  startingPrice Decimal?  @map("starting_price") @db.Decimal(10, 2)
+  priceUnit     PriceUnit @default(per_visit) @map("price_unit")
+  isPrimary     Boolean   @default(false) @map("is_primary")
+
+  provider    Provider     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+
+  @@unique([providerId, categoryId, subcategoryId])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@map("provider_services")
+}
+
+model AttributeValue {
+  id          BigInt              @id @default(autoincrement())
+  attributeId BigInt              @map("attribute_id")
+  entityType  AttributeEntityType @map("entity_type")
+  // Polymorphic: leads.id or provider_services.id depending on entity_type.
+  entityId    BigInt              @map("entity_id")
+  value       String
+
+  attribute CategoryAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId])
+  @@map("attribute_values")
+}
+
+// ---------------------------------------------------------------------------
+// 4. Search & contact events
+// ---------------------------------------------------------------------------
+
+model SearchQuery {
+  id                  BigInt   @id @default(autoincrement())
+  userId              BigInt?  @map("user_id")
+  rawQuery            String   @map("raw_query")
+  parsedCategoryId    BigInt?  @map("parsed_category_id")
+  parsedSubcategoryId BigInt?  @map("parsed_subcategory_id")
+  parsedLocationText  String?  @map("parsed_location_text")
+  parsedUrgency       String?  @map("parsed_urgency")
+  latitude            Decimal? @db.Decimal(9, 6)
+  longitude           Decimal? @db.Decimal(9, 6)
+  resultsCount        Int      @default(0) @map("results_count")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  user              User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  parsedCategory    Category?    @relation(fields: [parsedCategoryId], references: [id], onDelete: SetNull)
+  parsedSubcategory Subcategory? @relation(fields: [parsedSubcategoryId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("search_queries")
+}
+
+// A lead is the event of a customer tapping Call or WhatsApp on a provider.
+model Lead {
+  id                         BigInt      @id @default(autoincrement())
+  // Nullable so guest taps are still counted.
+  userId                     BigInt?     @map("user_id")
+  providerId                 BigInt      @map("provider_id")
+  categoryId                 BigInt?     @map("category_id")
+  subcategoryId              BigInt?     @map("subcategory_id")
+  channel                    LeadChannel
+  source                     LeadSource  @default(search)
+  description                String?
+  customerReportedResponse   Boolean?    @map("customer_reported_response")
+  customerReportedResponseAt DateTime?   @map("customer_reported_response_at")
+  createdAt                  DateTime    @default(now()) @map("created_at")
+
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider    Provider     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category    Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  review      Review?
+
+  @@index([providerId, createdAt])
+  @@index([userId])
+  @@map("leads")
+}
+
+// ---------------------------------------------------------------------------
+// 5. Reviews & trust
+// ---------------------------------------------------------------------------
+
+model Review {
+  id             BigInt       @id @default(autoincrement())
+  // Presence = "Verified Contact" badge.
+  leadId         BigInt?      @unique @map("lead_id")
+  providerId     BigInt       @map("provider_id")
+  userId         BigInt       @map("user_id")
+  rating         Int          @db.SmallInt
+  reviewText     String?      @map("review_text")
+  providerReply  String?      @map("provider_reply")
+  providerReplyAt DateTime?   @map("provider_reply_at")
+  status         ReviewStatus @default(published)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  lead     Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  provider Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos   ReviewPhoto[]
+
+  @@unique([providerId, userId])
+  @@index([providerId, status, createdAt])
+  @@map("reviews")
+}
+
+model ReviewPhoto {
+  id       BigInt @id @default(autoincrement())
+  reviewId BigInt @map("review_id")
+  photoUrl String @map("photo_url")
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_photos")
+}
+
+model Favorite {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt   @map("user_id")
+  providerId BigInt   @map("provider_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, providerId])
+  @@map("favorites")
+}
+
+// ---------------------------------------------------------------------------
+// 6. Subscriptions & payments
+// ---------------------------------------------------------------------------
+
+model SubscriptionPlan {
+  id              BigInt       @id @default(autoincrement())
+  name            String       @unique
+  price           Decimal      @db.Decimal(10, 2)
+  billingCycle    BillingCycle @default(monthly) @map("billing_cycle")
+  // null = unlimited
+  leadAccessLimit Int?         @map("lead_access_limit")
+  analyticsEnabled Boolean     @default(false) @map("analytics_enabled")
+  // Small factor, never dominant in ranking.
+  rankingBoost    Decimal      @default(0) @map("ranking_boost") @db.Decimal(4, 3)
+  badgeId         BigInt?      @map("badge_id")
+  featuresJson    Json?        @map("features_json")
+  isActive        Boolean      @default(true) @map("is_active")
+
+  badge         Badge?                 @relation(fields: [badgeId], references: [id], onDelete: SetNull)
+  subscriptions ProviderSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model ProviderSubscription {
+  id         BigInt             @id @default(autoincrement())
+  providerId BigInt             @map("provider_id")
+  planId     BigInt             @map("plan_id")
+  startDate  DateTime           @map("start_date") @db.Date
+  endDate    DateTime?          @map("end_date") @db.Date
+  status     SubscriptionStatus @default(active)
+  autoRenew  Boolean            @default(true) @map("auto_renew")
+
+  provider Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  plan     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([providerId, status])
+  @@map("provider_subscriptions")
+}
+
+model Transaction {
+  id           BigInt            @id @default(autoincrement())
+  providerId   BigInt            @map("provider_id")
+  type         TransactionType
+  amount       Decimal           @db.Decimal(10, 2)
+  status       TransactionStatus @default(pending)
+  gatewayTxnId String?           @map("gateway_txn_id")
+  invoiceUrl   String?           @map("invoice_url")
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, createdAt])
+  @@map("transactions")
+}
+
+model SponsoredListing {
+  id             BigInt          @id @default(autoincrement())
+  providerId     BigInt          @map("provider_id")
+  categoryId     BigInt          @map("category_id")
+  targetLocation String?         @map("target_location")
+  startDate      DateTime        @map("start_date") @db.Date
+  endDate        DateTime        @map("end_date") @db.Date
+  budget         Decimal         @db.Decimal(10, 2)
+  amountSpent    Decimal         @default(0) @map("amount_spent") @db.Decimal(10, 2)
+  impressions    Int             @default(0)
+  clicks         Int             @default(0)
+  status         SponsoredStatus @default(active)
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId, status])
+  @@map("sponsored_listings")
+}
+
+// ---------------------------------------------------------------------------
+// 7. Notifications & platform admin
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  title     String
+  body      String
+  type      String
+  isRead    Boolean  @default(false) @map("is_read")
+  dataJson  Json?    @map("data_json")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model DeviceToken {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  token     String   @unique
+  platform  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("device_tokens")
+}
+
+model AdminActivityLog {
+  id          BigInt   @id @default(autoincrement())
+  adminId     BigInt   @map("admin_id")
+  action      String
+  targetType  String   @map("target_type")
+  targetId    BigInt?  @map("target_id")
+  detailsJson Json?    @map("details_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId])
+  @@map("admin_activity_logs")
+}
+
+model ReportFlag {
+  id             BigInt         @id @default(autoincrement())
+  reporterUserId BigInt?        @map("reporter_user_id")
+  targetType     FlagTargetType @map("target_type")
+  targetId       BigInt         @map("target_id")
+  reason         String
+  status         FlagStatus     @default(open)
+  resolvedBy     BigInt?        @map("resolved_by")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  reporter User? @relation("ReportReporter", fields: [reporterUserId], references: [id], onDelete: SetNull)
+  resolver User? @relation("ReportResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([targetType, targetId])
+  @@map("reports_flags")
+}
+
+model Setting {
+  id        BigInt   @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model ContactMessage {
+  id        BigInt               @id @default(autoincrement())
+  userId    BigInt?              @map("user_id")
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  status    ContactMessageStatus @default(new)
+  createdAt DateTime             @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("contact_messages")
+}
