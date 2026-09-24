@@ -2,7 +2,7 @@
 
 A hyperlocal service directory: customers find trusted local providers (TV repair, plumbers, tutors...) near them and call or WhatsApp them directly. Providers claim or create a listing and manage it from their own portal.
 
-The repository is a pnpm workspace with four separate apps:
+The repository is a pnpm workspace with four separate apps, plus a mobile app in `mobile/`:
 
 | Folder | App | Stack | Dev URL |
 | --- | --- | --- | --- |
@@ -10,6 +10,7 @@ The repository is a pnpm workspace with four separate apps:
 | `web/` | Customer website | Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui | http://localhost:3000 |
 | `provider/` | Provider portal | React 19 + Vite, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query | http://localhost:5173 |
 | `super-admin/` | Admin console for the DialNFind team | React 19 + Vite, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, Recharts | http://localhost:5174 |
+| `mobile/` | Customer app for Android and iOS | Expo SDK 57, React Native 0.86, Expo Router, NativeWind, Zustand, MMKV, TanStack Query | Expo dev server on :8081 |
 
 The architecture, schema decisions and API list are in [docs/PLAN.md](docs/PLAN.md).
 
@@ -73,6 +74,28 @@ When claiming a listing by phone, the verification code in development is `12345
 **Plugins.** Razorpay, MSG91, WhatsApp Business, Google Maps, Google and Apple sign-in, SMTP email, Firebase Cloud Messaging and Google Analytics are configured from Plugins and stored in the `settings` table as `plugin.<name>.<field>`. Secret values are write-only: the API only returns them masked (`••••1234`) and the audit log records that a secret changed, never its value. Sign-in with Google or Apple turns on when either its environment variable or its plugin is set.
 
 The console runs on port 5174, which is already in the API's default `CORS_ORIGINS`.
+
+## Mobile app
+
+`mobile/` is the customer app for Android and iOS. It shows the same listings as the website and works without an account: a branded splash, then Home. The profile button at the top right opens sign-in for guests and the profile for signed-in users. The bottom tabs are Home, Favorites, My reviews and Settings.
+
+- **Screens**: Home (location picker, search, categories, top rated nearby), Search (suggestions, recent and popular searches, filters, sort, infinite list), Category (subcategory chips), Provider profile (services and prices, hours, areas, past work, reviews, Call and WhatsApp), Write or edit a review, Sign in, Create account, Profile, Help centre (FAQ, email and call support).
+- **Settings**: light, dark or system theme; help and support; terms and privacy links (shown when set in the admin console's Settings, read from the public `GET /app-config`); sign out; delete account (`DELETE /auth/me`, customers only, confirmed with the password).
+- **Design system**: tokens in `src/constants` (`colors.ts`, `spacing.ts`, `typography.ts`, `theme.ts`) drive the `App*` components in `src/components/design-system` through `useTheme()`, and the Tailwind config is generated from the same tokens, so NativeWind classes follow light and dark mode. Layout adapts from small phones to tablets (one to three columns).
+- **State**: Zustand stores read MMKV synchronously on start (sign-in token, profile, theme, location, recent searches); server data goes through TanStack Query.
+- **Version**: built on Expo SDK 57, the latest stable release. SDK 58 is still a preview; moving to it later is `npx expo install expo@^58 --fix`.
+
+It is a standalone npm project (not part of the pnpm workspace) so Metro resolves packages normally:
+
+```bash
+cd mobile
+npm install
+cp .env.example .env      # EXPO_PUBLIC_API_URL must be reachable from the phone
+npx expo run:android      # or run:ios; MMKV needs a development build, not Expo Go
+npm run typecheck && npm run lint
+```
+
+On a real phone, point `EXPO_PUBLIC_API_URL` at your computer's LAN address (for example `http://192.168.1.20:4000/api/v1`); the Android emulator reaches the host at `10.0.2.2`. Set the API's `PUBLIC_URL` to the same host so uploaded photos load on the device. `npx expo start --web` runs it in a browser; `http://localhost:8081` is in the API's default `CORS_ORIGINS` for that.
 
 ## What is stubbed
 

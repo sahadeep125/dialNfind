@@ -6,6 +6,7 @@ import { parse } from "../lib/validate.js";
 import { optionalAuth } from "../middleware/auth.js";
 import { notify } from "../services/notify.js";
 import { supportStaffIds, ticketRef } from "../services/tickets.js";
+import { SETTING_FIELDS } from "../services/settings.js";
 
 export const miscRouter = Router();
 
@@ -42,6 +43,15 @@ miscRouter.post("/contact", optionalAuth, async (req, res) => {
   });
   for (const id of await supportStaffIds(null)) void notify(id, "support", `New ticket ${ticketRef(ticket.id)}`, ticket.subject, { ticketId: Number(ticket.id) });
   res.status(201).json({ ok: true, id: ticket.id, reference: ticketRef(ticket.id) });
+});
+
+const PUBLIC_SETTINGS = ["site_name", "support_email", "support_phone", "support_hours", "terms_url", "privacy_url"] as const;
+
+/** GET /app-config — public settings the apps show (support contacts, legal links), edited from the admin console. */
+miscRouter.get("/app-config", async (_req, res) => {
+  const rows = await prisma.setting.findMany({ where: { key: { in: [...PUBLIC_SETTINGS] } } });
+  const values = new Map(rows.map((r) => [r.key, r.value]));
+  res.json({ config: Object.fromEntries(PUBLIC_SETTINGS.map((k) => [k, values.get(k) ?? SETTING_FIELDS.get(k)?.default ?? null])) });
 });
 
 miscRouter.get("/plans", async (_req, res) => {

@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "DialNFind",
+    "slug": "dialnfind",
+    "scheme": "dialnfind",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dialnfind.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "DialNFind uses your location to show service providers near you."
+      }
+    },
+    "android": {
+      "package": "com.dialnfind.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#355EDD",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#355EDD",
+          "dark": {
+            "backgroundColor": "#0B0F18"
+          }
+        }
+      ],
+      "expo-font",
+      "expo-status-bar",
+      "expo-image",
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "DialNFind uses your location to show service providers near you."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

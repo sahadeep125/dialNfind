@@ -10,6 +10,7 @@ dialNfind/
   web/        Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui (port 3000)
   provider/   React (Vite) + TypeScript + Tailwind CSS + shadcn/ui         (port 5173)
   super-admin/ React (Vite) + TypeScript + Tailwind CSS + shadcn/ui        (port 5174)
+  mobile/     Expo SDK 57 + React Native + Expo Router + NativeWind          (customer app)
   docs/       plan, API reference
 ```
 
@@ -24,6 +25,7 @@ The root is a pnpm workspace so `pnpm install` once installs all four, but each 
 4. **Web** — customer-facing Next.js site.
 5. **Provider** — provider onboarding and dashboard SPA.
 6. **Super admin** — admin console for the DialNFind team, with roles per staff member.
+7. **Mobile** — customer app for Android and iOS on the same API.
 
 ## 1. Schema
 
@@ -111,6 +113,15 @@ Categories (subcategories, attributes, icons), Badges, Reviews and reports, Lead
 billing (plans, subscribers, payments), Promotions, Users, Support tickets, Announcements,
 Settings, Plugins, Team and roles, Audit log, My account. The sidebar only shows the sections
 the member's role allows, and the API checks the same permission on every `/admin` path.
+
+## 7. Mobile (Expo)
+
+Customer app with the website's listings; guests can browse, search and call. Splash, then Home
+with a profile button (sign in for guests). Tabs: Home, Favorites, My reviews, Settings. Also
+Search, Category, Provider profile, Write review, Sign in, Create account, Profile, Help. Theme
+tokens drive both the `App*` design-system components and the NativeWind Tailwind config. The API
+gained `GET /app-config` (support contacts and legal links from Settings) and `DELETE /auth/me`
+(customer account deletion) for it. Standalone npm project in `mobile/`, outside the workspace.
 
 ## Stubbed until credentials exist
 

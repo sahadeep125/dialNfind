@@ -7,7 +7,8 @@ import { email, optionalPhone, optionalUrl, password, personName } from "../lib/
 import { prisma } from "../lib/prisma.js";
 import { parse } from "../lib/validate.js";
 import { signToken } from "../lib/jwt.js";
-import { badRequest, conflict, notConfigured, unauthorized } from "../lib/errors.js";
+import { badRequest, conflict, forbidden, notConfigured, unauthorized } from "../lib/errors.js";
+import { recalculateProvider } from "../services/ranking.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { env } from "../env.js";
 
@@ -103,6 +104,36 @@ authRouter.post("/change-password", requireAuth, async (req, res) => {
     }
   }
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(body.newPassword, 10) } });
+  res.json({ ok: true });
+});
+
+const deleteSchema = z.object({ password: z.string().optional() });
+
+// Account deletion for customers (required by the app stores). The row is kept so leads and audit
+// history stay consistent, but everything that identifies the person is cleared and they can no
+// longer sign in. Their reviews are removed and the affected providers' ratings recalculated.
+authRouter.delete("/me", requireAuth, async (req, res) => {
+  const body = parse(deleteSchema, req.body ?? {});
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id } });
+  if (user.role !== "customer") throw forbidden("Business and staff accounts are closed by contacting DialNFind support");
+  if (user.passwordHash && (!body.password || !(await bcrypt.compare(body.password, user.passwordHash)))) {
+    throw badRequest("Password is incorrect", [{ path: "password", message: "Password is incorrect" }]);
+  }
+  const reviews = await prisma.review.findMany({ where: { userId: user.id }, select: { providerId: true, photos: { select: { photoUrl: true } } } });
+  await prisma.$transaction([
+    prisma.favorite.deleteMany({ where: { userId: user.id } }),
+    prisma.userAddress.deleteMany({ where: { userId: user.id } }),
+    prisma.deviceToken.deleteMany({ where: { userId: user.id } }),
+    prisma.userOAuthAccount.deleteMany({ where: { userId: user.id } }),
+    prisma.review.deleteMany({ where: { userId: user.id } }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: { status: "deleted", name: "Deleted user", email: `deleted-${user.id}@deleted.invalid`, phone: null, passwordHash: null, profilePhotoUrl: null },
+    }),
+  ]);
+  for (const r of reviews) for (const p of r.photos) void storage.remove(p.photoUrl);
+  for (const providerId of new Set(reviews.map((r) => r.providerId))) await recalculateProvider(providerId);
+  if (user.profilePhotoUrl) void storage.remove(user.profilePhotoUrl);
   res.json({ ok: true });
 });
 
