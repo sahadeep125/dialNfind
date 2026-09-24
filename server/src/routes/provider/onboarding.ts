@@ -159,6 +159,41 @@ onboardingRouter.get("/claims/search", async (req, res) => {
   });
 });
 
+/** GET /provider/claims/listing/:id — a single listing, for claim links coming from the website. */
+onboardingRouter.get("/claims/listing/:id", async (req, res) => {
+  const p = await prisma.provider.findUnique({
+    where: { id: idParam(req.params.id) },
+    select: {
+      id: true,
+      businessName: true,
+      slug: true,
+      locality: true,
+      city: true,
+      phone: true,
+      userId: true,
+      status: true,
+      avgRating: true,
+      totalReviews: true,
+      services: { take: 1, orderBy: { isPrimary: "desc" }, include: { category: { select: { name: true } } } },
+    },
+  });
+  if (!p || p.status !== "active") throw notFound("Listing not found");
+  res.json({
+    listing: {
+      id: p.id,
+      businessName: p.businessName,
+      slug: p.slug,
+      locality: p.locality,
+      city: p.city,
+      phone: maskPhone(p.phone),
+      category: p.services[0]?.category.name ?? null,
+      avgRating: p.avgRating,
+      totalReviews: p.totalReviews,
+      isClaimed: p.userId !== null,
+    },
+  });
+});
+
 const startClaimSchema = z.object({
   providerId: z.number().int().positive(),
   method: z.enum(["phone_otp", "document"]).default("phone_otp"),
