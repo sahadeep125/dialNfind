@@ -90,7 +90,7 @@ searchRouter.get("/suggest", async (req, res) => {
 /** GET /search/popular — most searched terms over the last 30 days, for the home page. */
 searchRouter.get("/popular", async (_req, res) => {
   const rows = await prisma.$queryRaw<{ term: string; count: bigint }[]>`
-    SELECT LOWER(raw_query) AS term, COUNT(*)::bigint AS count FROM search_queries
+    SELECT MODE() WITHIN GROUP (ORDER BY raw_query) AS term, COUNT(*)::bigint AS count FROM search_queries
     WHERE created_at > NOW() - INTERVAL '30 days'
     GROUP BY LOWER(raw_query) ORDER BY count DESC LIMIT 8`;
   res.json({ terms: rows.map((r) => ({ term: r.term, count: Number(r.count) })) });
