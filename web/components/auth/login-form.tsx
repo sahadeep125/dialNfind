@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -10,6 +10,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
+import { SocialButtons } from "@/components/auth/social-buttons";
 import { email } from "@/lib/validation";
 
 const schema = z.object({
@@ -22,6 +23,10 @@ export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/dashboard";
+  const onSocialSignedIn = useCallback(() => {
+    router.push(next.startsWith("/") ? next : "/dashboard");
+    router.refresh();
+  }, [router, next]);
   const [error, setError] = useState<string | null>(null);
   const [show, setShow] = useState(false);
   const { register, handleSubmit, formState } = useForm<Values>({ resolver: zodResolver(schema), mode: "onTouched", defaultValues: { email: "", password: "" } });
@@ -45,6 +50,9 @@ export function LoginForm() {
 
   return (
     <>
+      <div className="mb-5">
+        <SocialButtons mode="signin" onError={setError} onSignedIn={onSocialSignedIn} />
+      </div>
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         <FormAlert message={error} />
         <Field id="email" label="Email" error={errors.email}>

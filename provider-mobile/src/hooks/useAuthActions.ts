@@ -1,6 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
+import {
+  socialSignOut,
+  type ApplePayload,
+  type GooglePayload,
+} from "@/services/socialAuth";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { SessionUser } from "@/types";
 import { normalizePhone } from "@/utils/validation";
@@ -18,6 +23,14 @@ interface RegisterInput extends LoginInput {
 interface AuthResponse {
   token: string;
   user: SessionUser;
+}
+
+type SocialInput =
+  | { provider: "google"; payload: GooglePayload }
+  | { provider: "apple"; payload: ApplePayload };
+
+interface SocialResponse extends AuthResponse {
+  isNewUser: boolean;
 }
 
 /** Sign in, create a business account, swap in a new token after onboarding, and sign out. */
@@ -60,6 +73,20 @@ export function useAuthActions() {
     },
   });
 
+  /** Google / Apple: the API verifies the ID token, then signs in, links or creates a business account. */
+  const socialLogin = useMutation<SocialResponse, Error, SocialInput>({
+    mutationFn: ({ provider, payload }: SocialInput): Promise<SocialResponse> =>
+      api<SocialResponse>(`/auth/${provider}`, {
+        method: "POST",
+        token: null,
+        body: { ...payload, role: "provider" },
+      }),
+    onSuccess: ({ token, user }: SocialResponse) => {
+      qc.clear();
+      signIn(token, user);
+    },
+  });
+
   /** Onboarding and claims can return a fresh token that carries the new provider role. */
   const applyToken = async (token: string | null): Promise<void> => {
     if (token) setToken(token);
@@ -71,8 +98,9 @@ export function useAuthActions() {
     // Ends the session on the server too; the request carries the token before the store clears it.
     void api("/auth/logout", { method: "POST" }).catch(() => undefined);
     signOutStore();
+    void socialSignOut();
     qc.clear();
   };
 
-  return { login, register, applyToken, signOut };
+  return { login, register, socialLogin, applyToken, signOut };
 }

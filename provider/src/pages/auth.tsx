@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,7 @@ import type { User } from "@/lib/types";
 import { WEB_URL } from "@/lib/config";
 import { email, normalizePhone, optionalPhone, password, personName } from "@/lib/validation";
 import { Field, fieldA11y, FormAlert } from "@/components/form";
+import { SocialButtons } from "@/components/social-buttons";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,8 @@ export function LoginPage() {
   const [params] = useSearchParams();
   const next = params.get("next") ?? "/";
   const [error, setError] = useState<string | null>(null);
+  // New accounts go through setup first; the dashboard gate would send them there anyway.
+  const onSocialSignedIn = useCallback(({ isNewUser }: { isNewUser: boolean }) => navigate(isNewUser ? "/start" : next, { replace: true }), [navigate, next]);
   const { register, handleSubmit, formState } = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: "", password: "" } });
   const { errors, isSubmitting } = formState;
 
@@ -72,6 +75,9 @@ export function LoginPage() {
 
   return (
     <Shell title="Log in to your business" subtitle="Manage your listing, leads and reviews.">
+      <div className="mb-5">
+        <SocialButtons mode="signin" onError={setError} onSignedIn={onSocialSignedIn} />
+      </div>
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         <FormAlert message={error} />
         <Field id="email" label="Email" error={errors.email}>
@@ -127,6 +133,7 @@ export function RegisterPage() {
   const [params] = useSearchParams();
   const next = params.get("next") ?? "/start";
   const [error, setError] = useState<string | null>(null);
+  const onSocialSignedIn = useCallback(({ isNewUser }: { isNewUser: boolean }) => navigate(isNewUser ? "/start" : next, { replace: true }), [navigate, next]);
   const { register, handleSubmit, control, formState } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: "", email: "", phone: "", password: "", acceptTerms: false as unknown as true },
@@ -150,6 +157,9 @@ export function RegisterPage() {
 
   return (
     <Shell title="Create your business account" subtitle="Free to join. Takes about three minutes to get listed.">
+      <div className="mb-5">
+        <SocialButtons mode="signup" onError={setError} onSignedIn={onSocialSignedIn} />
+      </div>
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         <FormAlert message={error} />
         <Field id="name" label="Your name" error={errors.name} required>

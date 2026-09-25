@@ -11,10 +11,12 @@ import { router } from "expo-router";
 import { Mail } from "lucide-react-native";
 
 import { AppButton, AppCallout, AppInput, AppPressable, AppText } from "@/components/design-system";
+import { SocialSignInButtons } from "@/components/auth";
 import { PasswordInput } from "@/components/forms";
 import { BrandMark, Screen } from "@/components/layout";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useTheme } from "@/hooks/useTheme";
+import type { SessionUser } from "@/types";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
 import { openWebPage } from "@/services/links";
@@ -48,6 +50,13 @@ export default function LoginScreen() {
     );
   };
 
+  // The home screen sends new business accounts through setup.
+  const onSocialSignedIn = ({ user, isNewUser }: { user: SessionUser; isNewUser: boolean }): void => {
+    const first = user.name.split(" ")[0];
+    toast(isNewUser ? `Welcome to DialNFind, ${first}` : `Welcome back, ${first}`, "success");
+    router.replace("/");
+  };
+
   return (
     <Screen edges={["top", "bottom"]}>
       <KeyboardAvoidingView
@@ -75,6 +84,8 @@ export default function LoginScreen() {
           </View>
 
           {formError ? <AppCallout tone="danger">{formError}</AppCallout> : null}
+
+          <SocialSignInButtons mode="signin" onError={setFormError} onSignedIn={onSocialSignedIn} />
 
           <AppInput
             label="Email"

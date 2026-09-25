@@ -21,11 +21,19 @@ export default async function AccountPage() {
       <Panel title="Saved addresses" description="Used as a starting point when searching for providers.">
         <AddressManager addresses={addresses} />
       </Panel>
-      <Panel title="Password" description="Use at least 8 characters.">
-        <PasswordForm />
+      <Panel title="Password" description={passwordDescription(user.hasPassword, user.linkedAccounts)}>
+        <PasswordForm hasPassword={user.hasPassword} />
       </Panel>
     </div>
   );
+}
+
+const PROVIDER_NAMES = { google: "Google", apple: "Apple" } as const;
+
+function passwordDescription(hasPassword: boolean, linked: ("google" | "apple")[]) {
+  const via = linked.map((p) => PROVIDER_NAMES[p]).join(" and ");
+  if (!hasPassword) return `You sign in with ${via}. Set a password to also log in with your email.`;
+  return via ? `Use at least 8 characters. You can also sign in with ${via}.` : "Use at least 8 characters.";
 }
 
 function Panel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {

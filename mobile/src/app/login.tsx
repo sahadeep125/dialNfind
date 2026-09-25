@@ -11,10 +11,11 @@ import { router } from "expo-router";
 import { Mail } from "lucide-react-native";
 
 import { AppButton, AppCallout, AppInput, AppPressable, AppText } from "@/components/design-system";
-import { PasswordInput } from "@/components/auth";
+import { PasswordInput, SocialSignInButtons } from "@/components/auth";
 import { BrandMark, Screen, ScreenHeader } from "@/components/layout";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useTheme } from "@/hooks/useTheme";
+import type { SessionUser } from "@/types";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
 import { openWebPage } from "@/services/links";
@@ -31,6 +32,12 @@ export default function LoginScreen() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const close = (): void => (router.canGoBack() ? router.back() : router.replace("/"));
+
+  const onSocialSignedIn = ({ user, isNewUser }: { user: SessionUser; isNewUser: boolean }): void => {
+    const first = user.name.split(" ")[0];
+    toast(isNewUser ? `Welcome to DialNFind, ${first}` : `Welcome back, ${first}`, "success");
+    close();
+  };
 
   const submit = (): void => {
     const next = { email: validateEmail(email), password: password ? null : "Enter your password" };
@@ -74,6 +81,8 @@ export default function LoginScreen() {
           </View>
 
           {formError ? <AppCallout tone="danger">{formError}</AppCallout> : null}
+
+          <SocialSignInButtons mode="signin" onError={setFormError} onSignedIn={onSocialSignedIn} />
 
           <AppInput
             label="Email"

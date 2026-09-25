@@ -113,6 +113,9 @@ importers:
       helmet:
         specifier: ^8.1.0
         version: 8.3.0
+      jose:
+        specifier: ^6.2.12
+        version: 6.2.12
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.3
@@ -2231,6 +2234,9 @@ packages:
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
+
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
   jsonwebtoken@9.0.3:
     resolution: {integrity: sha512-MT/xP0CrubFRNLNKvxJ2BYfy53Zkm++5bX9dtuPbqAeQpTVe0MQTFhao8+Cp//EmJp244xt6Drw/GVEGCUj40g==}
@@ -4613,6 +4619,8 @@ snapshots:
   is-promise@4.0.0: {}
 
   jiti@2.7.0: {}
+
+  jose@6.2.12: {}
 
   jsonwebtoken@9.0.3:
     dependencies:

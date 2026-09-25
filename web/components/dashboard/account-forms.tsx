@@ -84,30 +84,37 @@ export function ProfileForm({ name, email, phone, profilePhotoUrl }: { name: str
   );
 }
 
-const passwordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Enter your current password"),
-    newPassword: password,
-    confirmPassword: z.string().min(1, "Re-enter the new password"),
-  })
-  .refine((v) => v.newPassword === v.confirmPassword, { message: "The passwords do not match", path: ["confirmPassword"] })
-  .refine((v) => v.newPassword !== v.currentPassword, { message: "Choose a password different from your current one", path: ["newPassword"] });
-type PasswordValues = z.infer<typeof passwordSchema>;
+// Accounts made with Google or Apple have no password yet; they set one without a "current password".
+const passwordSchema = (hasPassword: boolean) =>
+  z
+    .object({
+      currentPassword: hasPassword ? z.string().min(1, "Enter your current password") : z.string(),
+      newPassword: password,
+      confirmPassword: z.string().min(1, "Re-enter the new password"),
+    })
+    .refine((v) => v.newPassword === v.confirmPassword, { message: "The passwords do not match", path: ["confirmPassword"] })
+    .refine((v) => !hasPassword || v.newPassword !== v.currentPassword, { message: "Choose a password different from your current one", path: ["newPassword"] });
+type PasswordValues = z.infer<ReturnType<typeof passwordSchema>>;
 
-export function PasswordForm() {
+export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [show, setShow] = useState(false);
   const empty: PasswordValues = { currentPassword: "", newPassword: "", confirmPassword: "" };
-  const { register, handleSubmit, reset, formState } = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema), mode: "onTouched", defaultValues: empty });
+  const { register, handleSubmit, reset, formState } = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema(hasPassword)), mode: "onTouched", defaultValues: empty });
   const { errors, isSubmitting } = formState;
   const type = show ? "text" : "password";
 
   const onSubmit = handleSubmit(async (v) => {
     setError(null);
     try {
-      await clientApi("/auth/change-password", { method: "POST", body: JSON.stringify({ currentPassword: v.currentPassword, newPassword: v.newPassword }) });
-      toast.success("Password changed");
+      await clientApi("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword: hasPassword ? v.currentPassword : undefined, newPassword: v.newPassword }),
+      });
+      toast.success(hasPassword ? "Password changed" : "Password set. You can now also log in with your email.");
       reset(empty);
+      if (!hasPassword) router.refresh();
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -120,9 +127,11 @@ export function PasswordForm() {
           <FormAlert message={error} />
         </div>
       )}
-      <Field id="currentPassword" label="Current password" error={errors.currentPassword} required className="sm:col-span-2 sm:max-w-[calc(50%-0.625rem)]">
-        <Input {...fieldA11y("currentPassword", errors.currentPassword)} type={type} autoComplete="current-password" {...register("currentPassword")} />
-      </Field>
+      {hasPassword && (
+        <Field id="currentPassword" label="Current password" error={errors.currentPassword} required className="sm:col-span-2 sm:max-w-[calc(50%-0.625rem)]">
+          <Input {...fieldA11y("currentPassword", errors.currentPassword)} type={type} autoComplete="current-password" {...register("currentPassword")} />
+        </Field>
+      )}
       <Field id="newPassword" label="New password" error={errors.newPassword} hint="At least 8 characters, with a letter and a number." required>
         <Input {...fieldA11y("newPassword", errors.newPassword, true)} type={type} autoComplete="new-password" {...register("newPassword")} />
       </Field>
@@ -131,7 +140,7 @@ export function PasswordForm() {
       </Field>
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
         <Button type="submit" variant="outline" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="animate-spin" />} Change password
+          {isSubmitting && <Loader2 className="animate-spin" />} {hasPassword ? "Change password" : "Set password"}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={() => setShow((s) => !s)}>
           {show ? <EyeOff /> : <Eye />} {show ? "Hide passwords" : "Show passwords"}

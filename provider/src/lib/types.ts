@@ -6,6 +6,9 @@ export interface User {
   phone: string | null;
   emailVerifiedAt: string | null;
   provider: { id: number; slug: string; businessName: string; status: string } | null;
+  /** False for accounts created with Google or Apple until a password is set. */
+  hasPassword: boolean;
+  linkedAccounts: ("google" | "apple")[];
 }
 
 export interface Subcategory {

@@ -133,7 +133,14 @@ await call("POST", "/provider/sponsored/request", { token: prov, body: { categor
 await call("POST", "/provider/subscription/request", { token: prov, body: { planId: sub.plans[sub.plans.length - 1].id, note: "Smoke test" }, expect: 201, label: "plan request opens a ticket" });
 await call("POST", "/provider/subscription/checkout", { token: prov, body: { planId: 1 }, expect: 404, label: "checkout removed" });
 await call("POST", "/provider/claims/1/verify", { token: prov, body: { code: "123456" }, expect: 404, label: "claim code removed" });
-await call("POST", "/auth/oauth/google", { body: { idToken: "x".repeat(20) }, expect: 404, label: "social sign-in removed" });
+// Social sign-in: forged tokens are refused (501 when GOOGLE_CLIENT_IDS / APPLE_CLIENT_IDS are not set).
+await call("POST", "/auth/google", { body: { idToken: "x".repeat(40) }, expect: [401, 501], label: "forged Google token refused" });
+await call("POST", "/auth/apple", { body: { idToken: "x".repeat(40), role: "provider" }, expect: [401, 501], label: "forged Apple token refused" });
+await call("POST", "/auth/google", { body: {}, expect: [400], label: "missing Google token" });
+await call("POST", "/auth/apple/callback", { body: { state: "evil.abc", id_token: "x" }, expect: [400, 501], label: "Apple callback only returns to our apps" });
+await call("POST", "/auth/apple/notifications", { body: { payload: "x".repeat(40) }, expect: [400, 501], label: "unsigned Apple notification refused" });
+const meUser = (await call("GET", "/auth/me", { token: cust })).user;
+if (meUser.hasPassword !== true || !Array.isArray(meUser.linkedAccounts)) { fail++; results.push("FAIL /auth/me should report hasPassword and linkedAccounts"); } else pass++;
 const sp = (await call("GET", "/provider/sponsored", { token: prov })).listings[0];
 await call("PATCH", `/provider/sponsored/${sp.id}`, { token: prov, body: { status: "paused" } });
 await call("PATCH", `/provider/sponsored/${sp.id}`, { token: prov, body: { status: "active" } });

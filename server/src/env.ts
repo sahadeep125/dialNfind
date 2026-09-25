@@ -8,6 +8,10 @@ function required(name: string, fallback?: string): string {
   return value;
 }
 
+function list(value: string | undefined): string[] {
+  return (value ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? 4000),
@@ -18,10 +22,7 @@ export const env = {
   staffSessionHours: Number(process.env.STAFF_SESSION_HOURS ?? 12),
   /** Scales every rate limit (2 doubles them). 0 turns rate limiting off, for load tests only. */
   rateLimitMultiplier: Number(process.env.RATE_LIMIT_MULTIPLIER ?? 1),
-  corsOrigins: (process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:5173,http://localhost:5174")
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean),
+  corsOrigins: list(process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:5173,http://localhost:5174"),
   timezone: process.env.APP_TIMEZONE ?? "Asia/Kolkata",
   /** Scheduled jobs (plan expiry, reminders, nightly ranking). Turn on in exactly one API instance. */
   runJobs: process.env.RUN_JOBS === "true",
@@ -47,6 +48,22 @@ export const env = {
     userAgent: process.env.GEOCODER_USER_AGENT ?? "DialNFind/1.0 (support@dialnfind.com)",
     country: process.env.GEOCODER_COUNTRY ?? "in",
     enabled: process.env.GEOCODER_ENABLED !== "false",
+  },
+  /**
+   * Sign in with Google and Apple. Each is switched on by setting its client IDs; its endpoints answer 501 otherwise.
+   * Client IDs are the accepted token audiences: every app (bundle ID / OAuth client) that can sign in.
+   */
+  oauth: {
+    googleClientIds: list(process.env.GOOGLE_CLIENT_IDS),
+    appleClientIds: list(process.env.APPLE_CLIENT_IDS),
+    /** Services ID used by the websites and the Android web flow. Must also be in APPLE_CLIENT_IDS. */
+    appleServicesId: process.env.APPLE_SERVICES_ID ?? "",
+    /** Sign in with Apple key, used to revoke access when an account is deleted (App Store requirement). */
+    appleTeamId: process.env.APPLE_TEAM_ID ?? "",
+    appleKeyId: process.env.APPLE_KEY_ID ?? "",
+    applePrivateKey: (process.env.APPLE_PRIVATE_KEY ?? "").replace(/\\n/g, "\n"),
+    /** App URL schemes the Android Apple sign-in callback may send people back to. */
+    appRedirectSchemes: list(process.env.APPLE_APP_REDIRECT_SCHEMES ?? "dialnfind,dialnfind-business"),
   },
   uploadDir: process.env.UPLOAD_DIR ?? "uploads",
   /** ID proofs, ownership documents and support attachments. Never served publicly; see lib/private-files.ts. */

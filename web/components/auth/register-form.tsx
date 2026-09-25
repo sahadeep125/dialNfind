@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
+import { SocialButtons } from "@/components/auth/social-buttons";
 import { email, normalizePhone, optionalPhone, password, personName } from "@/lib/validation";
 
 const schema = z.object({
@@ -26,6 +27,10 @@ export function RegisterForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/dashboard";
+  const onSocialSignedIn = useCallback(() => {
+    router.push(next.startsWith("/") ? next : "/dashboard");
+    router.refresh();
+  }, [router, next]);
   const [error, setError] = useState<string | null>(null);
   const [show, setShow] = useState(false);
   const { register, control, handleSubmit, formState } = useForm<Values>({
@@ -59,6 +64,9 @@ export function RegisterForm() {
 
   return (
     <>
+      <div className="mb-5">
+        <SocialButtons mode="signup" onError={setError} onSignedIn={onSocialSignedIn} />
+      </div>
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         <FormAlert message={error} />
         <Field id="name" label="Full name" error={errors.name}>

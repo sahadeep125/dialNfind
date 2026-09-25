@@ -13,7 +13,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "DialNFind uses your location to show service providers near you."
       },
-      "appleTeamId": "9HH33XNTUX"
+      "appleTeamId": "9HH33XNTUX",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.dialnfind.app",
@@ -61,6 +62,7 @@
         }
       ],
       "expo-asset",
+      "expo-apple-authentication",
       "./plugins/withSceneLifecycle"
     ],
     "experiments": {

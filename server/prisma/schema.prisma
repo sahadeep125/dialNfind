@@ -210,6 +210,7 @@ model User {
   addresses            UserAddress[]
   tokens               UserToken[]
   sessions             AuthSession[]
+  oauthAccounts        UserOAuthAccount[]
   leadDisputesResolved Lead[]              @relation("LeadDisputeResolver")
   provider             Provider?
   leads                Lead[]
@@ -252,6 +253,32 @@ model AuthSession {
 
   @@index([userId])
   @@map("auth_sessions")
+}
+
+enum OAuthProvider {
+  google
+  apple
+}
+
+// A Google or Apple identity that can sign in to a user. One user can have several; `sub` is unique per provider.
+model UserOAuthAccount {
+  id             BigInt        @id @default(autoincrement())
+  userId         BigInt        @map("user_id")
+  provider       OAuthProvider
+  providerUserId String        @map("provider_user_id")
+  // Email the provider reported (may be an Apple private relay address).
+  email          String?
+  // Apple only: the app or Services ID the token was issued to, and the refresh token used to revoke access on deletion.
+  clientId       String?       @map("client_id")
+  refreshToken   String?       @map("refresh_token")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  lastUsedAt     DateTime      @default(now()) @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("user_oauth_accounts")
 }
 
 enum UserTokenType {

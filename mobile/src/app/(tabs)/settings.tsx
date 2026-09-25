@@ -75,12 +75,15 @@ export default function SettingsScreen() {
     }
   };
 
+  // Accounts made with Google or Apple have no password to confirm with.
+  const needsPassword = user?.hasPassword !== false;
+
   const submitDelete = (): void => {
-    if (!password) {
+    if (needsPassword && !password) {
       setPasswordError("Enter your password to confirm");
       return;
     }
-    deleteAccount.mutate(password, {
+    deleteAccount.mutate(needsPassword ? password : undefined, {
       onSuccess: () => {
         setDeleting(false);
         setPassword("");
@@ -283,14 +286,16 @@ export default function SettingsScreen() {
           <AppText tone="secondary">
             Your profile, favorites and reviews will be removed. This cannot be undone.
           </AppText>
-          <PasswordInput
-            label="Password"
-            value={password}
-            onChangeText={(v) => (setPassword(v), setPasswordError(null))}
-            error={passwordError}
-            placeholder="Enter your password"
-            onSubmitEditing={submitDelete}
-          />
+          {needsPassword ? (
+            <PasswordInput
+              label="Password"
+              value={password}
+              onChangeText={(v) => (setPassword(v), setPasswordError(null))}
+              error={passwordError}
+              placeholder="Enter your password"
+              onSubmitEditing={submitDelete}
+            />
+          ) : null}
           <View style={styles.row}>
             <AppButton variant="secondary" style={styles.flex} onPress={() => setDeleting(false)}>
               Cancel

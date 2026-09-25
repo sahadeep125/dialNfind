@@ -15,7 +15,8 @@
         "NSPhotoLibraryUsageDescription": "DialNFind Business uses your photos for your logo, cover and past work.",
         "NSCameraUsageDescription": "DialNFind Business uses the camera to photograph your work and documents."
       },
-      "appleTeamId": "9HH33XNTUX"
+      "appleTeamId": "9HH33XNTUX",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.dialnfind.business",
@@ -70,7 +71,8 @@
           "cameraPermission": "DialNFind Business uses the camera to photograph your work and documents."
         }
       ],
-            "./plugins/withSceneLifecycle"
+      "expo-apple-authentication",
+      "./plugins/withSceneLifecycle"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,6 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
+import {
+  socialSignOut,
+  type ApplePayload,
+  type GooglePayload,
+} from "@/services/socialAuth";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { SessionUser } from "@/types";
 import { normalizePhone } from "@/utils/validation";
@@ -18,6 +23,14 @@ interface RegisterInput extends LoginInput {
 interface AuthResponse {
   token: string;
   user: SessionUser;
+}
+
+type SocialInput =
+  | { provider: "google"; payload: GooglePayload }
+  | { provider: "apple"; payload: ApplePayload };
+
+interface SocialResponse extends AuthResponse {
+  isNewUser: boolean;
 }
 
 /** Sign in, create an account and sign out. On success the whole cache refreshes so lists show favorites. */
@@ -59,15 +72,30 @@ export function useAuthActions() {
     },
   });
 
+  /** Google / Apple: the API verifies the ID token, then signs in, links or creates the account. */
+  const socialLogin = useMutation<SocialResponse, Error, SocialInput>({
+    mutationFn: ({ provider, payload }: SocialInput): Promise<SocialResponse> =>
+      api<SocialResponse>(`/auth/${provider}`, {
+        method: "POST",
+        token: null,
+        body: { ...payload, role: "customer" },
+      }),
+    onSuccess: ({ token, user }: SocialResponse) => {
+      signIn(token, user);
+      void qc.invalidateQueries();
+    },
+  });
+
   const signOut = (): void => {
     // Ends the session on the server too; the request carries the token before the store clears it.
     void api("/auth/logout", { method: "POST" }).catch(() => undefined);
     signOutStore();
+    void socialSignOut();
     qc.removeQueries({
       predicate: (q) => ["favorites", "my-reviews", "me"].includes(String(q.queryKey[0])),
     });
     void qc.invalidateQueries();
   };
 
-  return { login, register, signOut };
+  return { login, register, socialLogin, signOut };
 }

@@ -1,11 +1,11 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { storage } from "../storage/index.js";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { email, optionalPhone, optionalUrl, password, personName } from "../lib/rules.js";
 import { prisma } from "../lib/prisma.js";
 import { parse } from "../lib/validate.js";
-import { badRequest, conflict, forbidden, unauthorized } from "../lib/errors.js";
+import { badRequest, conflict, forbidden, notConfigured, unauthorized } from "../lib/errors.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { env } from "../env.js";
 import { sendMail } from "../services/mail.js";
@@ -13,6 +13,8 @@ import { revokeAllSessions, revokeSession, startSession } from "../services/sess
 import { consumeUserToken, issueUserToken } from "../services/user-tokens.js";
 import { limits } from "../lib/rate-limit.js";
 import { anonymiseUser, sendVerificationEmail } from "../services/accounts.js";
+import { appleEnabled, exchangeAppleCode, verifyAppleIdToken, verifyAppleNotification, verifyGoogleIdToken } from "../lib/oauth.js";
+import { signInWithIdentity, storeAppleRefreshToken } from "../services/social-auth.js";
 
 export const authRouter = Router();
 
@@ -27,6 +29,15 @@ const publicUser = {
   createdAt: true,
   provider: { select: { id: true, slug: true, businessName: true, status: true } },
 } as const;
+
+/** The signed-in user as every app sees it, plus how they can sign in (for "set a password" and account deletion). */
+async function sessionUser(id: bigint) {
+  const { passwordHash, oauthAccounts, ...user } = await prisma.user.findUniqueOrThrow({
+    where: { id },
+    select: { ...publicUser, passwordHash: true, oauthAccounts: { select: { provider: true } } },
+  });
+  return { ...user, hasPassword: passwordHash !== null, linkedAccounts: [...new Set(oauthAccounts.map((a) => a.provider))] };
+}
 
 const registerSchema = z.object({
   name: personName,
@@ -51,10 +62,9 @@ authRouter.post("/register", limits.auth, async (req, res) => {
       passwordHash: await bcrypt.hash(body.password, 10),
       termsAcceptedAt: new Date(),
     },
-    select: publicUser,
   });
   void sendVerificationEmail(user.id, user.email, user.name);
-  res.status(201).json({ token: await startSession(user.id, user.role, req), user });
+  res.status(201).json({ token: await startSession(user.id, user.role, req), user: await sessionUser(user.id) });
 });
 
 const loginSchema = z.object({
@@ -70,8 +80,99 @@ authRouter.post("/login", limits.auth, async (req, res) => {
   }
   if (user.status !== "active") throw unauthorized("This account is not active");
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-  const profile = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: publicUser });
-  res.json({ token: await startSession(user.id, user.role, req), user: profile });
+  res.json({ token: await startSession(user.id, user.role, req), user: await sessionUser(user.id) });
+});
+
+// Sign in with Google / Apple ---------------------------------------------------------------------
+// Apps get an ID token from Google or Apple and send it here. We check it against the provider's keys,
+// then sign in to the linked account, link an account with the same verified email, or create one.
+
+const socialRole = z.enum(["customer", "provider"]).default("customer");
+const idToken = z.string().min(20).max(5000);
+const rawNonce = z.string().min(16).max(200).optional();
+
+authRouter.post("/google", limits.auth, async (req, res) => {
+  const body = parse(z.object({ idToken, nonce: rawNonce, role: socialRole }), req.body);
+  const identity = await verifyGoogleIdToken(body.idToken, body.nonce);
+  const { user, isNewUser } = await signInWithIdentity({ provider: "google", identity, role: body.role });
+  res.status(isNewUser ? 201 : 200).json({ token: await startSession(user.id, user.role, req), user: await sessionUser(user.id), isNewUser });
+});
+
+const appleSchema = z.object({
+  idToken,
+  nonce: rawNonce,
+  /** One-time code from the same sign-in; exchanged for a refresh token so access can be revoked on deletion. */
+  authorizationCode: z.string().min(10).max(1000).optional(),
+  /** The redirect URI used on the web and Android flows (Apple needs it again for the code exchange). */
+  redirectUri: z.string().url().startsWith("https://").max(500).optional(),
+  /** Apple gives the name to the app only on the first sign-in, never in the token. */
+  name: z
+    .object({ givenName: z.string().max(80).nullish(), familyName: z.string().max(80).nullish() })
+    .nullish(),
+  role: socialRole,
+});
+
+authRouter.post("/apple", limits.auth, async (req, res) => {
+  const body = parse(appleSchema, req.body);
+  const identity = await verifyAppleIdToken(body.idToken, body.nonce);
+  const name = [body.name?.givenName, body.name?.familyName].filter(Boolean).join(" ");
+  const { user, isNewUser } = await signInWithIdentity({ provider: "apple", identity, role: body.role, name });
+  if (body.authorizationCode) {
+    const code = body.authorizationCode;
+    const link = await prisma.userOAuthAccount.findUnique({
+      where: { provider_providerUserId: { provider: "apple", providerUserId: identity.sub } },
+      select: { refreshToken: true },
+    });
+    if (!link?.refreshToken) {
+      // In the background: Apple's token endpoint should not slow down signing in.
+      void exchangeAppleCode(code, identity.audience, body.redirectUri).then((token) => {
+        if (token) return storeAppleRefreshToken(identity.sub, token, identity.audience);
+      }).catch((err) => console.warn("[oauth] storing Apple refresh token failed:", err));
+    }
+  }
+  res.status(isNewUser ? 201 : 200).json({ token: await startSession(user.id, user.role, req), user: await sessionUser(user.id), isNewUser });
+});
+
+/**
+ * POST /auth/apple/callback — Android "Sign in with Apple" runs Apple's web flow in a browser tab, and Apple
+ * posts the result here (response_mode=form_post). We hand it straight back to the app through its URL
+ * scheme, named in `state`; the app then sends the ID token to POST /auth/apple like iOS does.
+ */
+authRouter.post("/apple/callback", express.urlencoded({ extended: false, limit: "20kb" }), (req, res) => {
+  if (!appleEnabled()) throw notConfigured("Sign in with Apple is not available yet");
+  const field = (name: string) => (typeof req.body?.[name] === "string" ? (req.body[name] as string) : "");
+  const state = field("state");
+  const scheme = state.split(".")[0];
+  if (!state.includes(".") || !env.oauth.appRedirectSchemes.includes(scheme)) throw badRequest("Unknown sign-in request");
+  const params = new URLSearchParams({ state });
+  for (const key of ["id_token", "code", "user", "error"]) if (field(key)) params.set(key, field(key));
+  res.redirect(303, `${scheme}://auth/apple?${params.toString()}`);
+});
+
+/**
+ * POST /auth/apple/notifications — Apple's server-to-server events (set this URL in the Services ID).
+ * When someone stops using Sign in with Apple with us or deletes their Apple account, the link is removed.
+ */
+authRouter.post("/apple/notifications", async (req, res) => {
+  if (!appleEnabled()) throw notConfigured("Sign in with Apple is not available yet");
+  const { payload } = parse(z.object({ payload: z.string().min(20).max(10_000) }), req.body);
+  const event = await verifyAppleNotification(payload).catch(() => {
+    throw badRequest("Invalid notification");
+  });
+  const link = await prisma.userOAuthAccount.findUnique({
+    where: { provider_providerUserId: { provider: "apple", providerUserId: event.sub } },
+    include: { user: { select: { passwordHash: true, _count: { select: { oauthAccounts: true } } } } },
+  });
+  if (link) {
+    if (event.type === "consent-revoked" || event.type === "account-delete") {
+      await prisma.userOAuthAccount.delete({ where: { id: link.id } });
+      // With no other way in, the person can no longer sign in, so end the sessions they still have.
+      if (!link.user.passwordHash && link.user._count.oauthAccounts <= 1) await revokeAllSessions(link.userId);
+    } else if ((event.type === "email-disabled" || event.type === "email-enabled") && event.email) {
+      await prisma.userOAuthAccount.update({ where: { id: link.id }, data: { email: event.email.toLowerCase() } });
+    }
+  }
+  res.json({ ok: true });
 });
 
 /** POST /auth/logout — ends this sign-in on the server, so the token stops working straight away. */
@@ -81,8 +182,7 @@ authRouter.post("/logout", requireAuth, async (req, res) => {
 });
 
 authRouter.get("/me", requireAuth, async (req, res) => {
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id }, select: publicUser });
-  res.json({ user });
+  res.json({ user: await sessionUser(currentUser(req).id) });
 });
 
 const updateSchema = z.object({
@@ -96,7 +196,7 @@ authRouter.patch("/me", requireAuth, async (req, res) => {
   const before = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id }, select: { profilePhotoUrl: true } });
   const user = await prisma.user.update({ where: { id: currentUser(req).id }, data: body, select: publicUser });
   if (body.profilePhotoUrl !== undefined && before.profilePhotoUrl && before.profilePhotoUrl !== user.profilePhotoUrl) void storage.remove(before.profilePhotoUrl);
-  res.json({ user });
+  res.json({ user: await sessionUser(user.id) });
 });
 
 const passwordSchema = z.object({
