@@ -60,7 +60,8 @@
           "locationWhenInUsePermission": "DialNFind uses your location to show service providers near you."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "./plugins/withSceneLifecycle"
     ],
     "experiments": {
       "typedRoutes": true

@@ -69,7 +69,8 @@
           "photosPermission": "DialNFind Business uses your photos for your logo, cover and past work.",
           "cameraPermission": "DialNFind Business uses the camera to photograph your work and documents."
         }
-      ]
+      ],
+            "./plugins/withSceneLifecycle"
     ],
     "experiments": {
       "typedRoutes": true
