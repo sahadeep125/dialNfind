@@ -93,7 +93,10 @@ npm install
 cp .env.example .env      # EXPO_PUBLIC_API_URL must be reachable from the phone
 npx expo run:android      # or run:ios; MMKV needs a development build, not Expo Go
 npm run typecheck && npm run lint
+npm test                  # renders every screen on the Android code path against the running API
 ```
+
+After pulling changes to native packages, regenerate the native projects before running again: `npx expo prebuild --clean`. Add packages with `npx expo install`, not `npm install`, so native versions match the SDK; a mismatched native package (for example a newer `react-native-gesture-handler` pulled in as a peer) can crash the app at launch.
 
 On a real phone, point `EXPO_PUBLIC_API_URL` at your computer's LAN address (for example `http://192.168.1.20:4000/api/v1`); the Android emulator reaches the host at `10.0.2.2`. Set the API's `PUBLIC_URL` to the same host so uploaded photos load on the device. `npx expo start --web` runs it in a browser; `http://localhost:8081` is in the API's default `CORS_ORIGINS` for that.
 

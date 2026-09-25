@@ -1,5 +1,12 @@
 import { forwardRef, useState, type ReactNode } from "react";
-import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from "react-native";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+  type TextInputProps,
+} from "react-native";
 
 import { useTheme } from "@/hooks/useTheme";
 import { AppText } from "./AppText";
@@ -114,5 +121,11 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
 const styles = StyleSheet.create({
   wrapper: { gap: 6 },
   field: { borderCurve: "continuous", flexDirection: "row", gap: 10 },
-  input: { flex: 1, minHeight: 24, paddingVertical: 0, outlineStyle: "none" } as object,
+  input: {
+    flex: 1,
+    minHeight: 24,
+    paddingVertical: 0,
+    // Hides the browser focus ring on web; native only accepts solid, dotted or dashed here.
+    ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null),
+  },
 });
