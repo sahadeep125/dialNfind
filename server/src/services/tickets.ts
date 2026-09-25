@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { notify } from "./notify.js";
 
 export const TICKET_CATEGORIES = ["general", "account", "listing", "billing", "verification", "report", "technical"] as const;
 
@@ -29,4 +30,24 @@ export async function supportStaffIds(assignedToId: bigint | null): Promise<bigi
     select: { id: true },
   });
   return staff.map((s) => s.id);
+}
+
+/** Opens a ticket for a signed-in user (customer or provider) and tells the support team. */
+export async function openTicket(userId: bigint, input: { subject: string; category: (typeof TICKET_CATEGORIES)[number]; message: string; attachments?: string[] }) {
+  const me = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { id: true, name: true, email: true, phone: true, provider: { select: { id: true } } } });
+  const ticket = await prisma.supportTicket.create({
+    data: {
+      userId: me.id,
+      providerId: me.provider?.id ?? null,
+      name: me.name,
+      email: me.email,
+      phone: me.phone,
+      subject: input.subject,
+      category: input.category,
+      source: me.provider ? "provider_app" : "web",
+      messages: { create: { authorId: me.id, body: input.message, attachments: input.attachments ?? [] } },
+    },
+  });
+  for (const id of await supportStaffIds(null)) void notify(id, "support", `New ticket ${ticketRef(ticket.id)}`, input.subject, { ticketId: Number(ticket.id) });
+  return { ...ticket, reference: ticketRef(ticket.id) };
 }

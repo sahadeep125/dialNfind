@@ -33,7 +33,7 @@ The root is a pnpm workspace so `pnpm install` once installs all four, but each 
 Follows the brief table-for-table (users, oauth accounts, addresses, providers, hours, service
 areas, portfolio, verifications, badges, categories, subcategories, category attributes, provider
 services, attribute values, search queries, leads, reviews, review photos, favorites, plans,
-subscriptions, transactions, sponsored listings, notifications, device tokens, admin logs,
+subscriptions, transactions, sponsored listings, notifications, admin logs,
 reports/flags, settings). `BIGSERIAL` ids, `snake_case` columns via Prisma `@map`.
 
 Small additions the pages need, which the brief does not cover:
@@ -53,19 +53,19 @@ Small additions the pages need, which the brief does not cover:
 
 ## 2. APIs (server, `/api/v1`)
 
-Auth is email + password with JWT bearer tokens. Google and Apple endpoints exist and validate
-input, but return `501 not configured` until client ids are supplied.
+Auth is email + password with JWT bearer tokens tied to a revocable `auth_sessions` row, plus email
+verification and password reset links sent over SMTP. There is no social sign-in.
 
-- **auth**: register, login, me, update profile, change password, google (stub), apple (stub)
+- **auth**: register, login, logout, me, update profile, change password, verify email, resend verification, forgot and reset password
 - **categories**: list (with subcategories and counts), get by slug with attributes; super_admin CRUD with audit logging
 - **search**: provider search (text, category, lat/lng + radius, min rating, open now, verified, sort by relevance/distance/rating/reviews), autocomplete suggestions, location lookup; every search logged to `search_queries`
 - **providers**: public profile by slug (hours, open-now, areas, services, portfolio, badges, rating breakdown), reviews (paged), similar providers, profile-view tracking
 - **leads**: create call/WhatsApp lead (guest or user) with optional answers to the category's lead questions, "did they respond?" follow-up; a contact in a promoted category counts as a sponsored click
 - **reviews**: create, edit own, delete own; provider reply; report
-- **me**: favorites, addresses, my reviews, recent contacts, notifications (with unread count), device tokens (add, remove)
-- **provider (role=provider, own rows only)**: onboarding (create listing), claim search + claim start + OTP verify, profile, hours, service areas, services, portfolio, verification submissions, service details (category attribute values, asked once per category), leads, reviews + reply, dashboard stats, plans, subscription checkout (payment stubbed), sponsored campaigns (buy, pause, resume; payment stubbed)
+- **me**: favorites, addresses, my reviews, recent contacts, notifications (with unread count)
+- **provider (role=provider, own rows only)**: onboarding (create listing), claim search + claim with an ownership document, profile, hours, service areas, services, portfolio, verification submissions, service details (category attribute values, asked once per category), leads, reviews + reply, dashboard stats, plans, plan and campaign requests (they open billing tickets; there is no online payment), campaigns (pause, resume), lead reports
 - **support (signed in)**: my tickets, open a ticket, reply, close
-- **admin (super_admin, or admin with the section on their role)**: me and permissions, team and roles, support tickets (filter, assign, reply, internal notes), overview and analytics, leads, providers moderation and detail, grant plan, claims, verifications, reviews moderation, report flags (resolve, dismiss), users (role, suspend), activity log, search insights, badges (CRUD, award, revoke), subscription plans, transactions, subscriptions, sponsored listings, announcements, settings and plugins (secrets masked); subcategory and attribute edit/delete under **categories**
+- **admin (super_admin, or admin with the section on their role)**: me and permissions, team and roles, support tickets (filter, assign, reply, internal notes), overview and analytics, leads, providers (create, CSV import, edit, owner, delete, bulk status) and detail, change plan with an offline payment, claims, verifications, reviews moderation (single and bulk), report flags (resolve, dismiss), users (detail, suspend, sign out, anonymise, bulk), lead disputes, activity log, search insights, badges (CRUD, award, revoke), subscription plans, transactions (record, refund), subscriptions, sponsored listings, CSV exports, announcements, settings; subcategory and attribute edit/delete under **categories**
 - **notifications** are created for new leads and reviews, review replies, claim and verification decisions, listing status changes, badges and plan changes
 - **contact**, **plans**, **health**
 
@@ -100,7 +100,7 @@ cookie; a same-origin proxy route attaches it to client-side calls.
 ## 5. Provider (React + Vite)
 
 Pages: Login/Register, Get started (claim existing vs create new), Claim flow (find your business,
-verify with a code sent to the listed number, stubbed as `123456` in development), Onboarding
+upload an ownership document for the admin team to review), Onboarding
 wizard (business, services, location + areas, hours, contact preferences), Dashboard (leads,
 views, rating, completeness, ranking tips, chart), Leads, Reviews (reply), Services, Profile,
 Hours, Service areas, Portfolio, Verification, Promote (sponsored campaigns), Subscription, and a
@@ -112,7 +112,7 @@ Only `super_admin` and `admin` accounts can sign in. Sections: Dashboard (queues
 Analytics, Providers (detail, status, badges, grant plan), Listing claims, Verification,
 Categories (subcategories, attributes, icons), Badges, Reviews and reports, Leads, Plans and
 billing (plans, subscribers, payments), Promotions, Users, Support tickets, Announcements,
-Settings, Plugins, Team and roles, Audit log, My account. The sidebar only shows the sections
+Settings, Team and roles, Audit log, My account. Lists export to CSV; providers, users and reviews support bulk actions. The sidebar only shows the sections
 the member's role allows, and the API checks the same permission on every `/admin` path.
 
 ## 7. Mobile (Expo)
@@ -132,12 +132,14 @@ editors (profile, services, hours, areas, portfolio, verification), Promote, Pla
 Notifications, Help and legal pages. Account closure goes through a support ticket because
 `DELETE /auth/me` refuses providers. Standalone npm project in `provider-mobile/`.
 
-## Stubbed until credentials exist
+## Not built on purpose
 
-Google/Apple sign-in, payment gateway (checkout returns a simulated success in development),
-push notifications (tokens stored, nothing sent), SMS OTP (fixed dev code).
+Online payments, SMS, WhatsApp alerts, push notifications, Google/Apple sign-in and analytics
+plugins were removed: plans and promotions are arranged by the team and recorded as offline
+payments, and email is the only outgoing channel. Enforcing plan limits (lead access, analytics) is
+planned for later.
 
-File uploads are live: files are stored on the API server's disk behind a `Storage` interface
+File uploads are live: images are stored on the API server's disk and documents in a private folder served only through signed links, behind a `Storage` interface
 (`server/src/storage`) so an S3 implementation can replace it without touching routes or apps.
 
 ## Running locally

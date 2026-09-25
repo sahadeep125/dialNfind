@@ -44,9 +44,11 @@ export function validateOptionalPhone(value: string): string | null {
   return normalizePhone(value) ? null : "Enter a valid 10-digit Indian phone number";
 }
 
-export function validateReviewText(value: string): string | null {
+/** minLength comes from the admin settings (GET /app-config); 10 until it has loaded. */
+export function validateReviewText(value: string, minLength = 10): string | null {
   const v = value.trim();
-  if (v.length < 10) return "Tell others a little more (at least 10 characters)";
+  if (!v) return "Write a few words about your experience";
+  if (v.length < minLength) return `Tell others a little more (at least ${minLength} characters)`;
   if (v.length > 2000) return "Keep it under 2,000 characters";
   return null;
 }

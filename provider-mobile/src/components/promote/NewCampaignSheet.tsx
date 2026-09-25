@@ -4,7 +4,7 @@ import { Megaphone } from "lucide-react-native";
 
 import { AppButton, AppInput, AppSheet, AppText } from "@/components/design-system";
 import { AppSegmented, AppSelect } from "@/components/forms";
-import { useStartCampaign } from "@/hooks/useSponsored";
+import { useRequestCampaign } from "@/hooks/useSponsored";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
@@ -30,7 +30,7 @@ const MAX_BUDGET = 1_000_000;
 export function NewCampaignSheet({ visible, onClose, categories, pricing }: Props) {
   const theme = useTheme();
   const toast = useToast();
-  const start = useStartCampaign();
+  const start = useRequestCampaign();
   const [categoryId, setCategoryId] = useState<number | null>(categories[0]?.id ?? null);
   const [days, setDays] = useState<CampaignDays>(14);
   const [budget, setBudget] = useState("1500");
@@ -57,11 +57,9 @@ export function NewCampaignSheet({ visible, onClose, categories, pricing }: Prop
     start.mutate(
       { categoryId: selectedCategory, days, budget: amount },
       {
-        onSuccess: (result) => {
+        onSuccess: ({ ticket }) => {
           toast(
-            result.simulated
-              ? "Campaign started. Payment was simulated because no gateway is connected yet."
-              : "Campaign started",
+            `Request sent (${ticket.reference}). Our team will contact you to arrange payment and start the campaign.`,
             "success",
           );
           onClose();
@@ -72,7 +70,7 @@ export function NewCampaignSheet({ visible, onClose, categories, pricing }: Prop
   };
 
   return (
-    <AppSheet visible={visible} onClose={onClose} title="Start a campaign">
+    <AppSheet visible={visible} onClose={onClose} title="Request a campaign">
       <ScrollView
         keyboardShouldPersistTaps="handled"
         style={styles.scroll}
@@ -116,7 +114,7 @@ export function NewCampaignSheet({ visible, onClose, categories, pricing }: Prop
           returnKeyType="done"
         />
         <AppText variant="caption" tone="tertiary">
-          Your campaign runs in {pricing.city}. You pay only when a customer calls or messages you.
+          Your campaign runs in {pricing.city}. Each customer call or message uses part of the budget. Our team sets it up once payment is arranged.
         </AppText>
         <AppButton
           fullWidth
@@ -125,7 +123,7 @@ export function NewCampaignSheet({ visible, onClose, categories, pricing }: Prop
           onPress={submit}
           leadingIcon={<Megaphone size={18} color={theme.components.button.primary.text} />}
         >
-          {`Pay ${formatPrice(amount) ?? ""} and start`}
+          Request campaign
         </AppButton>
       </ScrollView>
     </AppSheet>

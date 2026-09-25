@@ -7,20 +7,33 @@ import { badRequest, forbidden, notFound } from "../lib/errors.js";
 import { currentUser, optionalAuth, requireAuth } from "../middleware/auth.js";
 import { notify } from "../services/notify.js";
 import { recalculateProvider } from "../services/ranking.js";
+import { getNumberSetting } from "../services/settings.js";
 import { storage } from "../storage/index.js";
+import { limits } from "../lib/rate-limit.js";
 
 export const reviewsRouter = Router();
 
 const createSchema = z.object({
   providerId: z.coerce.number().int().positive(),
   rating: z.number().int().min(1).max(5),
-  reviewText: z.string().trim().min(10, "Tell others a little more (at least 10 characters)").max(2000),
+  reviewText: z.string().trim().min(1, "Write a few words about your experience").max(2000),
   photos: z.array(httpUrl).max(6).optional(),
 });
 
+/** The minimum length is an admin setting, so it is checked here rather than in the schema. */
+async function checkReviewLength(text: string | undefined) {
+  if (text === undefined) return;
+  const min = await getNumberSetting("min_review_length", 10);
+  if (text.length < min) {
+    const message = `Tell others a little more (at least ${min} characters)`;
+    throw badRequest(message, [{ path: "reviewText", message }]);
+  }
+}
+
 /** POST /reviews — one review per customer per provider; linked to their latest lead if any. */
-reviewsRouter.post("/", requireAuth, async (req, res) => {
+reviewsRouter.post("/", limits.reviews, requireAuth, async (req, res) => {
   const body = parse(createSchema, req.body);
+  await checkReviewLength(body.reviewText);
   const user = currentUser(req);
   const providerId = BigInt(body.providerId);
   const provider = await prisma.provider.findFirst({ where: { id: providerId, status: "active" }, select: { id: true, userId: true } });
@@ -52,12 +65,13 @@ reviewsRouter.post("/", requireAuth, async (req, res) => {
 
 const updateSchema = z.object({
   rating: z.number().int().min(1).max(5).optional(),
-  reviewText: z.string().trim().min(10, "Tell others a little more (at least 10 characters)").max(2000).optional(),
+  reviewText: z.string().trim().min(1, "Write a few words about your experience").max(2000).optional(),
   photos: z.array(httpUrl).max(6).optional(),
 });
 
 reviewsRouter.patch("/:id", requireAuth, async (req, res) => {
   const body = parse(updateSchema, req.body);
+  await checkReviewLength(body.reviewText);
   const review = await prisma.review.findUnique({ where: { id: idParam(req.params.id as string) } });
   if (!review) throw notFound("Review not found");
   if (review.userId !== currentUser(req).id) throw forbidden();
@@ -90,7 +104,7 @@ reviewsRouter.delete("/:id", requireAuth, async (req, res) => {
 
 const reportSchema = z.object({ reason: z.string().trim().min(5).max(500) });
 
-reviewsRouter.post("/:id/report", optionalAuth, async (req, res) => {
+reviewsRouter.post("/:id/report", limits.reviews, optionalAuth, async (req, res) => {
   const { reason } = parse(reportSchema, req.body);
   const review = await prisma.review.findUnique({ where: { id: idParam(req.params.id as string) }, select: { id: true } });
   if (!review) throw notFound("Review not found");

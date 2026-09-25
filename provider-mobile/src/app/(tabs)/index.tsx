@@ -6,6 +6,7 @@ import { Eye, MessageCircle, Phone, Star } from "lucide-react-native";
 import { AppCallout } from "@/components/design-system";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
 import { CompletenessCard } from "@/components/dashboard/CompletenessCard";
+import { VerifyEmailCallout } from "@/components/auth/VerifyEmailCallout";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { RankingCard } from "@/components/dashboard/RankingCard";
@@ -76,6 +77,8 @@ export default function DashboardScreen() {
           unread={notifications.data?.unread ?? 0}
           onOpenNotifications={() => router.push("/notifications")}
         />
+
+        <VerifyEmailCallout />
 
         <AppSegmented
           options={RANGES}

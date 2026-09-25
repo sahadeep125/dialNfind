@@ -1,13 +1,12 @@
 import {
   useMutation,
   useQuery,
-  useQueryClient,
   type UseMutationResult,
   type UseQueryResult,
 } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
-import type { PaymentResult, SubscriptionResponse } from "@/types/billing";
+import type { BillingRequestResult, SubscriptionResponse } from "@/types/billing";
 
 const SUBSCRIPTION_KEY = ["subscription"] as const;
 
@@ -20,26 +19,10 @@ export function useSubscription(): UseQueryResult<SubscriptionResponse> {
   });
 }
 
-/** Switches plan. Payment is simulated by the server until a gateway is connected. */
-export function useCheckoutPlan(): UseMutationResult<PaymentResult, Error, number> {
-  const qc = useQueryClient();
+/** Asks the team for a plan. They arrange payment and switch the plan from the admin console. */
+export function useRequestPlan(): UseMutationResult<BillingRequestResult, Error, number> {
   return useMutation({
-    mutationFn: (planId: number): Promise<PaymentResult> =>
-      api<PaymentResult>("/provider/subscription/checkout", { method: "POST", body: { planId } }),
-    onSuccess: () => {
-      // A plan change adds badges and changes limits across the app, so refresh everything.
-      void qc.invalidateQueries();
-    },
-  });
-}
-
-/** Turns off auto-renew. The plan stays active until its end date. */
-export function useCancelAutoRenew(): UseMutationResult<unknown, Error, void> {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (): Promise<unknown> => api("/provider/subscription/cancel", { method: "POST" }),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: SUBSCRIPTION_KEY });
-    },
+    mutationFn: (planId: number): Promise<BillingRequestResult> =>
+      api<BillingRequestResult>("/provider/subscription/request", { method: "POST", body: { planId } }),
   });
 }

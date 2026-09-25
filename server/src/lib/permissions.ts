@@ -84,6 +84,8 @@ const PATH_MODULES: Record<string, AdminModule | null> = {
   roles: "team",
   "activity-logs": "audit",
   badges: "categories",
+  // Checked per entity inside the export route.
+  export: null,
 };
 
 export function guardAdminPath(req: Request, _res: Response, next: NextFunction) {

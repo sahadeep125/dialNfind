@@ -19,6 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { emptyPayment, PaymentFields, paymentBody, paymentProblem, type PaymentValue } from "@/components/payment-fields";
 
 interface Listing {
   id: number;
@@ -177,6 +178,7 @@ function PromotionDialog({ listing, onClose }: { listing?: Listing; onClose: () 
   const qc = useQueryClient();
   const { data: cats } = useQuery({ queryKey: ["categories"], queryFn: () => api<{ categories: CategoryOption[] }>("/categories") });
   const [error, setError] = useState<string | null>(null);
+  const [payment, setPayment] = useState<PaymentValue>(emptyPayment());
   const editing = !!listing;
   const { register, control, handleSubmit, setError: setFieldError, formState } = useForm<Values>({
     resolver: zodResolver(schema),
@@ -194,6 +196,8 @@ function PromotionDialog({ listing, onClose }: { listing?: Listing; onClose: () 
   const onSubmit = handleSubmit(async (v) => {
     if (!editing && !v.provider) return setFieldError("provider", { message: "Choose a provider" });
     if (!editing && !v.categoryId) return setFieldError("categoryId", { message: "Choose a category" });
+    const problem = editing ? null : paymentProblem(payment);
+    if (problem) return setError(problem);
     setError(null);
     try {
       if (listing) {
@@ -201,7 +205,15 @@ function PromotionDialog({ listing, onClose }: { listing?: Listing; onClose: () 
       } else {
         await api("/admin/sponsored", {
           method: "POST",
-          json: { providerId: v.provider!.id, categoryId: Number(v.categoryId), targetLocation: v.targetLocation || null, startDate: v.startDate, endDate: v.endDate, budget: Number(v.budget) },
+          json: {
+            providerId: v.provider!.id,
+            categoryId: Number(v.categoryId),
+            targetLocation: v.targetLocation || null,
+            startDate: v.startDate,
+            endDate: v.endDate,
+            budget: Number(v.budget),
+            payment: paymentBody(payment),
+          },
         });
       }
       toast.success(editing ? "Promotion updated" : "Promotion started");
@@ -216,7 +228,7 @@ function PromotionDialog({ listing, onClose }: { listing?: Listing; onClose: () 
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editing ? "Change promotion" : "New promotion"}</DialogTitle>
-          <DialogDescription>{editing ? `${listing.provider.businessName} in ${listing.category.name}` : "No payment is taken. Use this for partner deals or to make good on a problem."}</DialogDescription>
+          <DialogDescription>{editing ? `${listing.provider.businessName} in ${listing.category.name}` : "Set up a campaign a provider asked for. Record their payment here, or leave it unticked for partner deals and goodwill."}</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} noValidate className="grid gap-4 sm:grid-cols-2">
           {error && (
@@ -265,6 +277,11 @@ function PromotionDialog({ listing, onClose }: { listing?: Listing; onClose: () 
           <Field id="promo-budget" label="Budget (Rs)" error={errors.budget} required>
             <Input {...fieldA11y("promo-budget", errors.budget)} inputMode="numeric" maxLength={7} {...register("budget")} />
           </Field>
+          {!editing && (
+            <div className="sm:col-span-2">
+              <PaymentFields id="promo-pay" value={payment} onChange={setPayment} />
+            </div>
+          )}
           <DialogFooter className="sm:col-span-2">
             <Button type="button" variant="ghost" onClick={onClose}>
               Cancel

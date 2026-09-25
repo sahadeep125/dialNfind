@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Award, BadgeCheck, CreditCard, ExternalLink, Loader2, MapPin, Phone, Star, Store, X } from "lucide-react";
+import { ArrowLeft, Award, BadgeCheck, CreditCard, ExternalLink, Loader2, MapPin, Pencil, Phone, Plus, Star, Store, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { WEB_URL } from "@/lib/config";
@@ -11,6 +11,10 @@ import { PageHeader, Panel } from "@/components/page-header";
 import { Pager, PageSkeleton } from "@/components/common";
 import { ConfirmDialog, EmptyRow, Facts, FilterSelect, SearchInput, StatCard, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
+import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
+import { AddListingDialog, ImportListingsDialog } from "./provider-create";
+import { DeleteListingPanel, OwnerActions } from "./provider-manage";
+import { emptyPayment, PaymentFields, paymentBody, paymentProblem, type PaymentValue } from "@/components/payment-fields";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,10 +31,38 @@ export function ProvidersPage() {
   const [f, setF] = useUrlState({ q: "", status: "", verification: "", claimed: "", page: "1" });
   const qs = new URLSearchParams({ ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)), pageSize: "20" });
   const { data, isLoading } = useQuery({ queryKey: ["admin-providers", qs.toString()], queryFn: () => api<{ providers: ProviderRow[] } & Paged>(`/admin/providers?${qs}`) });
+  const selection = useSelection(data?.providers.map((p) => p.id) ?? []);
+  const [dialog, setDialog] = useState<"add" | "import" | null>(null);
+  const qc = useQueryClient();
+  const bulk = useMutation({
+    mutationFn: (action: "approve" | "suspend" | "reject" | "verify") => api<{ updated: number }>("/admin/providers/bulk", { method: "POST", json: { ids: selection.selected, action } }),
+    onSuccess: ({ updated }) => {
+      toast.success(`${updated} listing${updated === 1 ? "" : "s"} updated`);
+      selection.clear();
+      void qc.invalidateQueries({ queryKey: ["admin-providers"] });
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  });
 
   return (
     <>
-      <PageHeader title="Providers" description="Every business listed on DialNFind. Approve new listings, suspend bad actors and check each profile." />
+      <PageHeader
+        title="Providers"
+        description="Every business listed on DialNFind. Approve new listings, suspend bad actors and check each profile."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <ExportButton entity="providers" filters={f} />
+            <Button variant="outline" size="sm" onClick={() => setDialog("import")}>
+              <Upload /> Import CSV
+            </Button>
+            <Button size="sm" onClick={() => setDialog("add")}>
+              <Plus /> Add listing
+            </Button>
+          </div>
+        }
+      />
+      <AddListingDialog open={dialog === "add"} onOpenChange={(o) => setDialog(o ? "add" : null)} />
+      <ImportListingsDialog open={dialog === "import"} onOpenChange={(o) => setDialog(o ? "import" : null)} />
       <Toolbar>
         <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search name or phone" />
         <FilterSelect label="Status" allLabel="Any status" value={f.status} onChange={(status) => setF({ status, page: "1" })} options={STATUS_OPTIONS} />
@@ -57,9 +89,26 @@ export function ProvidersPage() {
         />
         {data && <span className="text-sm text-muted-foreground sm:ml-auto">{data.total.toLocaleString("en-IN")} listings</span>}
       </Toolbar>
+      <BulkBar selection={selection} noun="listing">
+        {(
+          [
+            ["approve", "Approve"],
+            ["verify", "Mark verified"],
+            ["suspend", "Suspend"],
+            ["reject", "Reject"],
+          ] as const
+        ).map(([action, label]) => (
+          <Button key={action} size="sm" variant={action === "suspend" || action === "reject" ? "outline" : "default"} disabled={bulk.isPending} onClick={() => bulk.mutate(action)}>
+            {label}
+          </Button>
+        ))}
+      </BulkBar>
       <Table>
         <thead>
           <tr>
+            <Th className="w-10">
+              <SelectAllBox selection={selection} />
+            </Th>
             <Th>Business</Th>
             <Th>Category</Th>
             <Th>Owner</Th>
@@ -69,10 +118,13 @@ export function ProvidersPage() {
           </tr>
         </thead>
         <tbody>
-          {isLoading && <TableSkeleton cols={6} />}
-          {data?.providers.length === 0 && <EmptyRow cols={6} text="No providers match these filters." />}
+          {isLoading && <TableSkeleton cols={7} />}
+          {data?.providers.length === 0 && <EmptyRow cols={7} text="No providers match these filters." />}
           {data?.providers.map((p) => (
             <tr key={p.id} className="hover:bg-muted/40">
+              <Td>
+                <SelectRowBox selection={selection} id={p.id} label={`Select ${p.businessName}`} />
+              </Td>
               <Td>
                 <Link to={`/providers/${p.id}`} className="flex items-center gap-3">
                   <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-accent text-primary">
@@ -238,6 +290,11 @@ export function ProviderDetailPage() {
               <ExternalLink /> Public page
             </a>
           </Button>
+          <Button asChild variant="outline">
+            <Link to={`/providers/${p.id}/edit`}>
+              <Pencil /> Edit listing
+            </Link>
+          </Button>
           {actions.map((s) => (
             <Button key={s} variant={STATUS_COPY[s].destructive ? "outline" : "default"} className={STATUS_COPY[s].destructive ? "text-destructive" : ""} onClick={() => setPending(s)}>
               {STATUS_COPY[s].label}
@@ -317,11 +374,11 @@ export function ProviderDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <Panel title="Owner">
+          <Panel title="Owner" actions={<OwnerActions providerId={p.id} businessName={p.businessName} hasOwner={!!p.user} onDone={invalidate} />}>
             {p.user ? (
               <Facts
                 items={[
-                  ["Name", p.user.name],
+                  ["Name", <Link to={`/users/${p.user.id}`} className="text-primary hover:underline">{p.user.name}</Link>],
                   ["Email", p.user.email],
                   ["Phone", p.user.phone ? formatPhone(p.user.phone) : null],
                   ["Last sign in", p.user.lastLoginAt ? formatRelative(p.user.lastLoginAt) : "Never"],
@@ -432,6 +489,7 @@ export function ProviderDetailPage() {
               </a>
             </Button>
           </Panel>
+          <DeleteListingPanel providerId={p.id} businessName={p.businessName} />
         </div>
       </div>
 
@@ -457,9 +515,15 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
   const [planId, setPlanId] = useState("");
   const [months, setMonths] = useState("1");
   const [note, setNote] = useState("");
+  const [payment, setPayment] = useState<PaymentValue>(emptyPayment());
   const [error, setError] = useState<string | null>(null);
+  const plan = data?.plans.find((pl) => String(pl.id) === planId);
   const grant = useMutation({
-    mutationFn: () => api(`/admin/providers/${providerId}/subscription`, { method: "POST", json: { planId: Number(planId), months: Number(months), note: note.trim() || undefined } }),
+    mutationFn: () =>
+      api(`/admin/providers/${providerId}/subscription`, {
+        method: "POST",
+        json: { planId: Number(planId), months: Number(months), note: note.trim() || undefined, payment: paymentBody(payment) },
+      }),
     onSuccess: () => {
       toast.success("Plan updated");
       onOpenChange(false);
@@ -471,8 +535,8 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Give a plan without payment</DialogTitle>
-          <DialogDescription>Use this for launch offers or goodwill extensions. Any current plan ends today and no payment is recorded.</DialogDescription>
+          <DialogTitle>Change plan</DialogTitle>
+          <DialogDescription>Any current plan ends today. If the provider paid, record the payment here; leave it unticked for a free launch offer or goodwill extension.</DialogDescription>
         </DialogHeader>
         <form
           noValidate
@@ -480,6 +544,8 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
           onSubmit={(e) => {
             e.preventDefault();
             if (!planId) return setError("Choose a plan");
+            const problem = paymentProblem(payment);
+            if (problem) return setError(problem);
             grant.mutate();
           }}
         >
@@ -491,6 +557,8 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
                 onValueChange={(v) => {
                   setPlanId(v);
                   setError(null);
+                  const price = data?.plans.find((pl) => String(pl.id) === v)?.price ?? 0;
+                  setPayment((pm) => ({ ...pm, amount: price ? String(price * Number(months)) : "" }));
                 }}
               >
                 <SelectTrigger id="grant-plan" className="w-full" aria-invalid={error === "Choose a plan" || undefined}>
@@ -509,7 +577,13 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
             </div>
             <div className="space-y-2">
               <Label htmlFor="grant-months">Length</Label>
-              <Select value={months} onValueChange={setMonths}>
+              <Select
+                value={months}
+                onValueChange={(m) => {
+                  setMonths(m);
+                  if (plan?.price) setPayment((pm) => ({ ...pm, amount: String(plan.price * Number(m)) }));
+                }}
+              >
                 <SelectTrigger id="grant-months" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -523,6 +597,7 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
               </Select>
             </div>
           </div>
+          {plan && plan.price > 0 && <PaymentFields id="grant-pay" value={payment} onChange={setPayment} />}
           <div className="space-y-2">
             <Label htmlFor="grant-note">
               Reason <span className="font-normal text-muted-foreground">(optional, kept in the audit log)</span>
@@ -539,7 +614,7 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
               Cancel
             </Button>
             <Button type="submit" disabled={grant.isPending}>
-              {grant.isPending && <Loader2 className="animate-spin" />} Give plan
+              {grant.isPending && <Loader2 className="animate-spin" />} Change plan
             </Button>
           </DialogFooter>
         </form>

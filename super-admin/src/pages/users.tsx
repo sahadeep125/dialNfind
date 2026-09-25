@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/page-header";
 import { Pager } from "@/components/common";
 import { ConfirmDialog, EmptyRow, FilterSelect, SearchInput, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
+import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface UserRow {
@@ -37,6 +38,17 @@ export function UsersPage() {
   for (const k of ["q", "role", "status"] as const) if (f[k]) params.set(k, f[k]);
   const { data, isLoading } = useQuery({ queryKey: ["admin-users", params.toString()], queryFn: () => api<{ users: UserRow[] } & Paged>(`/admin/users?${params}`) });
   const [pending, setPending] = useState<{ user: UserRow; status: UserRow["status"] } | null>(null);
+  const selectable = data?.users.filter((u) => (u.role === "customer" || u.role === "provider") && u.status !== "deleted") ?? [];
+  const selection = useSelection(selectable.map((u) => u.id));
+  const bulk = useMutation({
+    mutationFn: (action: "suspend" | "reactivate") => api<{ updated: number }>("/admin/users/bulk", { method: "POST", json: { ids: selection.selected, action } }),
+    onSuccess: ({ updated }, action) => {
+      toast.success(`${updated} account${updated === 1 ? "" : "s"} ${action === "suspend" ? "suspended" : "reactivated"}`);
+      selection.clear();
+      void qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
 
   const update = useMutation({
     mutationFn: ({ id, status }: { id: number; status: UserRow["status"] }) => api(`/admin/users/${id}`, { method: "PATCH", json: { status } }),
@@ -51,12 +63,16 @@ export function UsersPage() {
   const copy = pending && {
     active: { title: `Reactivate ${pending.user.name}?`, text: "They can sign in again straight away.", label: "Reactivate" },
     suspended: { title: `Suspend ${pending.user.name}?`, text: "They are signed out and cannot sign in until you reactivate the account. Their reviews stay visible.", label: "Suspend" },
-    deleted: { title: `Delete ${pending.user.name}?`, text: "The account is closed and cannot sign in. Use this for spam or at the person's request.", label: "Delete account" },
+    deleted: {
+      title: `Delete ${pending.user.name}?`,
+      text: "Their name, email, phone, reviews and favourites are erased and they are signed out everywhere. A business they owned stays listed as unclaimed. This cannot be undone.",
+      label: "Delete account",
+    },
   }[pending.status];
 
   return (
     <>
-      <PageHeader title="Users" description="Customers and provider accounts. Team members are managed from Team." />
+      <PageHeader title="Users" description="Customers and provider accounts. Team members are managed from Team." actions={<ExportButton entity="users" filters={f} />} />
       <Toolbar>
         <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search name, email or phone" />
         <FilterSelect
@@ -83,9 +99,20 @@ export function UsersPage() {
         />
         {data && <span className="text-sm text-muted-foreground sm:ml-auto">{data.total.toLocaleString("en-IN")} accounts</span>}
       </Toolbar>
+      <BulkBar selection={selection} noun="account">
+        <Button size="sm" variant="outline" disabled={bulk.isPending} onClick={() => bulk.mutate("suspend")}>
+          Suspend
+        </Button>
+        <Button size="sm" disabled={bulk.isPending} onClick={() => bulk.mutate("reactivate")}>
+          Reactivate
+        </Button>
+      </BulkBar>
       <Table>
         <thead>
           <tr>
+            <Th className="w-10">
+              <SelectAllBox selection={selection} />
+            </Th>
             <Th>Person</Th>
             <Th>Role</Th>
             <Th>Activity</Th>
@@ -96,22 +123,23 @@ export function UsersPage() {
           </tr>
         </thead>
         <tbody>
-          {isLoading && <TableSkeleton cols={7} />}
-          {data?.users.length === 0 && <EmptyRow cols={7} text="No accounts match these filters." />}
+          {isLoading && <TableSkeleton cols={8} />}
+          {data?.users.length === 0 && <EmptyRow cols={8} text="No accounts match these filters." />}
           {data?.users.map((u) => {
             const staff = u.role === "admin" || u.role === "super_admin";
             return (
               <tr key={u.id} className="hover:bg-muted/40">
+                <Td>{selectable.includes(u) && <SelectRowBox selection={selection} id={u.id} label={`Select ${u.name}`} />}</Td>
                 <Td>
-                  <div className="flex items-center gap-3">
+                  <Link to={`/users/${u.id}`} className="flex items-center gap-3">
                     <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent text-xs font-semibold text-primary">
                       {u.profilePhotoUrl ? <img src={u.profilePhotoUrl} alt="" className="size-full object-cover" /> : initials(u.name)}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate font-medium">{u.name}</span>
+                      <span className="block truncate font-medium hover:text-primary">{u.name}</span>
                       <span className="block max-w-56 truncate text-xs text-muted-foreground">{u.email}</span>
                     </span>
-                  </div>
+                  </Link>
                 </Td>
                 <Td>
                   {ROLE_LABEL[u.role]}
@@ -144,7 +172,7 @@ export function UsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {u.status !== "active" && <DropdownMenuItem onSelect={() => setPending({ user: u, status: "active" })}>Reactivate</DropdownMenuItem>}
+                        {u.status === "suspended" && <DropdownMenuItem onSelect={() => setPending({ user: u, status: "active" })}>Reactivate</DropdownMenuItem>}
                         {u.status === "active" && <DropdownMenuItem onSelect={() => setPending({ user: u, status: "suspended" })}>Suspend</DropdownMenuItem>}
                         {u.status !== "deleted" && (
                           <DropdownMenuItem className="text-destructive" onSelect={() => setPending({ user: u, status: "deleted" })}>

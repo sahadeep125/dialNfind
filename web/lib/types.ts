@@ -7,6 +7,7 @@ export interface SessionUser {
   email: string;
   phone: string | null;
   profilePhotoUrl: string | null;
+  emailVerifiedAt: string | null;
   createdAt: string;
   provider: { id: number; slug: string; businessName: string; status: string } | null;
 }
@@ -113,6 +114,8 @@ export interface Paged {
 
 export interface SearchResponse extends Paged {
   results: ProviderCard[];
+  /** The radius the server searched: the one asked for, or the admin's default. */
+  radiusKm: number;
   resolved: {
     category: { id: number; name: string; slug: string } | null;
     subcategory: { id: number; name: string; slug: string } | null;
@@ -124,7 +127,8 @@ export interface LocationOption {
   name: string;
   city: string;
   state: string;
-  kind: "city" | "area" | "current";
+  /** "place" comes from the map search: a real place with no providers listed yet. */
+  kind: "city" | "area" | "place" | "current";
   latitude: number;
   longitude: number;
   providerCount?: number;

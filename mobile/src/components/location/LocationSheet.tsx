@@ -81,7 +81,7 @@ export function LocationSheet({ visible, onClose }: Props) {
               <AppListItem
                 title={item.label}
                 subtitle={[
-                  item.kind === "city" ? "City" : "Area",
+                  item.kind === "city" ? "City" : item.kind === "place" ? "No providers listed here yet" : "Area",
                   item.providerCount ? plural(item.providerCount, "provider") : null,
                 ]
                   .filter(Boolean)

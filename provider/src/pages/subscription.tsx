@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, CreditCard, Loader2, Receipt } from "lucide-react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -27,22 +28,16 @@ interface SubscriptionResponse {
 
 export function SubscriptionPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery({ queryKey: ["subscription"], queryFn: () => api<SubscriptionResponse>("/provider/subscription") });
 
-  const checkout = useMutation({
-    mutationFn: (planId: number) => api<{ simulated: boolean }>("/provider/subscription/checkout", { method: "POST", json: { planId } }),
-    onSuccess: (res) => {
-      toast.success(res.simulated ? "Plan changed. Payment was simulated because no gateway is connected yet." : "Plan changed");
-      void qc.invalidateQueries();
-    },
-    onError: (err) => toast.error(errorMessage(err)),
-  });
-
-  const cancel = useMutation({
-    mutationFn: () => api("/provider/subscription/cancel", { method: "POST" }),
-    onSuccess: () => {
-      toast.success("Auto-renew turned off. Your plan stays active until the end date.");
-      void qc.invalidateQueries();
+  const request = useMutation({
+    mutationFn: (planId: number) => api<{ ticket: { id: number; reference: string } }>("/provider/subscription/request", { method: "POST", json: { planId } }),
+    onSuccess: ({ ticket }) => {
+      toast.success(`Request sent (${ticket.reference}). Our team will contact you to arrange payment and switch your plan.`, {
+        action: { label: "View", onClick: () => navigate(`/support/${ticket.id}`) },
+      });
+      void qc.invalidateQueries({ queryKey: ["support"] });
     },
     onError: (err) => toast.error(errorMessage(err)),
   });
@@ -53,7 +48,7 @@ export function SubscriptionPage() {
 
   return (
     <>
-      <PageHeader title="Plan and billing" description="Every plan keeps your listing free to find. Paid plans add reach, analytics and a partner badge." />
+      <PageHeader title="Plan and billing" description="Every plan keeps your listing free to find. Paid plans add reach, analytics and a partner badge. Send a request and our team will contact you to arrange payment." />
 
       {current && (
         <Panel className="mb-6">
@@ -65,15 +60,10 @@ export function SubscriptionPage() {
               <div>
                 <div className="text-lg font-semibold">{current.plan.name} plan</div>
                 <p className="text-sm text-muted-foreground">
-                  {current.endDate ? `${current.autoRenew ? "Renews" : "Ends"} on ${formatDate(current.endDate)}` : "No renewal needed"}
+                  {current.endDate ? `Active until ${formatDate(current.endDate)}` : "No end date"}
                 </p>
               </div>
             </div>
-            {current.endDate && current.autoRenew && (
-              <Button variant="outline" onClick={() => confirm("Turn off auto-renew?") && cancel.mutate()} disabled={cancel.isPending}>
-                Turn off auto-renew
-              </Button>
-            )}
           </div>
         </Panel>
       )}
@@ -97,9 +87,9 @@ export function SubscriptionPage() {
                   </li>
                 ))}
               </ul>
-              <Button className="mt-6 w-full" variant={featured ? "default" : "outline"} disabled={isCurrent || checkout.isPending} onClick={() => checkout.mutate(p.id)}>
-                {checkout.isPending && checkout.variables === p.id && <Loader2 className="animate-spin" />}
-                {isCurrent ? "Current plan" : current && p.price < current.plan.price ? `Switch to ${p.name}` : `Upgrade to ${p.name}`}
+              <Button className="mt-6 w-full" variant={featured ? "default" : "outline"} disabled={isCurrent || request.isPending} onClick={() => request.mutate(p.id)}>
+                {request.isPending && request.variables === p.id && <Loader2 className="animate-spin" />}
+                {isCurrent ? "Current plan" : `Request ${p.name}`}
               </Button>
             </div>
           );

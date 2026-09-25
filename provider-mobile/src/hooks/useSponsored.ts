@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
-import type { Campaign, NewCampaignInput, PaymentResult, SponsoredResponse } from "@/types/billing";
+import type { BillingRequestResult, Campaign, NewCampaignInput, SponsoredResponse } from "@/types/billing";
 
 const SPONSORED_KEY = ["sponsored"] as const;
 
@@ -19,16 +19,11 @@ export function useSponsored(): UseQueryResult<SponsoredResponse> {
   });
 }
 
-/** Starts a campaign. Payment is simulated by the server until a gateway is connected. */
-export function useStartCampaign(): UseMutationResult<PaymentResult, Error, NewCampaignInput> {
-  const qc = useQueryClient();
+/** Asks the team for a campaign. They arrange payment and start it from the admin console. */
+export function useRequestCampaign(): UseMutationResult<BillingRequestResult, Error, NewCampaignInput> {
   return useMutation({
-    mutationFn: (input: NewCampaignInput): Promise<PaymentResult> =>
-      api<PaymentResult>("/provider/sponsored", { method: "POST", body: input }),
-    onSuccess: () => {
-      // A campaign adds a transaction and changes ranking, so refresh everything like the web app.
-      void qc.invalidateQueries();
-    },
+    mutationFn: (input: NewCampaignInput): Promise<BillingRequestResult> =>
+      api<BillingRequestResult>("/provider/sponsored/request", { method: "POST", body: input }),
   });
 }
 

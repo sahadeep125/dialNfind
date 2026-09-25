@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
-import { ArrowLeft, BadgeCheck, CheckCircle2, FileText, Loader2, MapPin, Search, ShieldCheck, Star } from "lucide-react";
+import { Link, useSearchParams } from "react-router";
+import { ArrowLeft, BadgeCheck, CheckCircle2, FileText, Loader2, MapPin, Search, Star } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { FileUpload } from "@/components/file-upload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -24,21 +23,19 @@ interface Listing {
 
 const CITIES = ["Siliguri", "Kolkata", "Bengaluru", "Delhi", "Mumbai"];
 
-type Step = { kind: "search" } | { kind: "confirm"; listing: Listing } | { kind: "otp"; listing: Listing; claimId: number; sentTo: string; devCode?: string } | { kind: "document-sent"; listing: Listing };
+type Step = { kind: "search" } | { kind: "confirm"; listing: Listing } | { kind: "document-sent"; listing: Listing };
 
 export function ClaimPage() {
   const [params] = useSearchParams();
-  const navigate = useNavigate();
-  const { signIn, refresh } = useAuth();
+  const { signIn } = useAuth();
   const [step, setStep] = useState<Step>({ kind: "search" });
   const [q, setQ] = useState("");
   const [city, setCity] = useState("Siliguri");
   const [results, setResults] = useState<Listing[] | null>(null);
   const [busy, setBusy] = useState(false);
-  const [code, setCode] = useState("");
   const [docUrl, setDocUrl] = useState("");
   const [docUploading, setDocUploading] = useState(false);
-  const [errors, setErrors] = useState<{ q?: string; code?: string; doc?: string }>({});
+  const [errors, setErrors] = useState<{ q?: string; doc?: string }>({});
 
   useEffect(() => {
     const id = params.get("listing");
@@ -63,36 +60,17 @@ export function ClaimPage() {
     }
   }
 
-  async function start(listing: Listing, method: "phone_otp" | "document") {
-    if (method === "document" && !docUrl) return setErrors({ doc: "Upload a document before submitting" });
+  async function start(listing: Listing) {
+    if (!docUrl) return setErrors({ doc: "Upload a document before submitting" });
     setErrors({});
     setBusy(true);
     try {
-      const res = await api<{ claim: { id: number }; sentTo: string | null; devCode?: string; token: string | null }>("/provider/claims", {
+      const res = await api<{ claim: { id: number }; token: string | null }>("/provider/claims", {
         method: "POST",
-        json: { providerId: listing.id, method, documentUrl: method === "document" ? docUrl : undefined },
+        json: { providerId: listing.id, documentUrl: docUrl },
       });
       if (res.token) await signIn(res.token);
-      if (method === "phone_otp") setStep({ kind: "otp", listing, claimId: res.claim.id, sentTo: res.sentTo ?? listing.phone, devCode: res.devCode });
-      else setStep({ kind: "document-sent", listing });
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function verify(e: React.FormEvent) {
-    e.preventDefault();
-    if (step.kind !== "otp") return;
-    if (!/^\d{6}$/.test(code)) return setErrors({ code: "Enter the 6-digit code" });
-    setErrors({});
-    setBusy(true);
-    try {
-      await api(`/provider/claims/${step.claimId}/verify`, { method: "POST", json: { code } });
-      await refresh();
-      toast.success(`${step.listing.businessName} is now yours`);
-      navigate("/", { replace: true });
+      setStep({ kind: "document-sent", listing });
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {
@@ -176,18 +154,9 @@ export function ClaimPage() {
               <p className="rounded-xl bg-muted p-4 text-sm">This listing already has an owner. If you believe that is wrong, contact support@dialnfind.com.</p>
             ) : (
               <>
-                <div className="rounded-xl bg-accent p-4">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <ShieldCheck className="size-4 text-primary" /> Verify by phone
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">We will send a 6-digit code to {step.listing.phone}, the number on this listing.</p>
-                  <Button className="mt-4" onClick={() => start(step.listing, "phone_otp")} disabled={busy}>
-                    {busy && <Loader2 className="animate-spin" />} Send code
-                  </Button>
-                </div>
                 <div className="rounded-xl border p-4">
                   <div className="flex items-center gap-2 font-semibold">
-                    <FileText className="size-4 text-primary" /> No access to that number?
+                    <FileText className="size-4 text-primary" /> Prove that you own this business
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">Upload a trade licence, GST certificate or shop registration. Our team reviews it within two working days.</p>
                   <div className="mt-3 space-y-3">
@@ -208,8 +177,8 @@ export function ClaimPage() {
                         {errors.doc}
                       </p>
                     )}
-                    <Button variant="outline" disabled={busy || docUploading} onClick={() => start(step.listing, "document")}>
-                      Submit document
+                    <Button disabled={busy || docUploading} onClick={() => start(step.listing)}>
+                      {busy && <Loader2 className="animate-spin" />} Submit document
                     </Button>
                   </div>
                 </div>
@@ -219,39 +188,6 @@ export function ClaimPage() {
               Choose a different listing
             </Button>
           </div>
-        )}
-
-        {step.kind === "otp" && (
-          <form onSubmit={verify} noValidate className="space-y-5">
-            <ListingRow listing={step.listing} />
-            <div className="space-y-2">
-              <Label htmlFor="code">Enter the code sent to {step.sentTo}</Label>
-              <Input
-                id="code"
-                value={code}
-                onChange={(e) => {
-                  setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
-                  if (errors.code) setErrors({});
-                }}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                aria-invalid={!!errors.code || undefined}
-                aria-describedby={errors.code ? "code-error" : undefined}
-                placeholder="6-digit code"
-                className="h-12 text-center font-mono text-xl tracking-[0.5em]"
-                autoFocus
-              />
-              {errors.code && (
-                <p id="code-error" role="alert" className="text-xs font-medium text-destructive">
-                  {errors.code}
-                </p>
-              )}
-              {step.devCode && <p className="text-xs text-muted-foreground">Development mode: SMS is not connected yet, use code {step.devCode}.</p>}
-            </div>
-            <Button type="submit" size="lg" className="w-full" disabled={busy}>
-              {busy && <Loader2 className="animate-spin" />} Verify and claim
-            </Button>
-          </form>
         )}
 
         {step.kind === "document-sent" && (

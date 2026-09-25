@@ -19,6 +19,8 @@ export interface Lead {
   customerReportedResponse: boolean | null;
   reviewRating: number | null;
   details: { label: string; value: string }[];
+  /** A report the provider made about this contact (spam, fake, wrong number) and its outcome. */
+  disputeStatus: "none" | "open" | "accepted" | "rejected";
   /** Not sent by the API today; the row shows call-back actions only when it is present. */
   customerPhone?: string | null;
 }

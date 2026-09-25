@@ -4,12 +4,13 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, notFound } from "../../lib/errors.js";
-import { httpUrl } from "../../lib/rules.js";
 import { pageMeta, paginationSchema } from "../../lib/pagination.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
 import { notify } from "../../services/notify.js";
+import { sendMail } from "../../services/mail.js";
 import { ticketListSelect, ticketRef } from "../../services/tickets.js";
+import { privateFileUrl } from "../../lib/private-files.js";
 
 /** Staff side of the help desk. */
 export const adminSupportRouter = Router();
@@ -114,7 +115,7 @@ adminSupportRouter.patch("/tickets/:id", async (req, res) => {
 const messageSchema = z.object({
   body: z.string().trim().min(1, "Write a reply").max(5000),
   isInternal: z.boolean().default(false),
-  attachments: z.array(httpUrl).max(5).default([]),
+  attachments: z.array(privateFileUrl).max(5).default([]),
   // Status to move to after replying; a public reply defaults to pending (waiting on the customer).
   status: z.enum(["open", "pending", "resolved", "closed"]).optional(),
 });
@@ -135,6 +136,14 @@ adminSupportRouter.post("/tickets/:id/messages", async (req, res) => {
   });
   if (!body.isInternal) {
     void notify(ticket.userId, "support", `New reply on ${ticketRef(id)}`, body.body.slice(0, 120), { ticketId: Number(id) });
+    // Email the address on the ticket, so contact-form guests without an account get the answer too.
+    if (ticket.email) {
+      void sendMail({
+        to: ticket.email,
+        subject: `Re: ${ticket.subject} [${ticketRef(id)}]`,
+        lines: [body.body, ticket.userId ? "You can reply from Help and support in your DialNFind account." : "Reply to our contact form and mention this reference if you need more help."],
+      });
+    }
   }
   await logAdmin(admin.id, body.isInternal ? "ticket.note" : "ticket.reply", "support_ticket", id);
   res.status(201).json({ message });

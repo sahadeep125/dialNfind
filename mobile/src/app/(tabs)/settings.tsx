@@ -26,7 +26,7 @@ import {
   AppSheet,
   AppText,
 } from "@/components/design-system";
-import { PasswordInput } from "@/components/auth";
+import { PasswordInput, VerifyEmailCallout } from "@/components/auth";
 import { Screen } from "@/components/layout";
 import { SettingsGroup } from "@/components/settings";
 import { SUPPORT_EMAIL, SUPPORT_PHONE } from "@/constants/config";
@@ -105,6 +105,8 @@ export default function SettingsScreen() {
         <AppText variant="title" accessibilityRole="header">
           Settings
         </AppText>
+
+        <VerifyEmailCallout />
 
         <SettingsGroup title="Account">
           {user ? (

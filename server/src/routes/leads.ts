@@ -1,12 +1,14 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import { getNumberSetting } from "../services/settings.js";
 import { idParam, parse } from "../lib/validate.js";
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
 import { applicableAttributes, encodeAttributeValue, type AttributeInput } from "../services/attributes.js";
 import { notify } from "../services/notify.js";
 import { currentUser, optionalAuth, requireAuth } from "../middleware/auth.js";
 import { recalculateProvider } from "../services/ranking.js";
+import { limits } from "../lib/rate-limit.js";
 
 export const leadsRouter = Router();
 
@@ -37,26 +39,33 @@ async function prepareLeadDetails(categoryId: bigint | null, subcategoryId: bigi
   });
 }
 
-/** A contact from a promoted category counts as a click and spends the cost per click from the budget. */
-async function chargeSponsoredClick(providerId: bigint, categoryId: bigint) {
+/**
+ * A contact from a promoted category counts as a click and spends the cost per click from the budget.
+ * The charge is stored on the lead so an accepted dispute can give it back.
+ */
+async function chargeSponsoredClick(leadId: bigint, providerId: bigint, categoryId: bigint) {
   const now = new Date();
   const listing = await prisma.sponsoredListing.findFirst({
     where: { providerId, categoryId, status: "active", startDate: { lte: now }, endDate: { gte: now } },
   });
   if (!listing) return;
-  const cpc = Number((await prisma.setting.findUnique({ where: { key: "sponsored_cpc" } }))?.value ?? 5) || 5;
+  const cpc = await getNumberSetting("sponsored_cpc", 5);
   const spent = Math.min(Number(listing.budget), Number(listing.amountSpent) + cpc);
-  await prisma.sponsoredListing.update({
-    where: { id: listing.id },
-    data: { clicks: { increment: 1 }, amountSpent: spent, ...(spent >= Number(listing.budget) ? { status: "completed" } : {}) },
-  });
+  const charge = spent - Number(listing.amountSpent);
+  await prisma.$transaction([
+    prisma.sponsoredListing.update({
+      where: { id: listing.id },
+      data: { clicks: { increment: 1 }, amountSpent: spent, ...(spent >= Number(listing.budget) ? { status: "completed" } : {}) },
+    }),
+    prisma.lead.update({ where: { id: leadId }, data: { sponsoredListingId: listing.id, sponsoredCharge: charge } }),
+  ]);
 }
 
 /**
  * POST /leads — recorded when a visitor taps Call or WhatsApp. Guests are allowed so every contact
  * counts; the response carries the number to dial so the client never needs a second request.
  */
-leadsRouter.post("/", optionalAuth, async (req, res) => {
+leadsRouter.post("/", limits.leads, optionalAuth, async (req, res) => {
   const body = parse(leadSchema, req.body);
   const provider = await prisma.provider.findFirst({
     where: { id: BigInt(body.providerId), status: "active" },
@@ -88,7 +97,7 @@ leadsRouter.post("/", optionalAuth, async (req, res) => {
     await prisma.attributeValue.createMany({ data: details.map((d) => ({ ...d, entityType: "lead" as const, entityId: lead.id })) });
   }
 
-  if (categoryId) void chargeSponsoredClick(provider.id, categoryId).catch(() => undefined);
+  if (categoryId) void chargeSponsoredClick(lead.id, provider.id, categoryId).catch(() => undefined);
 
   void notify(
     provider.userId,

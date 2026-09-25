@@ -14,7 +14,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const location = await resolveLocation(sp);
   const q = one(sp.q) ?? "";
-  const radiusKm = Number(one(sp.radius) ?? 15);
+  const radiusParam = Number(one(sp.radius));
 
   const [data, { categories }] = await Promise.all([
     api<SearchResponse>("/search/providers", {
@@ -25,7 +25,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         lat: location.latitude,
         lng: location.longitude,
         location: location.label,
-        radiusKm,
+        radiusKm: radiusParam > 0 ? radiusParam : undefined,
         minRating: one(sp.minRating),
         openNow: one(sp.openNow),
         verified: one(sp.verified),
@@ -44,7 +44,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         {data.total.toLocaleString("en-IN")} {what === "service" ? "service providers" : `${what} providers`}
       </h1>
       <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-        <MapPin className="size-4 text-primary" /> within {radiusKm} km of {location.label}
+        <MapPin className="size-4 text-primary" /> within {data.radiusKm} km of {location.label}
       </p>
     </div>
   );
@@ -77,7 +77,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           basePath="/search"
           heading={heading}
           origin={{ lat: location.latitude, lng: location.longitude }}
-          radiusKm={radiusKm}
+          radiusKm={data.radiusKm}
           categories={categories}
           source="search"
         />

@@ -6,6 +6,7 @@ import { Field, fieldA11y } from "./form";
 import { Slider } from "@/components/ui/slider";
 import { LocateButton, LocationSearch } from "./editors";
 import { MapPicker } from "./map-picker";
+import { api } from "@/lib/api";
 
 export interface LocationValue {
   addressLine: string;
@@ -53,12 +54,19 @@ export function LocationFields({ value, onChange, errors }: { value: LocationVal
                 longitude: l.longitude,
                 city: l.city || l.name,
                 state: l.state || value.state,
-                locality: l.kind === "area" ? l.name : value.locality,
+                locality: l.kind === "city" ? value.locality : l.name,
               })
             }
           />
         </div>
-        <LocateButton onLocate={(latitude, longitude) => set({ latitude, longitude })} />
+        <LocateButton
+          onLocate={async (latitude, longitude) => {
+            set({ latitude, longitude });
+            // Fill in the area from the map when the fields are still empty; the pin is what matters.
+            const { location } = await api<{ location: { name: string; city: string; state: string } }>(`/locations/reverse?lat=${latitude}&lng=${longitude}`).catch(() => ({ location: null }));
+            if (location?.city) onChange({ ...value, latitude, longitude, city: value.city || location.city, state: value.state || location.state, locality: value.locality || (location.name !== location.city ? location.name : "") });
+          }}
+        />
       </div>
       <div className="h-64 overflow-hidden rounded-xl border">
         <MapPicker lat={value.latitude} lng={value.longitude} radiusKm={value.serviceRadiusKm} onChange={(latitude, longitude) => set({ latitude, longitude })} />

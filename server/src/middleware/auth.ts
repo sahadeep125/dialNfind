@@ -7,6 +7,8 @@ import { prisma } from "../lib/prisma.js";
 export interface AuthUser {
   id: bigint;
   role: UserRole;
+  /** The sign-in this request belongs to, so /auth/logout can end just this one. */
+  sessionId: string;
 }
 
 declare global {
@@ -17,6 +19,8 @@ declare global {
     }
   }
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function bearer(req: Request): string | null {
   const header = req.headers.authorization;
@@ -29,9 +33,14 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
   const token = bearer(req);
   if (token) {
     const payload = verifyToken(token);
-    if (payload) {
-      const user = await prisma.user.findUnique({ where: { id: BigInt(payload.sub) }, select: { id: true, role: true, status: true } });
-      if (user && user.status === "active") req.user = { id: user.id, role: user.role };
+    if (payload && UUID.test(payload.sid)) {
+      // One lookup checks both the sign-in (not revoked or expired) and the account (still active).
+      const session = await prisma.authSession.findUnique({
+        where: { id: payload.sid },
+        select: { userId: true, expiresAt: true, revokedAt: true, user: { select: { id: true, role: true, status: true } } },
+      });
+      const valid = session && !session.revokedAt && session.expiresAt > new Date() && session.userId.toString() === payload.sub;
+      if (valid && session.user.status === "active") req.user = { id: session.user.id, role: session.user.role, sessionId: payload.sid };
     }
   }
   next();

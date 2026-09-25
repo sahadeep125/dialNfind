@@ -35,7 +35,7 @@ const searchSchema = z.object({
 /** GET /search/providers — the core directory search used by listing and search pages. */
 searchRouter.get("/providers", optionalAuth, async (req, res) => {
   const params = parse(searchSchema, req.query);
-  const { results, total, resolved } = await searchProviders({ ...params, userId: req.user?.id });
+  const { results, total, resolved, radiusKm } = await searchProviders({ ...params, userId: req.user?.id });
 
   if (params.q && params.log !== false && params.page === 1) {
     void prisma.searchQuery
@@ -54,7 +54,7 @@ searchRouter.get("/providers", optionalAuth, async (req, res) => {
       .catch((err) => console.warn("Failed to log search", err));
   }
 
-  res.json({ results, resolved, ...pageMeta(params.page, params.pageSize, total) });
+  res.json({ results, resolved, radiusKm, ...pageMeta(params.page, params.pageSize, total) });
 });
 
 const suggestSchema = z.object({ q: z.string().trim().min(1).max(80) });

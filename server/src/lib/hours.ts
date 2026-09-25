@@ -24,6 +24,14 @@ export function localNow(date = new Date()): { day: number; time: string } {
   return { day, time: `${hour}:${get("minute")}` };
 }
 
+/** Today's calendar date in the platform timezone, as UTC midnight, to compare with @db.Date columns. */
+export function localToday(offsetDays = 0, date = new Date()): Date {
+  const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: env.timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  const day = new Date(`${ymd}T00:00:00.000Z`);
+  day.setUTCDate(day.getUTCDate() + offsetDays);
+  return day;
+}
+
 function openAt(row: HoursRow | undefined, time: string): boolean {
   if (!row) return false;
   if (row.is24x7) return true;

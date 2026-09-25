@@ -33,11 +33,6 @@ enum UserStatus {
   deleted
 }
 
-enum OAuthProvider {
-  google
-  apple
-}
-
 enum BusinessType {
   individual
   company
@@ -96,6 +91,13 @@ enum PriceUnit {
 enum LeadChannel {
   call
   whatsapp
+}
+
+enum LeadDisputeStatus {
+  none
+  open
+  accepted
+  rejected
 }
 
 enum LeadSource {
@@ -158,6 +160,7 @@ enum ClaimStatus {
   rejected
 }
 
+// phone_otp is kept only for claims made before claims moved to documents.
 enum ClaimMethod {
   phone_otp
   document
@@ -204,49 +207,72 @@ model User {
   createdAt       DateTime   @default(now()) @map("created_at")
   updatedAt       DateTime   @updatedAt @map("updated_at")
 
-  oauthAccounts        UserOAuthAccount[]
   addresses            UserAddress[]
+  tokens               UserToken[]
+  sessions             AuthSession[]
+  leadDisputesResolved Lead[]              @relation("LeadDisputeResolver")
   provider             Provider?
   leads                Lead[]
   reviews              Review[]
   favorites            Favorite[]
   searchQueries        SearchQuery[]
   notifications        Notification[]
-  deviceTokens         DeviceToken[]
   adminActivityLogs    AdminActivityLog[]
-  reportsFiled         ReportFlag[]         @relation("ReportReporter")
-  reportsResolved      ReportFlag[]         @relation("ReportResolver")
-  verificationsDone    Verification[]       @relation("VerificationVerifier")
-  categoriesCreated    Category[]           @relation("CategoryCreatedBy")
-  categoriesUpdated    Category[]           @relation("CategoryUpdatedBy")
-  subcategoriesCreated Subcategory[]        @relation("SubcategoryCreatedBy")
-  subcategoriesUpdated Subcategory[]        @relation("SubcategoryUpdatedBy")
+  reportsFiled         ReportFlag[]        @relation("ReportReporter")
+  reportsResolved      ReportFlag[]        @relation("ReportResolver")
+  verificationsDone    Verification[]      @relation("VerificationVerifier")
+  categoriesCreated    Category[]          @relation("CategoryCreatedBy")
+  categoriesUpdated    Category[]          @relation("CategoryUpdatedBy")
+  subcategoriesCreated Subcategory[]       @relation("SubcategoryCreatedBy")
+  subcategoriesUpdated Subcategory[]       @relation("SubcategoryUpdatedBy")
   attributesCreated    CategoryAttribute[]
-  claims               ProviderClaim[]      @relation("ClaimClaimant")
-  claimsReviewed       ProviderClaim[]      @relation("ClaimReviewer")
+  claims               ProviderClaim[]     @relation("ClaimClaimant")
+  claimsReviewed       ProviderClaim[]     @relation("ClaimReviewer")
   contactMessages      ContactMessage[]
-  adminRole            AdminRole?           @relation(fields: [adminRoleId], references: [id], onDelete: SetNull)
-  tickets              SupportTicket[]      @relation("TicketRequester")
-  ticketsAssigned      SupportTicket[]      @relation("TicketAssignee")
+  adminRole            AdminRole?          @relation(fields: [adminRoleId], references: [id], onDelete: SetNull)
+  tickets              SupportTicket[]     @relation("TicketRequester")
+  ticketsAssigned      SupportTicket[]     @relation("TicketAssignee")
   ticketMessages       TicketMessage[]
 
   @@index([role])
   @@map("users")
 }
 
-model UserOAuthAccount {
-  id                BigInt        @id @default(autoincrement())
-  userId            BigInt        @map("user_id")
-  provider          OAuthProvider
-  providerUserId    String        @map("provider_user_id")
-  emailFromProvider String?       @map("email_from_provider")
-  createdAt         DateTime      @default(now()) @map("created_at")
+// One row per sign-in. The JWT carries the id (sid), so signing out or a password change can end it early.
+model AuthSession {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    BigInt    @map("user_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  ip        String?
+  userAgent String?   @map("user_agent")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([provider, providerUserId])
   @@index([userId])
-  @@map("user_oauth_accounts")
+  @@map("auth_sessions")
+}
+
+enum UserTokenType {
+  verify_email
+  reset_password
+}
+
+// Single-use tokens sent by email (verify address, reset password). Only a SHA-256 hash is stored.
+model UserToken {
+  id        BigInt        @id @default(autoincrement())
+  userId    BigInt        @map("user_id")
+  type      UserTokenType
+  tokenHash String        @unique @map("token_hash")
+  expiresAt DateTime      @map("expires_at")
+  usedAt    DateTime?     @map("used_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("user_tokens")
 }
 
 model UserAddress {
@@ -273,49 +299,49 @@ model UserAddress {
 // ---------------------------------------------------------------------------
 
 model Provider {
-  id                        BigInt                   @id @default(autoincrement())
+  id                        BigInt                                 @id @default(autoincrement())
   // Nullable: seeded/imported listings exist before their owner claims them.
-  userId                    BigInt?                  @unique @map("user_id")
-  slug                      String                   @unique
-  businessName              String                   @map("business_name")
+  userId                    BigInt?                                @unique @map("user_id")
+  slug                      String                                 @unique
+  businessName              String                                 @map("business_name")
   description               String?
-  logoUrl                   String?                  @map("logo_url")
-  coverUrl                  String?                  @map("cover_url")
-  businessType              BusinessType             @default(individual) @map("business_type")
-  yearsExperience           Int?                     @map("years_experience")
+  logoUrl                   String?                                @map("logo_url")
+  coverUrl                  String?                                @map("cover_url")
+  businessType              BusinessType                           @default(individual) @map("business_type")
+  yearsExperience           Int?                                   @map("years_experience")
   // Business contact number shown on the profile and dialled by "Call Now".
   phone                     String
   email                     String?
   website                   String?
-  addressLine               String?                  @map("address_line")
+  addressLine               String?                                @map("address_line")
   locality                  String?
   city                      String
   state                     String
   pincode                   String?
-  latitude                  Decimal                  @db.Decimal(9, 6)
-  longitude                 Decimal                  @db.Decimal(9, 6)
+  latitude                  Decimal                                @db.Decimal(9, 6)
+  longitude                 Decimal                                @db.Decimal(9, 6)
   // PostGIS point maintained by trigger from latitude/longitude; GiST indexed.
   location                  Unsupported("geography(Point, 4326)")?
-  serviceRadiusKm           Int                      @default(10) @map("service_radius_km")
-  whatsappNumber            String?                  @map("whatsapp_number")
-  acceptsCalls              Boolean                  @default(true) @map("accepts_calls")
-  acceptsWhatsapp           Boolean                  @default(true) @map("accepts_whatsapp")
-  isAvailable               Boolean                  @default(true) @map("is_available")
-  avgRating                 Decimal                  @default(0) @map("avg_rating") @db.Decimal(2, 1)
-  totalReviews              Int                      @default(0) @map("total_reviews")
+  serviceRadiusKm           Int                                    @default(10) @map("service_radius_km")
+  whatsappNumber            String?                                @map("whatsapp_number")
+  acceptsCalls              Boolean                                @default(true) @map("accepts_calls")
+  acceptsWhatsapp           Boolean                                @default(true) @map("accepts_whatsapp")
+  isAvailable               Boolean                                @default(true) @map("is_available")
+  avgRating                 Decimal                                @default(0) @map("avg_rating") @db.Decimal(2, 1)
+  totalReviews              Int                                    @default(0) @map("total_reviews")
   // Provider-entered, labelled "as reported", excluded from ranking.
-  selfReportedCompletedJobs Int?                     @map("self_reported_completed_jobs")
+  selfReportedCompletedJobs Int?                                   @map("self_reported_completed_jobs")
   // Derived from leads.customer_reported_response; null until enough data.
-  responseSignal            Decimal?                 @map("response_signal") @db.Decimal(4, 3)
-  profileCompletenessPct    Int                      @default(0) @map("profile_completeness_pct")
-  rankingScore              Decimal                  @default(0) @map("ranking_score") @db.Decimal(8, 4)
-  verificationStatus        VerificationStatus       @default(none) @map("verification_status")
-  status                    ProviderStatus           @default(pending)
-  claimedAt                 DateTime?                @map("claimed_at")
-  createdAt                 DateTime                 @default(now()) @map("created_at")
-  updatedAt                 DateTime                 @updatedAt @map("updated_at")
+  responseSignal            Decimal?                               @map("response_signal") @db.Decimal(4, 3)
+  profileCompletenessPct    Int                                    @default(0) @map("profile_completeness_pct")
+  rankingScore              Decimal                                @default(0) @map("ranking_score") @db.Decimal(8, 4)
+  verificationStatus        VerificationStatus                     @default(none) @map("verification_status")
+  status                    ProviderStatus                         @default(pending)
+  claimedAt                 DateTime?                              @map("claimed_at")
+  createdAt                 DateTime                               @default(now()) @map("created_at")
+  updatedAt                 DateTime                               @updatedAt @map("updated_at")
 
-  user              User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user              User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
   businessHours     ProviderBusinessHour[]
   serviceAreas      ProviderServiceArea[]
   portfolio         ProviderPortfolio[]
@@ -338,14 +364,14 @@ model Provider {
 }
 
 model ProviderBusinessHour {
-  id         BigInt   @id @default(autoincrement())
-  providerId BigInt   @map("provider_id")
+  id         BigInt  @id @default(autoincrement())
+  providerId BigInt  @map("provider_id")
   // 0 = Sunday ... 6 = Saturday
-  dayOfWeek  Int      @map("day_of_week") @db.SmallInt
+  dayOfWeek  Int     @map("day_of_week") @db.SmallInt
   // "HH:MM" 24h; null open/close = closed that day
-  openTime   String?  @map("open_time") @db.VarChar(5)
-  closeTime  String?  @map("close_time") @db.VarChar(5)
-  is24x7     Boolean  @default(false) @map("is_24x7")
+  openTime   String? @map("open_time") @db.VarChar(5)
+  closeTime  String? @map("close_time") @db.VarChar(5)
+  is24x7     Boolean @default(false) @map("is_24x7")
 
   provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
@@ -404,10 +430,10 @@ model Verification {
 }
 
 model Badge {
-  id                  BigInt   @id @default(autoincrement())
-  name                String   @unique
-  iconUrl             String?  @map("icon_url")
-  criteriaDescription String?  @map("criteria_description")
+  id                  BigInt  @id @default(autoincrement())
+  name                String  @unique
+  iconUrl             String? @map("icon_url")
+  criteriaDescription String? @map("criteria_description")
 
   providers ProviderBadge[]
   plans     SubscriptionPlan[]
@@ -433,11 +459,9 @@ model ProviderClaim {
   id          BigInt      @id @default(autoincrement())
   providerId  BigInt      @map("provider_id")
   userId      BigInt      @map("user_id")
-  method      ClaimMethod @default(phone_otp)
+  method      ClaimMethod @default(document)
   status      ClaimStatus @default(pending)
   documentUrl String?     @map("document_url")
-  otpHash     String?     @map("otp_hash")
-  otpExpires  DateTime?   @map("otp_expires_at")
   reviewedBy  BigInt?     @map("reviewed_by")
   reviewedAt  DateTime?   @map("reviewed_at")
   createdAt   DateTime    @default(now()) @map("created_at")
@@ -604,26 +628,38 @@ model SearchQuery {
 
 // A lead is the event of a customer tapping Call or WhatsApp on a provider.
 model Lead {
-  id                         BigInt      @id @default(autoincrement())
+  id                         BigInt            @id @default(autoincrement())
   // Nullable so guest taps are still counted.
-  userId                     BigInt?     @map("user_id")
-  providerId                 BigInt      @map("provider_id")
-  categoryId                 BigInt?     @map("category_id")
-  subcategoryId              BigInt?     @map("subcategory_id")
+  userId                     BigInt?           @map("user_id")
+  providerId                 BigInt            @map("provider_id")
+  categoryId                 BigInt?           @map("category_id")
+  subcategoryId              BigInt?           @map("subcategory_id")
   channel                    LeadChannel
-  source                     LeadSource  @default(search)
+  source                     LeadSource        @default(search)
   description                String?
-  customerReportedResponse   Boolean?    @map("customer_reported_response")
-  customerReportedResponseAt DateTime?   @map("customer_reported_response_at")
-  createdAt                  DateTime    @default(now()) @map("created_at")
+  customerReportedResponse   Boolean?          @map("customer_reported_response")
+  customerReportedResponseAt DateTime?         @map("customer_reported_response_at")
+  // Set when the contact was charged to a promotion, so an accepted dispute can refund it.
+  sponsoredListingId         BigInt?           @map("sponsored_listing_id")
+  sponsoredCharge            Decimal?          @map("sponsored_charge") @db.Decimal(10, 2)
+  // A provider can report a contact as spam or fake; the admin team decides.
+  disputeStatus              LeadDisputeStatus @default(none) @map("dispute_status")
+  disputeReason              String?           @map("dispute_reason")
+  disputedAt                 DateTime?         @map("disputed_at")
+  disputeResolvedBy          BigInt?           @map("dispute_resolved_by")
+  disputeResolvedAt          DateTime?         @map("dispute_resolved_at")
+  createdAt                  DateTime          @default(now()) @map("created_at")
 
-  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  provider    Provider     @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  category    Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  subcategory Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  user        User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider    Provider          @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category    Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory Subcategory?      @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  sponsored   SponsoredListing? @relation(fields: [sponsoredListingId], references: [id], onDelete: SetNull)
+  resolver    User?             @relation("LeadDisputeResolver", fields: [disputeResolvedBy], references: [id], onDelete: SetNull)
   review      Review?
 
   @@index([providerId, createdAt])
+  @@index([disputeStatus])
   @@index([userId])
   @@map("leads")
 }
@@ -633,18 +669,18 @@ model Lead {
 // ---------------------------------------------------------------------------
 
 model Review {
-  id             BigInt       @id @default(autoincrement())
+  id              BigInt       @id @default(autoincrement())
   // Presence = "Verified Contact" badge.
-  leadId         BigInt?      @unique @map("lead_id")
-  providerId     BigInt       @map("provider_id")
-  userId         BigInt       @map("user_id")
-  rating         Int          @db.SmallInt
-  reviewText     String?      @map("review_text")
-  providerReply  String?      @map("provider_reply")
-  providerReplyAt DateTime?   @map("provider_reply_at")
-  status         ReviewStatus @default(published)
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  leadId          BigInt?      @unique @map("lead_id")
+  providerId      BigInt       @map("provider_id")
+  userId          BigInt       @map("user_id")
+  rating          Int          @db.SmallInt
+  reviewText      String?      @map("review_text")
+  providerReply   String?      @map("provider_reply")
+  providerReplyAt DateTime?    @map("provider_reply_at")
+  status          ReviewStatus @default(published)
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
 
   lead     Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   provider Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
@@ -684,18 +720,18 @@ model Favorite {
 // ---------------------------------------------------------------------------
 
 model SubscriptionPlan {
-  id              BigInt       @id @default(autoincrement())
-  name            String       @unique
-  price           Decimal      @db.Decimal(10, 2)
-  billingCycle    BillingCycle @default(monthly) @map("billing_cycle")
+  id               BigInt       @id @default(autoincrement())
+  name             String       @unique
+  price            Decimal      @db.Decimal(10, 2)
+  billingCycle     BillingCycle @default(monthly) @map("billing_cycle")
   // null = unlimited
-  leadAccessLimit Int?         @map("lead_access_limit")
-  analyticsEnabled Boolean     @default(false) @map("analytics_enabled")
+  leadAccessLimit  Int?         @map("lead_access_limit")
+  analyticsEnabled Boolean      @default(false) @map("analytics_enabled")
   // Small factor, never dominant in ranking.
-  rankingBoost    Decimal      @default(0) @map("ranking_boost") @db.Decimal(4, 3)
-  badgeId         BigInt?      @map("badge_id")
-  featuresJson    Json?        @map("features_json")
-  isActive        Boolean      @default(true) @map("is_active")
+  rankingBoost     Decimal      @default(0) @map("ranking_boost") @db.Decimal(4, 3)
+  badgeId          BigInt?      @map("badge_id")
+  featuresJson     Json?        @map("features_json")
+  isActive         Boolean      @default(true) @map("is_active")
 
   badge         Badge?                 @relation(fields: [badgeId], references: [id], onDelete: SetNull)
   subscriptions ProviderSubscription[]
@@ -725,8 +761,10 @@ model Transaction {
   type         TransactionType
   amount       Decimal           @db.Decimal(10, 2)
   status       TransactionStatus @default(pending)
+  // Payment reference: UPI or bank reference for payments recorded by the admin team.
   gatewayTxnId String?           @map("gateway_txn_id")
   invoiceUrl   String?           @map("invoice_url")
+  note         String?
   createdAt    DateTime          @default(now()) @map("created_at")
 
   provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
@@ -750,6 +788,7 @@ model SponsoredListing {
 
   provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  leads    Lead[]
 
   @@index([categoryId, status])
   @@map("sponsored_listings")
@@ -773,18 +812,6 @@ model Notification {
 
   @@index([userId, isRead])
   @@map("notifications")
-}
-
-model DeviceToken {
-  id        BigInt   @id @default(autoincrement())
-  userId    BigInt   @map("user_id")
-  token     String   @unique
-  platform  String
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("device_tokens")
 }
 
 model AdminActivityLog {
@@ -848,7 +875,9 @@ model ContactMessage {
 // 8. Admin team & support
 // ---------------------------------------------------------------------------
 
-/** A named set of admin modules a staff member may open. The super admin always has every module. */
+/**
+ * A named set of admin modules a staff member may open. The super admin always has every module.
+ */
 model AdminRole {
   id          BigInt   @id @default(autoincrement())
   name        String   @unique
@@ -907,4 +936,14 @@ model TicketMessage {
 
   @@index([ticketId, createdAt])
   @@map("ticket_messages")
+}
+
+// Answers from the geocoder (OpenStreetMap Nominatim), kept for 30 days to stay within its usage policy.
+model GeocodeCache {
+  key       String   @id
+  result    Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("geocode_cache")
 }

@@ -7,6 +7,7 @@ import { MapContainer, Marker, Popup, TileLayer, useMap, Circle } from "react-le
 import Link from "next/link";
 import type { ProviderCard } from "@/lib/types";
 import { formatDistance } from "@/lib/format";
+import { MAP_ATTRIBUTION, MAP_TILE_URL } from "@/lib/config";
 
 function pinIcon(rating: number, active: boolean) {
   const bg = active ? "oklch(0.45 0.19 270)" : "oklch(0.53 0.2 266)";
@@ -57,7 +58,7 @@ export default function ResultsMap({
 
   return (
     <MapContainer center={center} zoom={13} scrollWheelZoom className={className} style={{ height: "100%", width: "100%" }}>
-      <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <TileLayer attribution={MAP_ATTRIBUTION} url={MAP_TILE_URL} />
       <FitBounds points={points} />
       {origin && (
         <>

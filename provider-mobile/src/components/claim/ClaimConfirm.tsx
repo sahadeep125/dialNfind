@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { FileText, ShieldCheck } from "lucide-react-native";
+import { FileText } from "lucide-react-native";
 
 import { AppButton, AppCallout, AppCard, AppText } from "@/components/design-system";
 import { DocumentUploadField } from "@/components/forms";
 import { useTheme } from "@/hooks/useTheme";
-import type { ClaimListing, ClaimMethod } from "@/types/onboarding";
+import type { ClaimListing } from "@/types/onboarding";
 import { ListingRow } from "./ListingRow";
 
 interface Props {
   listing: ClaimListing;
-  busy: ClaimMethod | null;
-  onStart: (method: ClaimMethod, documentUrl?: string) => void;
+  busy: boolean;
+  onStart: (documentUrl: string) => void;
   onChooseAnother: () => void;
 }
 
-/** Shows the chosen listing and the two ways to prove ownership: a code by SMS, or a document. */
+/** Shows the chosen listing and asks for a document that proves ownership. */
 export function ClaimConfirm({ listing, busy, onStart, onChooseAnother }: Props) {
   const theme = useTheme();
   const [docUrl, setDocUrl] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export function ClaimConfirm({ listing, busy, onStart, onChooseAnother }: Props)
       setDocError("Upload a document before submitting");
       return;
     }
-    onStart("document", docUrl);
+    onStart(docUrl);
   };
 
   return (
@@ -39,27 +39,10 @@ export function ClaimConfirm({ listing, busy, onStart, onChooseAnother }: Props)
         </AppCallout>
       ) : (
         <>
-          <AppCard variant="tinted" style={{ gap: theme.spacing[2] }}>
-            <View style={styles.title}>
-              <ShieldCheck size={18} color={theme.colors.brand.primary} />
-              <AppText variant="label">Verify by phone</AppText>
-            </View>
-            <AppText variant="caption" tone="secondary">
-              {`We will send a 6-digit code to ${listing.phone}, the number on this listing.`}
-            </AppText>
-            <AppButton
-              style={styles.start}
-              loading={busy === "phone_otp"}
-              disabled={busy !== null}
-              onPress={() => onStart("phone_otp")}
-            >
-              Send code
-            </AppButton>
-          </AppCard>
           <AppCard variant="flat" style={{ gap: theme.spacing[2] }}>
             <View style={styles.title}>
               <FileText size={18} color={theme.colors.brand.primary} />
-              <AppText variant="label">No access to that number?</AppText>
+              <AppText variant="label">Prove that you own this business</AppText>
             </View>
             <AppText variant="caption" tone="secondary">
               Upload a trade licence, GST certificate or shop registration. Our team reviews it
@@ -79,10 +62,9 @@ export function ClaimConfirm({ listing, busy, onStart, onChooseAnother }: Props)
               </AppText>
             ) : null}
             <AppButton
-              variant="secondary"
               style={styles.start}
-              loading={busy === "document"}
-              disabled={busy !== null}
+              loading={busy}
+              disabled={busy}
               onPress={submitDocument}
             >
               Submit document

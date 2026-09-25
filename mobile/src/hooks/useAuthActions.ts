@@ -60,6 +60,8 @@ export function useAuthActions() {
   });
 
   const signOut = (): void => {
+    // Ends the session on the server too; the request carries the token before the store clears it.
+    void api("/auth/logout", { method: "POST" }).catch(() => undefined);
     signOutStore();
     qc.removeQueries({
       predicate: (q) => ["favorites", "my-reviews", "me"].includes(String(q.queryKey[0])),

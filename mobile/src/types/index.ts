@@ -9,6 +9,7 @@ export interface SessionUser {
   email: string;
   phone: string | null;
   profilePhotoUrl: string | null;
+  emailVerifiedAt: string | null;
   createdAt: string;
   provider: { id: number; slug: string; businessName: string; status: string } | null;
 }
@@ -132,7 +133,8 @@ export interface LocationOption {
   name: string;
   city: string;
   state: string;
-  kind: "city" | "area" | "current";
+  /** "place" comes from the map search: a real place with no providers listed yet. */
+  kind: "city" | "area" | "place" | "current";
   latitude: number;
   longitude: number;
   providerCount?: number;
@@ -227,4 +229,5 @@ export interface AppConfig {
   support_hours: string | null;
   terms_url: string | null;
   privacy_url: string | null;
+  min_review_length: number;
 }

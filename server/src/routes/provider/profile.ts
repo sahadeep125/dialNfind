@@ -1,20 +1,22 @@
 import { Router } from "express";
 import { z } from "zod";
-import { email, httpUrl, optionalPhone, optionalUrl, phone, pincode } from "../../lib/rules.js";
+import { httpUrl } from "../../lib/rules.js";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, notFound } from "../../lib/errors.js";
 import { num } from "../../lib/serialize.js";
-import { uniqueProviderSlug } from "../../lib/slug.js";
 import { completenessChecklist, recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
 import { applicableAttributes, attributeOptions, decodeAttributeValue, encodeAttributeValue, loadAttributeValues } from "../../services/attributes.js";
 import { storage } from "../../storage/index.js";
 import { ownProvider } from "./common.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "./shared.js";
+import { privateFileUrl } from "../../lib/private-files.js";
+import { listingProfileSchema, updateListingProfile } from "../../services/listings.js";
 
 export const profileRouter = Router();
 
-async function loadProfile(providerId: bigint) {
+/** The provider's full profile with its checklist, as the provider apps and the admin editor show it. */
+export async function loadProfile(providerId: bigint) {
   const provider = await prisma.provider.findUniqueOrThrow({
     where: { id: providerId },
     include: {
@@ -39,42 +41,9 @@ profileRouter.get("/profile", async (req, res) => {
   res.json({ provider: await loadProfile(provider.id) });
 });
 
-const profileSchema = z.object({
-  businessName: z.string().trim().min(2).max(100),
-  description: z.string().trim().max(2000).nullable(),
-  businessType: z.enum(["individual", "company"]),
-  yearsExperience: z.number().int().min(0).max(80).nullable(),
-  selfReportedCompletedJobs: z.number().int().min(0).max(1_000_000).nullable(),
-  phone,
-  whatsappNumber: optionalPhone,
-  email: z.union([z.literal(""), z.null(), email]).transform((v) => v || null),
-  website: optionalUrl,
-  logoUrl: optionalUrl,
-  coverUrl: optionalUrl,
-  addressLine: z.string().trim().max(200).nullable(),
-  locality: z.string().trim().max(80).nullable(),
-  city: z.string().trim().min(2).max(60),
-  state: z.string().trim().min(2).max(60),
-  pincode: z.union([z.null(), z.union([z.literal(""), pincode]).transform((v) => v || null)]),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-  serviceRadiusKm: z.number().int().min(1).max(100),
-  acceptsCalls: z.boolean(),
-  acceptsWhatsapp: z.boolean(),
-  isAvailable: z.boolean(),
-});
-
 profileRouter.patch("/profile", async (req, res) => {
   const provider = await ownProvider(req);
-  const body = parse(profileSchema.partial(), req.body);
-  const renamed = (body.businessName && body.businessName !== provider.businessName) || (body.city && body.city !== provider.city);
-  const slug = renamed ? await uniqueProviderSlug(body.businessName ?? provider.businessName, body.city ?? provider.city, provider.id) : undefined;
-  await prisma.provider.update({ where: { id: provider.id }, data: { ...body, ...(slug ? { slug } : {}) } });
-  // Replaced or cleared images are deleted from storage.
-  for (const key of ["logoUrl", "coverUrl"] as const) {
-    if (body[key] !== undefined && provider[key] && body[key] !== provider[key]) void storage.remove(provider[key]!);
-  }
-  await recalculateProvider(provider.id);
+  await updateListingProfile(provider, parse(listingProfileSchema.partial(), req.body));
   res.json({ provider: await loadProfile(provider.id) });
 });
 
@@ -234,7 +203,7 @@ profileRouter.get("/verifications", async (req, res) => {
 
 const verificationSchema = z.object({
   type: z.enum(["business", "location", "id_proof"]),
-  documentUrl: httpUrl,
+  documentUrl: privateFileUrl,
   notes: z.string().trim().max(500).optional(),
 });
 

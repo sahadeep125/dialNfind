@@ -3,11 +3,12 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { badRequest, notFound } from "../lib/errors.js";
-import { httpUrl } from "../lib/rules.js";
 import { pageMeta, paginationSchema } from "../lib/pagination.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { notify } from "../services/notify.js";
-import { supportStaffIds, TICKET_CATEGORIES, ticketListSelect, ticketRef } from "../services/tickets.js";
+import { openTicket, supportStaffIds, TICKET_CATEGORIES, ticketListSelect, ticketRef } from "../services/tickets.js";
+import { limits } from "../lib/rate-limit.js";
+import { privateFileUrl } from "../lib/private-files.js";
 
 /** Help-desk tickets for signed-in customers and providers. Staff side lives in routes/admin/support.ts. */
 export const supportRouter = Router();
@@ -17,7 +18,7 @@ const createSchema = z.object({
   subject: z.string().trim().min(5, "Write a short subject, at least 5 characters").max(120),
   category: z.enum(TICKET_CATEGORIES).default("general"),
   message: z.string().trim().min(10, "Describe the problem in at least 10 characters").max(5000),
-  attachments: z.array(httpUrl).max(5).default([]),
+  attachments: z.array(privateFileUrl).max(5).default([]),
 });
 
 supportRouter.get("/tickets", async (req, res) => {
@@ -30,24 +31,10 @@ supportRouter.get("/tickets", async (req, res) => {
   res.json({ tickets: tickets.map(({ assignedTo: _a, ...t }) => ({ ...t, reference: ticketRef(t.id) })), ...pageMeta(q.page, q.pageSize, total) });
 });
 
-supportRouter.post("/tickets", async (req, res) => {
+supportRouter.post("/tickets", limits.tickets, async (req, res) => {
   const body = parse(createSchema, req.body);
-  const me = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id }, select: { id: true, name: true, email: true, phone: true, provider: { select: { id: true } } } });
-  const ticket = await prisma.supportTicket.create({
-    data: {
-      userId: me.id,
-      providerId: me.provider?.id ?? null,
-      name: me.name,
-      email: me.email,
-      phone: me.phone,
-      subject: body.subject,
-      category: body.category,
-      source: me.provider ? "provider_app" : "web",
-      messages: { create: { authorId: me.id, body: body.message, attachments: body.attachments } },
-    },
-  });
-  for (const id of await supportStaffIds(null)) void notify(id, "support", `New ticket ${ticketRef(ticket.id)}`, body.subject, { ticketId: Number(ticket.id) });
-  res.status(201).json({ ticket: { ...ticket, reference: ticketRef(ticket.id) } });
+  const ticket = await openTicket(currentUser(req).id, body);
+  res.status(201).json({ ticket });
 });
 
 async function ownTicket(req: Parameters<typeof currentUser>[0]) {
@@ -68,7 +55,7 @@ supportRouter.get("/tickets/:id", async (req, res) => {
   });
 });
 
-const replySchema = z.object({ body: z.string().trim().min(1, "Write a message").max(5000), attachments: z.array(httpUrl).max(5).default([]) });
+const replySchema = z.object({ body: z.string().trim().min(1, "Write a message").max(5000), attachments: z.array(privateFileUrl).max(5).default([]) });
 
 supportRouter.post("/tickets/:id/messages", async (req, res) => {
   const body = parse(replySchema, req.body);

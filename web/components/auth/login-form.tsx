@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { email } from "@/lib/validation";
-import { OrDivider, SocialButtons } from "./social-buttons";
 
 const schema = z.object({
   email,
@@ -46,8 +45,6 @@ export function LoginForm() {
 
   return (
     <>
-      <SocialButtons />
-      <OrDivider />
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         <FormAlert message={error} />
         <Field id="email" label="Email" error={errors.email}>
@@ -55,7 +52,7 @@ export function LoginForm() {
         </Field>
         <div className="space-y-2">
           <div className="flex justify-end">
-            <Link href="/contact" className="-mb-7 text-xs font-medium text-primary hover:underline">
+            <Link href="/forgot-password" className="-mb-7 text-xs font-medium text-primary hover:underline">
               Forgot password?
             </Link>
           </div>

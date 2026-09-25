@@ -17,6 +17,7 @@ import { useAuthActions } from "@/hooks/useAuthActions";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
+import { openWebPage } from "@/services/links";
 import { isValid, validateEmail } from "@/utils/validation";
 
 export default function LoginScreen() {
@@ -101,6 +102,17 @@ export default function LoginScreen() {
             onSubmitEditing={submit}
           />
 
+          <AppPressable
+            accessibilityRole="link"
+            hitSlop={10}
+            style={styles.forgot}
+            onPress={() => void openWebPage("/forgot-password")}
+          >
+            <AppText variant="label" tone="brand">
+              Forgot password?
+            </AppText>
+          </AppPressable>
+
           <AppButton size="lg" fullWidth loading={login.isPending} onPress={submit}>
             Sign in
           </AppButton>
@@ -137,6 +149,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   brand: { alignItems: "center" },
+  forgot: { alignSelf: "flex-end", marginTop: -8 },
   switchRow: {
     alignItems: "center",
     flexDirection: "row",

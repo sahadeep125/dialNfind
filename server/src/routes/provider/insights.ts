@@ -5,11 +5,14 @@ import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, conflict, notFound } from "../../lib/errors.js";
 import { pageMeta, paginationSchema } from "../../lib/pagination.js";
 import { num } from "../../lib/serialize.js";
-import { env } from "../../env.js";
-import { completenessChecklist, recalculateProvider } from "../../services/ranking.js";
+import { completenessChecklist } from "../../services/ranking.js";
 import { displayAttributeValue, loadAttributeValues } from "../../services/attributes.js";
 import { notify } from "../../services/notify.js";
 import { ownProvider } from "./common.js";
+import { currentUser } from "../../middleware/auth.js";
+import { getNumberSetting } from "../../services/settings.js";
+import { openTicket } from "../../services/tickets.js";
+import { limits } from "../../lib/rate-limit.js";
 
 export const insightsRouter = Router();
 
@@ -32,10 +35,10 @@ insightsRouter.get("/dashboard", async (req, res) => {
     }),
     prisma.$queryRaw<{ day: Date; channel: string; count: bigint }[]>`
       SELECT date_trunc('day', created_at)::date AS day, channel::text AS channel, COUNT(*)::bigint AS count
-      FROM leads WHERE provider_id = ${provider.id} AND created_at >= ${since}
+      FROM leads WHERE provider_id = ${provider.id} AND created_at >= ${since} AND dispute_status <> 'accepted'
       GROUP BY 1, 2`,
     prisma.providerDailyStat.findMany({ where: { providerId: provider.id, date: { gte: since } } }),
-    prisma.lead.count({ where: { providerId: provider.id, createdAt: { gte: prevSince, lt: since } } }),
+    prisma.lead.count({ where: { providerId: provider.id, createdAt: { gte: prevSince, lt: since }, disputeStatus: { not: "accepted" } } }),
     prisma.providerDailyStat.aggregate({
       where: { providerId: provider.id, date: { gte: prevSince, lt: since } },
       _sum: { profileViews: true },
@@ -171,10 +174,30 @@ insightsRouter.get("/leads", async (req, res) => {
       service: l.subcategory?.name ?? l.category?.name ?? null,
       customerReportedResponse: l.customerReportedResponse,
       reviewRating: l.review?.rating ?? null,
+      disputeStatus: l.disputeStatus,
+      disputeReason: l.disputeReason,
       details: (details.get(l.id) ?? []).map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
     })),
     ...pageMeta(q.page, q.pageSize, total),
   });
+});
+
+const DISPUTE_WINDOW_DAYS = 30;
+const disputeSchema = z.object({ reason: z.string().trim().min(10, "Tell us what was wrong with this contact, at least 10 characters").max(500) });
+
+/**
+ * POST /provider/leads/:id/dispute — report a contact as spam, fake or a wrong number. The team
+ * reviews it; if accepted it no longer counts in the provider's numbers and any promotion charge is refunded.
+ */
+insightsRouter.post("/leads/:id/dispute", limits.disputes, async (req, res) => {
+  const provider = await ownProvider(req);
+  const { reason } = parse(disputeSchema, req.body);
+  const lead = await prisma.lead.findUnique({ where: { id: idParam(req.params.id as string) } });
+  if (!lead || lead.providerId !== provider.id) throw notFound("Lead not found");
+  if (lead.disputeStatus !== "none") throw conflict("You already reported this contact");
+  if (Date.now() - lead.createdAt.getTime() > DISPUTE_WINDOW_DAYS * 24 * 60 * 60 * 1000) throw badRequest(`Contacts can be reported within ${DISPUTE_WINDOW_DAYS} days`);
+  const updated = await prisma.lead.update({ where: { id: lead.id }, data: { disputeStatus: "open", disputeReason: reason, disputedAt: new Date() } });
+  res.status(201).json({ lead: { id: updated.id, disputeStatus: updated.disputeStatus, disputeReason: updated.disputeReason } });
 });
 
 // Reviews ----------------------------------------------------------------------------------
@@ -257,70 +280,37 @@ insightsRouter.get("/subscription", async (req, res) => {
   res.json({ current, plans, transactions });
 });
 
-const checkoutSchema = z.object({ planId: z.number().int().positive() });
+const planRequestSchema = z.object({ planId: z.number().int().positive(), note: z.string().trim().max(1000).optional() });
 
 /**
- * POST /provider/subscription/checkout — payment gateway is not wired yet. Outside production the
- * charge is simulated as successful so the upgrade flow can be demoed end to end.
+ * POST /provider/subscription/request — there is no online payment. The request becomes a billing
+ * ticket; the team arranges payment and grants the plan from the admin console.
  */
-insightsRouter.post("/subscription/checkout", async (req, res) => {
+insightsRouter.post("/subscription/request", limits.billing, async (req, res) => {
   const provider = await ownProvider(req);
-  const { planId } = parse(checkoutSchema, req.body);
-  const plan = await prisma.subscriptionPlan.findUnique({ where: { id: BigInt(planId) } });
+  const body = parse(planRequestSchema, req.body);
+  const plan = await prisma.subscriptionPlan.findUnique({ where: { id: BigInt(body.planId) } });
   if (!plan || !plan.isActive) throw notFound("Plan not found");
-  if (!env.paymentGatewayKey && env.nodeEnv === "production") throw badRequest("Payments are not configured yet");
-
-  const start = new Date();
-  const end = new Date(start);
-  if (plan.billingCycle === "yearly") end.setFullYear(end.getFullYear() + 1);
-  else end.setMonth(end.getMonth() + 1);
-
-  const result = await prisma.$transaction(async (tx) => {
-    await tx.providerSubscription.updateMany({ where: { providerId: provider.id, status: "active" }, data: { status: "cancelled" } });
-    const subscription = await tx.providerSubscription.create({
-      data: { providerId: provider.id, planId: plan.id, startDate: start, endDate: num(plan.price) ? end : null, status: "active" },
-      include: { plan: true },
-    });
-    const transaction = num(plan.price)
-      ? await tx.transaction.create({
-          data: {
-            providerId: provider.id,
-            type: "subscription",
-            amount: plan.price,
-            status: "success",
-            gatewayTxnId: `sim_${Date.now().toString(36)}`,
-          },
-        })
-      : null;
-    if (plan.badgeId) {
-      await tx.providerBadge.upsert({
-        where: { providerId_badgeId: { providerId: provider.id, badgeId: plan.badgeId } },
-        create: { providerId: provider.id, badgeId: plan.badgeId },
-        update: {},
-      });
-    }
-    return { subscription, transaction };
+  const price = num(plan.price) ?? 0;
+  const ticket = await openTicket(currentUser(req).id, {
+    subject: `Plan request: ${plan.name}`,
+    category: "billing",
+    message: [
+      `${provider.businessName} (${provider.city}) would like the ${plan.name} plan.`,
+      `Price: Rs ${price} per ${plan.billingCycle === "yearly" ? "year" : "month"}.`,
+      body.note ? `Note from the provider: ${body.note}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
   });
-  await recalculateProvider(provider.id);
-  void notify(req.user?.id, "subscription", `You are on the ${plan.name} plan`, num(plan.price) ? `Active until ${end.toDateString()}.` : "Your listing stays free to find.", { planId });
-  res.status(201).json({ ...result, simulated: !env.paymentGatewayKey });
-});
-
-insightsRouter.post("/subscription/cancel", async (req, res) => {
-  const provider = await ownProvider(req);
-  await prisma.providerSubscription.updateMany({
-    where: { providerId: provider.id, status: "active" },
-    data: { autoRenew: false },
-  });
-  res.json({ ok: true });
+  res.status(201).json({ ticket: { id: ticket.id, reference: ticket.reference } });
 });
 
 // Sponsored listings ---------------------------------------------------------------------------
 
 async function sponsoredPricing() {
-  const rows = await prisma.setting.findMany({ where: { key: { in: ["sponsored_cpc", "sponsored_min_budget"] } } });
-  const get = (k: string, d: number) => Number(rows.find((r) => r.key === k)?.value ?? d) || d;
-  return { costPerClick: get("sponsored_cpc", 5), minBudget: get("sponsored_min_budget", 500) };
+  const [costPerClick, minBudget] = await Promise.all([getNumberSetting("sponsored_cpc", 5), getNumberSetting("sponsored_min_budget", 500)]);
+  return { costPerClick, minBudget };
 }
 
 insightsRouter.get("/sponsored", async (req, res) => {
@@ -350,37 +340,34 @@ const sponsorSchema = z.object({
   categoryId: z.number().int().positive(),
   days: z.union([z.literal(7), z.literal(14), z.literal(30)]),
   budget: z.number().int().positive().max(1_000_000),
+  note: z.string().trim().max(1000).optional(),
 });
 
-/** POST /provider/sponsored — buys a campaign. Payment is simulated until a gateway is configured. */
-insightsRouter.post("/sponsored", async (req, res) => {
+/** POST /provider/sponsored/request — asks the team to set up a campaign; it is created from the admin console once paid. */
+insightsRouter.post("/sponsored/request", limits.billing, async (req, res) => {
   const provider = await ownProvider(req);
   const body = parse(sponsorSchema, req.body);
   if (provider.status !== "active") throw badRequest("Your listing must be live before you can promote it");
   const { minBudget } = await sponsoredPricing();
   if (body.budget < minBudget) throw badRequest(`The minimum budget is Rs ${minBudget}`);
-  const offers = await prisma.providerService.count({ where: { providerId: provider.id, categoryId: BigInt(body.categoryId) } });
-  if (!offers) throw badRequest("You can only promote a category you offer");
-  if (!env.paymentGatewayKey && env.nodeEnv === "production") throw badRequest("Payments are not configured yet");
+  const service = await prisma.providerService.findFirst({ where: { providerId: provider.id, categoryId: BigInt(body.categoryId) }, include: { category: { select: { name: true } } } });
+  if (!service) throw badRequest("You can only promote a category you offer");
   const running = await prisma.sponsoredListing.count({
     where: { providerId: provider.id, categoryId: BigInt(body.categoryId), status: { in: ["active", "paused"] }, endDate: { gte: new Date() } },
   });
   if (running) throw conflict("You already have a campaign running in this category");
-
-  const start = new Date();
-  start.setUTCHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + body.days - 1);
-  const result = await prisma.$transaction(async (tx) => {
-    const listing = await tx.sponsoredListing.create({
-      data: { providerId: provider.id, categoryId: BigInt(body.categoryId), targetLocation: provider.city, startDate: start, endDate: end, budget: body.budget },
-    });
-    const transaction = await tx.transaction.create({
-      data: { providerId: provider.id, type: "sponsored_ad", amount: body.budget, status: "success", gatewayTxnId: `sim_${Date.now().toString(36)}` },
-    });
-    return { listing, transaction };
+  const ticket = await openTicket(currentUser(req).id, {
+    subject: `Promotion request: ${service.category.name}`,
+    category: "billing",
+    message: [
+      `${provider.businessName} (${provider.city}) would like to promote their listing in ${service.category.name}.`,
+      `Duration: ${body.days} days. Budget: Rs ${body.budget}.`,
+      body.note ? `Note from the provider: ${body.note}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
   });
-  res.status(201).json({ ...result, simulated: !env.paymentGatewayKey });
+  res.status(201).json({ ticket: { id: ticket.id, reference: ticket.reference } });
 });
 
 insightsRouter.patch("/sponsored/:id", async (req, res) => {

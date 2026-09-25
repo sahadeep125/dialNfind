@@ -23,7 +23,7 @@ export default async function CategoryListingPage({ params, searchParams }: { pa
   if (!categoryData) notFound();
   const category = categoryData.category;
   const location = await resolveLocation(sp);
-  const radiusKm = Number(one(sp.radius) ?? 15);
+  const radiusParam = Number(one(sp.radius));
   const sub = category.subcategories.find((s) => s.slug === one(sp.sub));
 
   const data = await api<SearchResponse>("/search/providers", {
@@ -32,7 +32,7 @@ export default async function CategoryListingPage({ params, searchParams }: { pa
       subcategory: sub?.slug,
       lat: location.latitude,
       lng: location.longitude,
-      radiusKm,
+      radiusKm: radiusParam > 0 ? radiusParam : undefined,
       minRating: one(sp.minRating),
       openNow: one(sp.openNow),
       verified: one(sp.verified),
@@ -88,12 +88,12 @@ export default async function CategoryListingPage({ params, searchParams }: { pa
                 {data.total.toLocaleString("en-IN")} {sub ? sub.name : category.name} providers
               </h2>
               <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-                <MapPin className="size-4 text-primary" /> within {radiusKm} km of {location.label}
+                <MapPin className="size-4 text-primary" /> within {data.radiusKm} km of {location.label}
               </p>
             </div>
           }
           origin={{ lat: location.latitude, lng: location.longitude }}
-          radiusKm={radiusKm}
+          radiusKm={data.radiusKm}
           lockedCategory={category}
           source="category_browse"
         />

@@ -10,9 +10,16 @@ import { adminOpsRouter } from "./admin/operations.js";
 import { adminSettingsRouter } from "./admin/settings.js";
 import { adminSupportRouter } from "./admin/support.js";
 import { adminTeamRouter } from "./admin/team.js";
+import { adminProvidersRouter } from "./admin/providers.js";
+import { adminUsersRouter } from "./admin/users.js";
+import { adminRecordsRouter } from "./admin/records.js";
+import { adminExportRouter } from "./admin/export.js";
 import { logAdmin } from "../services/audit.js";
-import { notify } from "../services/notify.js";
-import { recalculateCategoryCounts, recalculateProvider } from "../services/ranking.js";
+import { notify, notifyAndEmail } from "../services/notify.js";
+import { env } from "../env.js";
+import { recalculateProvider } from "../services/ranking.js";
+import { offlinePaymentSchema, recordPayment } from "./admin/records.js";
+import { ticketRef } from "../services/tickets.js";
 
 /**
  * Admin endpoints for the super admin and their team. Each path is guarded by the module it
@@ -20,80 +27,7 @@ import { recalculateCategoryCounts, recalculateProvider } from "../services/rank
  */
 export const adminRouter = Router();
 adminRouter.use(requireStaff, guardAdminPath);
-adminRouter.use(adminTeamRouter, adminSupportRouter, adminSettingsRouter, adminOpsRouter);
-
-const providerQuery = paginationSchema.extend({
-  status: z.enum(["pending", "active", "rejected", "suspended"]).optional(),
-  verification: z.enum(["none", "partial", "verified"]).optional(),
-  claimed: z.enum(["yes", "no"]).optional(),
-  city: z.string().trim().max(60).optional(),
-  q: z.string().trim().max(100).optional(),
-});
-
-adminRouter.get("/providers", async (req, res) => {
-  const q = parse(providerQuery, req.query);
-  const where = {
-    ...(q.status ? { status: q.status } : {}),
-    ...(q.verification ? { verificationStatus: q.verification } : {}),
-    ...(q.claimed ? { userId: q.claimed === "yes" ? { not: null } : null } : {}),
-    ...(q.city ? { city: { equals: q.city, mode: "insensitive" as const } } : {}),
-    ...(q.q ? { OR: [{ businessName: { contains: q.q, mode: "insensitive" as const } }, { phone: { contains: q.q } }] } : {}),
-  };
-  const [providers, total] = await Promise.all([
-    prisma.provider.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (q.page - 1) * q.pageSize,
-      take: q.pageSize,
-      select: {
-        id: true,
-        slug: true,
-        businessName: true,
-        city: true,
-        locality: true,
-        phone: true,
-        logoUrl: true,
-        status: true,
-        verificationStatus: true,
-        userId: true,
-        avgRating: true,
-        totalReviews: true,
-        profileCompletenessPct: true,
-        createdAt: true,
-        user: { select: { name: true, email: true } },
-        services: { where: { isPrimary: true }, take: 1, select: { category: { select: { name: true } } } },
-      },
-    }),
-    prisma.provider.count({ where }),
-  ]);
-  res.json({ providers, ...pageMeta(q.page, q.pageSize, total) });
-});
-
-const providerStatusSchema = z.object({
-  status: z.enum(["pending", "active", "rejected", "suspended"]).optional(),
-  verificationStatus: z.enum(["none", "partial", "verified"]).optional(),
-});
-
-adminRouter.patch("/providers/:id", async (req, res) => {
-  const body = parse(providerStatusSchema, req.body);
-  const id = idParam(req.params.id as string);
-  const before = await prisma.provider.findUnique({ where: { id }, select: { status: true } });
-  if (!before) throw notFound("Provider not found");
-  const provider = await prisma.provider.update({ where: { id }, data: body });
-  await logAdmin(currentUser(req).id, "provider.update", "provider", id, body);
-  if (body.status && body.status !== before.status) {
-    const copy: Record<string, [string, string]> = {
-      active: ["Your listing is live", "Customers can now find and contact you on DialNFind."],
-      suspended: ["Your listing is suspended", "Your listing is hidden from search. Contact support to resolve this."],
-      rejected: ["Your listing was not approved", "Please review your details and contact support if you need help."],
-      pending: ["Your listing is under review", "We will let you know once it is approved."],
-    };
-    void notify(provider.userId, "listing", copy[body.status][0], copy[body.status][1], { providerId: Number(id) });
-  }
-  await recalculateProvider(id);
-  await recalculateCategoryCounts();
-  res.json({ provider: { id: provider.id, status: provider.status, verificationStatus: provider.verificationStatus } });
-});
+adminRouter.use(adminTeamRouter, adminSupportRouter, adminSettingsRouter, adminOpsRouter, adminProvidersRouter, adminUsersRouter, adminRecordsRouter, adminExportRouter);
 
 const queueQuery = z.object({ status: z.enum(["pending", "approved", "rejected"]).default("pending") });
 
@@ -127,7 +61,7 @@ adminRouter.patch("/claims/:id", async (req, res) => {
       : []),
   ]);
   await logAdmin(admin.id, `claim.${decision}`, "provider_claim", claim.id);
-  void notify(
+  void notifyAndEmail(
     claim.userId,
     "claim",
     decision === "approved" ? `${claim.provider.businessName} is now yours` : "Your claim was not approved",
@@ -135,6 +69,7 @@ adminRouter.patch("/claims/:id", async (req, res) => {
       ? "Your document was accepted. Sign in to the provider app to manage your listing."
       : `We could not confirm you own ${claim.provider.businessName}. Contact support if you think this is a mistake.`,
     { providerId: Number(claim.providerId), claimId: Number(claim.id) },
+    { label: "Open the provider app", url: env.providerUrl },
   );
   res.json({ ok: true });
 });
@@ -159,21 +94,23 @@ adminRouter.patch("/verifications/:id", async (req, res) => {
     where: { id },
     data: { status: decision, verifiedBy: admin.id, verifiedAt: new Date(), ...(notes !== undefined ? { notes } : {}) },
   });
-  // verified = phone + business (or ID) approved; partial = anything approved.
+  // verified = business registration or owner ID, plus phone or address; partial = anything approved.
+  // The address document stands in for the phone check that used to come from SMS claim codes.
   const approved = await prisma.verification.findMany({ where: { providerId: verification.providerId, status: "approved" }, select: { type: true } });
   const types = new Set(approved.map((a) => a.type));
-  const status = types.has("phone") && (types.has("business") || types.has("id_proof")) ? "verified" : types.size ? "partial" : "none";
+  const status = (types.has("phone") || types.has("location")) && (types.has("business") || types.has("id_proof")) ? "verified" : types.size ? "partial" : "none";
   await prisma.provider.update({ where: { id: verification.providerId }, data: { verificationStatus: status } });
   await recalculateProvider(verification.providerId);
   await logAdmin(admin.id, `verification.${decision}`, "verification", id);
   const owner = await prisma.provider.findUnique({ where: { id: verification.providerId }, select: { userId: true } });
   const label = { phone: "Phone", business: "Business registration", location: "Business address", id_proof: "Owner identity" }[verification.type];
-  void notify(
+  void notifyAndEmail(
     owner?.userId,
     "verification",
     decision === "approved" ? `${label} verified` : `${label} document not accepted`,
     decision === "approved" ? "Your verification badge on DialNFind has been updated." : `${notes} Please upload a new document from the Verification page.`,
     { verificationId: Number(id) },
+    { label: "Open Verification", url: `${env.providerUrl}/verification` },
   );
   res.json({ verification, verificationStatus: status });
 });
@@ -211,20 +148,6 @@ adminRouter.patch("/flags/:id", async (req, res) => {
   res.json({ flag });
 });
 
-const reviewModerationSchema = z.object({ status: z.enum(["published", "flagged", "removed"]) });
-
-adminRouter.patch("/reviews/:id", async (req, res) => {
-  const { status } = parse(reviewModerationSchema, req.body);
-  const id = idParam(req.params.id as string);
-  const review = await prisma.review.update({ where: { id }, data: { status } });
-  await prisma.reportFlag.updateMany({
-    where: { targetType: "review", targetId: id, status: "open" },
-    data: { status: "resolved", resolvedBy: currentUser(req).id },
-  });
-  await recalculateProvider(review.providerId);
-  await logAdmin(currentUser(req).id, "review.moderate", "review", id, { status });
-  res.json({ review });
-});
 
 adminRouter.get("/contact-messages", async (_req, res) => {
   res.json({ messages: await prisma.contactMessage.findMany({ orderBy: { createdAt: "desc" }, take: 100 }) });
@@ -238,60 +161,27 @@ adminRouter.patch("/contact-messages/:id", async (req, res) => {
   res.json({ message });
 });
 
-// Users ----------------------------------------------------------------------------------------
-
-const usersQuery = paginationSchema.extend({
-  q: z.string().trim().optional(),
-  role: z.enum(["super_admin", "admin", "provider", "customer"]).optional(),
-  status: z.enum(["active", "suspended", "deleted"]).optional(),
-});
-
-adminRouter.get("/users", async (req, res) => {
-  const q = parse(usersQuery, req.query);
-  const where = {
-    ...(q.role ? { role: q.role } : {}),
-    ...(q.status ? { status: q.status } : {}),
-    ...(q.q
-      ? { OR: [{ name: { contains: q.q, mode: "insensitive" as const } }, { email: { contains: q.q, mode: "insensitive" as const } }, { phone: { contains: q.q } }] }
-      : {}),
-  };
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (q.page - 1) * q.pageSize,
-      take: q.pageSize,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        status: true,
-        createdAt: true,
-        lastLoginAt: true,
-        profilePhotoUrl: true,
-        provider: { select: { id: true, businessName: true, slug: true } },
-        _count: { select: { reviews: true, leads: true } },
-      },
-    }),
-    prisma.user.count({ where }),
-  ]);
-  res.json({ users, ...pageMeta(q.page, q.pageSize, total) });
-});
-
-adminRouter.patch("/users/:id", async (req, res) => {
-  // Admin and super admin access is managed from Team, not here.
-  const body = parse(z.object({ status: z.enum(["active", "suspended", "deleted"]).optional() }), req.body);
-  const admin = currentUser(req);
+/** Moves a message from the old contact form into the help desk, then closes the message. */
+adminRouter.post("/contact-messages/:id/ticket", async (req, res) => {
   const id = idParam(req.params.id as string);
-  if (id === admin.id) throw badRequest("You cannot change your own account here");
-  const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
-  if (!target) throw notFound("User not found");
-  if (target.role === "super_admin" || target.role === "admin") throw badRequest("Manage team members from Team");
-  const user = await prisma.user.update({ where: { id }, data: body, select: { id: true, role: true, status: true } });
-  await logAdmin(admin.id, "user.update", "user", id, body);
-  res.json({ user });
+  const message = await prisma.contactMessage.findUnique({ where: { id } });
+  if (!message) throw notFound("Message not found");
+  const ticket = await prisma.supportTicket.create({
+    data: {
+      userId: message.userId,
+      name: message.name,
+      email: message.email,
+      phone: message.phone,
+      subject: message.subject || "Message from the contact form",
+      category: "general",
+      source: "contact_form",
+      createdAt: message.createdAt,
+      messages: { create: { authorId: message.userId, body: message.message, attachments: [], createdAt: message.createdAt } },
+    },
+  });
+  await prisma.contactMessage.update({ where: { id }, data: { status: "closed" } });
+  await logAdmin(currentUser(req).id, "contact_message.to_ticket", "contact_message", id, { ticketId: Number(ticket.id) });
+  res.status(201).json({ ticket: { id: ticket.id, reference: ticketRef(ticket.id) } });
 });
 
 // Activity log ----------------------------------------------------------------------------------
@@ -452,28 +342,6 @@ adminRouter.patch("/plans/:id", async (req, res) => {
   res.json({ plan });
 });
 
-adminRouter.get("/transactions", async (req, res) => {
-  const q = parse(
-    paginationSchema.extend({
-      status: z.enum(["pending", "success", "failed", "refunded"]).optional(),
-      type: z.enum(["subscription", "lead_fee", "sponsored_ad"]).optional(),
-    }),
-    req.query,
-  );
-  const where = { ...(q.status ? { status: q.status } : {}), ...(q.type ? { type: q.type } : {}) };
-  const [transactions, total, sum] = await Promise.all([
-    prisma.transaction.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (q.page - 1) * q.pageSize,
-      take: q.pageSize,
-      include: { provider: { select: { id: true, businessName: true, slug: true } } },
-    }),
-    prisma.transaction.count({ where }),
-    prisma.transaction.aggregate({ where: { ...where, status: "success" }, _sum: { amount: true } }),
-  ]);
-  res.json({ transactions, revenue: sum._sum.amount ?? 0, ...pageMeta(q.page, q.pageSize, total) });
-});
 
 // Sponsored listings ----------------------------------------------------------------------------
 
@@ -494,14 +362,18 @@ const adminSponsoredSchema = z.object({
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
   budget: z.number().min(0).max(10_000_000),
+  /** Set when the provider paid for the campaign offline. */
+  payment: offlinePaymentSchema.optional(),
 });
 
 adminRouter.post("/sponsored", async (req, res) => {
   const body = parse(adminSponsoredSchema, req.body);
   if (body.endDate < body.startDate) throw badRequest("End date must be after the start date");
+  const { payment, ...campaign } = body;
   const listing = await prisma.sponsoredListing.create({
-    data: { ...body, providerId: BigInt(body.providerId), categoryId: BigInt(body.categoryId) },
+    data: { ...campaign, providerId: BigInt(body.providerId), categoryId: BigInt(body.categoryId) },
   });
+  if (payment) await recordPayment(currentUser(req).id, listing.providerId, "sponsored_ad", payment);
   await logAdmin(currentUser(req).id, "sponsored.create", "sponsored_listing", listing.id, body);
   res.status(201).json({ listing });
 });

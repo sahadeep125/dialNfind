@@ -49,6 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(() => {
+    // Ends the session on the server too; the request carries the token before it is cleared below.
+    void api("/auth/logout", { method: "POST" }).catch(() => undefined);
     tokenStore.clear();
     setToken(null);
     qc.clear();

@@ -8,6 +8,7 @@ import type { Paged } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState, Pager, PageSkeleton, Stars } from "@/components/common";
 import { FilterSelect, SearchInput, StatusBadge, Toolbar, useUrlState } from "@/components/admin-ui";
+import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -80,10 +81,27 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
   if (f.rating) params.set("rating", f.rating);
   const { data, isLoading } = useQuery({ queryKey: ["admin-reviews", params.toString()], queryFn: () => api<{ reviews: ReviewRow[] } & Paged>(`/admin/reviews?${params}`) });
   const moderate = useModerate();
+  const qc = useQueryClient();
+  const selection = useSelection(data?.reviews.map((r) => r.id) ?? []);
+  const bulk = useMutation({
+    mutationFn: (status: "published" | "removed") => api<{ updated: number }>("/admin/reviews/bulk", { method: "POST", json: { ids: selection.selected, status } }),
+    onSuccess: ({ updated }, status) => {
+      toast.success(`${updated} review${updated === 1 ? "" : "s"} ${status === "removed" ? "hidden" : "published"}`);
+      selection.clear();
+      void qc.invalidateQueries({ queryKey: ["admin-reviews"] });
+      void qc.invalidateQueries({ queryKey: ["admin-flags"] });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
 
   return (
     <>
       <Toolbar>
+        {data && data.reviews.length > 0 && (
+          <label className="flex items-center gap-2 text-sm">
+            <SelectAllBox selection={selection} label="Select every review on this page" /> <span className="sm:sr-only">Select all</span>
+          </label>
+        )}
         <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search text or business" />
         <FilterSelect
           label="Status"
@@ -98,7 +116,16 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
         />
         <FilterSelect label="Rating" allLabel="Any rating" value={f.rating} onChange={(rating) => setF({ rating, page: "1" })} options={[5, 4, 3, 2, 1].map((r) => ({ value: String(r), label: `${r} star${r > 1 ? "s" : ""}` }))} />
         {data && <span className="text-sm text-muted-foreground sm:ml-auto">{data.total.toLocaleString("en-IN")} reviews</span>}
+        <ExportButton entity="reviews" filters={{ q: f.q, status: f.status, rating: f.rating }} />
       </Toolbar>
+      <BulkBar selection={selection} noun="review">
+        <Button size="sm" variant="outline" disabled={bulk.isPending} onClick={() => bulk.mutate("published")}>
+          <RotateCcw /> Publish
+        </Button>
+        <Button size="sm" variant="outline" className="text-destructive" disabled={bulk.isPending} onClick={() => bulk.mutate("removed")}>
+          <EyeOff /> Hide
+        </Button>
+      </BulkBar>
       {isLoading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
@@ -114,6 +141,7 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
+                    <SelectRowBox selection={selection} id={r.id} label={`Select review by ${r.user.name}`} />
                     <Stars rating={r.rating} />
                     <StatusBadge status={r.status} label={r.status === "removed" ? "Hidden" : undefined} />
                     {r.leadId && <span className="text-xs font-medium text-primary">Verified contact</span>}
@@ -124,7 +152,10 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
                     )}
                   </div>
                   <div className="mt-1.5 text-sm">
-                    <span className="font-medium">{r.user.name}</span> <span className="text-muted-foreground">on</span>{" "}
+                    <Link to={`/users/${r.user.id}`} className="font-medium hover:text-primary">
+                      {r.user.name}
+                    </Link>{" "}
+                    <span className="text-muted-foreground">on</span>{" "}
                     <Link to={`/providers/${r.provider.id}`} className="font-medium hover:text-primary">
                       {r.provider.businessName}
                     </Link>

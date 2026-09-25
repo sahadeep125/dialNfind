@@ -98,7 +98,7 @@ export default function PromoteScreen() {
                   leadingIcon={<Plus size={18} color={plusColor} />}
                   onPress={() => setCreating(true)}
                 >
-                  Start a campaign
+                  Request a campaign
                 </AppButton>
               ) : (
                 <AppCallout title="Add a service first">
@@ -111,7 +111,7 @@ export default function PromoteScreen() {
             <EmptyState
               icon={Megaphone}
               title="No campaigns yet"
-              text="Start a campaign to reach more customers searching for your services."
+              text="Request a campaign to reach more customers searching for your services."
             />
           }
         />

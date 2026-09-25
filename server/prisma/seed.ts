@@ -161,14 +161,12 @@ async function main() {
 
   await prisma.setting.createMany({
     data: [
-      { key: "lead_fee_amount", value: "10" },
       { key: "sponsored_cpc", value: "5" },
       { key: "sponsored_min_budget", value: "500" },
       { key: "support_email", value: "support@dialnfind.com" },
       { key: "support_phone", value: "+918001234567" },
       { key: "default_search_radius_km", value: "15" },
       { key: "support_hours", value: "Mon to Sat, 9 AM to 7 PM" },
-      { key: "plugin.google_analytics.enabled", value: "false" },
     ],
   });
 
@@ -396,8 +394,8 @@ async function main() {
     });
     await prisma.transaction.createMany({
       data: [
-        { providerId: demoProviderId, type: "subscription", amount: 599, status: "success", gatewayTxnId: "sim_demo_001", createdAt: daysAgo(50) },
-        { providerId: demoProviderId, type: "subscription", amount: 599, status: "success", gatewayTxnId: "sim_demo_002", createdAt: daysAgo(20) },
+        { providerId: demoProviderId, type: "subscription", amount: 599, status: "success", gatewayTxnId: "UPI-DEMO-001", createdAt: daysAgo(50) },
+        { providerId: demoProviderId, type: "subscription", amount: 599, status: "success", gatewayTxnId: "UPI-DEMO-002", createdAt: daysAgo(20) },
       ],
     });
     await prisma.providerBadge.createMany({
@@ -422,7 +420,7 @@ async function main() {
       },
     });
     await prisma.transaction.create({
-      data: { providerId: demoProviderId, type: "sponsored_ad", amount: 2000, status: "success", gatewayTxnId: "sim_demo_ads", createdAt: daysAgo(10) },
+      data: { providerId: demoProviderId, type: "sponsored_ad", amount: 2000, status: "success", gatewayTxnId: "UPI-DEMO-ADS", createdAt: daysAgo(10) },
     });
     await prisma.notification.createMany({
       data: [
@@ -552,7 +550,7 @@ async function main() {
   }[] = [
     { by: "provider", subject: "Lead count looks lower than my call log", category: "listing", priority: "high", status: "open", age: 0, thread: [[false, "I got 9 calls yesterday but the dashboard shows 6 leads. Can you check?"]] },
     { by: "customer", subject: "Technician did not show up", category: "report", priority: "normal", status: "pending", assignee: 0n, age: 2, thread: [[false, "Booked AC service on call for Saturday morning, nobody came and the number is switched off now."], [true, "Sorry about this. We have contacted the provider and will update you within a day. Could you share the time you called?"]] },
-    { by: "provider", subject: "Invoice needed for Pro plan payment", category: "billing", priority: "low", status: "resolved", assignee: 1n, age: 6, thread: [[false, "Please send a GST invoice for last month's Pro plan."], [true, "The invoice is now under Plan and billing in your dashboard."], [false, "Got it, thanks."]] },
+    { by: "provider", subject: "Invoice needed for Pro plan payment", category: "billing", priority: "low", status: "resolved", assignee: 1n, age: 6, thread: [[false, "Please send a receipt for last month's Pro plan payment."], [true, "The payment is listed under Plan and billing in your dashboard."], [false, "Got it, thanks."]] },
     { by: "guest", subject: "Wrong phone number on a listing", category: "report", priority: "normal", status: "open", age: 1, thread: [[false, "The number for Metro Electronics on Hill Cart Road belongs to someone else."]] },
     { by: "customer", subject: "Cannot change my email address", category: "account", priority: "low", status: "closed", assignee: 1n, age: 12, thread: [[false, "I want to use a new email for my account."], [true, "For security we change emails on request. Done, please sign in with the new address."]] },
     { by: "provider", subject: "Verification document rejected twice", category: "verification", priority: "urgent", status: "open", age: 0, thread: [[false, "My trade licence was rejected again. It is valid until 2027. What is wrong with it?"]] },

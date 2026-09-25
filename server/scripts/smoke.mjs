@@ -36,7 +36,6 @@ await call("GET", `/providers/${slug}/reviews`);
 await call("GET", `/providers/${slug}/similar`);
 await call("POST", `/providers/${slug}/report`, { body: { reason: "Smoke test report" } });
 await call("POST", "/contact", { body: { name: "Smoke Test", email: "smoke@example.com", message: "Testing the contact form end to end." } });
-await call("POST", "/auth/oauth/google", { body: { idToken: "smoke-test-id-token" }, expect: 501 });
 
 // customer
 await call("GET", "/auth/me", { token: cust });
@@ -57,11 +56,24 @@ await call("DELETE", "/auth/me", { token: temp, body: { password: "password123" 
 await call("GET", "/auth/me", { token: temp, expect: 401, label: "deleted account is signed out" });
 await call("DELETE", "/auth/me", { token: prov, body: { password: "password123" }, expect: 403, label: "providers cannot self-delete" });
 await call("GET", "/me/contacts", { token: cust });
+
+// email links, sessions and rate limits
+await call("POST", "/auth/forgot-password", { body: { email: "nobody.here@example.com" }, label: "forgot password answers the same for unknown emails" });
+await call("POST", "/auth/forgot-password", { body: { email: "demo@dialnfind.com" } });
+await call("POST", "/auth/reset-password", { body: { token: "x".repeat(43), newPassword: "password456" }, expect: 400, label: "reset needs a real token" });
+await call("POST", "/auth/verify-email", { body: { token: "x".repeat(43) }, expect: 400, label: "verify needs a real token" });
+const second = await login("demo@dialnfind.com");
+await call("POST", "/auth/logout", { token: second });
+await call("GET", "/auth/me", { token: second, expect: 401, label: "token stops working after sign-out" });
+await call("GET", "/auth/me", { token: cust, label: "other sign-ins stay active" });
+const staffExp = JSON.parse(Buffer.from(admin.split(".")[1], "base64url").toString()).exp - Math.floor(Date.now() / 1000);
+results.push(`     staff session lifetime: ${Math.round(staffExp / 3600)} h`);
+staffExp <= 12 * 3600 + 5 ? pass++ : (fail++, results.push("FAIL staff sessions should last at most 12 h"));
+for (let i = 0; i < 10; i++) await fetch(B + "/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "brute.force@example.com", password: "wrong" }) });
+await call("POST", "/auth/login", { body: { email: "brute.force@example.com", password: "wrong" }, expect: 429, label: "11th login attempt in 15 min is blocked" });
 const notes = await call("GET", "/me/notifications", { token: cust });
 results.push(`     customer unread notifications: ${notes.unread}`);
 await call("POST", "/me/notifications/read", { token: cust, body: {} });
-await call("POST", "/me/device-tokens", { token: cust, body: { token: "smoke-token-1234567890", platform: "web" } });
-await call("DELETE", "/me/device-tokens/smoke-token-1234567890", { token: cust });
 // lead with details (lead questions)
 const leadAttr = cat.category.attributes.find((a) => a.appliesTo === "lead");
 const lead = await call("POST", "/leads", { token: cust, body: { providerId: me.provider.id, channel: "call", source: "search", categorySlug: cats[0].slug, details: leadAttr ? [{ attributeId: leadAttr.id, value: leadAttr.optionsJson[0] }] : [] } });
@@ -102,12 +114,26 @@ const pf = (await call("POST", "/provider/portfolio", { token: prov, body: { tit
 await call("PATCH", `/provider/portfolio/${pf.id}`, { token: prov, body: { title: "Smoke photo 2" } });
 await call("DELETE", `/provider/portfolio/${pf.id}`, { token: prov });
 await call("GET", "/provider/verifications", { token: prov });
-const ver = (await call("POST", "/provider/verifications", { token: prov, body: { type: "location", documentUrl: "https://example.com/bill.pdf" } })).verification;
+const upload = await (await fetch(B + "/uploads?purpose=document", { method: "POST", headers: { "content-type": "application/pdf", authorization: `Bearer ${prov}` }, body: Buffer.from("%PDF-1.4\n% smoke test document\n") })).json();
+results.push(`     document upload returns a signed link: ${/\/files\/documents\/.+\?exp=\d+&sig=/.test(upload.url)}`);
+const unsigned = upload.url.split("?")[0];
+const signedRes = await fetch(upload.url);
+signedRes.status === 200 ? pass++ : (fail++, results.push(`FAIL signed document link -> ${signedRes.status}`));
+const unsignedRes = await fetch(unsigned);
+unsignedRes.status === 403 ? pass++ : (fail++, results.push(`FAIL unsigned document link should be 403, got ${unsignedRes.status}`));
+const tampered = await fetch(upload.url.replace(/sig=./, "sig=x"));
+tampered.status === 403 ? pass++ : (fail++, results.push(`FAIL tampered document link should be 403, got ${tampered.status}`));
+await call("POST", "/provider/verifications", { token: prov, body: { type: "location", documentUrl: "https://example.com/bill.pdf" }, expect: 400, label: "outside links are not accepted as documents" });
+const ver = (await call("POST", "/provider/verifications", { token: prov, body: { type: "location", documentUrl: upload.url } })).verification;
 const sub = await call("GET", "/provider/subscription", { token: prov });
 await call("GET", "/provider/sponsored", { token: prov });
 const catIds = [...new Set(profile.services.map((s) => s.categoryId))];
-await call("POST", "/provider/sponsored", { token: prov, body: { categoryId: catIds[0], days: 7, budget: 1000 }, expect: 409, label: "duplicate campaign blocked" });
-await call("POST", "/provider/sponsored", { token: prov, body: { categoryId: catIds[0], days: 7, budget: 100 }, expect: 400, label: "below minimum" });
+await call("POST", "/provider/sponsored/request", { token: prov, body: { categoryId: catIds[0], days: 7, budget: 1000 }, expect: 409, label: "duplicate campaign blocked" });
+await call("POST", "/provider/sponsored/request", { token: prov, body: { categoryId: catIds[0], days: 7, budget: 100 }, expect: 400, label: "below minimum" });
+await call("POST", "/provider/subscription/request", { token: prov, body: { planId: sub.plans[sub.plans.length - 1].id, note: "Smoke test" }, expect: 201, label: "plan request opens a ticket" });
+await call("POST", "/provider/subscription/checkout", { token: prov, body: { planId: 1 }, expect: 404, label: "checkout removed" });
+await call("POST", "/provider/claims/1/verify", { token: prov, body: { code: "123456" }, expect: 404, label: "claim code removed" });
+await call("POST", "/auth/oauth/google", { body: { idToken: "x".repeat(20) }, expect: 404, label: "social sign-in removed" });
 const sp = (await call("GET", "/provider/sponsored", { token: prov })).listings[0];
 await call("PATCH", `/provider/sponsored/${sp.id}`, { token: prov, body: { status: "paused" } });
 await call("PATCH", `/provider/sponsored/${sp.id}`, { token: prov, body: { status: "active" } });
@@ -127,10 +153,10 @@ await call("PATCH", `/admin/flags/${flags[0].id}`, { token: admin, body: { statu
 await call("GET", "/admin/flags?status=dismissed", { token: admin });
 await call("PATCH", `/admin/reviews/${r0.id}`, { token: admin, body: { status: "published" } });
 await call("GET", "/admin/settings", { token: admin });
-await call("PUT", "/admin/settings", { token: admin, body: { values: { sponsored_cpc: "5", "plugin.razorpay.key_secret": "smoke-secret-1234" } } });
-const plugins = (await call("GET", "/admin/settings", { token: admin })).plugins;
-results.push(`     razorpay secret comes back masked: ${plugins.find((p) => p.key === "razorpay").fields.find((f) => f.key.endsWith("key_secret")).value}`);
-await call("PUT", "/admin/settings", { token: admin, body: { values: { "plugin.razorpay.key_secret": null } } });
+await call("PUT", "/admin/settings", { token: admin, body: { values: { sponsored_cpc: "5", min_review_length: "20" } } });
+await call("POST", "/reviews", { token: cust, body: { providerId: featured[3].id, rating: 4, reviewText: "Too short text" }, expect: 400, label: "admin minimum review length applies" });
+await call("PUT", "/admin/settings", { token: admin, body: { values: { min_review_length: null } } });
+await call("PUT", "/admin/settings", { token: admin, body: { values: { "plugin.razorpay.key_secret": "x" } }, expect: 400, label: "plugin keys are gone" });
 await call("PUT", "/admin/settings", { token: admin, body: { values: { not_a_setting: "x" } }, expect: 400, label: "unknown setting rejected" });
 await call("GET", "/admin/contact-messages", { token: admin });
 
@@ -210,6 +236,73 @@ const pn = await call("GET", "/me/notifications", { token: prov });
 results.push(`     provider latest notifications: ${JSON.stringify(pn.notifications.slice(0, 4).map((n) => n.title))}`);
 const spAfter = (await call("GET", "/provider/sponsored", { token: prov })).listings[0];
 results.push(`     sponsored clicks ${sp.clicks} -> ${spAfter.clicks}, impressions ${sp.impressions} -> ${spAfter.impressions}`);
+
+// admin tools: listings, import, ownership, users, disputes, payments, export, bulk
+const newListing = { businessName: "Smoke Test Electricals", phone: "9876512340", city: "Siliguri", state: "West Bengal", locality: "Hakimpara", latitude: 26.71, longitude: 88.42, services: [{ categoryId: cats[0].id, isPrimary: true }] };
+const created = (await call("POST", "/admin/providers", { token: admin, body: newListing })).provider;
+await call("POST", "/admin/providers", { token: admin, body: newListing, expect: [201], label: "duplicate names get their own slug" });
+await call("GET", `/admin/providers/${created.id}/profile`, { token: admin });
+await call("PATCH", `/admin/providers/${created.id}/profile`, { token: admin, body: { description: "Wiring and repairs", serviceRadiusKm: 12 } });
+await call("PUT", `/admin/providers/${created.id}/hours`, { token: admin, body: { hours: [{ dayOfWeek: 1, openTime: "09:00", closeTime: "18:00" }] } });
+await call("PUT", `/admin/providers/${created.id}/service-areas`, { token: admin, body: { serviceAreas: [{ areaName: "Hakimpara" }] } });
+await call("PUT", `/admin/providers/${created.id}/services`, { token: admin, body: { services: [{ categoryId: cats[1].id, isPrimary: true }] } });
+await call("POST", `/admin/providers/${created.id}/owner`, { token: admin, body: { email: "demo@dialnfind.com" }, label: "give listing to a customer account" });
+await call("DELETE", `/admin/providers/${created.id}/owner`, { token: admin });
+await call("POST", "/admin/providers/bulk", { token: admin, body: { ids: [created.id], action: "suspend" } });
+await call("DELETE", `/admin/providers/${created.id}`, { token: admin, body: { confirmName: "wrong name" }, expect: 400, label: "delete needs the exact name" });
+await call("DELETE", `/admin/providers/${created.id}`, { token: admin, body: { confirmName: newListing.businessName } });
+const csv = `business_name,phone,category,subcategory,city,state,locality,latitude,longitude\nImport One Plumbing,9876512341,${cats[0].slug},,Siliguri,West Bengal,Pradhan Nagar,26.72,88.41\nBad Row,123,nope,,Siliguri,West Bengal,,,\n`;
+const dry = await call("POST", "/admin/providers/import", { token: admin, body: { csv, dryRun: true } });
+results.push(`     import dry run: ${dry.valid}/${dry.total} valid, errors: ${JSON.stringify(dry.rows[1]?.errors)}`);
+const imported = await call("POST", "/admin/providers/import", { token: admin, body: { csv, dryRun: false } });
+imported.created === 1 ? pass++ : (fail++, results.push(`FAIL import created ${imported.created}`));
+await call("POST", "/admin/providers/import", { token: admin, body: { csv: "name,phone\nx,y\n" }, expect: 400, label: "import needs the template columns" });
+
+const someone = (await call("GET", "/admin/users?role=customer&pageSize=5", { token: admin })).users.find((u) => u.email !== "demo@dialnfind.com");
+await call("GET", `/admin/users/${someone.id}`, { token: admin });
+await call("POST", `/admin/users/${someone.id}/sign-out`, { token: admin });
+await call("POST", "/admin/users/bulk", { token: admin, body: { ids: [someone.id], action: "suspend" } });
+await call("POST", "/admin/users/bulk", { token: admin, body: { ids: [someone.id], action: "reactivate" } });
+await call("GET", `/admin/users/${(await call("GET", "/admin/me", { token: admin })).user.id}`, { token: admin, label: "admin can view own record" });
+
+const disputedLead = (await call("POST", "/leads", { token: cust, body: { providerId: me.provider.id, channel: "call", source: "profile" } })).lead;
+await call("POST", `/provider/leads/${disputedLead.id}/dispute`, { token: prov, body: { reason: "Wrong number, the caller wanted someone else" } });
+await call("POST", `/provider/leads/${disputedLead.id}/dispute`, { token: prov, body: { reason: "Reporting the same contact twice" }, expect: 409, label: "a contact is reported once" });
+const openDisputes = await call("GET", "/admin/leads?dispute=open", { token: admin });
+results.push(`     open lead disputes: ${openDisputes.openDisputes}`);
+await call("PATCH", `/admin/leads/${disputedLead.id}/dispute`, { token: admin, body: { decision: "accepted" } });
+await call("PATCH", `/admin/leads/${disputedLead.id}/dispute`, { token: admin, body: { decision: "rejected" }, expect: 400, label: "a dispute is decided once" });
+
+const tx = (await call("POST", "/admin/transactions", { token: admin, body: { providerId: me.provider.id, type: "subscription", amount: 599, reference: "UPI-SMOKE-1" } })).transaction;
+await call("PATCH", `/admin/transactions/${tx.id}`, { token: admin, body: { status: "refunded", note: "Smoke test refund" } });
+await call("PATCH", `/admin/transactions/${tx.id}`, { token: admin, body: { status: "failed", note: "Twice" }, expect: 400, label: "refund only once" });
+const planForGrant = (await call("GET", "/admin/plans", { token: admin })).plans.find((p) => Number(p.price) > 0 && p.isActive);
+await call("POST", `/admin/providers/${me.provider.id}/subscription`, { token: admin, body: { planId: planForGrant.id, months: 1, payment: { amount: Number(planForGrant.price), reference: "UPI-SMOKE-2" } } });
+await call("POST", "/admin/reviews/bulk", { token: admin, body: { ids: [r0.id], status: "published" } });
+
+for (const entity of ["providers", "users", "leads", "reviews", "transactions", "subscriptions"]) {
+  const res = await fetch(`${B}/admin/export/${entity}`, { headers: { authorization: `Bearer ${admin}` } });
+  const text = await res.text();
+  const ok = res.status === 200 && res.headers.get("content-type")?.startsWith("text/csv") && text.split("\r\n").length > 2;
+  ok ? pass++ : fail++;
+  results.push(`${ok ? "ok  " : "FAIL"} ${res.status} GET /admin/export/${entity} (${text.split("\r\n").length - 2} rows)`);
+}
+const opsRes = await fetch(`${B}/admin/export/providers`, { headers: { authorization: `Bearer ${cust}` } });
+opsRes.status === 403 ? pass++ : (fail++, results.push(`FAIL customer export should be 403, got ${opsRes.status}`));
+const msgs = (await call("GET", "/admin/contact-messages", { token: admin })).messages;
+if (msgs[0]) await call("POST", `/admin/contact-messages/${msgs[0].id}/ticket`, { token: admin, label: "old contact message becomes a ticket" });
+
+// search and location: provider travel distance, map places, reverse lookup
+const near = await call("GET", "/search/providers?lat=26.87&lng=88.43&sort=distance&pageSize=50");
+const strict = await call("GET", "/search/providers?lat=26.87&lng=88.43&radiusKm=15&sort=distance&pageSize=50");
+// Beyond 15 km a provider still shows when a locality they serve is inside the radius (both searches), or,
+// without an explicit radius, when they travel that far; so the default search finds at least as many.
+results.push(`     default search ${near.total} vs explicit 15 km ${strict.total}`);
+near.total >= strict.total ? pass++ : (fail++, results.push("FAIL the default search should include providers who travel further"));
+const places = (await call("GET", "/locations?q=darjeeling")).locations;
+results.push(`     location search falls back to the map: ${JSON.stringify(places.slice(0, 2).map((l) => `${l.kind}:${l.label}`))}`);
+const here = (await call("GET", "/locations/reverse?lat=26.7338&lng=88.4325")).location;
+results.push(`     reverse lookup: ${here.label}`);
 
 console.log(results.join("\n"));
 console.log(`\n${pass} passed, ${fail} failed`);

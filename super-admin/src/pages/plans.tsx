@@ -4,18 +4,23 @@ import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CreditCard, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Check, CreditCard, Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatPrice } from "@/lib/format";
 import type { Badge, Paged, Plan } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState, Pager, PageSkeleton } from "@/components/common";
-import { EmptyRow, FilterSelect, StatCard, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
+import { ConfirmDialog, EmptyRow, FilterSelect, StatCard, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
+import { ExportButton } from "@/components/bulk";
+import { ProviderPicker } from "@/components/provider-picker";
 import { Field, fieldA11y, FormAlert } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -310,6 +315,9 @@ function SubscribersTab() {
             { value: "cancelled", label: "Cancelled" },
           ]}
         />
+        <div className="sm:ml-auto">
+          <ExportButton entity="subscriptions" filters={{ status: f.status }} />
+        </div>
       </Toolbar>
       <Table>
         <thead>
@@ -363,6 +371,7 @@ interface Txn {
   amount: number;
   status: string;
   gatewayTxnId: string | null;
+  note: string | null;
   createdAt: string;
   provider: { id: number; businessName: string };
 }
@@ -370,7 +379,21 @@ interface Txn {
 const TXN_TYPES: Record<string, string> = { subscription: "Plan", lead_fee: "Lead fee", sponsored_ad: "Promotion" };
 
 function PaymentsTab() {
+  const qc = useQueryClient();
   const [f, setF] = useState({ status: "", type: "", page: 1 });
+  const [recording, setRecording] = useState(false);
+  const [reversing, setReversing] = useState<{ txn: Txn; status: "refunded" | "failed" } | null>(null);
+  const [reason, setReason] = useState("");
+  const reverse = useMutation({
+    mutationFn: () => api(`/admin/transactions/${reversing!.txn.id}`, { method: "PATCH", json: { status: reversing!.status, note: reason.trim() } }),
+    onSuccess: () => {
+      toast.success(reversing!.status === "refunded" ? "Marked as refunded" : "Marked as failed");
+      setReversing(null);
+      setReason("");
+      void qc.invalidateQueries({ queryKey: ["transactions"] });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
   const qs = new URLSearchParams({ page: String(f.page), pageSize: "20", ...(f.status ? { status: f.status } : {}), ...(f.type ? { type: f.type } : {}) });
   const { data, isLoading } = useQuery({ queryKey: ["transactions", qs.toString()], queryFn: () => api<{ transactions: Txn[]; revenue: number } & Paged>(`/admin/transactions?${qs}`) });
   return (
@@ -396,7 +419,31 @@ function PaymentsTab() {
           onChange={(status) => setF({ ...f, status, page: 1 })}
           options={["success", "pending", "failed", "refunded"].map((s) => ({ value: s, label: s[0].toUpperCase() + s.slice(1) }))}
         />
+        <div className="flex gap-2 sm:ml-auto">
+          <ExportButton entity="transactions" filters={{ status: f.status, type: f.type }} />
+          <Button size="sm" onClick={() => setRecording(true)}>
+            <Plus /> Record payment
+          </Button>
+        </div>
       </Toolbar>
+      <RecordPaymentDialog open={recording} onOpenChange={setRecording} />
+      {reversing && (
+        <ConfirmDialog
+          open
+          onOpenChange={(o) => !o && (setReversing(null), setReason(""))}
+          title={reversing.status === "refunded" ? "Mark this payment refunded?" : "Mark this payment failed?"}
+          description={`${formatPrice(reversing.txn.amount)} from ${reversing.txn.provider.businessName} stops counting as revenue. Return the money outside DialNFind first; this only records it.`}
+          confirmLabel={reversing.status === "refunded" ? "Mark refunded" : "Mark failed"}
+          destructive
+          busy={reverse.isPending || reason.trim().length < 3}
+          onConfirm={() => reverse.mutate()}
+        >
+          <div className="space-y-2">
+            <Label htmlFor="reverse-reason">Reason</Label>
+            <Textarea id="reverse-reason" rows={2} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} />
+          </div>
+        </ConfirmDialog>
+      )}
       <Table>
         <thead>
           <tr>
@@ -406,11 +453,12 @@ function PaymentsTab() {
             <Th>Amount</Th>
             <Th>Reference</Th>
             <Th>Status</Th>
+            <Th className="w-12" />
           </tr>
         </thead>
         <tbody>
-          {isLoading && <TableSkeleton cols={6} />}
-          {data?.transactions.length === 0 && <EmptyRow cols={6} text="No payments match." />}
+          {isLoading && <TableSkeleton cols={7} />}
+          {data?.transactions.length === 0 && <EmptyRow cols={7} text="No payments match." />}
           {data?.transactions.map((t) => (
             <tr key={t.id}>
               <Td className="whitespace-nowrap">{formatDate(t.createdAt)}</Td>
@@ -424,6 +472,22 @@ function PaymentsTab() {
               <Td className="font-mono text-xs text-muted-foreground">{t.gatewayTxnId ?? "None"}</Td>
               <Td>
                 <StatusBadge status={t.status} />
+                {t.note && <div className="mt-1 max-w-48 truncate text-xs text-muted-foreground" title={t.note}>{t.note}</div>}
+              </Td>
+              <Td>
+                {t.status === "success" && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon-sm" aria-label={`Actions for payment from ${t.provider.businessName}`}>
+                        <MoreHorizontal />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => setReversing({ txn: t, status: "refunded" })}>Mark refunded</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setReversing({ txn: t, status: "failed" })}>Mark failed</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </Td>
             </tr>
           ))}
@@ -431,5 +495,97 @@ function PaymentsTab() {
       </Table>
       {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(page) => setF({ ...f, page })} />}
     </>
+  );
+}
+
+/** A payment received outside the app (UPI, bank transfer, cash), for example before a plan is granted. */
+function RecordPaymentDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const qc = useQueryClient();
+  const [provider, setProvider] = useState<{ id: number; businessName: string; city: string } | null>(null);
+  const [type, setType] = useState<"subscription" | "sponsored_ad">("subscription");
+  const [amount, setAmount] = useState("");
+  const [reference, setReference] = useState("");
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const reset = () => {
+    setProvider(null);
+    setAmount("");
+    setReference("");
+    setNote("");
+    setError(null);
+  };
+  const save = useMutation({
+    mutationFn: () => api("/admin/transactions", { method: "POST", json: { providerId: provider!.id, type, amount: Number(amount), reference: reference.trim(), note: note.trim() || undefined } }),
+    onSuccess: () => {
+      toast.success("Payment recorded");
+      void qc.invalidateQueries({ queryKey: ["transactions"] });
+      reset();
+      onOpenChange(false);
+    },
+    onError: (e) => setError(errorMessage(e)),
+  });
+  return (
+    <Dialog open={open} onOpenChange={(o) => (o || reset(), onOpenChange(o))}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Record a payment</DialogTitle>
+          <DialogDescription>For money received outside DialNFind. To also switch the plan, use Change plan on the provider page, which records the payment for you.</DialogDescription>
+        </DialogHeader>
+        <form
+          id="record-payment"
+          noValidate
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!provider) return setError("Choose the provider");
+            if (!(Number(amount) > 0)) return setError("Enter the amount received");
+            if (reference.trim().length < 3) return setError("Enter the UPI or bank reference");
+            save.mutate();
+          }}
+        >
+          <FormAlert message={error} />
+          <div className="space-y-2">
+            <Label htmlFor="pay-provider">Provider</Label>
+            <ProviderPicker id="pay-provider" value={provider} onChange={(p) => (setProvider(p), setError(null))} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="pay-type">For</Label>
+              <Select value={type} onValueChange={(v) => setType(v as typeof type)}>
+                <SelectTrigger id="pay-type" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="subscription">Plan</SelectItem>
+                  <SelectItem value="sponsored_ad">Promotion</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pay-amount">Amount (Rs)</Label>
+              <Input id="pay-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pay-ref">UPI or bank reference</Label>
+            <Input id="pay-ref" maxLength={80} value={reference} onChange={(e) => setReference(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pay-note">
+              Note <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Textarea id="pay-note" rows={2} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />
+          </div>
+        </form>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="submit" form="record-payment" disabled={save.isPending}>
+            {save.isPending && <Loader2 className="animate-spin" />} Record payment
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

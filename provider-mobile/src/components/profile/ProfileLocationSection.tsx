@@ -33,7 +33,7 @@ export function ProfileLocationSection({ values, errors, serviceRadiusKm, onChan
       longitude: round(l.longitude),
       city: l.city || l.name,
       state: l.state || values.state,
-      locality: l.kind === "area" ? l.name : values.locality,
+      locality: l.kind === "city" ? values.locality : l.name,
     });
 
   const locate = async (): Promise<void> => {

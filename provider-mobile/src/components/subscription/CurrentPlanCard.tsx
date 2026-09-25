@@ -1,22 +1,18 @@
 import { StyleSheet, View } from "react-native";
 import { CreditCard } from "lucide-react-native";
 
-import { AppButton, AppCard, AppText } from "@/components/design-system";
+import { AppCard, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { CurrentSubscription } from "@/types/billing";
 import { formatDate } from "@/utils/format";
 
 interface Props {
   current: CurrentSubscription;
-  onTurnOffRenew: () => void;
-  busy: boolean;
 }
 
-export function CurrentPlanCard({ current, onTurnOffRenew, busy }: Props) {
+export function CurrentPlanCard({ current }: Props) {
   const theme = useTheme();
-  const renewal = current.endDate
-    ? `${current.autoRenew ? "Renews" : "Ends"} on ${formatDate(current.endDate)}`
-    : "No renewal needed";
+  const renewal = current.endDate ? `Active until ${formatDate(current.endDate)}` : "No end date";
   return (
     <AppCard>
       <View style={{ gap: theme.spacing[4] }}>
@@ -41,11 +37,6 @@ export function CurrentPlanCard({ current, onTurnOffRenew, busy }: Props) {
             </AppText>
           </View>
         </View>
-        {current.endDate && current.autoRenew ? (
-          <AppButton variant="secondary" loading={busy} onPress={onTurnOffRenew}>
-            Turn off auto-renew
-          </AppButton>
-        ) : null}
       </View>
     </AppCard>
   );

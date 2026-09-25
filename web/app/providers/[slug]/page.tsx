@@ -63,10 +63,11 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
   const data = await apiOrNull<{ provider: ProviderDetail }>(`/providers/${slug}`);
   if (!data) notFound();
   const p = data.provider;
-  const [reviews, { results: similar }, user] = await Promise.all([
+  const [reviews, { results: similar }, user, { config }] = await Promise.all([
     api<{ reviews: Review[] } & Paged>(`/providers/${slug}/reviews`, { query: { pageSize: 6 } }),
     api<{ results: ProviderCardType[] }>(`/providers/${slug}/similar`),
     getSession(),
+    api<{ config: { min_review_length: number } }>("/app-config", { auth: false }),
   ]);
 
   const tone = categoryTone(p.primaryCategory?.slug);
@@ -226,7 +227,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
               </Section>
             )}
 
-            <Section title="Ratings and reviews" id="reviews" action={<ReviewForm providerId={p.id} providerName={p.businessName} signedIn={!!user} existing={p.myReview} />}>
+            <Section title="Ratings and reviews" id="reviews" action={<ReviewForm providerId={p.id} providerName={p.businessName} signedIn={!!user} existing={p.myReview} minLength={config.min_review_length} />}>
               {p.totalReviews > 0 && (
                 <div className="mb-8 grid gap-6 rounded-2xl bg-muted/60 p-5 sm:grid-cols-[10rem_1fr]">
                   <div className="text-center sm:border-r sm:pr-6">

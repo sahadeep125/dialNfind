@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { env } from "../env.js";
+import { PRIVATE_FILES_URL, privateDir } from "../lib/private-files.js";
 
 /**
  * Where uploaded files live. Local disk is the default because no cloud credentials exist yet;
@@ -9,8 +10,8 @@ import { env } from "../env.js";
  * createStorage() when its env vars are set.
  */
 export interface Storage {
-  /** Saves the bytes and returns the public URL the file is served from. */
-  put(key: string, data: Buffer, contentType: string): Promise<string>;
+  /** Saves the bytes and returns the URL to store. Private files get a URL that only works once signed. */
+  put(key: string, data: Buffer, contentType: string, visibility?: "public" | "private"): Promise<string>;
   /** Removes a file previously returned by put(); unknown URLs are ignored. */
   remove(url: string): Promise<void>;
 }
@@ -19,18 +20,20 @@ export const UPLOAD_ROUTE = "/uploads";
 export const uploadDir = path.resolve(env.uploadDir);
 
 class LocalDiskStorage implements Storage {
-  async put(key: string, data: Buffer) {
-    const file = path.join(uploadDir, key);
+  async put(key: string, data: Buffer, _contentType: string, visibility: "public" | "private" = "public") {
+    const root = visibility === "private" ? privateDir : uploadDir;
+    const file = path.join(root, key);
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, data);
-    return `${env.publicUrl}${UPLOAD_ROUTE}/${key}`;
+    return visibility === "private" ? `${PRIVATE_FILES_URL}${key}` : `${env.publicUrl}${UPLOAD_ROUTE}/${key}`;
   }
 
   async remove(url: string) {
-    const prefix = `${env.publicUrl}${UPLOAD_ROUTE}/`;
+    const publicPrefix = `${env.publicUrl}${UPLOAD_ROUTE}/`;
+    const [root, prefix] = url.startsWith(PRIVATE_FILES_URL) ? [privateDir, PRIVATE_FILES_URL] : [uploadDir, publicPrefix];
     if (!url.startsWith(prefix)) return;
-    const file = path.resolve(uploadDir, url.slice(prefix.length));
-    if (!file.startsWith(uploadDir + path.sep)) return; // never leave the upload folder
+    const file = path.resolve(root, url.slice(prefix.length).split("?")[0]);
+    if (!file.startsWith(root + path.sep)) return; // never leave the upload folder
     await unlink(file).catch(() => undefined);
   }
 }

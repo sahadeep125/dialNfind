@@ -17,30 +17,15 @@ export interface ClaimListing {
   isClaimed: boolean;
 }
 
-export type ClaimMethod = "phone_otp" | "document";
-
 export interface StartClaimInput {
   providerId: number;
-  method: ClaimMethod;
-  documentUrl?: string;
+  documentUrl: string;
 }
 
 /** POST /provider/claims. token is set when the account's role changed to provider. */
 export interface StartClaimResponse {
-  claim: { id: number; status: string; method: ClaimMethod };
-  sentTo: string | null;
-  devCode?: string;
+  claim: { id: number; status: string; method: "document" };
   token: string | null;
-}
-
-export interface VerifyClaimInput {
-  claimId: number;
-  code: string;
-}
-
-export interface VerifyClaimResponse {
-  ok: boolean;
-  provider: { id: number; slug: string };
 }
 
 export type BusinessType = "individual" | "company";

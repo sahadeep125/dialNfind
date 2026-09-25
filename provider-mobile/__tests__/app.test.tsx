@@ -14,7 +14,7 @@ globalThis.fetch = liveFetch as typeof fetch;
 
 jest.setTimeout(90000);
 
-const API = "http://localhost:4000/api/v1";
+const API = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
 const apiUp = isApiUp();
 const describeLive = apiUp ? describe : describe.skip;
 if (!apiUp) console.warn("API is not running on :4000; skipping the app walkthrough.");
@@ -22,14 +22,21 @@ if (!apiUp) console.warn("API is not running on :4000; skipping the app walkthro
 const find = (text: string | RegExp) =>
   waitFor(() => expect(screen.getAllByText(text)[0]).toBeOnTheScreen(), { timeout: 8000 });
 
+// One sign-in per account for the whole run: the API allows 10 login attempts per 15 minutes.
+const sessions = new Map<string, { token: string; user: SessionUser }>();
+
 function login(email: string): { token: string; user: SessionUser } {
-  return JSON.parse(
+  const cached = sessions.get(email);
+  if (cached) return cached;
+  const session = JSON.parse(
     curl(`${API}/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email, password: "password123" }),
     }).body,
   ) as { token: string; user: SessionUser };
+  sessions.set(email, session);
+  return session;
 }
 
 async function launch(url = "/") {

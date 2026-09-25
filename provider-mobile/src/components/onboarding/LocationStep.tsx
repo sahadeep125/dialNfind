@@ -66,7 +66,7 @@ export function LocationStep({ value, areas, errors, onChange, onAreasChange }: 
               longitude: l.longitude,
               city: l.city || l.name,
               state: l.state || value.state,
-              locality: l.kind === "area" ? l.name : value.locality,
+              locality: l.kind === "city" ? value.locality : l.name,
             })
           }
         />

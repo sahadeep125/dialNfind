@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useForm } from "react-hook-form";
+import { WEB_URL } from "@/lib/config";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, LifeBuoy, Loader2, ShieldCheck, Store } from "lucide-react";
@@ -52,6 +53,11 @@ export function LoginPage() {
             <Field id="email" label="Work email" error={errors.email}>
               <Input type="email" autoComplete="email" inputMode="email" {...fieldA11y("email", errors.email)} {...register("email")} />
             </Field>
+            <div className="flex justify-end">
+              <a href={`${WEB_URL}/forgot-password`} className="-mb-7 text-xs font-medium text-primary hover:underline">
+                Forgot password?
+              </a>
+            </div>
             <Field id="password" label="Password" error={errors.password}>
               <div className="relative">
                 <Input type={show ? "text" : "password"} autoComplete="current-password" className="pr-10" {...fieldA11y("password", errors.password)} {...register("password")} />

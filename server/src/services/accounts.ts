@@ -1,0 +1,53 @@
+import { prisma } from "../lib/prisma.js";
+import { storage } from "../storage/index.js";
+import { recalculateProvider } from "./ranking.js";
+import { revokeAllSessions } from "./sessions.js";
+import { env } from "../env.js";
+import { sendMail } from "./mail.js";
+import { issueUserToken } from "./user-tokens.js";
+
+/**
+ * Deletes a person's account: the row is kept so leads, tickets and the audit log stay consistent,
+ * but everything that identifies them is cleared and they are signed out everywhere. Their reviews,
+ * favourites and addresses are removed. A business they owned stays on DialNFind as an unclaimed listing.
+ */
+export async function anonymiseUser(userId: bigint): Promise<void> {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const reviews = await prisma.review.findMany({ where: { userId }, select: { providerId: true, photos: { select: { photoUrl: true } } } });
+  await prisma.$transaction([
+    prisma.favorite.deleteMany({ where: { userId } }),
+    prisma.userAddress.deleteMany({ where: { userId } }),
+    prisma.review.deleteMany({ where: { userId } }),
+    prisma.userToken.deleteMany({ where: { userId } }),
+    prisma.provider.updateMany({ where: { userId }, data: { userId: null, claimedAt: null } }),
+    prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: "deleted",
+        role: user.role === "super_admin" ? user.role : "customer",
+        adminRoleId: null,
+        name: "Deleted user",
+        email: `deleted-${userId}@deleted.invalid`,
+        phone: null,
+        passwordHash: null,
+        profilePhotoUrl: null,
+        emailVerifiedAt: null,
+      },
+    }),
+  ]);
+  await revokeAllSessions(userId);
+  for (const r of reviews) for (const p of r.photos) void storage.remove(p.photoUrl);
+  for (const providerId of new Set(reviews.map((r) => r.providerId))) await recalculateProvider(providerId);
+  if (user.profilePhotoUrl) void storage.remove(user.profilePhotoUrl);
+}
+
+/** Emails a fresh "confirm your address" link; earlier links stop working. */
+export async function sendVerificationEmail(userId: bigint, email: string, name: string) {
+  const token = await issueUserToken(userId, "verify_email");
+  await sendMail({
+    to: email,
+    subject: "Confirm your email address",
+    lines: [`Hi ${name.split(" ")[0]},`, "Please confirm that this is your email address so we can reach you about your account. The link works for 3 days."],
+    action: { label: "Confirm email", url: `${env.webUrl}/verify-email?token=${token}` },
+  });
+}

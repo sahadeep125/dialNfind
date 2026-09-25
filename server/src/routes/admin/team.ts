@@ -9,6 +9,7 @@ import { email, personName } from "../../lib/rules.js";
 import { ADMIN_MODULES, ASSIGNABLE_MODULES } from "../../lib/permissions.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
+import { revokeAllSessions } from "../../services/sessions.js";
 
 /** Who is signed in to the admin app, and the admin team: staff accounts and their roles. */
 export const adminTeamRouter = Router();
@@ -91,6 +92,7 @@ adminTeamRouter.patch("/team/:id", async (req, res) => {
     data: { ...(body.roleId ? { adminRoleId: BigInt(body.roleId) } : {}), ...(body.status ? { status: body.status } : {}) },
     select: staffSelect,
   });
+  if (body.status === "suspended") await revokeAllSessions(id);
   await logAdmin(currentUser(req).id, "team.update", "user", id, body);
   res.json({ member });
 });
@@ -100,6 +102,7 @@ adminTeamRouter.post("/team/:id/reset-password", async (req, res) => {
   await staffTarget(req, id);
   const password = temporaryPassword();
   await prisma.user.update({ where: { id }, data: { passwordHash: await bcrypt.hash(password, 10) } });
+  await revokeAllSessions(id);
   await logAdmin(currentUser(req).id, "team.reset_password", "user", id);
   res.json({ temporaryPassword: password });
 });
@@ -109,6 +112,7 @@ adminTeamRouter.delete("/team/:id", async (req, res) => {
   const id = idParam(req.params.id as string);
   await staffTarget(req, id);
   await prisma.user.update({ where: { id }, data: { role: "customer", adminRoleId: null } });
+  await revokeAllSessions(id);
   await prisma.supportTicket.updateMany({ where: { assignedToId: id, status: { in: ["open", "pending"] } }, data: { assignedToId: null } });
   await logAdmin(currentUser(req).id, "team.remove", "user", id);
   res.json({ ok: true });

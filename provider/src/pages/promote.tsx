@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Loader2, Megaphone, MousePointerClick, Pause, Play, Wallet } from "lucide-react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -39,6 +40,7 @@ const DURATIONS = [7, 14, 30] as const;
 
 export function PromotePage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery({ queryKey: ["sponsored"], queryFn: () => api<PromoteResponse>("/provider/sponsored") });
   const [categoryId, setCategoryId] = useState<string>("");
   const [days, setDays] = useState<(typeof DURATIONS)[number]>(14);
@@ -46,10 +48,16 @@ export function PromotePage() {
   const [budgetError, setBudgetError] = useState<string | null>(null);
 
   const create = useMutation({
-    mutationFn: () => api<{ simulated: boolean }>("/provider/sponsored", { method: "POST", json: { categoryId: Number(categoryId || data!.categories[0].id), days, budget: Number(budget) } }),
-    onSuccess: (r) => {
-      toast.success(r.simulated ? "Campaign started. Payment was simulated because no gateway is connected yet." : "Campaign started");
-      void qc.invalidateQueries();
+    mutationFn: () =>
+      api<{ ticket: { id: number; reference: string } }>("/provider/sponsored/request", {
+        method: "POST",
+        json: { categoryId: Number(categoryId || data!.categories[0].id), days, budget: Number(budget) },
+      }),
+    onSuccess: ({ ticket }) => {
+      toast.success(`Request sent (${ticket.reference}). Our team will contact you to arrange payment and start the campaign.`, {
+        action: { label: "View", onClick: () => navigate(`/support/${ticket.id}`) },
+      });
+      void qc.invalidateQueries({ queryKey: ["support"] });
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
@@ -73,12 +81,12 @@ export function PromotePage() {
 
   return (
     <>
-      <PageHeader title="Promote your business" description={`Appear with a Sponsored label when customers in ${pricing.city} search your category. You pay only when a customer calls or messages you.`} />
+      <PageHeader title="Promote your business" description={`Appear with a Sponsored label when customers in ${pricing.city} search your category. Each customer call or message uses part of your budget. Request a campaign and our team will set it up once payment is arranged.`} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-4">
           {data.listings.length === 0 ? (
-            <EmptyState icon={Megaphone} title="No campaigns yet" text="Start a campaign to reach more customers searching for your services." />
+            <EmptyState icon={Megaphone} title="No campaigns yet" text="Request a campaign to reach more customers searching for your services." />
           ) : (
             data.listings.map((c) => {
               const ended = c.status === "completed" || new Date(c.endDate) < new Date(new Date().toDateString());
@@ -115,7 +123,7 @@ export function PromotePage() {
           )}
         </div>
 
-        <Panel title="Start a campaign" className="h-fit">
+        <Panel title="Request a campaign" className="h-fit">
           {data.categories.length === 0 ? (
             <p className="text-sm text-muted-foreground">Add a service first. You can promote any category you offer.</p>
           ) : (
@@ -178,7 +186,7 @@ export function PromotePage() {
                 />
               </Field>
               <Button type="submit" className="w-full" disabled={create.isPending}>
-                {create.isPending && <Loader2 className="animate-spin" />} Pay {formatPrice(Number(budget) || 0)} and start
+                {create.isPending && <Loader2 className="animate-spin" />} Request campaign
               </Button>
             </form>
           )}

@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
-import { MessageCircle, Phone } from "lucide-react-native";
+import { Flag, MessageCircle, Phone } from "lucide-react-native";
 
-import { AppButton, AppCard, AppText } from "@/components/design-system";
+import { AppBadge, AppButton, AppCard, AppPressable, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { Lead } from "@/types/leads";
 import { formatRelative } from "@/utils/format";
@@ -16,13 +16,18 @@ const SOURCE_LABEL: Record<string, string> = {
   ai_match: "Smart match",
 };
 
+const DISPUTE_DAYS = 30;
+const DISPUTE_LABEL = { open: "Reported, under review", accepted: "Report accepted", rejected: "Report not accepted" } as const;
+
 interface Props {
   lead: Lead;
   onCall: (phone: string) => void;
   onWhatsApp: (phone: string) => void;
+  onReport: (lead: Lead) => void;
 }
 
-export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp }: Props) {
+export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp, onReport }: Props) {
+  const canReport = lead.disputeStatus === "none" && Date.now() - new Date(lead.createdAt).getTime() <= DISPUTE_DAYS * 86_400_000;
   const theme = useTheme();
   const phone = lead.customerPhone;
   const details = lead.details.map((d) => `${d.label}: ${d.value}`).join(" · ");
@@ -70,6 +75,25 @@ export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp }: Props
         <LeadOutcome lead={lead} />
       </View>
 
+      {lead.disputeStatus !== "none" ? (
+        <View style={{ marginTop: theme.spacing[2] }}>
+          <AppBadge label={DISPUTE_LABEL[lead.disputeStatus]} tone="neutral" />
+        </View>
+      ) : canReport ? (
+        <AppPressable
+          accessibilityRole="button"
+          accessibilityLabel={`Report the contact from ${lead.customerName}`}
+          hitSlop={8}
+          onPress={() => onReport(lead)}
+          style={[styles.report, { gap: theme.spacing[1], marginTop: theme.spacing[2] }]}
+        >
+          <Flag size={14} color={theme.colors.text.tertiary} />
+          <AppText variant="caption" tone="tertiary">
+            Report spam or wrong number
+          </AppText>
+        </AppPressable>
+      ) : null}
+
       {phone ? (
         <View style={[styles.actions, { gap: theme.spacing[2], marginTop: theme.spacing[3] }]}>
           <AppButton
@@ -109,4 +133,5 @@ const styles = StyleSheet.create({
   },
   actions: { flexDirection: "row", flexWrap: "wrap" },
   action: { flexGrow: 1 },
+  report: { alignItems: "center", alignSelf: "flex-start", flexDirection: "row" },
 });

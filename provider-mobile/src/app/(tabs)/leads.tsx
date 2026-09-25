@@ -13,6 +13,7 @@ import { AppChip, AppText } from "@/components/design-system";
 import { EmptyState, ErrorState, Screen } from "@/components/layout";
 import { LeadRow } from "@/components/leads/LeadRow";
 import { LeadRowSkeleton } from "@/components/leads/LeadRowSkeleton";
+import { ReportLeadSheet } from "@/components/leads/ReportLeadSheet";
 import { useLeads } from "@/hooks/useLeads";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
@@ -31,6 +32,7 @@ export default function LeadsScreen() {
   const theme = useTheme();
   const toast = useToast();
   const [channel, setChannel] = useState<LeadFilter>("all");
+  const [reporting, setReporting] = useState<Lead | null>(null);
   const {
     data,
     error,
@@ -61,7 +63,7 @@ export default function LeadsScreen() {
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<Lead>) => (
-      <LeadRow lead={item} onCall={onCall} onWhatsApp={onWhatsApp} />
+      <LeadRow lead={item} onCall={onCall} onWhatsApp={onWhatsApp} onReport={setReporting} />
     ),
     [onCall, onWhatsApp],
   );
@@ -143,6 +145,7 @@ export default function LeadsScreen() {
         initialNumToRender={8}
         windowSize={9}
       />
+      <ReportLeadSheet lead={reporting} onClose={() => setReporting(null)} />
     </Screen>
   );
 }

@@ -73,7 +73,7 @@ export interface SubscriptionResponse {
   transactions: Transaction[];
 }
 
-/** Payments are simulated until a gateway is connected; the server says so with this flag. */
-export interface PaymentResult {
-  simulated: boolean;
+/** Plans and campaigns are requested, not bought in the app: the request becomes a support ticket. */
+export interface BillingRequestResult {
+  ticket: { id: number; reference: string };
 }

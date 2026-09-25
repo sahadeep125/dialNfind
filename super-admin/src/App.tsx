@@ -7,6 +7,7 @@ import { LoginPage } from "@/pages/login";
 import { DashboardPage } from "@/pages/dashboard";
 import { AnalyticsPage } from "@/pages/analytics";
 import { ProviderDetailPage, ProvidersPage } from "@/pages/providers";
+import { ProviderEditPage } from "@/pages/provider-manage";
 import { ClaimsPage } from "@/pages/claims";
 import { VerificationsPage } from "@/pages/verifications";
 import { CategoriesPage } from "@/pages/categories";
@@ -16,9 +17,10 @@ import { LeadsPage } from "@/pages/leads";
 import { PlansPage } from "@/pages/plans";
 import { PromotionsPage } from "@/pages/promotions";
 import { UsersPage } from "@/pages/users";
+import { UserDetailPage } from "@/pages/user-detail";
 import { TicketDetailPage, TicketsPage } from "@/pages/support";
 import { AnnouncementsPage } from "@/pages/announcements";
-import { PluginsPage, SettingsPage } from "@/pages/settings";
+import { SettingsPage } from "@/pages/settings";
 import { TeamPage } from "@/pages/team";
 import { AuditPage } from "@/pages/audit";
 import { AccountPage } from "@/pages/account";
@@ -84,6 +86,7 @@ const guarded: [Module, [string, React.ReactNode][]][] = [
     [
       ["/providers", <ProvidersPage />],
       ["/providers/:id", <ProviderDetailPage />],
+      ["/providers/:id/edit", <ProviderEditPage />],
       ["/claims", <ClaimsPage />],
     ],
   ],
@@ -99,7 +102,13 @@ const guarded: [Module, [string, React.ReactNode][]][] = [
   ["leads", [["/leads", <LeadsPage />]]],
   ["plans", [["/plans", <PlansPage />]]],
   ["promotions", [["/promotions", <PromotionsPage />]]],
-  ["users", [["/users", <UsersPage />]]],
+  [
+    "users",
+    [
+      ["/users", <UsersPage />],
+      ["/users/:id", <UserDetailPage />],
+    ],
+  ],
   [
     "support",
     [
@@ -108,13 +117,7 @@ const guarded: [Module, [string, React.ReactNode][]][] = [
     ],
   ],
   ["notifications", [["/announcements", <AnnouncementsPage />]]],
-  [
-    "settings",
-    [
-      ["/settings", <SettingsPage />],
-      ["/plugins", <PluginsPage />],
-    ],
-  ],
+  ["settings", [["/settings", <SettingsPage />]]],
   ["team", [["/team", <TeamPage />]]],
   ["audit", [["/audit", <AuditPage />]]],
 ];

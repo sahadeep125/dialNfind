@@ -1,17 +1,15 @@
-import { Router } from "express";
-import bcrypt from "bcryptjs";
+import { Router, type Request } from "express";
 import { z } from "zod";
-import { email, httpUrl, optionalPhone, optionalUrl, phone, pincode } from "../../lib/rules.js";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
-import { badRequest, conflict, forbidden, notFound } from "../../lib/errors.js";
+import { conflict, notFound } from "../../lib/errors.js";
 import { currentUser } from "../../middleware/auth.js";
-import { uniqueProviderSlug } from "../../lib/slug.js";
-import { signToken } from "../../lib/jwt.js";
-import { env, isProduction } from "../../env.js";
+import { revokeSession, startSession } from "../../services/sessions.js";
+import { isProduction } from "../../env.js";
 import { getSetting } from "../../services/settings.js";
-import { recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
-import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "./shared.js";
+import { limits } from "../../lib/rate-limit.js";
+import { privateFileUrl } from "../../lib/private-files.js";
+import { createListing, newListingSchema } from "../../services/listings.js";
 
 export const onboardingRouter = Router();
 
@@ -47,72 +45,30 @@ function maskPhone(phone: string): string {
 }
 
 /** Customers who start onboarding become providers; returns a fresh token carrying the new role. */
-async function ensureProviderRole(userId: bigint) {
+/** A customer who starts a business becomes a provider; their sign-in is swapped for one with the new role. */
+async function ensureProviderRole(req: Request) {
+  const { id: userId, sessionId } = currentUser(req);
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   if (user.role === "customer") {
     await prisma.user.update({ where: { id: userId }, data: { role: "provider" } });
-    return signToken(userId, "provider");
+    const token = await startSession(userId, "provider", req);
+    await revokeSession(sessionId);
+    return token;
   }
   return null;
 }
 
-const onboardingSchema = z.object({
-  businessName: z.string().trim().min(2).max(100),
-  description: z.string().trim().max(2000).optional(),
-  businessType: z.enum(["individual", "company"]).default("individual"),
-  yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
-  phone,
-  whatsappNumber: optionalPhone,
-  email: z.union([z.literal(""), z.null(), email]).optional(),
-  website: optionalUrl.optional(),
-  addressLine: z.string().trim().max(200).optional(),
-  locality: z.string().trim().max(80).optional(),
-  city: z.string().trim().min(2).max(60),
-  state: z.string().trim().min(2).max(60),
-  pincode: z.union([z.literal(""), pincode]).transform((v) => v || null).optional(),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-  serviceRadiusKm: z.number().int().min(1).max(100).default(10),
-  acceptsCalls: z.boolean().default(true),
-  acceptsWhatsapp: z.boolean().default(true),
-  services: z.array(serviceSchema).min(1, "Pick at least one service"),
-  serviceAreas: z.array(serviceAreaSchema).max(50).default([]),
-  hours: hoursSchema.optional(),
-});
-
 /** POST /provider/onboarding — create a brand-new listing owned by the signed-in user. */
 onboardingRouter.post("/onboarding", async (req, res) => {
-  const body = parse(onboardingSchema, req.body);
+  const body = parse(newListingSchema, req.body);
   const user = currentUser(req);
   const existing = await prisma.provider.findUnique({ where: { userId: user.id }, select: { id: true } });
   if (existing) throw conflict("You already have a business profile");
 
-  const token = await ensureProviderRole(user.id);
-  const slug = await uniqueProviderSlug(body.businessName, body.city);
-  const { services, serviceAreas, hours, ...profile } = body;
-
+  const token = await ensureProviderRole(req);
+  // Controlled by the auto_approve_listings setting in the admin app.
   const autoApprove = ((await getSetting("auto_approve_listings")) ?? String(!isProduction)) === "true";
-  const provider = await prisma.$transaction(async (tx) => {
-    const created = await tx.provider.create({
-      data: {
-        ...profile,
-        email: profile.email || null,
-        website: profile.website || null,
-        slug,
-        userId: user.id,
-        claimedAt: new Date(),
-        // Controlled by the auto_approve_listings setting in the admin app.
-        status: autoApprove ? "active" : "pending",
-      },
-    });
-    await replaceServices(tx, created.id, services);
-    await replaceServiceAreas(tx, created.id, serviceAreas);
-    if (hours) await replaceHours(tx, created.id, hours);
-    return created;
-  });
-
-  await recalculateProvider(provider.id);
-  await recalculateCategoryCounts();
+  const provider = await createListing(body, { ownerId: user.id, status: autoApprove ? "active" : "pending" });
   res.status(201).json({ provider: { id: provider.id, slug: provider.slug, status: provider.status }, token });
 });
 
@@ -199,70 +155,26 @@ onboardingRouter.get("/claims/listing/:id", async (req, res) => {
 
 const startClaimSchema = z.object({
   providerId: z.number().int().positive(),
-  method: z.enum(["phone_otp", "document"]).default("phone_otp"),
-  documentUrl: httpUrl.optional(),
+  documentUrl: privateFileUrl,
 });
 
-/**
- * POST /provider/claims — start a claim. phone_otp sends a code to the listing's number (SMS is
- * stubbed: the development code is DEV_OTP_CODE); document claims wait for admin review.
- */
-onboardingRouter.post("/claims", async (req, res) => {
+/** POST /provider/claims — start a claim with a document that proves ownership; the admin team reviews it. */
+onboardingRouter.post("/claims", limits.claims, async (req, res) => {
   const body = parse(startClaimSchema, req.body);
   const user = currentUser(req);
-  const [provider, owned] = await Promise.all([
+  const [provider, owned, pending] = await Promise.all([
     prisma.provider.findUnique({ where: { id: BigInt(body.providerId) } }),
     prisma.provider.findUnique({ where: { userId: user.id }, select: { id: true } }),
+    prisma.providerClaim.findFirst({ where: { providerId: BigInt(body.providerId), userId: user.id, status: "pending" }, select: { id: true } }),
   ]);
   if (!provider || provider.status !== "active") throw notFound("Listing not found");
   if (provider.userId) throw conflict("This listing has already been claimed. Contact support if you believe this is a mistake.");
   if (owned) throw conflict("Your account already manages a business profile");
-  if (body.method === "document" && !body.documentUrl) throw badRequest("Upload a document that proves ownership");
+  if (pending) throw conflict("You already sent a claim for this listing. We will let you know once it is reviewed.");
 
-  const token = await ensureProviderRole(user.id);
-  const code = env.devOtpCode;
+  const token = await ensureProviderRole(req);
   const claim = await prisma.providerClaim.create({
-    data: {
-      providerId: provider.id,
-      userId: user.id,
-      method: body.method,
-      documentUrl: body.documentUrl,
-      otpHash: body.method === "phone_otp" ? await bcrypt.hash(code, 8) : null,
-      otpExpires: body.method === "phone_otp" ? new Date(Date.now() + 10 * 60 * 1000) : null,
-    },
+    data: { providerId: provider.id, userId: user.id, method: "document", documentUrl: body.documentUrl },
   });
-  res.status(201).json({
-    claim: { id: claim.id, status: claim.status, method: claim.method },
-    sentTo: body.method === "phone_otp" ? maskPhone(provider.phone) : null,
-    // Surfaced only outside production so the flow can be demoed without an SMS gateway.
-    devCode: body.method === "phone_otp" && !isProduction ? code : undefined,
-    token,
-  });
-});
-
-const verifyClaimSchema = z.object({ code: z.string().trim().min(4).max(8) });
-
-onboardingRouter.post("/claims/:id/verify", async (req, res) => {
-  const { code } = parse(verifyClaimSchema, req.body);
-  const user = currentUser(req);
-  const claim = await prisma.providerClaim.findUnique({ where: { id: idParam(req.params.id as string) }, include: { provider: true } });
-  if (!claim) throw notFound("Claim not found");
-  if (claim.userId !== user.id) throw forbidden();
-  if (claim.status !== "pending") throw badRequest("This claim is no longer pending");
-  if (claim.method !== "phone_otp" || !claim.otpHash) throw badRequest("This claim is waiting for document review");
-  if (!claim.otpExpires || claim.otpExpires < new Date()) throw badRequest("The code has expired. Start the claim again.");
-  if (!(await bcrypt.compare(code, claim.otpHash))) throw badRequest("That code is not correct");
-  if (claim.provider.userId) throw conflict("This listing has already been claimed");
-
-  await prisma.$transaction([
-    prisma.providerClaim.update({ where: { id: claim.id }, data: { status: "approved", reviewedAt: new Date(), otpHash: null } }),
-    prisma.provider.update({ where: { id: claim.providerId }, data: { userId: user.id, claimedAt: new Date() } }),
-    prisma.verification.create({
-      data: { providerId: claim.providerId, type: "phone", status: "approved", verifiedAt: new Date(), notes: "Verified by claim OTP" },
-    }),
-  ]);
-  const verification = claim.provider.verificationStatus === "none" ? "partial" : claim.provider.verificationStatus;
-  await prisma.provider.update({ where: { id: claim.providerId }, data: { verificationStatus: verification } });
-  await recalculateProvider(claim.providerId);
-  res.json({ ok: true, provider: { id: claim.providerId, slug: claim.provider.slug } });
+  res.status(201).json({ claim: { id: claim.id, status: claim.status, method: claim.method }, token });
 });

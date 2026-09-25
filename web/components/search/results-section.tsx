@@ -39,11 +39,11 @@ export function ResultsSection({
 
   return (
     <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
-      <FiltersSidebar categories={categories} lockedCategory={lockedCategory} />
+      <FiltersSidebar categories={categories} lockedCategory={lockedCategory} defaultRadius={data.radiusKm} />
       <div className="min-w-0">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">{heading}</div>
-          <ResultsToolbar categories={categories} lockedCategory={lockedCategory} />
+          <ResultsToolbar categories={categories} lockedCategory={lockedCategory} defaultRadius={data.radiusKm} />
         </div>
 
         {data.results.length === 0 ? (

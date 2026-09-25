@@ -11,8 +11,6 @@ interface Props {
   plan: Plan;
   isCurrent: boolean;
   featured: boolean;
-  /** The current plan's price, to word the button as an upgrade or a switch. */
-  currentPrice: number | null;
   busy: boolean;
   disabled: boolean;
   onChoose: (plan: Plan) => void;
@@ -22,17 +20,12 @@ export const PlanCard = memo(function PlanCard({
   plan,
   isCurrent,
   featured,
-  currentPrice,
   busy,
   disabled,
   onChoose,
 }: Props) {
   const theme = useTheme();
-  const label = isCurrent
-    ? "Current plan"
-    : currentPrice !== null && plan.price < currentPrice
-      ? `Switch to ${plan.name}`
-      : `Upgrade to ${plan.name}`;
+  const label = isCurrent ? "Current plan" : `Request ${plan.name}`;
 
   return (
     <View

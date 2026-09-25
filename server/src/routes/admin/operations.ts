@@ -4,10 +4,11 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, notFound } from "../../lib/errors.js";
-import { pageMeta, paginationSchema } from "../../lib/pagination.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
-import { notify } from "../../services/notify.js";
+import { notifyAndEmail } from "../../services/notify.js";
+import { env } from "../../env.js";
+import { offlinePaymentSchema, recordPayment } from "./records.js";
 
 /** Dashboard, analytics, leads, reviews, provider detail, subscriptions and announcements. */
 export const adminOpsRouter = Router();
@@ -113,77 +114,7 @@ adminOpsRouter.get("/analytics", async (req, res) => {
   });
 });
 
-// Leads ------------------------------------------------------------------------------------------
 
-adminOpsRouter.get("/leads", async (req, res) => {
-  const q = parse(
-    paginationSchema.extend({
-      channel: z.enum(["call", "whatsapp"]).optional(),
-      providerId: z.coerce.number().int().positive().optional(),
-      days: z.coerce.number().int().min(1).max(365).optional(),
-    }),
-    req.query,
-  );
-  const where: Prisma.LeadWhereInput = {
-    ...(q.channel ? { channel: q.channel } : {}),
-    ...(q.providerId ? { providerId: BigInt(q.providerId) } : {}),
-    ...(q.days ? { createdAt: { gte: new Date(Date.now() - q.days * DAY) } } : {}),
-  };
-  const [leads, total] = await Promise.all([
-    prisma.lead.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (q.page - 1) * q.pageSize,
-      take: q.pageSize,
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        provider: { select: { id: true, businessName: true, city: true } },
-        category: { select: { name: true } },
-        subcategory: { select: { name: true } },
-      },
-    }),
-    prisma.lead.count({ where }),
-  ]);
-  res.json({ leads, ...pageMeta(q.page, q.pageSize, total) });
-});
-
-// Reviews ----------------------------------------------------------------------------------------
-
-adminOpsRouter.get("/reviews", async (req, res) => {
-  const q = parse(
-    paginationSchema.extend({
-      status: z.enum(["published", "flagged", "removed"]).optional(),
-      rating: z.coerce.number().int().min(1).max(5).optional(),
-      q: z.string().trim().max(100).optional(),
-    }),
-    req.query,
-  );
-  const where: Prisma.ReviewWhereInput = {
-    ...(q.status ? { status: q.status } : {}),
-    ...(q.rating ? { rating: q.rating } : {}),
-    ...(q.q ? { OR: [{ reviewText: { contains: q.q, mode: "insensitive" } }, { provider: { businessName: { contains: q.q, mode: "insensitive" } } }] } : {}),
-  };
-  const [reviews, total] = await Promise.all([
-    prisma.review.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (q.page - 1) * q.pageSize,
-      take: q.pageSize,
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        provider: { select: { id: true, businessName: true, slug: true } },
-        photos: { select: { photoUrl: true } },
-      },
-    }),
-    prisma.review.count({ where }),
-  ]);
-  const flags = await prisma.reportFlag.groupBy({ by: ["targetId"], where: { targetType: "review", status: "open", targetId: { in: reviews.map((r) => r.id) } }, _count: true });
-  const flagMap = new Map(flags.map((f) => [f.targetId.toString(), f._count]));
-  res.json({
-    reviews: reviews.map((r) => ({ ...r, photos: r.photos.map((p) => p.photoUrl), openReports: flagMap.get(r.id.toString()) ?? 0 })),
-    ...pageMeta(q.page, q.pageSize, total),
-  });
-});
 
 // Provider detail ----------------------------------------------------------------------------------
 
@@ -216,9 +147,15 @@ adminOpsRouter.get("/providers/:id", async (req, res) => {
   res.json({ provider: rest, stats: { leads30, leadsAll, openTickets }, recentReviews });
 });
 
-const subscriptionSchema = z.object({ planId: z.number().int().positive(), months: z.number().int().min(1).max(36), note: z.string().trim().max(200).optional() });
+const subscriptionSchema = z.object({
+  planId: z.number().int().positive(),
+  months: z.number().int().min(1).max(36),
+  note: z.string().trim().max(200).optional(),
+  /** Set when the provider paid (UPI, bank transfer); left out for free grants. */
+  payment: offlinePaymentSchema.optional(),
+});
 
-/** Gives a provider a plan without payment, e.g. a launch offer or a goodwill extension. */
+/** Gives a provider a plan: after an offline payment (recorded with it), or free as a launch offer or goodwill extension. */
 adminOpsRouter.post("/providers/:id/subscription", async (req, res) => {
   const body = parse(subscriptionSchema, req.body);
   const providerId = idParam(req.params.id as string);
@@ -235,26 +172,19 @@ adminOpsRouter.post("/providers/:id/subscription", async (req, res) => {
     await tx.providerSubscription.updateMany({ where: { providerId, status: "active" }, data: { status: "cancelled", endDate: start } });
     return tx.providerSubscription.create({ data: { providerId, planId: plan.id, startDate: start, endDate: end, status: "active", autoRenew: false } });
   });
+  if (body.payment) await recordPayment(currentUser(req).id, providerId, "subscription", body.payment);
   await logAdmin(currentUser(req).id, "subscription.grant", "provider", providerId, body);
-  void notify(provider.userId, "subscription", `You are now on the ${plan.name} plan`, `Active until ${end.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.`, { planId: body.planId });
+  void notifyAndEmail(
+    provider.userId,
+    "subscription",
+    `You are now on the ${plan.name} plan`,
+    `Active until ${end.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.`,
+    { planId: body.planId },
+    { label: "See your plan", url: `${env.providerUrl}/subscription` },
+  );
   res.status(201).json({ subscription });
 });
 
-adminOpsRouter.get("/subscriptions", async (req, res) => {
-  const q = parse(paginationSchema.extend({ status: z.enum(["active", "expired", "cancelled"]).optional(), planId: z.coerce.number().int().positive().optional() }), req.query);
-  const where: Prisma.ProviderSubscriptionWhereInput = { ...(q.status ? { status: q.status } : {}), ...(q.planId ? { planId: BigInt(q.planId) } : {}) };
-  const [subscriptions, total] = await Promise.all([
-    prisma.providerSubscription.findMany({
-      where,
-      orderBy: { startDate: "desc" },
-      skip: (q.page - 1) * q.pageSize,
-      take: q.pageSize,
-      include: { plan: { select: { id: true, name: true, price: true, billingCycle: true } }, provider: { select: { id: true, businessName: true, city: true } } },
-    }),
-    prisma.providerSubscription.count({ where }),
-  ]);
-  res.json({ subscriptions, ...pageMeta(q.page, q.pageSize, total) });
-});
 
 adminOpsRouter.patch("/subscriptions/:id", async (req, res) => {
   const body = parse(z.object({ status: z.enum(["active", "expired", "cancelled"]).optional(), endDate: z.coerce.date().optional(), autoRenew: z.boolean().optional() }), req.body);

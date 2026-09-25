@@ -51,9 +51,12 @@ export function TicketsPage() {
     queryKey: ["admin-tickets", params.toString()],
     queryFn: () => api<{ tickets: TicketRow[]; counts: Partial<Record<Status, number>> } & Paged>(`/admin/tickets?${params}`),
     refetchInterval: 30_000,
+    enabled: f.status !== "messages",
   });
   const c = data?.counts ?? {};
   const active = (c.open ?? 0) + (c.pending ?? 0);
+  const { data: legacy } = useQuery({ queryKey: ["contact-messages"], queryFn: () => api<{ messages: ContactMessage[] }>("/admin/contact-messages") });
+  const legacyOpen = legacy?.messages.filter((m) => m.status !== "closed").length ?? 0;
 
   return (
     <>
@@ -66,8 +69,17 @@ export function TicketsPage() {
           <TabsTrigger value="resolved">Resolved</TabsTrigger>
           <TabsTrigger value="closed">Closed</TabsTrigger>
           <TabsTrigger value="all">All</TabsTrigger>
+          {!!legacy?.messages.length && (
+            <TabsTrigger value="messages">
+              Old contact messages {legacyOpen > 0 && <span className="ml-1 text-muted-foreground">{legacyOpen}</span>}
+            </TabsTrigger>
+          )}
         </TabsList>
       </Tabs>
+      {f.status === "messages" ? (
+        <ContactMessages messages={legacy?.messages ?? []} />
+      ) : (
+        <>
       <Toolbar>
         <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search subject, email or DNF-000123" />
         <FilterSelect label="Priority" allLabel="Any priority" value={f.priority} onChange={(priority) => setF({ priority, page: "1" })} options={PRIORITIES.map((p) => ({ value: p, label: humanize(p) }))} />
@@ -123,6 +135,8 @@ export function TicketsPage() {
         </tbody>
       </Table>
       {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+        </>
+      )}
     </>
   );
 }
@@ -383,6 +397,74 @@ function Composer({ ticketId, status }: { ticketId: number; status: Status }) {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  subject: string | null;
+  message: string;
+  status: "new" | "in_progress" | "closed";
+  createdAt: string;
+}
+
+/** Messages sent through the contact form before it created tickets. Move them into the help desk or close them. */
+function ContactMessages({ messages }: { messages: ContactMessage[] }) {
+  const qc = useQueryClient();
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: ["contact-messages"] });
+    void qc.invalidateQueries({ queryKey: ["admin-tickets"] });
+  };
+  const toTicket = useMutation({
+    mutationFn: (id: number) => api<{ ticket: { id: number; reference: string } }>(`/admin/contact-messages/${id}/ticket`, { method: "POST" }),
+    onSuccess: ({ ticket }) => {
+      toast.success(`Moved to ticket ${ticket.reference}`);
+      refresh();
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+  const close = useMutation({
+    mutationFn: (id: number) => api(`/admin/contact-messages/${id}`, { method: "PATCH", json: { status: "closed" } }),
+    onSuccess: () => {
+      toast.success("Marked as handled");
+      refresh();
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">New contact form messages become tickets automatically. These arrived before that and still need an answer or a close.</p>
+      {messages.map((m) => (
+        <article key={m.id} className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{m.subject || "No subject"}</span>
+                <StatusBadge status={m.status === "closed" ? "closed" : "open"} label={m.status === "closed" ? "Handled" : "Needs reply"} />
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {m.name} · {m.email}
+                {m.phone ? ` · ${m.phone}` : ""} · {formatRelative(m.createdAt)}
+              </div>
+            </div>
+            {m.status !== "closed" && (
+              <div className="flex gap-2">
+                <Button size="sm" disabled={toTicket.isPending} onClick={() => toTicket.mutate(m.id)}>
+                  Move to ticket
+                </Button>
+                <Button size="sm" variant="outline" disabled={close.isPending} onClick={() => close.mutate(m.id)}>
+                  Mark handled
+                </Button>
+              </div>
+            )}
+          </div>
+          <p className="mt-3 whitespace-pre-line text-sm">{m.message}</p>
+        </article>
+      ))}
     </div>
   );
 }

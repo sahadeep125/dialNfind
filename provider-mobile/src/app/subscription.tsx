@@ -14,12 +14,12 @@ import { ErrorState, Screen, ScreenHeader, SectionHeader } from "@/components/la
 import { CurrentPlanCard } from "@/components/subscription/CurrentPlanCard";
 import { PlanCard } from "@/components/subscription/PlanCard";
 import { TransactionRow } from "@/components/subscription/TransactionRow";
-import { useCancelAutoRenew, useCheckoutPlan, useSubscription } from "@/hooks/useSubscription";
+import { useRequestPlan, useSubscription } from "@/hooks/useSubscription";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
 import type { Plan } from "@/types/billing";
-import { formatDate, formatPrice } from "@/utils/format";
+import { formatPrice } from "@/utils/format";
 
 const POPULAR_PLAN = "Pro";
 
@@ -27,10 +27,8 @@ export default function SubscriptionScreen() {
   const theme = useTheme();
   const toast = useToast();
   const subscription = useSubscription();
-  const checkout = useCheckoutPlan();
-  const cancel = useCancelAutoRenew();
+  const request = useRequestPlan();
   const [choosing, setChoosing] = useState<Plan | null>(null);
-  const [confirmCancel, setConfirmCancel] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const data = subscription.data;
   const current = data?.current ?? null;
@@ -46,35 +44,16 @@ export default function SubscriptionScreen() {
   const confirmPlan = (): void => {
     if (!choosing) return;
     const plan = choosing;
-    checkout.mutate(plan.id, {
-      onSuccess: (result) => {
+    request.mutate(plan.id, {
+      onSuccess: ({ ticket }) => {
         setChoosing(null);
         toast(
-          result.simulated
-            ? "Plan changed. Payment was simulated because no gateway is connected yet."
-            : "Plan changed",
+          `Request sent (${ticket.reference}). Our team will contact you to arrange payment and switch your plan.`,
           "success",
         );
       },
       onError: (error: Error) => toast(errorMessage(error), "error"),
     });
-  };
-
-  const turnOffRenew = (): void => {
-    cancel.mutate(undefined, {
-      onSuccess: () => {
-        setConfirmCancel(false);
-        toast("Auto-renew turned off. Your plan stays active until the end date.", "success");
-      },
-      onError: (error: Error) => toast(errorMessage(error), "error"),
-    });
-  };
-
-  const chosenEnd = (plan: Plan): string => {
-    const end = new Date();
-    if (plan.billingCycle === "yearly") end.setFullYear(end.getFullYear() + 1);
-    else end.setMonth(end.getMonth() + 1);
-    return formatDate(end.toISOString());
   };
 
   return (
@@ -105,15 +84,11 @@ export default function SubscriptionScreen() {
         >
           <AppText tone="secondary">
             Every plan keeps your listing free to find. Paid plans add reach, analytics and a
-            partner badge.
+            partner badge. Send a request and our team will contact you to arrange payment.
           </AppText>
 
           {current ? (
-            <CurrentPlanCard
-              current={current}
-              busy={cancel.isPending}
-              onTurnOffRenew={() => setConfirmCancel(true)}
-            />
+            <CurrentPlanCard current={current} />
           ) : null}
 
           <View style={[styles.grid, { gap: theme.spacing[4] }]}>
@@ -123,9 +98,8 @@ export default function SubscriptionScreen() {
                 plan={plan}
                 isCurrent={current?.plan.id === plan.id}
                 featured={plan.name === POPULAR_PLAN}
-                currentPrice={current?.plan.price ?? null}
-                busy={checkout.isPending && checkout.variables === plan.id}
-                disabled={checkout.isPending}
+                busy={request.isPending && request.variables === plan.id}
+                disabled={request.isPending}
                 onChoose={onChoose}
               />
             ))}
@@ -155,58 +129,27 @@ export default function SubscriptionScreen() {
       <AppSheet
         visible={!!choosing}
         onClose={() => setChoosing(null)}
-        title={choosing ? `Switch to ${choosing.name}?` : ""}
+        title={choosing ? `Request the ${choosing.name} plan?` : ""}
       >
         {choosing ? (
           <View style={[styles.sheet, { gap: theme.spacing[4], padding: theme.spacing[4] }]}>
             <AppText tone="secondary">
               {choosing.price > 0
-                ? `You pay ${formatPrice(choosing.price)} now and the ${choosing.name} plan runs until ${chosenEnd(choosing)}.`
-                : `Your listing moves to the free ${choosing.name} plan straight away.`}
-              {current ? ` Your ${current.plan.name} plan ends today.` : ""}
+                ? `The ${choosing.name} plan costs ${formatPrice(choosing.price)} per ${choosing.billingCycle === "yearly" ? "year" : "month"}. We will contact you to arrange payment, then switch your plan.`
+                : `We will move your listing to the free ${choosing.name} plan.`}
             </AppText>
             <View style={[styles.row, { gap: theme.spacing[3] }]}>
               <AppButton variant="secondary" style={styles.flex} onPress={() => setChoosing(null)}>
                 Cancel
               </AppButton>
-              <AppButton style={styles.flex} loading={checkout.isPending} onPress={confirmPlan}>
-                {choosing.price > 0 ? `Pay ${formatPrice(choosing.price)}` : "Switch plan"}
+              <AppButton style={styles.flex} loading={request.isPending} onPress={confirmPlan}>
+                Send request
               </AppButton>
             </View>
           </View>
         ) : null}
       </AppSheet>
 
-      <AppSheet
-        visible={confirmCancel}
-        onClose={() => setConfirmCancel(false)}
-        title="Turn off auto-renew?"
-      >
-        <View style={[styles.sheet, { gap: theme.spacing[4], padding: theme.spacing[4] }]}>
-          <AppText tone="secondary">
-            {current?.endDate
-              ? `Your ${current.plan.name} plan stays active until ${formatDate(current.endDate)} and then stops.`
-              : "Your plan will not renew."}
-          </AppText>
-          <View style={[styles.row, { gap: theme.spacing[3] }]}>
-            <AppButton
-              variant="secondary"
-              style={styles.flex}
-              onPress={() => setConfirmCancel(false)}
-            >
-              Keep it on
-            </AppButton>
-            <AppButton
-              variant="destructive"
-              style={styles.flex}
-              loading={cancel.isPending}
-              onPress={turnOffRenew}
-            >
-              Turn off
-            </AppButton>
-          </View>
-        </View>
-      </AppSheet>
     </Screen>
   );
 }

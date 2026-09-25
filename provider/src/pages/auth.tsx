@@ -7,6 +7,7 @@ import { BarChart3, BadgeCheck, Loader2, PhoneCall } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
+import { WEB_URL } from "@/lib/config";
 import { email, normalizePhone, optionalPhone, password, personName } from "@/lib/validation";
 import { Field, fieldA11y, FormAlert } from "@/components/form";
 import { Button } from "@/components/ui/button";
@@ -76,9 +77,16 @@ export function LoginPage() {
         <Field id="email" label="Email" error={errors.email}>
           <Input type="email" autoComplete="email" inputMode="email" {...fieldA11y("email", errors.email)} {...register("email")} />
         </Field>
-        <Field id="password" label="Password" error={errors.password}>
-          <Input type="password" autoComplete="current-password" {...fieldA11y("password", errors.password)} {...register("password")} />
-        </Field>
+        <div className="space-y-2">
+          <div className="flex justify-end">
+            <a href={`${WEB_URL}/forgot-password`} className="-mb-7 text-xs font-medium text-primary hover:underline">
+              Forgot password?
+            </a>
+          </div>
+          <Field id="password" label="Password" error={errors.password}>
+            <Input type="password" autoComplete="current-password" {...fieldA11y("password", errors.password)} {...register("password")} />
+          </Field>
+        </div>
         <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="animate-spin" />} Log in
         </Button>

@@ -4,6 +4,7 @@ export interface User {
   name: string;
   email: string;
   phone: string | null;
+  emailVerifiedAt: string | null;
   provider: { id: number; slug: string; businessName: string; status: string } | null;
 }
 

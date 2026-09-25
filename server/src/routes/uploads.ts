@@ -32,7 +32,8 @@ const MAX_BYTES = Math.max(...Object.values(PURPOSES).map((p) => p.maxBytes));
 
 /**
  * POST /uploads?purpose=portfolio — the request body is the raw file, sent with its content type.
- * Returns { url } to store on the record (portfolio imageUrl, logoUrl, documentUrl, ...).
+ * Returns { url } to store on the record (portfolio imageUrl, logoUrl, documentUrl, ...). Documents are
+ * private: their URL comes back signed and only works for an hour, like everywhere else in the API.
  */
 uploadsRouter.post(
   "/",
@@ -48,7 +49,7 @@ uploadsRouter.post(
     if (!type || !(rule.types as readonly string[]).includes(type)) {
       throw badRequest(purpose === "document" ? "Upload a JPG, PNG, WebP or PDF file" : "Upload a JPG, PNG or WebP image");
     }
-    const url = await storage.put(storageKey(rule.folder, EXT[type]), body, type);
+    const url = await storage.put(storageKey(rule.folder, EXT[type]), body, type, purpose === "document" ? "private" : "public");
     res.status(201).json({ url, contentType: type, size: body.length });
   },
 );

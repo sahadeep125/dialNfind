@@ -1,11 +1,13 @@
 import { createApp } from "./app.js";
 import { env } from "./env.js";
 import { prisma } from "./lib/prisma.js";
+import { startJobs } from "./jobs/index.js";
 
 const app = createApp();
 const server = app.listen(env.port, () => {
   console.log(`DialNFind API listening on http://localhost:${env.port}/api/v1`);
 });
+startJobs();
 
 async function shutdown() {
   server.close();

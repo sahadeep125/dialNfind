@@ -2,6 +2,7 @@ import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import { Circle, MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { MAP_ATTRIBUTION, MAP_TILE_URL } from "@/lib/config";
 
 const icon = L.divIcon({
   className: "",
@@ -38,7 +39,7 @@ export function MapPicker({ lat, lng, radiusKm, onChange }: { lat: number; lng: 
   );
   return (
     <MapContainer center={[lat, lng]} zoom={13} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
-      <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <TileLayer attribution={MAP_ATTRIBUTION} url={MAP_TILE_URL} />
       <Recenter lat={lat} lng={lng} />
       <ClickToMove onChange={onChange} />
       {radiusKm && <Circle center={[lat, lng]} radius={radiusKm * 1000} pathOptions={{ color: "oklch(0.53 0.2 266)", weight: 1, fillOpacity: 0.06 }} />}

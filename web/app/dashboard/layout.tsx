@@ -1,6 +1,7 @@
 import { requireSession } from "@/lib/session";
 import { initials } from "@/lib/format";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
+import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireSession("/dashboard");
@@ -17,7 +18,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
           <DashboardNav />
         </aside>
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0">
+          {!user.emailVerifiedAt && <VerifyEmailBanner email={user.email} />}
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -1,13 +1,18 @@
 import { useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { CheckCircle2, CircleHelp, MessageCircle, Phone, PhoneIncoming, XCircle } from "lucide-react";
-import { api } from "@/lib/api";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, CircleHelp, Flag, Loader2, MessageCircle, Phone, PhoneIncoming, XCircle } from "lucide-react";
+import { toast } from "sonner";
+import { api, errorMessage } from "@/lib/api";
 import { formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "@/components/page-header";
 import { EmptyState, PageSkeleton, Pager, Stars } from "@/components/common";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Lead {
   id: number;
@@ -21,7 +26,10 @@ interface Lead {
   customerReportedResponse: boolean | null;
   reviewRating: number | null;
   details: { label: string; value: string }[];
+  disputeStatus: "none" | "open" | "accepted" | "rejected";
 }
+
+const DISPUTE_DAYS = 30;
 
 interface LeadsResponse {
   leads: Lead[];
@@ -35,6 +43,7 @@ const SOURCE_LABEL: Record<string, string> = { search: "Search results", profile
 export function LeadsPage() {
   const [channel, setChannel] = useState<"all" | "call" | "whatsapp">("all");
   const [page, setPage] = useState(1);
+  const [reporting, setReporting] = useState<Lead | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["leads", channel, page],
     queryFn: () => api<LeadsResponse>(`/provider/leads?page=${page}&pageSize=15${channel === "all" ? "" : `&channel=${channel}`}`),
@@ -97,8 +106,9 @@ export function LeadsPage() {
                   )}
                 </div>
                 <div className="text-sm text-muted-foreground">{SOURCE_LABEL[l.source] ?? l.source}</div>
-                <div>
+                <div className="flex flex-wrap items-center gap-2">
                   <Outcome lead={l} />
+                  <DisputeState lead={l} onReport={() => setReporting(l)} />
                 </div>
                 </div>
               </li>
@@ -107,6 +117,7 @@ export function LeadsPage() {
         </Panel>
       )}
       <Pager page={data.page} totalPages={data.totalPages} onPage={setPage} />
+      <ReportLeadDialog lead={reporting} onClose={() => setReporting(null)} />
     </>
   );
 }
@@ -129,5 +140,78 @@ function Outcome({ lead }: { lead: Lead }) {
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
       <CircleHelp className="size-3" /> Awaiting feedback
     </span>
+  );
+}
+
+function DisputeState({ lead, onReport }: { lead: Lead; onReport: () => void }) {
+  if (lead.disputeStatus === "open") return <Badge variant="secondary">Reported, under review</Badge>;
+  if (lead.disputeStatus === "accepted") return <Badge variant="secondary">Report accepted, not counted</Badge>;
+  if (lead.disputeStatus === "rejected") return <Badge variant="secondary">Report not accepted</Badge>;
+  if (Date.now() - new Date(lead.createdAt).getTime() > DISPUTE_DAYS * 86_400_000) return null;
+  return (
+    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground" onClick={onReport}>
+      <Flag className="size-3" /> Report
+    </Button>
+  );
+}
+
+/** Spam, fake or wrong-number contacts can be reported; if our team agrees, they stop counting and any promotion charge is refunded. */
+function ReportLeadDialog({ lead, onClose }: { lead: Lead | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const report = useMutation({
+    mutationFn: () => api(`/provider/leads/${lead!.id}/dispute`, { method: "POST", json: { reason: reason.trim() } }),
+    onSuccess: () => {
+      toast.success("Thanks. Our team will look at this contact.");
+      setReason("");
+      onClose();
+      void qc.invalidateQueries({ queryKey: ["leads"] });
+    },
+    onError: (e) => setError(errorMessage(e)),
+  });
+  return (
+    <Dialog open={!!lead} onOpenChange={(o) => !o && (onClose(), setError(null))}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Report this contact</DialogTitle>
+          <DialogDescription>For spam, fake or wrong-number contacts. If our team agrees, it no longer counts in your numbers and any promotion charge goes back to your budget.</DialogDescription>
+        </DialogHeader>
+        <form
+          id="report-lead"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (reason.trim().length < 10) return setError("Tell us what was wrong, at least 10 characters");
+            report.mutate();
+          }}
+          className="space-y-2"
+        >
+          <Label htmlFor="report-reason">What was wrong with it?</Label>
+          <Textarea
+            id="report-reason"
+            rows={3}
+            maxLength={500}
+            value={reason}
+            onChange={(e) => (setReason(e.target.value), setError(null))}
+            aria-invalid={!!error || undefined}
+            aria-describedby={error ? "report-reason-error" : undefined}
+          />
+          {error && (
+            <p id="report-reason-error" role="alert" className="text-xs font-medium text-destructive">
+              {error}
+            </p>
+          )}
+        </form>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="report-lead" disabled={report.isPending}>
+            {report.isPending && <Loader2 className="animate-spin" />} Send report
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

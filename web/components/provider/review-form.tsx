@@ -18,22 +18,30 @@ import { cn } from "@/lib/utils";
 const LABELS = ["", "Poor", "Below average", "Good", "Very good", "Excellent"];
 const MAX_PHOTOS = 6;
 
-const schema = z.object({
-  rating: z.number().int().min(1, "Pick a star rating").max(5),
-  reviewText: z.string().trim().min(10, "Tell others a little more, at least 10 characters").max(2000, "Keep the review under 2,000 characters"),
-  photos: z.array(z.string()).max(MAX_PHOTOS),
-});
-type Values = z.infer<typeof schema>;
+/** The minimum length comes from the admin settings (GET /app-config). */
+const makeSchema = (minLength: number) =>
+  z.object({
+    rating: z.number().int().min(1, "Pick a star rating").max(5),
+    reviewText: z
+      .string()
+      .trim()
+      .min(Math.max(1, minLength), minLength > 1 ? `Tell others a little more, at least ${minLength} characters` : "Write a few words about your experience")
+      .max(2000, "Keep the review under 2,000 characters"),
+    photos: z.array(z.string()).max(MAX_PHOTOS),
+  });
+type Values = z.infer<ReturnType<typeof makeSchema>>;
 
 export function ReviewForm({
   providerId,
   providerName,
   signedIn,
   existing,
+  minLength,
 }: {
   providerId: number;
   providerName: string;
   signedIn: boolean;
+  minLength: number;
   existing: { id: number; rating: number; reviewText: string | null; photos?: string[] } | null;
 }) {
   const router = useRouter();
@@ -43,7 +51,7 @@ export function ReviewForm({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const defaults: Values = { rating: existing?.rating ?? 0, reviewText: existing?.reviewText ?? "", photos: existing?.photos ?? [] };
-  const { register, control, handleSubmit, reset, watch, formState } = useForm<Values>({ resolver: zodResolver(schema), mode: "onTouched", defaultValues: defaults });
+  const { register, control, handleSubmit, reset, watch, formState } = useForm<Values>({ resolver: zodResolver(makeSchema(minLength)), mode: "onTouched", defaultValues: defaults });
   const { errors, isSubmitting } = formState;
   const rating = watch("rating");
   const textLength = watch("reviewText").length;

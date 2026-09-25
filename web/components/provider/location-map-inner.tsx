@@ -3,6 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Circle, MapContainer, Marker, TileLayer } from "react-leaflet";
+import { MAP_ATTRIBUTION, MAP_TILE_URL } from "@/lib/config";
 
 const icon = L.divIcon({
   className: "",
@@ -13,8 +14,8 @@ const icon = L.divIcon({
 
 export default function LocationMapInner({ lat, lng, radiusKm, label }: { lat: number; lng: number; radiusKm: number; label: string }) {
   return (
-    <MapContainer center={[lat, lng]} zoom={12} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }} attributionControl={false}>
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+    <MapContainer center={[lat, lng]} zoom={12} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+      <TileLayer attribution={MAP_ATTRIBUTION} url={MAP_TILE_URL} />
       <Circle center={[lat, lng]} radius={radiusKm * 1000} pathOptions={{ color: "oklch(0.53 0.2 266)", weight: 1, fillOpacity: 0.06 }} />
       <Marker position={[lat, lng]} icon={icon} title={label} />
     </MapContainer>

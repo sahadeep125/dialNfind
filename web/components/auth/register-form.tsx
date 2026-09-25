@@ -12,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { email, normalizePhone, optionalPhone, password, personName } from "@/lib/validation";
-import { OrDivider, SocialButtons } from "./social-buttons";
 
 const schema = z.object({
   name: personName,
@@ -60,8 +59,6 @@ export function RegisterForm() {
 
   return (
     <>
-      <SocialButtons />
-      <OrDivider />
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         <FormAlert message={error} />
         <Field id="name" label="Full name" error={errors.name}>

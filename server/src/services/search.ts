@@ -2,8 +2,12 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { localNow } from "../lib/hours.js";
 import { providerCardInclude, toProviderCard } from "./presenter.js";
+import { getNumberSetting } from "./settings.js";
 
 export type SortKey = "relevance" | "distance" | "rating" | "reviews";
+
+/** Nobody is shown further away than this, whatever their travel distance or service areas. */
+const MAX_REACH_KM = 100;
 
 export interface SearchParams {
   q?: string;
@@ -61,7 +65,7 @@ export async function resolveTerm(q: string): Promise<ResolvedTerm> {
 export async function searchProviders(params: SearchParams) {
   const { sort, page, pageSize } = params;
   const hasOrigin = params.lat !== undefined && params.lng !== undefined;
-  const radiusKm = params.radiusKm ?? 15;
+  const radiusKm = params.radiusKm ?? (await getNumberSetting("default_search_radius_km", 15));
 
   let categoryId: bigint | null = null;
   let subcategoryId: bigint | null = null;
@@ -124,7 +128,18 @@ export async function searchProviders(params: SearchParams) {
   }
 
   if (origin) {
-    where.push(Prisma.sql`ST_DWithin(p.location, ${origin}, ${radiusKm * 1000})`);
+    // A provider matches when they are within the search radius, when a locality they serve is, or, when
+    // the customer did not pick a radius themselves, when the customer is within the distance the
+    // provider travels. The first check keeps the GiST index in play before the per-row ones.
+    const radiusM = radiusKm * 1000;
+    const servedArea = Prisma.sql`EXISTS (
+      SELECT 1 FROM provider_service_areas a
+      WHERE a.provider_id = p.id AND a.latitude IS NOT NULL AND a.longitude IS NOT NULL
+        AND ST_DWithin(ST_SetSRID(ST_MakePoint(a.longitude::double precision, a.latitude::double precision), 4326)::geography, ${origin}, ${radiusM})
+    )`;
+    const travels = params.radiusKm === undefined ? Prisma.sql`OR ST_DWithin(p.location, ${origin}, p.service_radius_km * 1000)` : Prisma.empty;
+    where.push(Prisma.sql`ST_DWithin(p.location, ${origin}, ${Math.max(radiusM, MAX_REACH_KM * 1000)})`);
+    where.push(Prisma.sql`(ST_DWithin(p.location, ${origin}, ${radiusM}) ${travels} OR ${servedArea})`);
   } else if (params.city) {
     where.push(Prisma.sql`p.city ILIKE ${params.city}`);
   }
@@ -214,6 +229,7 @@ export async function searchProviders(params: SearchParams) {
   return {
     results,
     total,
+    radiusKm,
     resolved: {
       category: resolved.category,
       subcategory: resolved.subcategory ? { id: resolved.subcategory.id, name: resolved.subcategory.name, slug: resolved.subcategory.slug } : null,

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { pincode } from "../lib/rules.js";
 import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
-import { forbidden, notFound } from "../lib/errors.js";
+import { notFound } from "../lib/errors.js";
 import { pageMeta, paginationSchema } from "../lib/pagination.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { providerCardInclude, toProviderCard } from "../services/presenter.js";
@@ -181,22 +181,5 @@ meRouter.post("/notifications/read", async (req, res) => {
     where: { userId, ...(body.ids ? { id: { in: body.ids.map(BigInt) } } : {}) },
     data: { isRead: true },
   });
-  res.json({ ok: true });
-});
-
-const deviceSchema = z.object({ token: z.string().min(10).max(500), platform: z.enum(["web", "ios", "android"]) });
-
-/** Stores push tokens; nothing is sent until a push provider is configured. */
-meRouter.post("/device-tokens", async (req, res) => {
-  const body = parse(deviceSchema, req.body);
-  const userId = currentUser(req).id;
-  const existing = await prisma.deviceToken.findUnique({ where: { token: body.token } });
-  if (existing && existing.userId !== userId) throw forbidden();
-  await prisma.deviceToken.upsert({ where: { token: body.token }, create: { ...body, userId }, update: { platform: body.platform } });
-  res.status(201).json({ ok: true });
-});
-
-meRouter.delete("/device-tokens/:token", async (req, res) => {
-  await prisma.deviceToken.deleteMany({ where: { token: req.params.token as string, userId: currentUser(req).id } });
   res.json({ ok: true });
 });

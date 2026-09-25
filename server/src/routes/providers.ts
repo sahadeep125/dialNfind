@@ -10,6 +10,7 @@ import { num } from "../lib/serialize.js";
 import { optionalAuth } from "../middleware/auth.js";
 import { providerCardInclude, toProviderCard } from "../services/presenter.js";
 import { recordProfileView, searchProviders } from "../services/search.js";
+import { limits } from "../lib/rate-limit.js";
 
 export const providersRouter = Router();
 
@@ -188,7 +189,7 @@ providersRouter.get("/:slug/similar", optionalAuth, async (req, res) => {
 
 const reportSchema = z.object({ reason: z.string().trim().min(5).max(500) });
 
-providersRouter.post("/:slug/report", optionalAuth, async (req, res) => {
+providersRouter.post("/:slug/report", limits.reviews, optionalAuth, async (req, res) => {
   const { id } = await findActiveBySlug(req.params.slug as string);
   const { reason } = parse(reportSchema, req.body);
   await prisma.reportFlag.create({ data: { reporterUserId: req.user?.id ?? null, targetType: "provider", targetId: id, reason } });

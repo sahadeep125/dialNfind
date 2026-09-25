@@ -1,16 +1,18 @@
 import { Router } from "express";
 import { storage } from "../storage/index.js";
-import { pluginEnabled } from "../services/settings.js";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { email, optionalPhone, optionalUrl, password, personName } from "../lib/rules.js";
 import { prisma } from "../lib/prisma.js";
 import { parse } from "../lib/validate.js";
-import { signToken } from "../lib/jwt.js";
-import { badRequest, conflict, forbidden, notConfigured, unauthorized } from "../lib/errors.js";
-import { recalculateProvider } from "../services/ranking.js";
+import { badRequest, conflict, forbidden, unauthorized } from "../lib/errors.js";
 import { currentUser, requireAuth } from "../middleware/auth.js";
 import { env } from "../env.js";
+import { sendMail } from "../services/mail.js";
+import { revokeAllSessions, revokeSession, startSession } from "../services/sessions.js";
+import { consumeUserToken, issueUserToken } from "../services/user-tokens.js";
+import { limits } from "../lib/rate-limit.js";
+import { anonymiseUser, sendVerificationEmail } from "../services/accounts.js";
 
 export const authRouter = Router();
 
@@ -36,7 +38,7 @@ const registerSchema = z.object({
   acceptTerms: z.literal(true, { errorMap: () => ({ message: "You must accept the terms" }) }),
 });
 
-authRouter.post("/register", async (req, res) => {
+authRouter.post("/register", limits.auth, async (req, res) => {
   const body = parse(registerSchema, req.body);
   const existing = await prisma.user.findUnique({ where: { email: body.email } });
   if (existing) throw conflict("An account with this email already exists");
@@ -51,7 +53,8 @@ authRouter.post("/register", async (req, res) => {
     },
     select: publicUser,
   });
-  res.status(201).json({ token: signToken(user.id, user.role), user });
+  void sendVerificationEmail(user.id, user.email, user.name);
+  res.status(201).json({ token: await startSession(user.id, user.role, req), user });
 });
 
 const loginSchema = z.object({
@@ -59,7 +62,7 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-authRouter.post("/login", async (req, res) => {
+authRouter.post("/login", limits.auth, async (req, res) => {
   const body = parse(loginSchema, req.body);
   const user = await prisma.user.findUnique({ where: { email: body.email } });
   if (!user || !user.passwordHash || !(await bcrypt.compare(body.password, user.passwordHash))) {
@@ -68,7 +71,13 @@ authRouter.post("/login", async (req, res) => {
   if (user.status !== "active") throw unauthorized("This account is not active");
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
   const profile = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: publicUser });
-  res.json({ token: signToken(user.id, user.role), user: profile });
+  res.json({ token: await startSession(user.id, user.role, req), user: profile });
+});
+
+/** POST /auth/logout — ends this sign-in on the server, so the token stops working straight away. */
+authRouter.post("/logout", requireAuth, async (req, res) => {
+  await revokeSession(currentUser(req).sessionId);
+  res.json({ ok: true });
 });
 
 authRouter.get("/me", requireAuth, async (req, res) => {
@@ -104,14 +113,14 @@ authRouter.post("/change-password", requireAuth, async (req, res) => {
     }
   }
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(body.newPassword, 10) } });
+  // Other devices must sign in again with the new password; this one stays signed in.
+  await revokeAllSessions(user.id, currentUser(req).sessionId);
   res.json({ ok: true });
 });
 
 const deleteSchema = z.object({ password: z.string().optional() });
 
-// Account deletion for customers (required by the app stores). The row is kept so leads and audit
-// history stay consistent, but everything that identifies the person is cleared and they can no
-// longer sign in. Their reviews are removed and the affected providers' ratings recalculated.
+// Account deletion for customers (required by the app stores); see anonymiseUser for what is kept.
 authRouter.delete("/me", requireAuth, async (req, res) => {
   const body = parse(deleteSchema, req.body ?? {});
   const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id } });
@@ -119,36 +128,60 @@ authRouter.delete("/me", requireAuth, async (req, res) => {
   if (user.passwordHash && (!body.password || !(await bcrypt.compare(body.password, user.passwordHash)))) {
     throw badRequest("Password is incorrect", [{ path: "password", message: "Password is incorrect" }]);
   }
-  const reviews = await prisma.review.findMany({ where: { userId: user.id }, select: { providerId: true, photos: { select: { photoUrl: true } } } });
-  await prisma.$transaction([
-    prisma.favorite.deleteMany({ where: { userId: user.id } }),
-    prisma.userAddress.deleteMany({ where: { userId: user.id } }),
-    prisma.deviceToken.deleteMany({ where: { userId: user.id } }),
-    prisma.userOAuthAccount.deleteMany({ where: { userId: user.id } }),
-    prisma.review.deleteMany({ where: { userId: user.id } }),
-    prisma.user.update({
-      where: { id: user.id },
-      data: { status: "deleted", name: "Deleted user", email: `deleted-${user.id}@deleted.invalid`, phone: null, passwordHash: null, profilePhotoUrl: null },
-    }),
-  ]);
-  for (const r of reviews) for (const p of r.photos) void storage.remove(p.photoUrl);
-  for (const providerId of new Set(reviews.map((r) => r.providerId))) await recalculateProvider(providerId);
-  if (user.profilePhotoUrl) void storage.remove(user.profilePhotoUrl);
+  await anonymiseUser(user.id);
   res.json({ ok: true });
 });
 
-const oauthSchema = z.object({ idToken: z.string().min(10), role: z.enum(["customer", "provider"]).default("customer") });
+// Email verification and password reset -----------------------------------------------------------
 
-// Social sign-in. The token verification step needs client credentials; until they are set these
-// endpoints validate input and answer 501 so the frontends can show a clear message.
-authRouter.post("/oauth/google", async (req, res) => {
-  parse(oauthSchema, req.body);
-  if (!env.googleClientId && !(await pluginEnabled("google_oauth"))) throw notConfigured("Google sign-in is not configured yet");
-  throw notConfigured("Google token verification is not implemented yet");
+/** POST /auth/verify-email — the link from the verification email. Works without being signed in. */
+authRouter.post("/verify-email", limits.auth, async (req, res) => {
+  const { token } = parse(z.object({ token: z.string().min(20).max(200) }), req.body);
+  const userId = await consumeUserToken(token, "verify_email");
+  if (!userId) throw badRequest("This link has expired or was already used. Sign in and ask for a new one.");
+  await prisma.user.update({ where: { id: userId }, data: { emailVerifiedAt: new Date() } });
+  res.json({ ok: true });
 });
 
-authRouter.post("/oauth/apple", async (req, res) => {
-  parse(oauthSchema, req.body);
-  if (!env.appleClientId && !(await pluginEnabled("apple_oauth"))) throw notConfigured("Apple sign-in is not configured yet");
-  throw notConfigured("Apple token verification is not implemented yet");
+/** POST /auth/resend-verification — sends a fresh link to the signed-in user. */
+authRouter.post("/resend-verification", limits.auth, requireAuth, async (req, res) => {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id }, select: { id: true, email: true, name: true, emailVerifiedAt: true } });
+  if (user.emailVerifiedAt) throw badRequest("Your email address is already confirmed");
+  await sendVerificationEmail(user.id, user.email, user.name);
+  res.json({ ok: true });
+});
+
+/** POST /auth/forgot-password — always answers the same way so it cannot be used to find out who has an account. */
+authRouter.post("/forgot-password", limits.auth, async (req, res) => {
+  const body = parse(z.object({ email: z.string().trim().toLowerCase().email() }), req.body);
+  const user = await prisma.user.findUnique({ where: { email: body.email }, select: { id: true, name: true, email: true, status: true } });
+  if (user && user.status === "active") {
+    const token = await issueUserToken(user.id, "reset_password");
+    void sendMail({
+      to: user.email,
+      subject: "Reset your password",
+      lines: [
+        `Hi ${user.name.split(" ")[0]},`,
+        "Someone asked to reset the password for your DialNFind account. If it was you, choose a new password with the button below. The link works for one hour.",
+        "If you did not ask for this, you can ignore this email; your password stays the same.",
+      ],
+      action: { label: "Choose a new password", url: `${env.webUrl}/reset-password?token=${token}` },
+    });
+  }
+  res.json({ ok: true });
+});
+
+/** POST /auth/reset-password — sets a new password from the emailed link. Opening the link also proves the address. */
+authRouter.post("/reset-password", limits.auth, async (req, res) => {
+  const body = parse(z.object({ token: z.string().min(20).max(200), newPassword: password }), req.body);
+  const userId = await consumeUserToken(body.token, "reset_password");
+  if (!userId) throw badRequest("This link has expired or was already used. Ask for a new one.");
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { status: true, emailVerifiedAt: true } });
+  if (user.status !== "active") throw badRequest("This account is not active");
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: await bcrypt.hash(body.newPassword, 10), emailVerifiedAt: user.emailVerifiedAt ?? new Date() },
+  });
+  await revokeAllSessions(userId);
+  res.json({ ok: true });
 });

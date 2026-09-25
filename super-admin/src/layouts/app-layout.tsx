@@ -15,7 +15,6 @@ import {
   Menu,
   MessageSquareWarning,
   PhoneIncoming,
-  Plug,
   ScrollText,
   Send,
   Settings,
@@ -99,7 +98,6 @@ const NAV: { title: string; items: Item[] }[] = [
     title: "System",
     items: [
       { to: "/settings", label: "Settings", icon: Settings, module: "settings" },
-      { to: "/plugins", label: "Plugins", icon: Plug, module: "settings" },
       { to: "/team", label: "Team and roles", icon: UsersRound, module: "team" },
       { to: "/audit", label: "Audit log", icon: ScrollText, module: "audit" },
     ],

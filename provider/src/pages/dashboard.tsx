@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CheckCircle2, Circle, Eye, MessageCircle, Phone, Star, Trophy } from "lucide-react";
 import { api } from "@/lib/api";
+import { VerifyEmailBanner } from "@/components/verify-email-banner";
 import { formatDate, formatRelative } from "@/lib/format";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <VerifyEmailBanner />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-brand-deep">Good to see you</h1>

@@ -125,3 +125,11 @@ export async function recalculateCategoryCounts(): Promise<void> {
       WHERE ps.category_id = c.id
     )`;
 }
+
+/** Recalculates every provider, for the nightly job and `pnpm --filter server rank`. */
+export async function recalculateAllProviders(): Promise<number> {
+  const providers = await prisma.provider.findMany({ select: { id: true } });
+  for (const p of providers) await recalculateProvider(p.id);
+  await recalculateCategoryCounts();
+  return providers.length;
+}

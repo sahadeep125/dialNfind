@@ -19,10 +19,12 @@ const RATINGS = [
   { value: "4.5", label: "4.5+" },
 ];
 
-function FilterFields({ categories, lockedCategory }: { categories?: Category[]; lockedCategory?: Category }) {
+type FilterProps = { categories?: Category[]; lockedCategory?: Category; defaultRadius: number };
+
+function FilterFields({ categories, lockedCategory, defaultRadius }: FilterProps) {
   const { params, update } = useUrlParams();
-  const [radius, setRadius] = useState(Number(params.get("radius") ?? 15));
-  useEffect(() => setRadius(Number(params.get("radius") ?? 15)), [params]);
+  const [radius, setRadius] = useState(Number(params.get("radius") ?? defaultRadius));
+  useEffect(() => setRadius(Number(params.get("radius") ?? defaultRadius)), [params, defaultRadius]);
 
   const categorySlug = lockedCategory?.slug ?? params.get("category") ?? "";
   const activeCategory = lockedCategory ?? categories?.find((c) => c.slug === categorySlug);
@@ -140,7 +142,7 @@ function ToggleRow({ id, label, description, checked, onChange }: { id: string; 
   );
 }
 
-export function FiltersSidebar(props: { categories?: Category[]; lockedCategory?: Category }) {
+export function FiltersSidebar(props: FilterProps) {
   return (
     <aside className="hidden lg:block">
       <div className="sticky top-24 rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)]">
@@ -153,7 +155,7 @@ export function FiltersSidebar(props: { categories?: Category[]; lockedCategory?
   );
 }
 
-export function FiltersSheet(props: { categories?: Category[]; lockedCategory?: Category; activeCount: number }) {
+export function FiltersSheet(props: FilterProps & { activeCount: number }) {
   return (
     <Sheet>
       <SheetTrigger asChild>

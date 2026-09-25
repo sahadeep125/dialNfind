@@ -7,14 +7,14 @@ import { cn } from "@/lib/utils";
 import { FiltersSheet } from "./filters";
 import { useUrlParams } from "./use-url-params";
 
-export function ResultsToolbar({ categories, lockedCategory }: { categories?: Category[]; lockedCategory?: Category }) {
+export function ResultsToolbar({ categories, lockedCategory, defaultRadius }: { categories?: Category[]; lockedCategory?: Category; defaultRadius: number }) {
   const { params, update } = useUrlParams();
   const view = params.get("view") === "map" ? "map" : "list";
   const activeCount = ["minRating", "openNow", "verified", "radius", "sub", ...(lockedCategory ? [] : ["category"])].filter((k) => params.get(k)).length;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <FiltersSheet categories={categories} lockedCategory={lockedCategory} activeCount={activeCount} />
+      <FiltersSheet categories={categories} lockedCategory={lockedCategory} defaultRadius={defaultRadius} activeCount={activeCount} />
       <Select value={params.get("sort") ?? "relevance"} onValueChange={(v) => update({ sort: v === "relevance" ? null : v })}>
         <SelectTrigger className="w-[11.5rem]" aria-label="Sort results">
           <SelectValue />

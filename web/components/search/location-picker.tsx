@@ -55,17 +55,13 @@ export function LocationPicker({
     }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
+        const latitude = Math.round(pos.coords.latitude * 1e6) / 1e6;
+        const longitude = Math.round(pos.coords.longitude * 1e6) / 1e6;
+        // Name the area ("Sevoke Road, Siliguri") when the API can; the coordinates alone are enough to search.
+        const named = await clientApi<{ location: LocationOption }>(`/locations/reverse?lat=${latitude}&lng=${longitude}`).catch(() => null);
         setLocating(false);
-        select({
-          label: "Current location",
-          name: "Current location",
-          city: "",
-          state: "",
-          kind: "current",
-          latitude: Math.round(pos.coords.latitude * 1e6) / 1e6,
-          longitude: Math.round(pos.coords.longitude * 1e6) / 1e6,
-        });
+        select(named?.location ?? { label: "Current location", name: "Current location", city: "", state: "", kind: "current", latitude, longitude });
       },
       () => {
         setLocating(false);
@@ -133,9 +129,9 @@ export function LocationPicker({
                 <MapPin className="size-4" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{o.kind === "city" ? o.name : o.name}</span>
+                <span className="block truncate text-sm font-medium">{o.name}</span>
                 <span className="block truncate text-xs text-muted-foreground">
-                  {o.kind === "city" ? `${o.state} · city` : o.city}
+                  {o.kind === "city" ? `${o.state} · city` : o.kind === "place" ? `${[o.city, o.state].filter((v) => v && v !== o.name).join(", ")} · no providers listed yet` : o.city}
                   {o.providerCount ? ` · ${o.providerCount} providers` : ""}
                 </span>
               </span>

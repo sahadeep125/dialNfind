@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/useToast";
 import { ApiError, errorMessage } from "@/services/api";
 import type { ProviderDetail } from "@/types";
 import { validateReviewText } from "@/utils/validation";
+import { useAppConfig } from "@/hooks/useAppConfig";
 import { StarPicker } from "./StarPicker";
 
 interface Props {
@@ -22,6 +23,7 @@ export function ReviewForm({ provider: p, onSaved }: Props) {
   const theme = useTheme();
   const toast = useToast();
   const save = useSaveReview();
+  const config = useAppConfig();
   const [rating, setRating] = useState(p.myReview?.rating ?? 0);
   const [text, setText] = useState(p.myReview?.reviewText ?? "");
   const [errors, setErrors] = useState<{ rating: string | null; text: string | null }>({
@@ -31,7 +33,7 @@ export function ReviewForm({ provider: p, onSaved }: Props) {
   const [formError, setFormError] = useState<string | null>(null);
 
   const submit = (): void => {
-    const next = { rating: rating ? null : "Choose a star rating", text: validateReviewText(text) };
+    const next = { rating: rating ? null : "Choose a star rating", text: validateReviewText(text, config.data?.min_review_length) };
     setErrors(next);
     setFormError(null);
     if (next.rating || next.text) return;
