@@ -7,6 +7,8 @@ import { AppCallout } from "@/components/design-system";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
 import { CompletenessCard } from "@/components/dashboard/CompletenessCard";
 import { VerifyEmailCallout } from "@/components/auth/VerifyEmailCallout";
+import { LockedCard } from "@/components/subscription/LockedCard";
+import { PlanBanner } from "@/components/subscription/PlanBanner";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { RankingCard } from "@/components/dashboard/RankingCard";
@@ -79,6 +81,7 @@ export default function DashboardScreen() {
         />
 
         <VerifyEmailCallout />
+        <PlanBanner />
 
         <AppSegmented
           options={RANGES}
@@ -106,15 +109,15 @@ export default function DashboardScreen() {
               />
               <StatCard
                 label="Profile views"
-                value={count(data.totals.views)}
+                value={data.totals.views !== null ? count(data.totals.views) : "Pro"}
                 change={data.totals.viewsChangePct}
                 icon={Eye}
                 tone="accent"
-                hint={`${count(data.totals.impressions)} search impressions`}
+                hint={data.totals.impressions !== null ? `${count(data.totals.impressions)} search impressions` : "Upgrade to see who views you"}
               />
               <StatCard
                 label="View to lead rate"
-                value={data.totals.conversionPct !== null ? `${data.totals.conversionPct}%` : "-"}
+                value={data.analyticsLocked ? "Pro" : data.totals.conversionPct !== null ? `${data.totals.conversionPct}%` : "-"}
                 icon={MessageCircle}
                 tone="success"
                 hint="Visitors who tapped Call or WhatsApp"
@@ -128,7 +131,7 @@ export default function DashboardScreen() {
               />
             </StatGrid>
 
-            <ActivityChart series={data.series} days={days} />
+            {data.analyticsLocked ? <LockedCard feature="analytics" /> : <ActivityChart series={data.series} days={days} />}
 
             <CompletenessCard
               pct={data.provider.profileCompletenessPct}
@@ -136,11 +139,9 @@ export default function DashboardScreen() {
               onOpen={open}
             />
 
-            <RankingCard
-              position={data.ranking.position}
-              outOf={data.ranking.outOf}
-              city={data.provider.city}
-            />
+            {data.ranking ? (
+              <RankingCard position={data.ranking.position} outOf={data.ranking.outOf} city={data.provider.city} />
+            ) : null}
 
             <RecentLeadsCard leads={data.recentLeads} onViewAll={() => router.push("/leads")} />
 

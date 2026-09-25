@@ -53,6 +53,20 @@ export const SETTING_GROUPS: SettingGroup[] = [
     ],
   },
   {
+    key: "invoicing",
+    title: "Invoicing",
+    description: "Seller details printed on GST invoices for plan payments. Invoices already issued keep the details they were issued with.",
+    fields: [
+      { key: "invoice_legal_name", label: "Legal business name", type: "text", default: "DialNFind" },
+      { key: "invoice_gstin", label: "GSTIN", type: "text", help: "15 characters. Leave empty until registered; invoices then show no GSTIN." },
+      { key: "invoice_address", label: "Registered address", type: "textarea" },
+      { key: "invoice_state_code", label: "GST state code", type: "text", default: "19", help: "Two digits, e.g. 19 for West Bengal. Decides CGST+SGST (same state) or IGST." },
+      { key: "invoice_sac", label: "SAC code", type: "text", default: "998365", help: "Service accounting code for the subscription." },
+      { key: "invoice_prefix", label: "Invoice number prefix", type: "text", default: "DNF" },
+      { key: "invoice_gst_rate", label: "GST rate (%)", type: "number", min: 0, max: 28, default: "18" },
+    ],
+  },
+  {
     key: "legal",
     title: "Legal links",
     description: "Linked from the footer and sign-up forms.",

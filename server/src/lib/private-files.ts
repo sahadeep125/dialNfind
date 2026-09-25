@@ -22,6 +22,12 @@ export function signFileUrl(url: string): string {
   return `${PRIVATE_FILES_URL}${key}?exp=${exp}&sig=${signature(key, exp)}`;
 }
 
+/** A time-limited link to a generated file (such as an invoice PDF) served at `${env.publicUrl}${route}/${key}`. */
+export function signedLink(route: string, key: string): string {
+  const exp = Math.floor(Date.now() / 1000) + LINK_LIFETIME_S;
+  return `${env.publicUrl}${route}/${key}?exp=${exp}&sig=${signature(key, exp)}`;
+}
+
 export function checkFileSignature(key: string, exp: string | undefined, sig: string | undefined): boolean {
   const expiry = Number(exp);
   if (!sig || !Number.isInteger(expiry) || expiry < Date.now() / 1000) return false;

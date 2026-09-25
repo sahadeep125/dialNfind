@@ -3,7 +3,7 @@ import { z } from "zod";
 import { httpUrl } from "../../lib/rules.js";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
-import { badRequest, notFound } from "../../lib/errors.js";
+import { badRequest, notFound, upgradeRequired } from "../../lib/errors.js";
 import { num } from "../../lib/serialize.js";
 import { completenessChecklist, recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
 import { applicableAttributes, attributeOptions, decodeAttributeValue, encodeAttributeValue, loadAttributeValues } from "../../services/attributes.js";
@@ -12,6 +12,7 @@ import { ownProvider } from "./common.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "./shared.js";
 import { privateFileUrl } from "../../lib/private-files.js";
 import { listingProfileSchema, updateListingProfile } from "../../services/listings.js";
+import { planOf } from "../../services/entitlements.js";
 
 export const profileRouter = Router();
 
@@ -161,6 +162,10 @@ const portfolioSchema = z.object({
 profileRouter.post("/portfolio", async (req, res) => {
   const provider = await ownProvider(req);
   const body = parse(portfolioSchema, req.body);
+  const { plan } = await planOf(provider.id);
+  if (plan?.photoLimit != null && (await prisma.providerPortfolio.count({ where: { providerId: provider.id } })) >= plan.photoLimit) {
+    throw upgradeRequired(`Your ${plan.name} plan includes ${plan.photoLimit} photos. Upgrade to add more.`, "provider_pro", "photos");
+  }
   const item = await prisma.providerPortfolio.create({
     data: { ...body, categoryId: body.categoryId ? BigInt(body.categoryId) : null, providerId: provider.id },
   });

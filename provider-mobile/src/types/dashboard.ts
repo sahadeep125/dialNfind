@@ -24,8 +24,9 @@ export interface DashboardTotals {
   leads: number;
   calls: number;
   whatsapp: number;
-  views: number;
-  impressions: number;
+  /** Null on Free: views, trends and conversion are analytics (Pro). */
+  views: number | null;
+  impressions: number | null;
   leadsChangePct: number | null;
   viewsChangePct: number | null;
   conversionPct: number | null;
@@ -48,6 +49,8 @@ export interface DashboardRecentLead {
   customerName: string;
   service: string | null;
   description: string | null;
+  /** Past the plan's monthly lead limit: details hidden until the provider upgrades. */
+  locked: boolean;
 }
 
 export interface DashboardRecentReview {
@@ -68,8 +71,9 @@ export interface DashboardSubscription {
 
 export interface Dashboard {
   provider: DashboardProvider;
+  analyticsLocked: boolean;
   totals: DashboardTotals;
-  ranking: { position: number; outOf: number };
+  ranking: { position: number; outOf: number } | null;
   series: DashboardSeriesPoint[];
   checklist: ChecklistItem[];
   recentLeads: DashboardRecentLead[];

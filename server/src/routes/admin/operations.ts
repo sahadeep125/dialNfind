@@ -3,12 +3,17 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
-import { badRequest, notFound } from "../../lib/errors.js";
+import { badRequest, conflict, notFound } from "../../lib/errors.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
 import { notifyAndEmail } from "../../services/notify.js";
 import { env } from "../../env.js";
-import { offlinePaymentSchema, recordPayment } from "./records.js";
+import { externalSubscriptionUrl, offlinePaymentSchema, recordPayment } from "./records.js";
+import type { SubscriptionSource } from "@prisma/client";
+import { applySubscriptionChange, getPlanState, liveSubscription } from "../../services/entitlements.js";
+import { presentInvoice } from "../../services/invoices.js";
+import { razorpay } from "../../services/razorpay.js";
+import type { PlanCode } from "../../lib/plans.js";
 
 /** Dashboard, analytics, leads, reviews, provider detail, subscriptions and announcements. */
 export const adminOpsRouter = Router();
@@ -58,7 +63,7 @@ adminOpsRouter.get("/overview", async (_req, res) => {
       prisma.transaction.aggregate({ where: { createdAt: { gte: since30 }, status: "success" }, _sum: { amount: true } }),
       prisma.sponsoredListing.count({ where: { status: "active" } }),
       prisma.supportTicket.count({ where: { status: { in: ["open", "pending"] } } }),
-      prisma.providerSubscription.count({ where: { status: "active" } }),
+      prisma.providerSubscription.count({ where: { status: { in: ["active", "past_due"] } } }),
     ]);
   const [leadSeries, signupSeries] = await Promise.all([dailySeries("leads", since14, 14), dailySeries("users", since14, 14)]);
   res.json({
@@ -127,7 +132,8 @@ adminOpsRouter.get("/providers/:id", async (req, res) => {
       services: { include: { category: { select: { name: true } }, subcategory: { select: { name: true } } } },
       verifications: { orderBy: { createdAt: "desc" } },
       badges: { include: { badge: true } },
-      subscriptions: { orderBy: { startDate: "desc" }, take: 5, include: { plan: { select: { id: true, name: true, price: true } } } },
+      subscriptions: { orderBy: { startDate: "desc" }, take: 10, include: { plan: { select: { id: true, code: true, name: true, price: true } } } },
+      invoices: { orderBy: { issuedAt: "desc" }, take: 10 },
       sponsoredListings: { orderBy: { startDate: "desc" }, take: 5, include: { category: { select: { name: true } } } },
       claims: { orderBy: { createdAt: "desc" }, take: 5, include: { user: { select: { name: true, email: true } } } },
       portfolio: { take: 6 },
@@ -143,8 +149,17 @@ adminOpsRouter.get("/providers/:id", async (req, res) => {
     prisma.supportTicket.count({ where: { providerId: id, status: { in: ["open", "pending"] } } }),
     prisma.review.findMany({ where: { providerId: id }, orderBy: { createdAt: "desc" }, take: 5, include: { user: { select: { name: true } } } }),
   ]);
-  const { location: _location, ...rest } = provider as typeof provider & { location?: unknown };
-  res.json({ provider: rest, stats: { leads30, leadsAll, openTickets }, recentReviews });
+  const { location: _location, invoices, subscriptions, ...rest } = provider as typeof provider & { location?: unknown };
+  res.json({
+    provider: {
+      ...rest,
+      subscriptions: subscriptions.map((s) => ({ ...s, externalUrl: externalSubscriptionUrl(s) })),
+      invoices: invoices.map(presentInvoice),
+    },
+    plan: await getPlanState(id),
+    stats: { leads30, leadsAll, openTickets },
+    recentReviews,
+  });
 });
 
 const subscriptionSchema = z.object({
@@ -155,43 +170,85 @@ const subscriptionSchema = z.object({
   payment: offlinePaymentSchema.optional(),
 });
 
-/** Gives a provider a plan: after an offline payment (recorded with it), or free as a launch offer or goodwill extension. */
+/**
+ * Gives a provider a plan: after an offline payment (recorded with it, and invoiced), or free as a
+ * launch offer or goodwill extension. It replaces any web plan; store plans must end in the store first.
+ */
 adminOpsRouter.post("/providers/:id/subscription", async (req, res) => {
   const body = parse(subscriptionSchema, req.body);
   const providerId = idParam(req.params.id as string);
-  const [provider, plan] = await Promise.all([
-    prisma.provider.findUnique({ where: { id: providerId }, select: { userId: true } }),
+  const [provider, plan, live] = await Promise.all([
+    prisma.provider.findUnique({ where: { id: providerId }, select: { id: true } }),
     prisma.subscriptionPlan.findUnique({ where: { id: BigInt(body.planId) } }),
+    liveSubscription(providerId),
   ]);
   if (!provider) throw notFound("Provider not found");
   if (!plan || !plan.isActive) throw badRequest("Choose an active plan");
-  const start = new Date();
-  const end = new Date(start);
+  if (live && (live.source === "app_store" || live.source === "play_store")) {
+    throw conflict("This provider pays through the app store. They need to cancel there before the team can set their plan.");
+  }
+  // A web subscription would keep charging, so it is stopped now.
+  if (live?.source === "razorpay" && live.externalId && live.autoRenew) await razorpay.cancelSubscription(live.externalId, false).catch(() => undefined);
+  const end = new Date();
   end.setMonth(end.getMonth() + body.months);
-  const subscription = await prisma.$transaction(async (tx) => {
-    await tx.providerSubscription.updateMany({ where: { providerId, status: "active" }, data: { status: "cancelled", endDate: start } });
-    return tx.providerSubscription.create({ data: { providerId, planId: plan.id, startDate: start, endDate: end, status: "active", autoRenew: false } });
+  const subscription = await applySubscriptionChange({
+    providerId,
+    planCode: plan.code as PlanCode,
+    billingCycle: body.months >= 12 ? "yearly" : "monthly",
+    source: "admin",
+    status: "active",
+    periodEnd: end,
+    autoRenew: false,
   });
-  if (body.payment) await recordPayment(currentUser(req).id, providerId, "subscription", body.payment);
+  if (body.payment) await recordPayment(currentUser(req).id, providerId, "subscription", body.payment, subscription?.id ?? null);
   await logAdmin(currentUser(req).id, "subscription.grant", "provider", providerId, body);
-  void notifyAndEmail(
-    provider.userId,
-    "subscription",
-    `You are now on the ${plan.name} plan`,
-    `Active until ${end.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.`,
-    { planId: body.planId },
-    { label: "See your plan", url: `${env.providerUrl}/subscription` },
-  );
   res.status(201).json({ subscription });
 });
 
+/** Takes a provider back to Free now: ends a team-granted plan, or cancels a web subscription at Razorpay. */
+adminOpsRouter.delete("/providers/:id/subscription", async (req, res) => {
+  const providerId = idParam(req.params.id as string);
+  const { note } = parse(z.object({ note: z.string().trim().max(200).optional() }), req.body ?? {});
+  const live = await liveSubscription(providerId);
+  if (!live) throw badRequest("This provider is already on Free");
+  await endSubscription(live);
+  await logAdmin(currentUser(req).id, "subscription.revoke", "provider", providerId, { subscriptionId: Number(live.id), note });
+  res.json({ ok: true });
+});
+
+async function endSubscription(sub: { id: bigint; providerId: bigint; source: string; externalId: string | null; billingCycle: "monthly" | "yearly"; endDate: Date | null }) {
+  if (sub.source === "app_store" || sub.source === "play_store") throw badRequest("Store subscriptions can only be cancelled by the subscriber in the store");
+  if (sub.source === "razorpay" && sub.externalId) await razorpay.cancelSubscription(sub.externalId, false);
+  await applySubscriptionChange({
+    providerId: sub.providerId,
+    planCode: "free",
+    billingCycle: sub.billingCycle,
+    source: sub.source as SubscriptionSource,
+    externalId: sub.externalId,
+    status: "cancelled",
+    periodEnd: new Date(),
+    autoRenew: false,
+  });
+}
 
 adminOpsRouter.patch("/subscriptions/:id", async (req, res) => {
-  const body = parse(z.object({ status: z.enum(["active", "expired", "cancelled"]).optional(), endDate: z.coerce.date().optional(), autoRenew: z.boolean().optional() }), req.body);
+  const body = parse(
+    z.object({ status: z.enum(["active", "expired", "cancelled"]).optional(), endDate: z.coerce.date().optional(), autoRenew: z.boolean().optional() }),
+    req.body,
+  );
   const id = idParam(req.params.id as string);
-  const subscription = await prisma.providerSubscription.update({ where: { id }, data: body });
+  const before = await prisma.providerSubscription.findUnique({ where: { id } });
+  if (!before) throw notFound("Subscription not found");
+  const live = before.status === "active" || before.status === "past_due";
+  if ((body.status === "cancelled" || body.status === "expired") && live) {
+    await endSubscription(before);
+  } else if (before.source !== "admin" && (body.endDate || body.autoRenew !== undefined || body.status === "active")) {
+    throw badRequest("Dates and renewal of paid subscriptions follow Razorpay or the app store. Only cancelling is possible here.");
+  } else if (body.endDate || body.autoRenew !== undefined) {
+    await prisma.providerSubscription.update({ where: { id }, data: { endDate: body.endDate, autoRenew: body.autoRenew } });
+  }
   await logAdmin(currentUser(req).id, "subscription.update", "provider_subscription", id, body);
-  res.json({ subscription });
+  res.json({ subscription: await prisma.providerSubscription.findUnique({ where: { id } }) });
 });
 
 // Categories (admin view includes inactive ones) ----------------------------------------------------

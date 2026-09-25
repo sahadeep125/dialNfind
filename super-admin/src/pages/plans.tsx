@@ -4,11 +4,12 @@ import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CreditCard, Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Check, CreditCard, ExternalLink, Loader2, MoreHorizontal, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatPrice } from "@/lib/format";
-import type { Badge, Paged, Plan } from "@/lib/types";
+import { GATEWAY_LABEL, SOURCE_LABEL, type Badge, type Invoice, type Paged, type PaymentGateway, type Plan, type SubscriptionSource } from "@/lib/types";
+import { BillingOverviewTab, InvoicesTab, WebhooksTab } from "@/pages/billing-tabs";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState, Pager, PageSkeleton } from "@/components/common";
 import { ConfirmDialog, EmptyRow, FilterSelect, StatCard, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
@@ -26,16 +27,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export function PlansPage() {
-  const [f, setF] = useUrlState({ tab: "plans" });
+  const [f, setF] = useUrlState({ tab: "overview" });
   return (
     <>
-      <PageHeader title="Plans and billing" description="Subscription plans providers can buy, who is subscribed and every payment." />
+      <PageHeader
+        title="Plans and billing"
+        description="Plans providers can buy on the web (Razorpay) or in the app (App Store and Google Play through RevenueCat), who is subscribed, every payment and GST invoice."
+      />
       <Tabs value={f.tab} onValueChange={(tab) => setF({ tab })}>
-        <TabsList className="mb-2">
+        <TabsList className="mb-2 flex-wrap">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="plans">Plans</TabsTrigger>
           <TabsTrigger value="subscribers">Subscribers</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="invoices">Invoices</TabsTrigger>
+          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
         </TabsList>
+        <TabsContent value="overview">
+          <BillingOverviewTab />
+        </TabsContent>
+        <TabsContent value="invoices">
+          <InvoicesTab />
+        </TabsContent>
+        <TabsContent value="webhooks">
+          <WebhooksTab />
+        </TabsContent>
         <TabsContent value="plans">
           <PlansTab />
         </TabsContent>
@@ -51,12 +67,26 @@ export function PlansPage() {
 }
 
 function PlansTab() {
+  const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["plans"], queryFn: () => api<{ plans: Plan[] }>("/admin/plans") });
   const [edit, setEdit] = useState<Plan | "new" | null>(null);
+  const sync = useMutation({
+    mutationFn: () => api<{ created: { plan: string; billingCycle: string }[] }>("/admin/plans/sync-razorpay", { method: "POST" }),
+    onSuccess: ({ created }) => {
+      toast.success(created.length ? `Created ${created.length} Razorpay plan${created.length === 1 ? "" : "s"}` : "Every price is already on Razorpay");
+      void qc.invalidateQueries({ queryKey: ["plans"] });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
   if (!data) return <PageSkeleton />;
+  const unsynced = data.plans.some((p) => p.isActive && p.prices.some((pr) => pr.isActive && !pr.razorpayPlanId));
   return (
     <>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+        {unsynced && <span className="mr-auto text-sm text-warning">Some prices are not on Razorpay yet, so they cannot be bought on the web.</span>}
+        <Button variant="outline" onClick={() => sync.mutate()} disabled={sync.isPending}>
+          {sync.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />} Sync to Razorpay
+        </Button>
         <Button onClick={() => setEdit("new")}>
           <Plus /> New plan
         </Button>
@@ -73,8 +103,19 @@ function PlansTab() {
                     {p.name} {!p.isActive && <StatusBadge status="closed" label="Not for sale" />}
                   </div>
                   <div className="mt-1 font-display text-2xl font-bold">
-                    {formatPrice(p.price)}
-                    <span className="text-sm font-medium text-muted-foreground"> / {p.billingCycle === "yearly" ? "year" : "month"}</span>
+                    {p.prices.length ? formatPrice(p.prices.find((pr) => pr.billingCycle === "monthly")?.amount ?? p.price) : "Free"}
+                    {p.prices.length > 0 && <span className="text-sm font-medium text-muted-foreground"> / month</span>}
+                  </div>
+                  {p.prices.find((pr) => pr.billingCycle === "yearly") && (
+                    <div className="text-xs text-muted-foreground">{formatPrice(p.prices.find((pr) => pr.billingCycle === "yearly")!.amount)} / year</div>
+                  )}
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px]">{p.code}</span>
+                    {p.entitlements.map((e) => (
+                      <span key={e} className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-[11px] text-primary">
+                        {e}
+                      </span>
+                    ))}
                   </div>
                 </div>
                 <Button variant="ghost" size="icon-sm" onClick={() => setEdit(p)} aria-label={`Edit ${p.name}`}>
@@ -88,7 +129,19 @@ function PlansTab() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-4 grid grid-cols-3 gap-2 border-t pt-4 text-center text-xs text-muted-foreground">
+              {p.prices.length > 0 && (
+                <ul className="mt-4 space-y-1 border-t pt-3 text-xs text-muted-foreground">
+                  {p.prices.map((pr) => (
+                    <li key={pr.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className="w-14 font-medium capitalize text-foreground">{pr.billingCycle}</span>
+                      <span className={pr.razorpayPlanId ? "text-success" : "text-warning"}>{pr.razorpayPlanId ? "Web" : "Web not synced"}</span>
+                      <span className={pr.iosProductId ? "" : "opacity-50"}>iOS {pr.iosProductId ?? "none"}</span>
+                      <span className={pr.androidProductId ? "" : "opacity-50"}>Android {pr.androidProductId ?? "none"}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="mt-4 grid grid-cols-4 gap-2 border-t pt-4 text-center text-xs text-muted-foreground">
                 <div>
                   <div className="text-base font-semibold text-foreground">{p._count.subscriptions}</div>
                   subscribers
@@ -96,6 +149,10 @@ function PlansTab() {
                 <div>
                   <div className="text-base font-semibold text-foreground">{p.leadAccessLimit ?? "No limit"}</div>
                   leads
+                </div>
+                <div>
+                  <div className="text-base font-semibold text-foreground">{p.photoLimit ?? "No limit"}</div>
+                  photos
                 </div>
                 <div>
                   <div className="text-base font-semibold text-foreground">+{Math.round(Number(p.rankingBoost) * 100)}%</div>
@@ -111,11 +168,20 @@ function PlansTab() {
   );
 }
 
+const amount = z.string().trim().refine((v) => v === "" || /^\d{1,7}$/.test(v), "Enter whole rupees, or leave empty");
+const productId = z.string().trim().max(100, "Keep it under 100 characters");
+
 const planSchema = z.object({
+  code: z.string().trim().toLowerCase().regex(/^[a-z][a-z0-9_]{1,30}$/, "Lowercase letters, digits and _, e.g. pro"),
   name: z.string().trim().min(2, "Enter at least 2 characters").max(40, "Keep it under 40 characters"),
-  price: z.string().trim().refine((v) => /^\d{1,7}$/.test(v), "Enter whole rupees, 0 for a free plan"),
-  billingCycle: z.enum(["monthly", "yearly"]),
+  monthly: amount,
+  yearly: amount,
+  iosMonthly: productId,
+  iosYearly: productId,
+  androidMonthly: productId,
+  androidYearly: productId,
   leadAccessLimit: z.string().trim().refine((v) => v === "" || /^\d{1,6}$/.test(v), "Use a whole number, or leave empty for no limit"),
+  photoLimit: z.string().trim().refine((v) => v === "" || /^\d{1,4}$/.test(v), "Use a whole number, or leave empty for no limit"),
   analyticsEnabled: z.boolean(),
   rankingBoost: z.string().trim().refine((v) => /^\d{1,2}$/.test(v) && Number(v) <= 20, "Use a whole number from 0 to 20"),
   badgeId: z.string(),
@@ -123,6 +189,8 @@ const planSchema = z.object({
   isActive: z.boolean(),
 });
 type PlanValues = z.infer<typeof planSchema>;
+
+const priceOf = (plan: Plan | null, cycle: "monthly" | "yearly") => plan?.prices.find((p) => p.billingCycle === cycle);
 
 function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void }) {
   const qc = useQueryClient();
@@ -132,10 +200,16 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
     resolver: zodResolver(planSchema),
     mode: "onTouched",
     defaultValues: {
+      code: plan?.code ?? "",
       name: plan?.name ?? "",
-      price: plan ? String(Math.round(Number(plan.price))) : "",
-      billingCycle: plan?.billingCycle ?? "monthly",
+      monthly: priceOf(plan, "monthly")?.amount.toString() ?? "",
+      yearly: priceOf(plan, "yearly")?.amount.toString() ?? "",
+      iosMonthly: priceOf(plan, "monthly")?.iosProductId ?? "",
+      iosYearly: priceOf(plan, "yearly")?.iosProductId ?? "",
+      androidMonthly: priceOf(plan, "monthly")?.androidProductId ?? "",
+      androidYearly: priceOf(plan, "yearly")?.androidProductId ?? "",
       leadAccessLimit: plan?.leadAccessLimit?.toString() ?? "",
+      photoLimit: plan?.photoLimit?.toString() ?? "",
       analyticsEnabled: plan?.analyticsEnabled ?? false,
       rankingBoost: plan ? String(Math.round(Number(plan.rankingBoost) * 100)) : "0",
       badgeId: plan?.badgeId ? String(plan.badgeId) : "none",
@@ -148,19 +222,32 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
   const onSubmit = handleSubmit(async (v) => {
     setError(null);
     const json = {
+      code: v.code,
       name: v.name,
-      price: Number(v.price),
-      billingCycle: v.billingCycle,
+      price: Number(v.monthly || 0),
+      billingCycle: "monthly",
       leadAccessLimit: v.leadAccessLimit === "" ? null : Number(v.leadAccessLimit),
+      photoLimit: v.photoLimit === "" ? null : Number(v.photoLimit),
       analyticsEnabled: v.analyticsEnabled,
       rankingBoost: Number(v.rankingBoost) / 100,
       badgeId: v.badgeId === "none" ? null : Number(v.badgeId),
       features: v.features.map((f) => f.text),
       isActive: v.isActive,
     };
+    const prices = (["monthly", "yearly"] as const)
+      .filter((c) => v[c] !== "")
+      .map((c) => ({
+        billingCycle: c,
+        amount: Number(v[c]),
+        iosProductId: (c === "monthly" ? v.iosMonthly : v.iosYearly) || null,
+        androidProductId: (c === "monthly" ? v.androidMonthly : v.androidYearly) || null,
+        isActive: true,
+      }));
     try {
-      if (plan) await api(`/admin/plans/${plan.id}`, { method: "PATCH", json });
-      else await api("/admin/plans", { method: "POST", json });
+      const saved = plan
+        ? (await api<{ plan: { id: number } }>(`/admin/plans/${plan.id}`, { method: "PATCH", json })).plan
+        : (await api<{ plan: { id: number } }>("/admin/plans", { method: "POST", json })).plan;
+      if (v.code !== "free") await api(`/admin/plans/${saved.id}/prices`, { method: "PUT", json: { prices } });
       toast.success(plan ? "Plan saved" : "Plan created");
       void qc.invalidateQueries({ queryKey: ["plans"] });
       onClose();
@@ -173,7 +260,9 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{plan ? `Edit ${plan.name}` : "New plan"}</DialogTitle>
-          <DialogDescription>Price changes apply to new purchases. Existing subscribers keep what they paid for until renewal.</DialogDescription>
+          <DialogDescription>
+            Price changes apply to new purchases; run Sync to Razorpay afterwards. Store prices are set in App Store Connect and Google Play for the product IDs below.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} noValidate className="grid gap-4 sm:grid-cols-2">
           {error && (
@@ -184,25 +273,29 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
           <Field id="plan-name" label="Name" error={errors.name} required>
             <Input {...fieldA11y("plan-name", errors.name)} maxLength={40} {...register("name")} />
           </Field>
-          <Field id="plan-price" label="Price (Rs)" error={errors.price} required>
-            <Input {...fieldA11y("plan-price", errors.price)} inputMode="numeric" maxLength={7} {...register("price")} />
+          <Field id="plan-code" label="Code" error={errors.code} required hint={plan ? "Fixed once created" : "free, pro or business decide what it unlocks"}>
+            <Input {...fieldA11y("plan-code", errors.code, true)} maxLength={31} disabled={!!plan} className="font-mono" {...register("code")} />
           </Field>
-          <Field id="plan-cycle" label="Billed">
-            <Controller
-              control={control}
-              name="billingCycle"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="plan-cycle" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Every month</SelectItem>
-                    <SelectItem value="yearly">Every year</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
+          <Field id="plan-monthly" label="Monthly price (Rs, incl. GST)" error={errors.monthly} optional>
+            <Input {...fieldA11y("plan-monthly", errors.monthly)} inputMode="numeric" maxLength={7} {...register("monthly")} />
+          </Field>
+          <Field id="plan-yearly" label="Yearly price (Rs, incl. GST)" error={errors.yearly} optional>
+            <Input {...fieldA11y("plan-yearly", errors.yearly)} inputMode="numeric" maxLength={7} {...register("yearly")} />
+          </Field>
+          <Field id="plan-ios-m" label="iOS product, monthly" error={errors.iosMonthly} optional>
+            <Input {...fieldA11y("plan-ios-m", errors.iosMonthly)} className="font-mono" placeholder="dnf_pro_monthly" {...register("iosMonthly")} />
+          </Field>
+          <Field id="plan-ios-y" label="iOS product, yearly" error={errors.iosYearly} optional>
+            <Input {...fieldA11y("plan-ios-y", errors.iosYearly)} className="font-mono" placeholder="dnf_pro_yearly" {...register("iosYearly")} />
+          </Field>
+          <Field id="plan-and-m" label="Android product, monthly" error={errors.androidMonthly} optional>
+            <Input {...fieldA11y("plan-and-m", errors.androidMonthly)} className="font-mono" placeholder="dnf_pro:monthly" {...register("androidMonthly")} />
+          </Field>
+          <Field id="plan-and-y" label="Android product, yearly" error={errors.androidYearly} optional>
+            <Input {...fieldA11y("plan-and-y", errors.androidYearly)} className="font-mono" placeholder="dnf_pro:yearly" {...register("androidYearly")} />
+          </Field>
+          <Field id="plan-photos" label="Photo limit" error={errors.photoLimit} hint="Empty means no limit" optional>
+            <Input {...fieldA11y("plan-photos", errors.photoLimit, true)} inputMode="numeric" maxLength={4} {...register("photoLimit")} />
           </Field>
           <Field id="plan-leads" label="Lead limit" error={errors.leadAccessLimit} hint="Empty means no limit" optional>
             <Input {...fieldA11y("plan-leads", errors.leadAccessLimit, true)} inputMode="numeric" maxLength={6} {...register("leadAccessLimit")} />
@@ -279,19 +372,26 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
 interface Sub {
   id: number;
   status: string;
+  source: SubscriptionSource;
+  billingCycle: "monthly" | "yearly";
+  externalId: string | null;
+  externalUrl: string | null;
+  amount: number;
   startDate: string;
   endDate: string | null;
   autoRenew: boolean;
-  plan: { id: number; name: string; price: number; billingCycle: string };
+  graceUntil: string | null;
+  plan: { id: number; code: string; name: string; price: number; billingCycle: string };
   provider: { id: number; businessName: string; city: string };
 }
 
 function SubscribersTab() {
   const qc = useQueryClient();
-  const [f, setF] = useState({ status: "active", page: 1 });
+  const [f, setF] = useState({ status: "active", source: "", page: 1 });
   const { data, isLoading } = useQuery({
     queryKey: ["subscriptions", f],
-    queryFn: () => api<{ subscriptions: Sub[] } & Paged>(`/admin/subscriptions?page=${f.page}&pageSize=20${f.status ? `&status=${f.status}` : ""}`),
+    queryFn: () =>
+      api<{ subscriptions: Sub[] } & Paged>(`/admin/subscriptions?page=${f.page}&pageSize=20${f.status ? `&status=${f.status}` : ""}${f.source ? `&source=${f.source}` : ""}`),
   });
   const cancel = useMutation({
     mutationFn: (id: number) => api(`/admin/subscriptions/${id}`, { method: "PATCH", json: { status: "cancelled", autoRenew: false } }),
@@ -308,15 +408,24 @@ function SubscribersTab() {
           label="Status"
           allLabel="Any status"
           value={f.status}
-          onChange={(status) => setF({ status, page: 1 })}
+          onChange={(status) => setF({ ...f, status, page: 1 })}
           options={[
             { value: "active", label: "Active" },
+            { value: "past_due", label: "Payment failed" },
+            { value: "pending", label: "Checkout started" },
             { value: "expired", label: "Expired" },
             { value: "cancelled", label: "Cancelled" },
           ]}
         />
+        <FilterSelect
+          label="Bought in"
+          allLabel="Anywhere"
+          value={f.source}
+          onChange={(source) => setF({ ...f, source, page: 1 })}
+          options={Object.entries(SOURCE_LABEL).map(([value, label]) => ({ value, label }))}
+        />
         <div className="sm:ml-auto">
-          <ExportButton entity="subscriptions" filters={{ status: f.status }} />
+          <ExportButton entity="subscriptions" filters={{ status: f.status, source: f.source }} />
         </div>
       </Toolbar>
       <Table>
@@ -324,15 +433,16 @@ function SubscribersTab() {
           <tr>
             <Th>Provider</Th>
             <Th>Plan</Th>
+            <Th>Bought in</Th>
             <Th>Started</Th>
-            <Th>Ends</Th>
+            <Th>Renews or ends</Th>
             <Th>Status</Th>
             <Th />
           </tr>
         </thead>
         <tbody>
-          {isLoading && <TableSkeleton cols={6} />}
-          {data?.subscriptions.length === 0 && <EmptyRow cols={6} text="No subscriptions match." />}
+          {isLoading && <TableSkeleton cols={7} />}
+          {data?.subscriptions.length === 0 && <EmptyRow cols={7} text="No subscriptions match." />}
           {data?.subscriptions.map((s) => (
             <tr key={s.id}>
               <Td>
@@ -342,16 +452,31 @@ function SubscribersTab() {
                 <div className="text-xs text-muted-foreground">{s.provider.city}</div>
               </Td>
               <Td>
-                {s.plan.name} <span className="text-muted-foreground">{formatPrice(s.plan.price)}</span>
+                <div className="font-medium">{s.plan.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {formatPrice(s.amount)} / {s.billingCycle === "yearly" ? "year" : "month"}
+                </div>
+              </Td>
+              <Td>
+                {SOURCE_LABEL[s.source]}
+                {s.externalUrl && (
+                  <a href={s.externalUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-primary">
+                    {s.externalId?.slice(0, 22)} <ExternalLink className="size-3" />
+                  </a>
+                )}
               </Td>
               <Td className="whitespace-nowrap">{formatDate(s.startDate)}</Td>
-              <Td className="whitespace-nowrap">{s.endDate ? formatDate(s.endDate) : "No end"}</Td>
+              <Td className="whitespace-nowrap">
+                {s.endDate ? formatDate(s.endDate) : "No end"}
+                <div className="text-xs text-muted-foreground">{s.source === "admin" ? "Does not renew" : s.autoRenew ? "Renews" : "Cancelled, ends then"}</div>
+              </Td>
               <Td>
-                <StatusBadge status={s.status} />
+                <StatusBadge status={s.status} label={s.status === "past_due" ? "Payment failed" : undefined} />
+                {s.graceUntil && s.status === "past_due" && <div className="mt-1 text-xs text-muted-foreground">Grace until {formatDate(s.graceUntil)}</div>}
               </Td>
               <Td className="text-right">
-                {s.status === "active" && (
-                  <Button size="sm" variant="ghost" className="text-destructive" disabled={cancel.isPending} onClick={() => confirm(`Cancel ${s.provider.businessName}'s ${s.plan.name} plan now?`) && cancel.mutate(s.id)}>
+                {(s.status === "active" || s.status === "past_due") && s.source !== "app_store" && s.source !== "play_store" && (
+                  <Button size="sm" variant="ghost" className="text-destructive" disabled={cancel.isPending} onClick={() => confirm(`Cancel ${s.provider.businessName}'s ${s.plan.name} plan now? ${s.source === "razorpay" ? "Razorpay stops charging them and " : ""}they move to Free straight away.`) && cancel.mutate(s.id)}>
                     Cancel
                   </Button>
                 )}
@@ -368,7 +493,11 @@ function SubscribersTab() {
 interface Txn {
   id: number;
   type: string;
+  gateway: PaymentGateway;
   amount: number;
+  currency: string;
+  invoice: Invoice | null;
+  subscription: { id: number; billingCycle: string; plan: { name: string } } | null;
   status: string;
   gatewayTxnId: string | null;
   note: string | null;
@@ -380,8 +509,16 @@ const TXN_TYPES: Record<string, string> = { subscription: "Plan", lead_fee: "Lea
 
 function PaymentsTab() {
   const qc = useQueryClient();
-  const [f, setF] = useState({ status: "", type: "", page: 1 });
+  const [f, setF] = useState({ status: "", type: "", gateway: "", page: 1 });
   const [recording, setRecording] = useState(false);
+  const issue = useMutation({
+    mutationFn: (id: number) => api(`/admin/transactions/${id}/invoice`, { method: "POST" }),
+    onSuccess: () => {
+      toast.success("Invoice issued");
+      void qc.invalidateQueries({ queryKey: ["transactions"] });
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
   const [reversing, setReversing] = useState<{ txn: Txn; status: "refunded" | "failed" } | null>(null);
   const [reason, setReason] = useState("");
   const reverse = useMutation({
@@ -394,7 +531,13 @@ function PaymentsTab() {
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
-  const qs = new URLSearchParams({ page: String(f.page), pageSize: "20", ...(f.status ? { status: f.status } : {}), ...(f.type ? { type: f.type } : {}) });
+  const qs = new URLSearchParams({
+    page: String(f.page),
+    pageSize: "20",
+    ...(f.status ? { status: f.status } : {}),
+    ...(f.type ? { type: f.type } : {}),
+    ...(f.gateway ? { gateway: f.gateway } : {}),
+  });
   const { data, isLoading } = useQuery({ queryKey: ["transactions", qs.toString()], queryFn: () => api<{ transactions: Txn[]; revenue: number } & Paged>(`/admin/transactions?${qs}`) });
   return (
     <>
@@ -419,8 +562,15 @@ function PaymentsTab() {
           onChange={(status) => setF({ ...f, status, page: 1 })}
           options={["success", "pending", "failed", "refunded"].map((s) => ({ value: s, label: s[0].toUpperCase() + s.slice(1) }))}
         />
+        <FilterSelect
+          label="Paid via"
+          allLabel="Any method"
+          value={f.gateway}
+          onChange={(gateway) => setF({ ...f, gateway, page: 1 })}
+          options={Object.entries(GATEWAY_LABEL).map(([value, label]) => ({ value, label }))}
+        />
         <div className="flex gap-2 sm:ml-auto">
-          <ExportButton entity="transactions" filters={{ status: f.status, type: f.type }} />
+          <ExportButton entity="transactions" filters={{ status: f.status, type: f.type, gateway: f.gateway }} />
           <Button size="sm" onClick={() => setRecording(true)}>
             <Plus /> Record payment
           </Button>
@@ -432,7 +582,11 @@ function PaymentsTab() {
           open
           onOpenChange={(o) => !o && (setReversing(null), setReason(""))}
           title={reversing.status === "refunded" ? "Mark this payment refunded?" : "Mark this payment failed?"}
-          description={`${formatPrice(reversing.txn.amount)} from ${reversing.txn.provider.businessName} stops counting as revenue. Return the money outside DialNFind first; this only records it.`}
+          description={
+            reversing.status === "refunded" && reversing.txn.gateway === "razorpay"
+              ? `${formatPrice(reversing.txn.amount)} goes back to ${reversing.txn.provider.businessName} through Razorpay now, and the invoice is voided. Their plan is not changed; cancel it from Subscribers if needed.`
+              : `${formatPrice(reversing.txn.amount)} from ${reversing.txn.provider.businessName} stops counting as revenue and its invoice is voided. Return the money outside DialNFind first; this only records it.`
+          }
           confirmLabel={reversing.status === "refunded" ? "Mark refunded" : "Mark failed"}
           destructive
           busy={reverse.isPending || reason.trim().length < 3}
@@ -451,14 +605,15 @@ function PaymentsTab() {
             <Th>Provider</Th>
             <Th>For</Th>
             <Th>Amount</Th>
-            <Th>Reference</Th>
+            <Th>Paid via</Th>
+            <Th>Invoice</Th>
             <Th>Status</Th>
             <Th className="w-12" />
           </tr>
         </thead>
         <tbody>
-          {isLoading && <TableSkeleton cols={7} />}
-          {data?.transactions.length === 0 && <EmptyRow cols={7} text="No payments match." />}
+          {isLoading && <TableSkeleton cols={8} />}
+          {data?.transactions.length === 0 && <EmptyRow cols={8} text="No payments match." />}
           {data?.transactions.map((t) => (
             <tr key={t.id}>
               <Td className="whitespace-nowrap">{formatDate(t.createdAt)}</Td>
@@ -467,15 +622,39 @@ function PaymentsTab() {
                   {t.provider.businessName}
                 </Link>
               </Td>
-              <Td>{TXN_TYPES[t.type] ?? t.type}</Td>
-              <Td className="font-semibold tabular-nums">{formatPrice(t.amount)}</Td>
-              <Td className="font-mono text-xs text-muted-foreground">{t.gatewayTxnId ?? "None"}</Td>
+              <Td>
+                {TXN_TYPES[t.type] ?? t.type}
+                {t.subscription && <div className="text-xs text-muted-foreground">{t.subscription.plan.name}, {t.subscription.billingCycle}</div>}
+              </Td>
+              <Td className="font-semibold tabular-nums">{t.currency === "INR" ? formatPrice(t.amount) : `${t.currency} ${t.amount}`}</Td>
+              <Td>
+                {GATEWAY_LABEL[t.gateway]}
+                <div className="max-w-40 truncate font-mono text-xs text-muted-foreground" title={t.gatewayTxnId ?? undefined}>
+                  {t.gatewayTxnId ?? "None"}
+                </div>
+              </Td>
+              <Td>
+                {t.invoice ? (
+                  <a href={t.invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="font-mono text-xs hover:text-primary">
+                    {t.invoice.number}
+                    {t.invoice.status === "void" && " (void)"}
+                  </a>
+                ) : t.gateway === "app_store" || t.gateway === "play_store" ? (
+                  <span className="text-xs text-muted-foreground">Store receipt</span>
+                ) : t.status === "success" ? (
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" disabled={issue.isPending} onClick={() => issue.mutate(t.id)}>
+                    Issue invoice
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground">-</span>
+                )}
+              </Td>
               <Td>
                 <StatusBadge status={t.status} />
                 {t.note && <div className="mt-1 max-w-48 truncate text-xs text-muted-foreground" title={t.note}>{t.note}</div>}
               </Td>
               <Td>
-                {t.status === "success" && (
+                {t.status === "success" && t.gateway !== "app_store" && t.gateway !== "play_store" && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon-sm" aria-label={`Actions for payment from ${t.provider.businessName}`}>
@@ -483,7 +662,7 @@ function PaymentsTab() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => setReversing({ txn: t, status: "refunded" })}>Mark refunded</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setReversing({ txn: t, status: "refunded" })}>{t.gateway === "razorpay" ? "Refund through Razorpay" : "Mark refunded"}</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setReversing({ txn: t, status: "failed" })}>Mark failed</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

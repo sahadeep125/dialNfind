@@ -10,6 +10,7 @@ import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
 import { providerQuery, providerWhere } from "./providers.js";
 import { usersQuery, userWhere } from "./users.js";
+import { invoicesQuery, invoiceWhere } from "./billing.js";
 import { leadsQuery, leadWhere, reviewsQuery, reviewWhere, subscriptionsQuery, subscriptionWhere, transactionsQuery, transactionWhere } from "./records.js";
 
 /** CSV downloads of the admin lists, with the same filters as the list pages. */
@@ -107,21 +108,24 @@ const EXPORTS = {
   transactions: exporter({
     module: "plans",
     query: transactionsQuery,
-    header: ["id", "date", "provider", "type", "amount", "status", "reference", "note"],
+    header: ["id", "date", "provider", "type", "gateway", "amount", "currency", "status", "reference", "invoice", "note"],
     batch: async (q, afterId, take) =>
       (
         await prisma.transaction.findMany({
           where: { AND: [transactionWhere(q), { id: { gt: afterId } }] },
           orderBy: { id: "asc" },
           take,
-          include: { provider: { select: { businessName: true } } },
+          include: { provider: { select: { businessName: true } }, invoice: { select: { number: true } } },
         })
-      ).map((t) => ({ id: t.id, values: [t.id, t.createdAt, t.provider.businessName, t.type, num(t.amount), t.status, t.gatewayTxnId, t.note] })),
+      ).map((t) => ({
+        id: t.id,
+        values: [t.id, t.createdAt, t.provider.businessName, t.type, t.gateway, num(t.amount), t.currency, t.status, t.gatewayTxnId, t.invoice?.number, t.note],
+      })),
   }),
   subscriptions: exporter({
     module: "plans",
     query: subscriptionsQuery,
-    header: ["id", "provider", "city", "plan", "price", "status", "start", "end"],
+    header: ["id", "provider", "city", "plan", "source", "cycle", "status", "auto_renew", "start", "end", "external_id"],
     batch: async (q, afterId, take) =>
       (
         await prisma.providerSubscription.findMany({
@@ -130,7 +134,30 @@ const EXPORTS = {
           take,
           include: { plan: { select: { name: true, price: true } }, provider: { select: { businessName: true, city: true } } },
         })
-      ).map((s) => ({ id: s.id, values: [s.id, s.provider.businessName, s.provider.city, s.plan.name, num(s.plan.price), s.status, date(s.startDate), date(s.endDate)] })),
+      ).map((s) => ({
+        id: s.id,
+        values: [s.id, s.provider.businessName, s.provider.city, s.plan.name, s.source, s.billingCycle, s.status, s.autoRenew, date(s.startDate), date(s.endDate), s.externalId],
+      })),
+  }),
+  invoices: exporter({
+    module: "plans",
+    query: invoicesQuery,
+    header: ["number", "date", "provider", "billed_to", "gstin", "place_of_supply", "taxable", "cgst", "sgst", "igst", "total", "status"],
+    batch: async (q, afterId, take) =>
+      (
+        await prisma.invoice.findMany({
+          where: { AND: [invoiceWhere(q), { id: { gt: afterId } }] },
+          orderBy: { id: "asc" },
+          take,
+          include: { provider: { select: { businessName: true } } },
+        })
+      ).map((i) => {
+        const to = i.billedTo as { name?: string; gstin?: string | null };
+        return {
+          id: i.id,
+          values: [i.number, date(i.issuedAt), i.provider.businessName, to.name, to.gstin, i.placeOfSupply, num(i.taxable), num(i.cgst), num(i.sgst), num(i.igst), num(i.total), i.status],
+        };
+      }),
   }),
 };
 

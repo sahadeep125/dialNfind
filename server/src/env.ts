@@ -65,6 +65,24 @@ export const env = {
     /** App URL schemes the Android Apple sign-in callback may send people back to. */
     appRedirectSchemes: list(process.env.APPLE_APP_REDIRECT_SCHEMES ?? "dialnfind,dialnfind-business"),
   },
+  /**
+   * Web payments (Razorpay Subscriptions). Checkout answers 501 until the keys are set. The webhook
+   * secret is the one entered on the Razorpay dashboard for POST /api/v1/webhooks/razorpay.
+   */
+  razorpay: {
+    keyId: process.env.RAZORPAY_KEY_ID ?? "",
+    keySecret: process.env.RAZORPAY_KEY_SECRET ?? "",
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET ?? "",
+  },
+  /**
+   * In-app purchases in the provider app, through RevenueCat. The secret key reads subscribers; the
+   * webhook auth value must match the Authorization header set on the RevenueCat webhook.
+   */
+  revenuecat: {
+    secretKey: process.env.REVENUECAT_SECRET_KEY ?? "",
+    webhookAuth: process.env.REVENUECAT_WEBHOOK_AUTH ?? "",
+    projectId: process.env.REVENUECAT_PROJECT_ID ?? "",
+  },
   uploadDir: process.env.UPLOAD_DIR ?? "uploads",
   /** ID proofs, ownership documents and support attachments. Never served publicly; see lib/private-files.ts. */
   uploadPrivateDir: process.env.UPLOAD_PRIVATE_DIR ?? "uploads-private",

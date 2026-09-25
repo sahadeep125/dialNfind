@@ -11,6 +11,7 @@ import { PhoneIncoming } from "lucide-react-native";
 
 import { AppChip, AppText } from "@/components/design-system";
 import { EmptyState, ErrorState, Screen } from "@/components/layout";
+import { PlanBanner } from "@/components/subscription/PlanBanner";
 import { LeadRow } from "@/components/leads/LeadRow";
 import { LeadRowSkeleton } from "@/components/leads/LeadRowSkeleton";
 import { ReportLeadSheet } from "@/components/leads/ReportLeadSheet";
@@ -78,6 +79,7 @@ export default function LeadsScreen() {
           Every customer who tapped Call or WhatsApp on your listing.
         </AppText>
       </View>
+      <PlanBanner />
       <View style={[styles.chips, { gap: theme.spacing[2] }]}>
         {FILTERS.map((f) => (
           <AppChip

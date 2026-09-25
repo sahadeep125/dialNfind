@@ -24,6 +24,8 @@ export interface SponsoredPricing {
 
 /** GET /provider/sponsored */
 export interface SponsoredResponse {
+  /** Campaigns need the Business plan; past campaigns stay visible either way. */
+  locked: boolean;
   listings: Campaign[];
   categories: { id: number; name: string }[];
   pricing: SponsoredPricing;
@@ -37,43 +39,82 @@ export interface NewCampaignInput {
   budget: number;
 }
 
-export interface Plan {
-  id: number;
-  name: string;
-  price: number;
-  billingCycle: "monthly" | "yearly";
-  leadAccessLimit: number | null;
-  analyticsEnabled: boolean;
-  featuresJson: string[] | null;
-  badge?: { id: number; name: string } | null;
+// Plans and billing. Mirrors server/src/routes/provider/billing.ts and services/entitlements.ts.
+
+export type Entitlement = "provider_pro" | "provider_business";
+export type PlanCode = "free" | "pro" | "business";
+export type SubscriptionSource = "admin" | "razorpay" | "app_store" | "play_store";
+export type BillingCycle = "monthly" | "yearly";
+
+/** From GET /provider/me and /provider/billing. Features are gated on entitlements, never plan names. */
+export interface PlanState {
+  plan: { id: number | null; code: PlanCode; name: string };
+  entitlements: Entitlement[];
+  features: { analytics: boolean; whatsapp: boolean; promote: boolean; priority_support: boolean };
+  subscription: {
+    id: number;
+    status: "pending" | "active" | "past_due" | "expired" | "cancelled";
+    source: SubscriptionSource;
+    billingCycle: BillingCycle;
+    startDate: string;
+    endDate: string | null;
+    cancelAtPeriodEnd: boolean;
+    graceUntil: string | null;
+  } | null;
+  limits: { leads: { limit: number | null; used: number }; photos: { limit: number | null; used: number } };
 }
 
-export interface CurrentSubscription {
+export interface PlanPrice {
+  billingCycle: BillingCycle;
+  amount: number;
+  iosProductId: string | null;
+  androidProductId: string | null;
+  availableOnWeb: boolean;
+}
+
+export interface Plan {
   id: number;
-  planId: number;
-  startDate: string;
-  endDate: string | null;
-  autoRenew: boolean;
-  plan: Plan;
+  code: PlanCode;
+  name: string;
+  price: number;
+  leadAccessLimit: number | null;
+  photoLimit: number | null;
+  featuresJson: string[] | null;
+  badge?: { id: number; name: string } | null;
+  prices: PlanPrice[];
 }
 
 export interface Transaction {
   id: number;
   type: string;
+  gateway: "manual" | "razorpay" | "app_store" | "play_store";
   amount: number;
+  currency: string;
   status: string;
   gatewayTxnId: string | null;
+  invoiceNumber: string | null;
   createdAt: string;
 }
 
-/** GET /provider/subscription */
-export interface SubscriptionResponse {
-  current: CurrentSubscription | null;
-  plans: Plan[];
-  transactions: Transaction[];
+export interface Invoice {
+  id: number;
+  number: string;
+  total: number;
+  tax: number;
+  status: "issued" | "void";
+  issuedAt: string;
+  /** Signed link, valid for an hour; opens the PDF in the browser. */
+  pdfUrl: string;
 }
 
-/** Plans and campaigns are requested, not bought in the app: the request becomes a support ticket. */
-export interface BillingRequestResult {
-  ticket: { id: number; reference: string };
+/** GET /provider/billing */
+export interface BillingResponse {
+  state: PlanState;
+  plans: Plan[];
+  transactions: Transaction[];
+  invoices: Invoice[];
+  /** Where the live plan is managed. Only store plans (or none) can be bought or changed in the app. */
+  managedIn: "web" | "app_store" | "play_store" | "support" | null;
+  manageUrl: string | null;
+  store: { enabled: boolean };
 }

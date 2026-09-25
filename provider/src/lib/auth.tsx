@@ -1,10 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, tokenStore } from "./api";
-import type { User } from "./types";
+import type { PlanState, User } from "./types";
 
 interface ProviderState {
   provider: { id: number; slug: string; businessName: string; status: string; profileCompletenessPct: number; verificationStatus: string } | null;
+  /** The provider's plan, entitlements and limits; null until a business exists. */
+  plan: PlanState | null;
   claims: { id: number; status: string; method: string; provider: { id: number; businessName: string; city: string } }[];
 }
 

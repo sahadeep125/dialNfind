@@ -13,6 +13,10 @@ import { currentUser } from "../../middleware/auth.js";
 import { getNumberSetting } from "../../services/settings.js";
 import { openTicket } from "../../services/tickets.js";
 import { limits } from "../../lib/rate-limit.js";
+import { assertFeature, getPlanState, hasEntitlement, lockedLeadIds, planOf } from "../../services/entitlements.js";
+
+/** What a locked lead shows instead of the customer's details. */
+const LOCKED = "Upgrade to see this contact";
 
 export const insightsRouter = Router();
 
@@ -28,7 +32,7 @@ insightsRouter.get("/dashboard", async (req, res) => {
   const prevSince = new Date(since);
   prevSince.setUTCDate(prevSince.getUTCDate() - days);
 
-  const [full, leadRows, statRows, prevLeads, prevViews, recentLeads, recentReviews, unreplied, subscription, rankRows] = await Promise.all([
+  const [full, leadRows, statRows, prevLeads, prevViews, recentLeads, recentReviews, unreplied, plan, rankRows] = await Promise.all([
     prisma.provider.findUniqueOrThrow({
       where: { id: provider.id },
       include: { _count: { select: { businessHours: true, serviceAreas: true, services: true, portfolio: true, favorites: true } } },
@@ -56,11 +60,7 @@ insightsRouter.get("/dashboard", async (req, res) => {
       include: { user: { select: { name: true } } },
     }),
     prisma.review.count({ where: { providerId: provider.id, status: "published", providerReply: null } }),
-    prisma.providerSubscription.findFirst({
-      where: { providerId: provider.id, status: "active" },
-      include: { plan: true },
-      orderBy: { startDate: "desc" },
-    }),
+    getPlanState(provider.id),
     prisma.$queryRaw<{ rank: bigint; total: bigint }[]>`
       WITH mine AS (
         SELECT ps.category_id FROM provider_services ps WHERE ps.provider_id = ${provider.id} ORDER BY ps.is_primary DESC LIMIT 1
@@ -85,6 +85,9 @@ insightsRouter.get("/dashboard", async (req, res) => {
   const sum = (k: "calls" | "whatsapp" | "views" | "impressions") => series.reduce((a, s) => a + s[k], 0);
   const leads = sum("calls") + sum("whatsapp");
   const views = sum("views");
+  // Free plans see their lead count; views, trends, conversion and ranking are analytics (Pro).
+  const analytics = hasEntitlement(plan, "provider_pro");
+  const lockedRecent = await lockedLeadIds(provider.id, plan.limits.leads.limit, recentLeads.map((l) => l.id));
 
   res.json({
     provider: {
@@ -102,28 +105,33 @@ insightsRouter.get("/dashboard", async (req, res) => {
       favorites: full._count.favorites,
       city: full.city,
     },
+    analyticsLocked: !analytics,
     totals: {
       leads,
       calls: sum("calls"),
       whatsapp: sum("whatsapp"),
-      views,
-      impressions: sum("impressions"),
-      leadsChangePct: prevLeads ? Math.round(((leads - prevLeads) / prevLeads) * 100) : null,
-      viewsChangePct: prevViews._sum.profileViews ? Math.round(((views - prevViews._sum.profileViews) / prevViews._sum.profileViews) * 100) : null,
-      conversionPct: views ? Math.round((leads / views) * 1000) / 10 : null,
+      views: analytics ? views : null,
+      impressions: analytics ? sum("impressions") : null,
+      leadsChangePct: analytics && prevLeads ? Math.round(((leads - prevLeads) / prevLeads) * 100) : null,
+      viewsChangePct: analytics && prevViews._sum.profileViews ? Math.round(((views - prevViews._sum.profileViews) / prevViews._sum.profileViews) * 100) : null,
+      conversionPct: analytics && views ? Math.round((leads / views) * 1000) / 10 : null,
       unrepliedReviews: unreplied,
     },
-    ranking: { position: Number(rankRows[0]?.rank ?? 1), outOf: Number(rankRows[0]?.total ?? 1) },
-    series,
+    ranking: analytics ? { position: Number(rankRows[0]?.rank ?? 1), outOf: Number(rankRows[0]?.total ?? 1) } : null,
+    series: analytics ? series : series.map((s) => ({ ...s, views: 0, impressions: 0 })),
     checklist: completenessChecklist(full),
-    recentLeads: recentLeads.map((l) => ({
-      id: l.id,
-      channel: l.channel,
-      createdAt: l.createdAt,
-      customerName: l.user?.name ?? "Guest visitor",
-      service: l.subcategory?.name ?? l.category?.name ?? null,
-      description: l.description,
-    })),
+    recentLeads: recentLeads.map((l) => {
+      const locked = lockedRecent.has(l.id);
+      return {
+        id: l.id,
+        channel: l.channel,
+        createdAt: l.createdAt,
+        locked,
+        customerName: locked ? LOCKED : (l.user?.name ?? "Guest visitor"),
+        service: l.subcategory?.name ?? l.category?.name ?? null,
+        description: locked ? null : l.description,
+      };
+    }),
     recentReviews: recentReviews.map((r) => ({
       id: r.id,
       rating: r.rating,
@@ -132,8 +140,9 @@ insightsRouter.get("/dashboard", async (req, res) => {
       createdAt: r.createdAt,
       author: r.user.name,
     })),
-    subscription: subscription
-      ? { planName: subscription.plan.name, status: subscription.status, endDate: subscription.endDate, autoRenew: subscription.autoRenew }
+    plan,
+    subscription: plan.subscription
+      ? { planName: plan.plan.name, status: plan.subscription.status, endDate: plan.subscription.endDate, autoRenew: !plan.subscription.cancelAtPeriodEnd }
       : null,
   });
 });
@@ -161,23 +170,30 @@ insightsRouter.get("/leads", async (req, res) => {
     }),
     prisma.lead.count({ where }),
   ]);
-  const details = await loadAttributeValues(prisma, "lead", leads.map((l) => l.id));
+  const [details, { plan }] = await Promise.all([loadAttributeValues(prisma, "lead", leads.map((l) => l.id)), planOf(provider.id)]);
+  // Past the plan's monthly lead limit, a lead is still delivered but its details stay hidden until the provider upgrades.
+  const locked = await lockedLeadIds(provider.id, plan?.leadAccessLimit ?? null, leads.map((l) => l.id));
   res.json({
-    leads: leads.map((l) => ({
-      id: l.id,
-      channel: l.channel,
-      source: l.source,
-      description: l.description,
-      createdAt: l.createdAt,
-      customerName: l.user?.name ?? "Guest visitor",
-      isGuest: !l.user,
-      service: l.subcategory?.name ?? l.category?.name ?? null,
-      customerReportedResponse: l.customerReportedResponse,
-      reviewRating: l.review?.rating ?? null,
-      disputeStatus: l.disputeStatus,
-      disputeReason: l.disputeReason,
-      details: (details.get(l.id) ?? []).map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
-    })),
+    leads: leads.map((l) => {
+      const hidden = locked.has(l.id);
+      return {
+        id: l.id,
+        channel: l.channel,
+        source: l.source,
+        locked: hidden,
+        description: hidden ? null : l.description,
+        createdAt: l.createdAt,
+        customerName: hidden ? LOCKED : (l.user?.name ?? "Guest visitor"),
+        isGuest: !l.user,
+        service: l.subcategory?.name ?? l.category?.name ?? null,
+        customerReportedResponse: l.customerReportedResponse,
+        reviewRating: l.review?.rating ?? null,
+        disputeStatus: l.disputeStatus,
+        disputeReason: l.disputeReason,
+        details: hidden ? [] : (details.get(l.id) ?? []).map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
+      };
+    }),
+    leadLimit: plan?.leadAccessLimit ?? null,
     ...pageMeta(q.page, q.pageSize, total),
   });
 });
@@ -264,48 +280,6 @@ insightsRouter.put("/reviews/:id/reply", async (req, res) => {
   res.json({ review: updated });
 });
 
-// Subscription & billing ---------------------------------------------------------------------
-
-insightsRouter.get("/subscription", async (req, res) => {
-  const provider = await ownProvider(req);
-  const [current, plans, transactions] = await Promise.all([
-    prisma.providerSubscription.findFirst({
-      where: { providerId: provider.id, status: "active" },
-      include: { plan: true },
-      orderBy: { startDate: "desc" },
-    }),
-    prisma.subscriptionPlan.findMany({ where: { isActive: true }, orderBy: { price: "asc" }, include: { badge: true } }),
-    prisma.transaction.findMany({ where: { providerId: provider.id }, orderBy: { createdAt: "desc" }, take: 20 }),
-  ]);
-  res.json({ current, plans, transactions });
-});
-
-const planRequestSchema = z.object({ planId: z.number().int().positive(), note: z.string().trim().max(1000).optional() });
-
-/**
- * POST /provider/subscription/request — there is no online payment. The request becomes a billing
- * ticket; the team arranges payment and grants the plan from the admin console.
- */
-insightsRouter.post("/subscription/request", limits.billing, async (req, res) => {
-  const provider = await ownProvider(req);
-  const body = parse(planRequestSchema, req.body);
-  const plan = await prisma.subscriptionPlan.findUnique({ where: { id: BigInt(body.planId) } });
-  if (!plan || !plan.isActive) throw notFound("Plan not found");
-  const price = num(plan.price) ?? 0;
-  const ticket = await openTicket(currentUser(req).id, {
-    subject: `Plan request: ${plan.name}`,
-    category: "billing",
-    message: [
-      `${provider.businessName} (${provider.city}) would like the ${plan.name} plan.`,
-      `Price: Rs ${price} per ${plan.billingCycle === "yearly" ? "year" : "month"}.`,
-      body.note ? `Note from the provider: ${body.note}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n"),
-  });
-  res.status(201).json({ ticket: { id: ticket.id, reference: ticket.reference } });
-});
-
 // Sponsored listings ---------------------------------------------------------------------------
 
 async function sponsoredPricing() {
@@ -324,7 +298,9 @@ insightsRouter.get("/sponsored", async (req, res) => {
     prisma.providerService.findMany({ where: { providerId: provider.id }, distinct: ["categoryId"], include: { category: { select: { id: true, name: true } } } }),
     sponsoredPricing(),
   ]);
+  const { entitlements } = await planOf(provider.id);
   res.json({
+    locked: !entitlements.includes("provider_business"),
     listings: listings.map((l) => ({
       ...l,
       budget: num(l.budget),
@@ -347,6 +323,7 @@ const sponsorSchema = z.object({
 insightsRouter.post("/sponsored/request", limits.billing, async (req, res) => {
   const provider = await ownProvider(req);
   const body = parse(sponsorSchema, req.body);
+  await assertFeature(provider.id, "promote");
   if (provider.status !== "active") throw badRequest("Your listing must be live before you can promote it");
   const { minBudget } = await sponsoredPricing();
   if (body.budget < minBudget) throw badRequest(`The minimum budget is Rs ${minBudget}`);
@@ -377,6 +354,7 @@ insightsRouter.patch("/sponsored/:id", async (req, res) => {
   const listing = await prisma.sponsoredListing.findUnique({ where: { id } });
   if (!listing || listing.providerId !== provider.id) throw notFound("Campaign not found");
   if (listing.status === "completed") throw badRequest("This campaign has ended");
+  if (status === "active") await assertFeature(provider.id, "promote");
   const updated = await prisma.sponsoredListing.update({ where: { id }, data: { status } });
   res.json({ listing: updated });
 });

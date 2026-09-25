@@ -7,6 +7,7 @@ import {
   type GooglePayload,
 } from "@/services/socialAuth";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { resetPurchases } from "@/services/purchases";
 import type { SessionUser } from "@/types";
 import { normalizePhone } from "@/utils/validation";
 
@@ -99,6 +100,7 @@ export function useAuthActions() {
     void api("/auth/logout", { method: "POST" }).catch(() => undefined);
     signOutStore();
     void socialSignOut();
+    void resetPurchases();
     qc.clear();
   };
 

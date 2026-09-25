@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { getNumberSetting } from "../services/settings.js";
 import { idParam, parse } from "../lib/validate.js";
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
+import { leadsThisMonth, planOf } from "../services/entitlements.js";
 import { applicableAttributes, encodeAttributeValue, type AttributeInput } from "../services/attributes.js";
 import { notify } from "../services/notify.js";
 import { currentUser, optionalAuth, requireAuth } from "../middleware/auth.js";
@@ -72,6 +73,9 @@ leadsRouter.post("/", limits.leads, optionalAuth, async (req, res) => {
     select: { id: true, userId: true, businessName: true, phone: true, whatsappNumber: true },
   });
   if (!provider) throw notFound("Provider not found");
+  const { plan, entitlements } = await planOf(provider.id);
+  // WhatsApp contact is a paid feature; free listings only show Call.
+  if (body.channel === "whatsapp" && !entitlements.includes("provider_pro")) throw badRequest("This business takes calls only");
 
   const [category, subcategory] = await Promise.all([
     body.categorySlug ? prisma.category.findUnique({ where: { slug: body.categorySlug }, select: { id: true } }) : null,
@@ -99,12 +103,15 @@ leadsRouter.post("/", limits.leads, optionalAuth, async (req, res) => {
 
   if (categoryId) void chargeSponsoredClick(lead.id, provider.id, categoryId).catch(() => undefined);
 
+  const overLimit = plan?.leadAccessLimit != null && (await leadsThisMonth(provider.id)) > plan.leadAccessLimit;
   void notify(
     provider.userId,
     "lead",
     body.channel === "call" ? "New call from DialNFind" : "New WhatsApp enquiry",
-    "A customer just tapped to contact you from your DialNFind profile.",
-    { leadId: Number(lead.id) },
+    overLimit
+      ? `You have used the ${plan!.leadAccessLimit} leads in your ${plan!.name} plan this month. Upgrade to see who contacted you.`
+      : "A customer just tapped to contact you from your DialNFind profile.",
+    { leadId: Number(lead.id), locked: overLimit },
   );
 
   const number = body.channel === "whatsapp" ? (provider.whatsappNumber ?? provider.phone) : provider.phone;

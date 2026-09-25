@@ -10,6 +10,7 @@ import { getSetting } from "../../services/settings.js";
 import { limits } from "../../lib/rate-limit.js";
 import { privateFileUrl } from "../../lib/private-files.js";
 import { createListing, newListingSchema } from "../../services/listings.js";
+import { getPlanState } from "../../services/entitlements.js";
 
 export const onboardingRouter = Router();
 
@@ -29,6 +30,8 @@ onboardingRouter.get("/me", async (req, res) => {
   ]);
   res.json({
     provider,
+    // Every app gates features on this: entitlements, limits and the live subscription.
+    plan: provider ? await getPlanState(provider.id) : null,
     claims: claims.map((c) => ({
       id: c.id,
       status: c.status,

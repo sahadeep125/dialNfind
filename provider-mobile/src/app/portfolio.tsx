@@ -1,16 +1,19 @@
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from "react-native";
-import { ImagePlus, Images } from "lucide-react-native";
+import { router } from "expo-router";
+import { ImagePlus, Images, Lock } from "lucide-react-native";
 
 import { AppButton, AppIconButton, AppSkeleton, AppText } from "@/components/design-system";
 import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { PortfolioSheet } from "@/components/portfolio/PortfolioSheet";
 import { PortfolioTile } from "@/components/portfolio/PortfolioTile";
+import { LockedCard } from "@/components/subscription/LockedCard";
 import { ConfirmSheet } from "@/components/profile/ConfirmSheet";
 import { MAX_CONTENT_WIDTH } from "@/constants/spacing";
 import { useLayout } from "@/hooks/useLayout";
 import { useDeletePortfolioItem, useSavePortfolioItem } from "@/hooks/usePortfolio";
 import { useProfile } from "@/hooks/useProfile";
+import { usePlan } from "@/hooks/useSubscription";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { useUpload } from "@/hooks/useUpload";
@@ -25,6 +28,7 @@ export default function PortfolioScreen() {
   const toast = useToast();
   const { width } = useLayout();
   const profile = useProfile();
+  const plan = usePlan();
   const upload = useUpload("portfolio");
   const saveItem = useSavePortfolioItem();
   const deleteItem = useDeletePortfolioItem();
@@ -96,7 +100,16 @@ export default function PortfolioScreen() {
     [tileWidth, onEdit, onDelete],
   );
 
-  const addButton = uploading ? (
+  const photoLimit = plan.limits.photos.limit;
+  const full = photoLimit !== null && items.length >= photoLimit;
+  const addButton = full ? (
+    <AppIconButton
+      accessibilityLabel="Upgrade for more photos"
+      variant="soft"
+      icon={<Lock size={20} color={theme.colors.brand.softText} />}
+      onPress={() => router.push({ pathname: "/paywall", params: { feature: "photos" } })}
+    />
+  ) : uploading ? (
     <View style={styles.spinner}>
       <ActivityIndicator color={theme.colors.brand.primary} />
     </View>
@@ -114,7 +127,7 @@ export default function PortfolioScreen() {
       <View style={[styles.fill, { width: contentWidth }]}>
         <ScreenHeader
           title="Photos"
-          subtitle={profile.data ? `${items.length} in your portfolio` : undefined}
+          subtitle={profile.data ? (photoLimit !== null ? `${items.length} of ${photoLimit} on ${plan.plan.name}` : `${items.length} in your portfolio`) : undefined}
           right={profile.data ? addButton : undefined}
         />
         {profile.data ? (
@@ -135,10 +148,13 @@ export default function PortfolioScreen() {
             }
             ListHeaderComponent={
               items.length ? (
-                <AppText variant="caption" tone="secondary">
-                  Show your shop, your team and finished jobs. Profiles with photos get noticeably
-                  more calls.
-                </AppText>
+                <View style={{ gap: theme.spacing[3] }}>
+                  <AppText variant="caption" tone="secondary">
+                    Show your shop, your team and finished jobs. Profiles with photos get noticeably
+                    more calls.
+                  </AppText>
+                  {full ? <LockedCard feature="photos" compact /> : null}
+                </View>
               ) : null
             }
             ListEmptyComponent={

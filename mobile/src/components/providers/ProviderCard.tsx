@@ -64,6 +64,7 @@ export const ProviderCard = memo(function ProviderCard({ provider: p, source = "
       </View>
 
       <View style={styles.badges}>
+        {p.planTier ? <AppBadge label={p.planTier === "business" ? "Business Partner" : "Pro Partner"} tone="brand" /> : null}
         {p.isSponsored ? <AppBadge label="Sponsored" tone="warning" /> : null}
         <AppBadge
           label={p.isOpenNow ? "Open now" : "Closed now"}

@@ -7,3 +7,4 @@ export { ScreenHeader } from "./ScreenHeader";
 export { SectionHeader } from "./SectionHeader";
 export { ToastPortal } from "./ToastPortal";
 export { SessionRefresher } from "./SessionRefresher";
+export { PurchasesSync } from "./PurchasesSync";

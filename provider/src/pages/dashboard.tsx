@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CheckCircle2, Circle, Eye, MessageCircle, Phone, Star, Trophy } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CheckCircle2, Circle, Eye, Lock, MessageCircle, Phone, Star, Trophy } from "lucide-react";
 import { api } from "@/lib/api";
 import { VerifyEmailBanner } from "@/components/verify-email-banner";
+import { LockedCard, PlanBanner } from "@/components/plan";
+import { usePlan } from "@/lib/plan";
 import { formatDate, formatRelative } from "@/lib/format";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -16,13 +18,15 @@ import { Panel } from "@/components/page-header";
 
 interface Dashboard {
   provider: { businessName: string; avgRating: number; totalReviews: number; profileCompletenessPct: number; verificationStatus: string; responseSignal: number | null; favorites: number; city: string; status: string };
-  totals: { leads: number; calls: number; whatsapp: number; views: number; impressions: number; leadsChangePct: number | null; viewsChangePct: number | null; conversionPct: number | null; unrepliedReviews: number };
-  ranking: { position: number; outOf: number };
+  /** Free plans get lead counts only; views, trends, conversion and ranking come with Pro. */
+  analyticsLocked: boolean;
+  totals: { leads: number; calls: number; whatsapp: number; views: number | null; impressions: number | null; leadsChangePct: number | null; viewsChangePct: number | null; conversionPct: number | null; unrepliedReviews: number };
+  ranking: { position: number; outOf: number } | null;
   series: { date: string; calls: number; whatsapp: number; views: number; impressions: number }[];
   checklist: ChecklistItem[];
-  recentLeads: { id: number; channel: "call" | "whatsapp"; createdAt: string; customerName: string; service: string | null }[];
+  recentLeads: { id: number; channel: "call" | "whatsapp"; createdAt: string; customerName: string; service: string | null; locked: boolean }[];
   recentReviews: { id: number; rating: number; reviewText: string | null; providerReply: string | null; createdAt: string; author: string }[];
-  subscription: { planName: string; endDate: string | null } | null;
+  subscription: { planName: string; endDate: string | null; autoRenew: boolean } | null;
 }
 
 const CHECKLIST_LINKS: Record<string, string> = {
@@ -42,6 +46,7 @@ const CHECKLIST_LINKS: Record<string, string> = {
 
 export function DashboardPage() {
   const [days, setDays] = useState(30);
+  const plan = usePlan();
   const { data, isLoading } = useQuery({ queryKey: ["dashboard", days], queryFn: () => api<Dashboard>(`/provider/dashboard?days=${days}`) });
 
   if (isLoading || !data) {
@@ -59,11 +64,13 @@ export function DashboardPage() {
   }
 
   const { totals, provider } = data;
+  const locked = data.analyticsLocked;
   const todo = data.checklist.filter((c) => !c.done);
 
   return (
     <div className="space-y-6">
       <VerifyEmailBanner />
+      <PlanBanner />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-brand-deep">Good to see you</h1>
@@ -89,12 +96,30 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Kpi label="Total leads" value={totals.leads} change={totals.leadsChangePct} icon={Phone} tone="primary" hint={`${totals.calls} calls, ${totals.whatsapp} WhatsApp`} />
-        <Kpi label="Profile views" value={totals.views} change={totals.viewsChangePct} icon={Eye} tone="teal" hint={`${totals.impressions.toLocaleString("en-IN")} search impressions`} />
-        <Kpi label="View to lead rate" value={totals.conversionPct !== null ? `${totals.conversionPct}%` : "-"} icon={MessageCircle} tone="green" hint="Visitors who tapped Call or WhatsApp" />
+        <Kpi
+          label="Profile views"
+          value={totals.views ?? "Pro"}
+          locked={locked}
+          change={totals.viewsChangePct}
+          icon={Eye}
+          tone="teal"
+          hint={totals.impressions !== null ? `${totals.impressions.toLocaleString("en-IN")} search impressions` : "Upgrade to see who views you"}
+        />
+        <Kpi
+          label="View to lead rate"
+          value={locked ? "Pro" : totals.conversionPct !== null ? `${totals.conversionPct}%` : "-"}
+          locked={locked}
+          icon={MessageCircle}
+          tone="green"
+          hint="Visitors who tapped Call or WhatsApp"
+        />
         <Kpi label="Rating" value={provider.totalReviews ? provider.avgRating.toFixed(1) : "-"} icon={Star} tone="amber" hint={`${provider.totalReviews} reviews`} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
+        {locked ? (
+          <LockedCard feature="analytics" />
+        ) : (
         <Panel title="Leads and profile views" description={`Last ${days} days`}>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -128,16 +153,26 @@ export function DashboardPage() {
             </span>
           </div>
         </Panel>
+        )}
 
         <div className="space-y-6">
           <div className="rounded-2xl bg-brand-deep p-5 text-white">
             <div className="flex items-center gap-2 text-sm text-white/70">
               <Trophy className="size-4 text-warning" /> Ranking in {provider.city}
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-display text-4xl font-bold">#{data.ranking.position}</span>
-              <span className="text-white/70">of {data.ranking.outOf} in your main category</span>
-            </div>
+            {data.ranking ? (
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="font-display text-4xl font-bold">#{data.ranking.position}</span>
+                <span className="text-white/70">of {data.ranking.outOf} in your main category</span>
+              </div>
+            ) : (
+              <div className="mt-3">
+                <div className="font-display text-2xl font-bold">See where you rank</div>
+                <Button asChild size="sm" variant="secondary" className="mt-3">
+                  <Link to="/subscription">Unlock with Pro</Link>
+                </Button>
+              </div>
+            )}
             <p className="mt-3 text-xs text-white/60">Ranking uses your rating, reviews, verification, profile completeness and how often customers say you responded.</p>
           </div>
           <Panel title="Profile strength">
@@ -177,7 +212,15 @@ export function DashboardPage() {
                   {l.channel === "call" ? <Phone className="size-4" /> : <MessageCircle className="size-4" />}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{l.customerName}</div>
+                  <div className={cn("truncate text-sm font-medium", l.locked && "text-muted-foreground")}>
+                    {l.locked ? (
+                      <Link to="/subscription" className="inline-flex items-center gap-1 hover:text-primary">
+                        <Lock className="size-3.5" /> {l.customerName}
+                      </Link>
+                    ) : (
+                      l.customerName
+                    )}
+                  </div>
                   <div className="truncate text-xs text-muted-foreground">
                     {l.channel === "call" ? "Tapped Call" : "Opened WhatsApp"}
                     {l.service ? ` · ${l.service}` : ""}
@@ -223,13 +266,18 @@ export function DashboardPage() {
 
       <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border bg-card p-5 sm:flex-row sm:items-center">
         <div>
-          <div className="font-semibold">{data.subscription ? `${data.subscription.planName} plan` : "Free plan"}</div>
+          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Current plan</div>
+          <div className="font-semibold">{plan.plan.name}</div>
           <div className="text-sm text-muted-foreground">
-            {data.subscription?.endDate ? `Renews on ${formatDate(data.subscription.endDate)}` : "Upgrade for unlimited leads and profile analytics."}
+            {plan.subscription?.endDate
+              ? `${plan.subscription.cancelAtPeriodEnd ? "Ends" : "Renews"} on ${formatDate(plan.subscription.endDate)}`
+              : plan.limits.leads.limit !== null
+                ? `${Math.min(plan.limits.leads.used, plan.limits.leads.limit)} of ${plan.limits.leads.limit} leads used this month. Upgrade for unlimited leads and profile analytics.`
+                : "Unlimited leads and profile analytics."}
           </div>
         </div>
-        <Button asChild variant="outline">
-          <Link to="/subscription">Manage plan</Link>
+        <Button asChild variant={plan.plan.code === "free" ? "default" : "outline"}>
+          <Link to="/subscription">{plan.plan.code === "free" ? "Upgrade" : "Manage plan"}</Link>
         </Button>
       </div>
     </div>
@@ -243,9 +291,11 @@ function Kpi({
   icon: Icon,
   hint,
   tone,
+  locked,
 }: {
   label: string;
   value: string | number;
+  locked?: boolean;
   change?: number | null;
   icon: React.ComponentType<{ className?: string }>;
   hint: string;
@@ -261,7 +311,13 @@ function Kpi({
         </span>
       </div>
       <div className="mt-2 flex flex-wrap items-baseline gap-x-2">
-        <span className="font-display text-2xl sm:text-3xl font-bold text-brand-deep">{typeof value === "number" ? value.toLocaleString("en-IN") : value}</span>
+        {locked ? (
+          <Link to="/subscription" className="inline-flex items-center gap-1.5 font-display text-lg font-bold text-primary hover:underline">
+            <Lock className="size-4" /> Unlock with Pro
+          </Link>
+        ) : (
+          <span className="font-display text-2xl sm:text-3xl font-bold text-brand-deep">{typeof value === "number" ? value.toLocaleString("en-IN") : value}</span>
+        )}
         {change !== undefined && change !== null && (
           <span className={cn("inline-flex items-center text-xs font-semibold", change >= 0 ? "text-success" : "text-destructive")}>
             {change >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}

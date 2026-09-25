@@ -6,6 +6,7 @@ import { AppButton, AppCallout, AppSkeleton, AppText } from "@/components/design
 import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { CampaignCard } from "@/components/promote/CampaignCard";
 import { NewCampaignSheet } from "@/components/promote/NewCampaignSheet";
+import { LockedCard } from "@/components/subscription/LockedCard";
 import { useSponsored, useToggleCampaign } from "@/hooks/useSponsored";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
@@ -92,7 +93,9 @@ export default function PromoteScreen() {
                   category. You pay only when a customer calls or messages you.
                 </AppText>
               </View>
-              {canStart ? (
+              {data.locked ? (
+                <LockedCard feature="promote" />
+              ) : canStart ? (
                 <AppButton
                   fullWidth
                   leadingIcon={<Plus size={18} color={plusColor} />}
@@ -116,7 +119,7 @@ export default function PromoteScreen() {
           }
         />
       )}
-      {data && canStart ? (
+      {data && canStart && !data.locked ? (
         <NewCampaignSheet
           visible={creating}
           onClose={() => setCreating(false)}

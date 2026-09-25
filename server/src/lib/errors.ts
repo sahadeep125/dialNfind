@@ -15,3 +15,6 @@ export const forbidden = (message = "You do not have access to this resource") =
 export const notFound = (message = "Not found") => new HttpError(404, message, "not_found");
 export const conflict = (message: string) => new HttpError(409, message, "conflict");
 export const notConfigured = (message: string) => new HttpError(501, message, "not_configured");
+/** The provider's plan does not include this feature. Apps open their upgrade screen on this code. */
+export const upgradeRequired = (message: string, entitlement: string, feature: string) =>
+  new HttpError(402, message, "upgrade_required", { entitlement, feature });

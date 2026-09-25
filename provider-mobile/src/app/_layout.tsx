@@ -23,7 +23,7 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 
-import { BrandSplash, SessionRefresher, ToastPortal } from "@/components/layout";
+import { BrandSplash, PurchasesSync, SessionRefresher, ToastPortal } from "@/components/layout";
 import { colorVariables } from "@/constants/colors";
 import { useTheme } from "@/hooks/useTheme";
 import { ApiError } from "@/services/api";
@@ -83,6 +83,7 @@ export default function RootLayout() {
         >
           <StatusBar style={showSplash || theme.mode === "dark" ? "light" : "dark"} />
           <SessionRefresher />
+          <PurchasesSync />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -95,6 +96,7 @@ export default function RootLayout() {
             <Stack.Screen name="login" options={{ animation: "fade" }} />
             <Stack.Screen name="start" options={{ animation: "fade" }} />
             <Stack.Screen name="register" options={{ animation: "fade" }} />
+            <Stack.Screen name="paywall" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
           </Stack>
           <ToastPortal />
           {showSplash ? (

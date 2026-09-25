@@ -45,7 +45,8 @@ export interface ProviderCard {
   businessType: "individual" | "company";
   yearsExperience: number | null;
   phone: string;
-  whatsappNumber: string;
+  /** Null for Free listings: the WhatsApp button is a paid feature. */
+  whatsappNumber: string | null;
   acceptsCalls: boolean;
   acceptsWhatsapp: boolean;
   isAvailable: boolean;
@@ -69,6 +70,8 @@ export interface ProviderCard {
   badges: { id: number; name: string }[];
   isFavorite: boolean;
   isSponsored: boolean;
+  /** Paid plan, shown as a partner badge; null for Free listings. */
+  planTier: "pro" | "business" | null;
 }
 
 export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {

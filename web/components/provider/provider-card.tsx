@@ -8,6 +8,7 @@ import { ProviderAvatar } from "./provider-avatar";
 import { RatingPill } from "./rating";
 import { ContactButtons } from "./contact-buttons";
 import { FavoriteButton } from "./favorite-button";
+import { PlanTierBadge } from "./plan-tier-badge";
 
 export function OpenStatus({ provider, className }: { provider: Pick<ProviderCardType, "isOpenNow" | "isAvailable" | "todayHours">; className?: string }) {
   if (!provider.isAvailable) {
@@ -62,6 +63,7 @@ export function ProviderCard({
                 <BadgeCheck className="size-4" /> Verified
               </span>
             )}
+            {provider.planTier && <PlanTierBadge tier={provider.planTier} />}
             {provider.isSponsored && (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <Megaphone className="size-3.5" /> Sponsored

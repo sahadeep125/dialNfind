@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { WEB_URL } from "@/lib/config";
 import { formatDate, formatPhone, formatPrice, formatRelative } from "@/lib/format";
-import { type Badge as BadgeT, type Paged, type Plan, type ProviderRow, VERIFICATION_LABEL } from "@/lib/types";
+import { type Badge as BadgeT, type Invoice, type Paged, type Plan, type ProviderRow, SOURCE_LABEL, type SubscriptionSource, VERIFICATION_LABEL } from "@/lib/types";
 import { PageHeader, Panel } from "@/components/page-header";
 import { Pager, PageSkeleton } from "@/components/common";
 import { ConfirmDialog, EmptyRow, Facts, FilterSelect, SearchInput, StatCard, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
@@ -198,9 +198,26 @@ interface ProviderDetail {
     services: { id: number; isPrimary: boolean; startingPrice: number | null; category: { name: string }; subcategory: { name: string } | null }[];
     verifications: { id: number; type: string; status: string; documentUrl: string | null; notes: string | null; createdAt: string }[];
     badges: { badge: BadgeT; awardedAt?: string }[];
-    subscriptions: { id: number; status: string; startDate: string; endDate: string | null; plan: { id: number; name: string; price: number } }[];
+    subscriptions: {
+      id: number;
+      status: string;
+      source: SubscriptionSource;
+      billingCycle: "monthly" | "yearly";
+      autoRenew: boolean;
+      externalId: string | null;
+      externalUrl: string | null;
+      startDate: string;
+      endDate: string | null;
+      plan: { id: number; code: string; name: string; price: number };
+    }[];
+    invoices: Invoice[];
     sponsoredListings: { id: number; status: string; budget: number; amountSpent: number; startDate: string; endDate: string; category: { name: string } }[];
     portfolio: { id: number; imageUrl: string; title: string }[];
+  };
+  plan: {
+    plan: { code: string; name: string };
+    entitlements: string[];
+    limits: { leads: { limit: number | null; used: number }; photos: { limit: number | null; used: number } };
   };
   stats: { leads30: number; leadsAll: number; openTickets: number };
   recentReviews: { id: number; rating: number; reviewText: string | null; status: string; createdAt: string; user: { name: string } }[];
@@ -221,6 +238,7 @@ export function ProviderDetailPage() {
   const [pending, setPending] = useState<string | null>(null);
   const [badgeId, setBadgeId] = useState("");
   const [grantOpen, setGrantOpen] = useState(false);
+  const [revokeOpen, setRevokeOpen] = useState(false);
 
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["admin-provider", id] });
@@ -254,10 +272,21 @@ export function ProviderDetailPage() {
     onError: (e) => toast.error(errorMessage(e)),
   });
 
+  const revokePlan = useMutation({
+    mutationFn: () => api(`/admin/providers/${id}/subscription`, { method: "DELETE", json: { note: "Revoked from the admin console" } }),
+    onSuccess: () => {
+      toast.success("Moved to Free");
+      setRevokeOpen(false);
+      invalidate();
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+
   if (!data) return <PageSkeleton />;
   const p = data.provider;
   const owned = new Set(p.badges.map((b) => b.badge.id));
-  const activeSub = p.subscriptions.find((s) => s.status === "active");
+  const activeSub = p.subscriptions.find((s) => s.status === "active" || s.status === "past_due");
+  const storeSub = activeSub && (activeSub.source === "app_store" || activeSub.source === "play_store");
   const actions = (["active", "suspended", "rejected", "pending"] as const).filter((s) => s !== p.status && !(p.status === "pending" && s === "pending"));
 
   return (
@@ -391,20 +420,67 @@ export function ProviderDetailPage() {
           <Panel
             title="Plan"
             actions={
-              <Button size="sm" variant="outline" onClick={() => setGrantOpen(true)}>
-                <CreditCard /> Change plan
-              </Button>
+              !storeSub && (
+                <Button size="sm" variant="outline" onClick={() => setGrantOpen(true)}>
+                  <CreditCard /> Change plan
+                </Button>
+              )
             }
           >
-            {activeSub ? (
-              <div className="text-sm">
-                <div className="font-semibold">{activeSub.plan.name}</div>
-                <div className="text-muted-foreground">
-                  {formatPrice(activeSub.plan.price)}, until {activeSub.endDate ? formatDate(activeSub.endDate) : "cancelled"}
-                </div>
+            <div className="text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold">{data.plan.plan.name}</span>
+                {activeSub && <StatusBadge status={activeSub.status} label={activeSub.status === "past_due" ? "Payment failed" : undefined} />}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Free listing</p>
+              {activeSub ? (
+                <div className="text-muted-foreground">
+                  {SOURCE_LABEL[activeSub.source]}, {activeSub.billingCycle} · {activeSub.autoRenew && activeSub.source !== "admin" ? "renews" : "ends"}{" "}
+                  {activeSub.endDate ? formatDate(activeSub.endDate) : "never"}
+                  {activeSub.externalUrl && (
+                    <a href={activeSub.externalUrl} target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-0.5 text-primary hover:underline">
+                      View <ExternalLink className="size-3" />
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div className="text-muted-foreground">No paid plan</div>
+              )}
+              <div className="mt-2 flex flex-wrap gap-1">
+                {data.plan.entitlements.length ? (
+                  data.plan.entitlements.map((e) => (
+                    <span key={e} className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-[11px] text-primary">
+                      {e}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-muted-foreground">No entitlements</span>
+                )}
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground">
+                Leads this month {data.plan.limits.leads.used}
+                {data.plan.limits.leads.limit !== null && ` (limit ${data.plan.limits.leads.limit} in full)`} · Photos {data.plan.limits.photos.used}
+                {data.plan.limits.photos.limit !== null && ` of ${data.plan.limits.photos.limit}`}
+              </div>
+              {storeSub && <p className="mt-2 text-xs text-muted-foreground">Billed by {activeSub.source === "app_store" ? "Apple" : "Google"}. Only the subscriber can change it, in the store.</p>}
+              {activeSub && !storeSub && (
+                <Button size="sm" variant="ghost" className="mt-2 h-7 px-2 text-xs text-destructive" onClick={() => setRevokeOpen(true)}>
+                  Move to Free now
+                </Button>
+              )}
+            </div>
+            {p.invoices.length > 0 && (
+              <ul className="mt-4 space-y-1.5 border-t pt-3 text-xs">
+                {p.invoices.slice(0, 5).map((i) => (
+                  <li key={i.id} className="flex items-center justify-between gap-2">
+                    <a href={i.pdfUrl} target="_blank" rel="noopener noreferrer" className="font-mono hover:text-primary">
+                      {i.number}
+                    </a>
+                    <span className="tabular-nums text-muted-foreground">
+                      {formatPrice(i.total)} {i.status === "void" && "(void)"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </Panel>
           <Panel title="Verification">
@@ -506,6 +582,20 @@ export function ProviderDetailPage() {
         />
       )}
       <GrantPlanDialog open={grantOpen} onOpenChange={setGrantOpen} providerId={p.id} onDone={invalidate} />
+      <ConfirmDialog
+        open={revokeOpen}
+        onOpenChange={setRevokeOpen}
+        title="Move this provider to Free now?"
+        description={
+          activeSub?.source === "razorpay"
+            ? "Their Razorpay subscription is cancelled straight away, so they are not charged again. Paid time left is not refunded automatically."
+            : "The plan granted by the team ends today. Their badge and ranking boost are removed."
+        }
+        confirmLabel="Move to Free"
+        destructive
+        busy={revokePlan.isPending}
+        onConfirm={() => revokePlan.mutate()}
+      />
     </>
   );
 }
@@ -536,7 +626,10 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Change plan</DialogTitle>
-          <DialogDescription>Any current plan ends today. If the provider paid, record the payment here; leave it unticked for a free launch offer or goodwill extension.</DialogDescription>
+          <DialogDescription>
+            Any current plan ends today; a web subscription stops charging. If the provider paid, record the payment here and a GST invoice is issued; leave it unticked for a free
+            launch offer or goodwill extension.
+          </DialogDescription>
         </DialogHeader>
         <form
           noValidate
@@ -557,7 +650,7 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
                 onValueChange={(v) => {
                   setPlanId(v);
                   setError(null);
-                  const price = data?.plans.find((pl) => String(pl.id) === v)?.price ?? 0;
+                  const price = Number(data?.plans.find((pl) => String(pl.id) === v)?.price ?? 0);
                   setPayment((pm) => ({ ...pm, amount: price ? String(price * Number(months)) : "" }));
                 }}
               >
@@ -566,7 +659,7 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
                 </SelectTrigger>
                 <SelectContent>
                   {data?.plans
-                    .filter((pl) => pl.isActive)
+                    .filter((pl) => pl.isActive && pl.code !== "free")
                     .map((pl) => (
                       <SelectItem key={pl.id} value={String(pl.id)}>
                         {pl.name} ({formatPrice(pl.price)})
@@ -581,7 +674,7 @@ function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boo
                 value={months}
                 onValueChange={(m) => {
                   setMonths(m);
-                  if (plan?.price) setPayment((pm) => ({ ...pm, amount: String(plan.price * Number(m)) }));
+                  if (plan?.price) setPayment((pm) => ({ ...pm, amount: String(Number(plan.price) * Number(m)) }));
                 }}
               >
                 <SelectTrigger id="grant-months" className="w-full">

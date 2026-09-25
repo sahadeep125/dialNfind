@@ -10,6 +10,8 @@ interface Props {
   transaction: Transaction;
 }
 
+const GATEWAY_LABEL = { manual: "Paid to our team", razorpay: "Paid online", app_store: "App Store", play_store: "Google Play" } as const;
+
 const TYPE_LABEL: Record<string, string> = {
   subscription: "Plan payment",
   sponsored_ad: "Sponsored campaign",
@@ -30,11 +32,10 @@ export const TransactionRow = memo(function TransactionRow({ transaction: t }: P
           ) : null}
         </AppText>
         <AppText variant="caption" tone="secondary" numberOfLines={1}>
-          {formatDate(t.createdAt)}
-          {t.gatewayTxnId ? ` · ${t.gatewayTxnId}` : ""}
+          {[formatDate(t.createdAt), GATEWAY_LABEL[t.gateway], t.invoiceNumber].filter(Boolean).join(" · ")}
         </AppText>
       </View>
-      <AppText variant="label">{formatPrice(t.amount)}</AppText>
+      <AppText variant="label">{t.currency === "INR" ? formatPrice(t.amount) : `${t.currency} ${t.amount.toFixed(2)}`}</AppText>
     </View>
   );
 });

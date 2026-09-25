@@ -12,7 +12,7 @@ interface ContactProvider {
   id: number;
   businessName: string;
   phone: string;
-  whatsappNumber: string;
+  whatsappNumber: string | null;
   acceptsCalls: boolean;
   acceptsWhatsapp: boolean;
 }
@@ -54,6 +54,7 @@ export function ContactButtons({
 
   function whatsapp() {
     recordLead(provider.id, "whatsapp", source, categorySlug);
+    if (!provider.whatsappNumber) return;
     window.open(whatsappHref(provider.whatsappNumber, `Hi ${provider.businessName}, I found you on DialNFind and need help with a service.`), "_blank", "noopener");
   }
 
@@ -66,7 +67,7 @@ export function ContactButtons({
             Call now
           </Button>
         )}
-        {provider.acceptsWhatsapp && (
+        {provider.acceptsWhatsapp && provider.whatsappNumber && (
           <Button size={size} variant="outline" onClick={whatsapp} className={cn("border-[oklch(0.85_0.06_150)] text-[oklch(0.45_0.12_150)] hover:bg-[oklch(0.97_0.03_150)] hover:text-[oklch(0.4_0.12_150)]", layout === "row" && "flex-1")}>
             <MessageCircle />
             WhatsApp

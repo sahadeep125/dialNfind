@@ -1,115 +1,112 @@
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { Receipt } from "lucide-react-native";
+import { FileText, Receipt } from "lucide-react-native";
 
-import {
-  AppButton,
-  AppCard,
-  AppDivider,
-  AppSheet,
-  AppSkeleton,
-  AppText,
-} from "@/components/design-system";
+import { AppButton, AppCard, AppDivider, AppPressable, AppSkeleton, AppText } from "@/components/design-system";
 import { ErrorState, Screen, ScreenHeader, SectionHeader } from "@/components/layout";
 import { CurrentPlanCard } from "@/components/subscription/CurrentPlanCard";
-import { PlanCard } from "@/components/subscription/PlanCard";
+import { PlanBanner } from "@/components/subscription/PlanBanner";
+import { PlanPicker } from "@/components/subscription/PlanPicker";
 import { TransactionRow } from "@/components/subscription/TransactionRow";
-import { useRequestPlan, useSubscription } from "@/hooks/useSubscription";
+import { useOfferings, useRestore } from "@/hooks/usePurchases";
+import { useBilling } from "@/hooks/useSubscription";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
-import type { Plan } from "@/types/billing";
-import { formatPrice } from "@/utils/format";
-
-const POPULAR_PLAN = "Pro";
+import { openUrl } from "@/services/links";
+import { purchasesEnabled } from "@/services/purchases";
+import { formatDate, formatPrice } from "@/utils/format";
 
 export default function SubscriptionScreen() {
   const theme = useTheme();
   const toast = useToast();
-  const subscription = useSubscription();
-  const request = useRequestPlan();
-  const [choosing, setChoosing] = useState<Plan | null>(null);
+  const billing = useBilling();
+  const offerings = useOfferings();
+  const restore = useRestore();
   const [refreshing, setRefreshing] = useState(false);
-  const data = subscription.data;
-  const current = data?.current ?? null;
+  const data = billing.data;
 
   const onRefresh = async (): Promise<void> => {
     setRefreshing(true);
-    await subscription.refetch();
+    await Promise.all([billing.refetch(), purchasesEnabled ? offerings.refetch() : null]);
     setRefreshing(false);
   };
 
-  const onChoose = useCallback((plan: Plan): void => setChoosing(plan), []);
-
-  const confirmPlan = (): void => {
-    if (!choosing) return;
-    const plan = choosing;
-    request.mutate(plan.id, {
-      onSuccess: ({ ticket }) => {
-        setChoosing(null);
-        toast(
-          `Request sent (${ticket.reference}). Our team will contact you to arrange payment and switch your plan.`,
-          "success",
-        );
-      },
+  const onRestore = (): void =>
+    restore.mutate(undefined, {
+      onSuccess: (state) =>
+        toast(state.plan.code === "free" ? "No store subscription found for this account." : `Restored: you are on ${state.plan.name}.`, state.plan.code === "free" ? "info" : "success"),
       onError: (error: Error) => toast(errorMessage(error), "error"),
     });
-  };
 
   return (
     <Screen edges={["top", "bottom"]}>
       <ScreenHeader title="Plan and billing" />
-      {subscription.isError && !data ? (
-        <ErrorState error={subscription.error} onRetry={() => void subscription.refetch()} />
+      {billing.isError && !data ? (
+        <ErrorState error={billing.error} onRetry={() => void billing.refetch()} />
       ) : !data ? (
         <View style={{ padding: theme.spacing[4], gap: theme.spacing[4] }}>
-          <AppSkeleton shape="block" height={110} />
-          <AppSkeleton shape="block" height={260} />
-          <AppSkeleton shape="block" height={260} />
+          <AppSkeleton shape="block" height={150} />
+          <AppSkeleton shape="block" height={300} />
+          <AppSkeleton shape="block" height={300} />
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={{
-            padding: theme.spacing[4],
-            gap: theme.spacing[5],
-            paddingBottom: theme.spacing[10],
-          }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => void onRefresh()}
-              tintColor={theme.colors.brand.primary}
-            />
-          }
+          contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[5], paddingBottom: theme.spacing[10] }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={theme.colors.brand.primary} />}
         >
-          <AppText tone="secondary">
-            Every plan keeps your listing free to find. Paid plans add reach, analytics and a
-            partner badge. Send a request and our team will contact you to arrange payment.
-          </AppText>
-
-          {current ? (
-            <CurrentPlanCard current={current} />
-          ) : null}
-
-          <View style={[styles.grid, { gap: theme.spacing[4] }]}>
-            {data.plans.map((plan) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                isCurrent={current?.plan.id === plan.id}
-                featured={plan.name === POPULAR_PLAN}
-                busy={request.isPending && request.variables === plan.id}
-                disabled={request.isPending}
-                onChoose={onChoose}
-              />
-            ))}
-          </View>
+          <PlanBanner />
+          <CurrentPlanCard billing={data} />
 
           <View style={{ gap: theme.spacing[3] }}>
-            <SectionHeader title="Billing history" />
+            <SectionHeader title="Plans" />
+            <PlanPicker billing={data} />
+            {purchasesEnabled ? (
+              <AppButton variant="ghost" loading={restore.isPending} onPress={onRestore}>
+                Restore purchases
+              </AppButton>
+            ) : null}
+          </View>
+
+          {data.invoices.length > 0 ? (
+            <View style={{ gap: theme.spacing[3] }}>
+              <SectionHeader title="Invoices" />
+              <AppCard padding={0}>
+                {data.invoices.map((inv, i) => (
+                  <Fragment key={inv.id}>
+                    {i > 0 ? <AppDivider /> : null}
+                    <AppPressable
+                      accessibilityRole="link"
+                      accessibilityLabel={`Open invoice ${inv.number}`}
+                      onPress={() => void openUrl(inv.pdfUrl)}
+                      style={[styles.row, { gap: theme.spacing[3], padding: theme.spacing[4] }]}
+                    >
+                      <FileText size={18} color={theme.colors.brand.primary} />
+                      <View style={styles.flex}>
+                        <AppText variant="label" numberOfLines={1}>
+                          {inv.number}
+                          {inv.status === "void" ? "  (void)" : ""}
+                        </AppText>
+                        <AppText variant="caption" tone="secondary">
+                          {`${formatDate(inv.issuedAt)} · incl. ${formatPrice(inv.tax)} GST`}
+                        </AppText>
+                      </View>
+                      <AppText variant="label">{formatPrice(inv.total)}</AppText>
+                    </AppPressable>
+                  </Fragment>
+                ))}
+              </AppCard>
+              <AppText variant="caption" tone="tertiary">
+                GST invoices are for plans paid on the website or to our team. For App Store and Google Play purchases, the store sends the receipt.
+              </AppText>
+            </View>
+          ) : null}
+
+          <View style={{ gap: theme.spacing[3] }}>
+            <SectionHeader title="Payment history" />
             <AppCard padding={0}>
               {data.transactions.length === 0 ? (
-                <View style={[styles.empty, { gap: theme.spacing[2], padding: theme.spacing[4] }]}>
+                <View style={[styles.row, { gap: theme.spacing[2], padding: theme.spacing[4] }]}>
                   <Receipt size={16} color={theme.colors.text.secondary} />
                   <AppText tone="secondary">No payments yet.</AppText>
                 </View>
@@ -125,39 +122,11 @@ export default function SubscriptionScreen() {
           </View>
         </ScrollView>
       )}
-
-      <AppSheet
-        visible={!!choosing}
-        onClose={() => setChoosing(null)}
-        title={choosing ? `Request the ${choosing.name} plan?` : ""}
-      >
-        {choosing ? (
-          <View style={[styles.sheet, { gap: theme.spacing[4], padding: theme.spacing[4] }]}>
-            <AppText tone="secondary">
-              {choosing.price > 0
-                ? `The ${choosing.name} plan costs ${formatPrice(choosing.price)} per ${choosing.billingCycle === "yearly" ? "year" : "month"}. We will contact you to arrange payment, then switch your plan.`
-                : `We will move your listing to the free ${choosing.name} plan.`}
-            </AppText>
-            <View style={[styles.row, { gap: theme.spacing[3] }]}>
-              <AppButton variant="secondary" style={styles.flex} onPress={() => setChoosing(null)}>
-                Cancel
-              </AppButton>
-              <AppButton style={styles.flex} loading={request.isPending} onPress={confirmPlan}>
-                Send request
-              </AppButton>
-            </View>
-          </View>
-        ) : null}
-      </AppSheet>
-
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: "row", flexWrap: "wrap" },
-  empty: { alignItems: "center", flexDirection: "row" },
-  sheet: { paddingTop: 0 },
-  row: { flexDirection: "row" },
-  flex: { flex: 1 },
+  row: { alignItems: "center", flexDirection: "row" },
+  flex: { flex: 1, gap: 2 },
 });

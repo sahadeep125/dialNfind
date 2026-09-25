@@ -12,3 +12,10 @@ export const GOOGLE_WEB_CLIENT_ID: string = process.env.EXPO_PUBLIC_GOOGLE_WEB_C
 export const GOOGLE_IOS_CLIENT_ID: string = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
 /** Apple Services ID, used for Sign in with Apple on Android (Apple's web flow). */
 export const APPLE_SERVICES_ID: string = process.env.EXPO_PUBLIC_APPLE_SERVICES_ID ?? "";
+
+// In-app subscriptions through RevenueCat (docs/billing.md). Public SDK keys: appl_... for iOS, goog_... for
+// Android. Leave empty to hide store purchases; plans bought on the web still apply.
+export const REVENUECAT_IOS_KEY: string = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? "";
+export const REVENUECAT_ANDROID_KEY: string = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? "";
+/** Where plans bought on the web are managed. */
+export const PROVIDER_WEB_URL: string = process.env.EXPO_PUBLIC_PROVIDER_URL ?? "http://localhost:5173";

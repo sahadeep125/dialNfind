@@ -1,39 +1,34 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
-import { Check } from "lucide-react-native";
+import { Check, Crown } from "lucide-react-native";
 
 import { AppBadge, AppButton, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
-import type { Plan } from "@/types/billing";
-import { formatPrice } from "@/utils/format";
+import type { BillingCycle, Plan } from "@/types/billing";
 
 interface Props {
   plan: Plan;
+  /** Localized store price, or the website price when the store has none. */
+  priceLabel: string;
+  period: BillingCycle | null;
   isCurrent: boolean;
   featured: boolean;
+  /** Null hides the button (the Free card while on a paid plan). */
+  actionLabel: string | null;
   busy: boolean;
   disabled: boolean;
-  onChoose: (plan: Plan) => void;
+  onChoose: () => void;
 }
 
-export const PlanCard = memo(function PlanCard({
-  plan,
-  isCurrent,
-  featured,
-  busy,
-  disabled,
-  onChoose,
-}: Props) {
+export const PlanCard = memo(function PlanCard({ plan, priceLabel, period, isCurrent, featured, actionLabel, busy, disabled, onChoose }: Props) {
   const theme = useTheme();
-  const label = isCurrent ? "Current plan" : `Request ${plan.name}`;
-
   return (
     <View
       style={[
         styles.card,
         theme.shadow.card,
         {
-          backgroundColor: theme.components.card.background,
+          backgroundColor: isCurrent ? theme.colors.brand.soft : theme.components.card.background,
           borderColor: featured ? theme.colors.brand.primary : theme.components.card.border,
           borderWidth: featured ? theme.borderWidth.focus : theme.borderWidth.default,
           borderRadius: theme.components.card.radius,
@@ -43,6 +38,7 @@ export const PlanCard = memo(function PlanCard({
       ]}
     >
       <View style={[styles.head, { gap: theme.spacing[2] }]}>
+        {plan.code !== "free" ? <Crown size={18} color={theme.colors.brand.primary} /> : null}
         <AppText variant="subheading" style={styles.flex}>
           {plan.name}
         </AppText>
@@ -50,10 +46,8 @@ export const PlanCard = memo(function PlanCard({
         {isCurrent ? <AppBadge label="Your plan" tone="success" /> : null}
       </View>
       <View style={[styles.price, { gap: theme.spacing[1] }]}>
-        <AppText variant="display">{plan.price ? formatPrice(plan.price) : "Free"}</AppText>
-        {plan.price > 0 ? (
-          <AppText tone="secondary">/ {plan.billingCycle === "yearly" ? "year" : "month"}</AppText>
-        ) : null}
+        <AppText variant="display">{priceLabel}</AppText>
+        {period ? <AppText tone="secondary">/ {period === "yearly" ? "year" : "month"}</AppText> : null}
       </View>
       <View style={{ gap: theme.spacing[2] }}>
         {(plan.featuresJson ?? []).map((feature) => (
@@ -63,15 +57,11 @@ export const PlanCard = memo(function PlanCard({
           </View>
         ))}
       </View>
-      <AppButton
-        fullWidth
-        variant={featured ? "primary" : "secondary"}
-        disabled={isCurrent || disabled}
-        loading={busy}
-        onPress={() => onChoose(plan)}
-      >
-        {label}
-      </AppButton>
+      {actionLabel ? (
+        <AppButton fullWidth variant={featured ? "primary" : "secondary"} disabled={disabled} loading={busy} onPress={onChoose}>
+          {actionLabel}
+        </AppButton>
+      ) : null}
     </View>
   );
 });

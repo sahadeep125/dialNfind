@@ -1,36 +1,59 @@
 import { prisma } from "../lib/prisma.js";
-import { localToday } from "../lib/hours.js";
 import { env } from "../env.js";
 import { notifyAndEmail } from "../services/notify.js";
-import { recalculateProvider } from "../services/ranking.js";
+import { applySubscriptionChange } from "../services/entitlements.js";
+import { reconcileSubscription } from "../services/billing-sync.js";
 
-const longDate = (d: Date) => d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const longDate = (d: Date) => d.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: env.timezone });
+const HOUR = 60 * 60 * 1000;
 
-/** Plans whose end date has passed become expired, and the provider loses the plan's ranking boost. */
+/**
+ * Plans whose paid period (or grace period after a failed payment) is over drop to Free. Paid
+ * subscriptions are checked with Razorpay or RevenueCat first, in case a renewal webhook was missed.
+ */
 export async function expireSubscriptions(): Promise<string> {
+  const now = new Date();
   const due = await prisma.providerSubscription.findMany({
-    where: { status: "active", endDate: { lt: localToday() } },
-    include: { plan: { select: { name: true } }, provider: { select: { id: true, userId: true } } },
+    where: {
+      OR: [
+        { status: "active", endDate: { lt: now } },
+        { status: "past_due", OR: [{ graceUntil: { lt: now } }, { graceUntil: null, endDate: { lt: now } }] },
+      ],
+    },
+    include: { plan: { select: { code: true } } },
   });
+  let expired = 0;
   for (const sub of due) {
-    await prisma.providerSubscription.update({ where: { id: sub.id }, data: { status: "expired" } });
-    await recalculateProvider(sub.providerId);
-    await notifyAndEmail(
-      sub.provider.userId,
-      "subscription",
-      `Your ${sub.plan.name} plan has ended`,
-      "Your listing stays on DialNFind. Contact us from Plan and billing to renew and keep the extra reach.",
-      { subscriptionId: Number(sub.id) },
-      { label: "Renew your plan", url: `${env.providerUrl}/subscription` },
-    );
+    if (sub.source !== "admin" && (await reconcileSubscription(sub))) continue;
+    await applySubscriptionChange({
+      providerId: sub.providerId,
+      planCode: "free",
+      billingCycle: sub.billingCycle,
+      source: sub.source,
+      externalId: sub.externalId,
+      status: "expired",
+      periodEnd: sub.endDate,
+      autoRenew: false,
+    });
+    expired++;
   }
-  return `${due.length} expired`;
+  // Checkouts nobody finished within a day are dropped.
+  const abandoned = await prisma.providerSubscription.updateMany({
+    where: { status: "pending", createdAt: { lt: new Date(now.getTime() - 24 * HOUR) } },
+    data: { status: "cancelled", cancelledAt: now },
+  });
+  return `${expired} expired, ${abandoned.count} abandoned checkouts closed`;
 }
 
-/** Three days before a plan ends, the provider is reminded to renew. */
+/**
+ * Three days before a plan that will not renew ends, the provider is reminded. Plans that renew
+ * automatically are charged without a reminder.
+ */
 export async function remindExpiringSubscriptions(): Promise<string> {
+  const from = new Date(Date.now() + 2 * 24 * HOUR);
+  const to = new Date(Date.now() + 3 * 24 * HOUR);
   const due = await prisma.providerSubscription.findMany({
-    where: { status: "active", endDate: localToday(3) },
+    where: { status: "active", autoRenew: false, endDate: { gte: from, lt: to } },
     include: { plan: { select: { name: true } }, provider: { select: { userId: true } } },
   });
   for (const sub of due) {
@@ -38,7 +61,7 @@ export async function remindExpiringSubscriptions(): Promise<string> {
       sub.provider.userId,
       "subscription",
       `Your ${sub.plan.name} plan ends on ${longDate(sub.endDate!)}`,
-      "Contact us from Plan and billing if you would like to renew. Your listing stays on DialNFind either way.",
+      "Renew from Plan and billing to keep unlimited leads and analytics. Your listing stays on DialNFind either way.",
       { subscriptionId: Number(sub.id) },
       { label: "Renew your plan", url: `${env.providerUrl}/subscription` },
     );

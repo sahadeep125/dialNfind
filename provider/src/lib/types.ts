@@ -106,3 +106,72 @@ export interface LocationOption {
   latitude: number;
   longitude: number;
 }
+
+// Plans and billing ------------------------------------------------------------------------------
+
+export type Entitlement = "provider_pro" | "provider_business";
+export type PlanCode = "free" | "pro" | "business";
+export type SubscriptionSource = "admin" | "razorpay" | "app_store" | "play_store";
+export type BillingCycle = "monthly" | "yearly";
+
+/** From GET /provider/me and /provider/billing. Features are gated on entitlements, never plan names. */
+export interface PlanState {
+  plan: { id: number | null; code: PlanCode; name: string };
+  entitlements: Entitlement[];
+  features: { analytics: boolean; whatsapp: boolean; promote: boolean; priority_support: boolean };
+  subscription: {
+    id: number;
+    status: "pending" | "active" | "past_due" | "expired" | "cancelled";
+    source: SubscriptionSource;
+    billingCycle: BillingCycle;
+    startDate: string;
+    endDate: string | null;
+    cancelAtPeriodEnd: boolean;
+    graceUntil: string | null;
+  } | null;
+  limits: { leads: { limit: number | null; used: number }; photos: { limit: number | null; used: number } };
+}
+
+export interface PlanForSale {
+  id: number;
+  code: PlanCode;
+  name: string;
+  price: number;
+  leadAccessLimit: number | null;
+  photoLimit: number | null;
+  featuresJson: string[] | null;
+  badge: { id: number; name: string } | null;
+  prices: { billingCycle: BillingCycle; amount: number; availableOnWeb: boolean }[];
+}
+
+export interface Invoice {
+  id: number;
+  number: string;
+  total: number;
+  taxable: number;
+  tax: number;
+  status: "issued" | "void";
+  issuedAt: string;
+  pdfUrl: string;
+}
+
+export interface BillingResponse {
+  state: PlanState;
+  plans: PlanForSale[];
+  transactions: {
+    id: number;
+    type: string;
+    gateway: "manual" | "razorpay" | "app_store" | "play_store";
+    amount: number;
+    currency: string;
+    status: string;
+    gatewayTxnId: string | null;
+    invoiceNumber: string | null;
+    createdAt: string;
+  }[];
+  invoices: Invoice[];
+  billingProfile: { billingName: string; billingAddress: string | null; billingStateCode: string | null; gstin: string | null };
+  web: { enabled: boolean; keyId: string | null };
+  managedIn: "web" | "app_store" | "play_store" | "support" | null;
+  manageUrl: string | null;
+}

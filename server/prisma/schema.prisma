@@ -119,9 +119,38 @@ enum BillingCycle {
 }
 
 enum SubscriptionStatus {
+  // Checkout started on the web, waiting for the first payment.
+  pending
   active
+  // A renewal payment failed; the plan keeps working until grace_until.
+  past_due
   expired
   cancelled
+}
+
+// Where a subscription was bought, which decides where it is managed.
+enum SubscriptionSource {
+  admin
+  razorpay
+  app_store
+  play_store
+}
+
+enum PaymentGateway {
+  manual
+  razorpay
+  app_store
+  play_store
+}
+
+enum InvoiceStatus {
+  issued
+  void
+}
+
+enum WebhookSource {
+  razorpay
+  revenuecat
 }
 
 enum TransactionType {
@@ -365,6 +394,11 @@ model Provider {
   verificationStatus        VerificationStatus                     @default(none) @map("verification_status")
   status                    ProviderStatus                         @default(pending)
   claimedAt                 DateTime?                              @map("claimed_at")
+  // Who invoices are made out to. GSTIN is optional; the state code decides CGST+SGST or IGST.
+  billingName               String?                                @map("billing_name")
+  billingAddress            String?                                @map("billing_address")
+  billingStateCode          String?                                @map("billing_state_code") @db.VarChar(2)
+  gstin                     String?                                @db.VarChar(15)
   createdAt                 DateTime                               @default(now()) @map("created_at")
   updatedAt                 DateTime                               @updatedAt @map("updated_at")
 
@@ -380,6 +414,7 @@ model Provider {
   favorites         Favorite[]
   subscriptions     ProviderSubscription[]
   transactions      Transaction[]
+  invoices          Invoice[]
   tickets           SupportTicket[]
   sponsoredListings SponsoredListing[]
   claims            ProviderClaim[]
@@ -748,12 +783,17 @@ model Favorite {
 
 model SubscriptionPlan {
   id               BigInt       @id @default(autoincrement())
+  // free | pro | business. Entitlements come from the code (see src/lib/plans.ts), so it never changes.
+  code             String       @unique
   name             String       @unique
+  // Monthly price, kept for older clients; prices per billing cycle live in plan_prices.
   price            Decimal      @db.Decimal(10, 2)
   billingCycle     BillingCycle @default(monthly) @map("billing_cycle")
-  // null = unlimited
+  // Leads a month with full customer details; null = unlimited.
   leadAccessLimit  Int?         @map("lead_access_limit")
   analyticsEnabled Boolean      @default(false) @map("analytics_enabled")
+  // Portfolio photos; null = unlimited.
+  photoLimit       Int?         @map("photo_limit")
   // Small factor, never dominant in ranking.
   rankingBoost     Decimal      @default(0) @map("ranking_boost") @db.Decimal(4, 3)
   badgeId          BigInt?      @map("badge_id")
@@ -761,43 +801,137 @@ model SubscriptionPlan {
   isActive         Boolean      @default(true) @map("is_active")
 
   badge         Badge?                 @relation(fields: [badgeId], references: [id], onDelete: SetNull)
+  prices        PlanPrice[]
   subscriptions ProviderSubscription[]
 
   @@map("subscription_plans")
 }
 
-model ProviderSubscription {
-  id         BigInt             @id @default(autoincrement())
-  providerId BigInt             @map("provider_id")
-  planId     BigInt             @map("plan_id")
-  startDate  DateTime           @map("start_date") @db.Date
-  endDate    DateTime?          @map("end_date") @db.Date
-  status     SubscriptionStatus @default(active)
-  autoRenew  Boolean            @default(true) @map("auto_renew")
+// What a plan costs per billing cycle, and the matching product in each store. Prices include GST.
+model PlanPrice {
+  id               BigInt       @id @default(autoincrement())
+  planId           BigInt       @map("plan_id")
+  billingCycle     BillingCycle @map("billing_cycle")
+  amount           Decimal      @db.Decimal(10, 2)
+  razorpayPlanId   String?      @unique @map("razorpay_plan_id")
+  iosProductId     String?      @unique @map("ios_product_id")
+  // Play subscription id and base plan, e.g. dnf_pro:monthly
+  androidProductId String?      @unique @map("android_product_id")
+  isActive         Boolean      @default(true) @map("is_active")
 
-  provider Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  plan     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  plan SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, billingCycle])
+  @@map("plan_prices")
+}
+
+model ProviderSubscription {
+  id           BigInt             @id @default(autoincrement())
+  providerId   BigInt             @map("provider_id")
+  planId       BigInt             @map("plan_id")
+  source       SubscriptionSource @default(admin)
+  billingCycle BillingCycle       @default(monthly) @map("billing_cycle")
+  // Razorpay subscription id, or the store's original transaction id from RevenueCat.
+  externalId   String?            @map("external_id")
+  startDate    DateTime           @map("start_date")
+  // End of the paid period. Renewals move it forward.
+  endDate      DateTime?          @map("end_date")
+  status       SubscriptionStatus @default(active)
+  // false = cancels at the end of the period.
+  autoRenew    Boolean            @default(true) @map("auto_renew")
+  // Set while past_due: the plan keeps working until then.
+  graceUntil   DateTime?          @map("grace_until")
+  cancelledAt  DateTime?          @map("cancelled_at")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  provider     Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  plan         SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  transactions Transaction[]
 
   @@index([providerId, status])
+  @@index([source, externalId])
   @@map("provider_subscriptions")
 }
 
 model Transaction {
-  id           BigInt            @id @default(autoincrement())
-  providerId   BigInt            @map("provider_id")
-  type         TransactionType
-  amount       Decimal           @db.Decimal(10, 2)
-  status       TransactionStatus @default(pending)
+  id               BigInt            @id @default(autoincrement())
+  providerId       BigInt            @map("provider_id")
+  subscriptionId   BigInt?           @map("subscription_id")
+  type             TransactionType
+  gateway          PaymentGateway    @default(manual)
+  amount           Decimal           @db.Decimal(10, 2)
+  currency         String            @default("INR") @db.VarChar(3)
+  status           TransactionStatus @default(pending)
   // Payment reference: UPI or bank reference for payments recorded by the admin team.
-  gatewayTxnId String?           @map("gateway_txn_id")
-  invoiceUrl   String?           @map("invoice_url")
-  note         String?
-  createdAt    DateTime          @default(now()) @map("created_at")
+  gatewayTxnId     String?           @map("gateway_txn_id")
+  // Razorpay payment id or store transaction id; unique so a replayed webhook cannot record a payment twice.
+  gatewayPaymentId String?           @unique @map("gateway_payment_id")
+  invoiceUrl       String?           @map("invoice_url")
+  note             String?
+  createdAt        DateTime          @default(now()) @map("created_at")
 
-  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  provider     Provider              @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  subscription ProviderSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  invoice      Invoice?
 
   @@index([providerId, createdAt])
+  @@index([createdAt])
   @@map("transactions")
+}
+
+// GST tax invoice for a payment we collected (Razorpay or recorded by the team). Store purchases have
+// none: Apple and Google are the seller and send their own receipts.
+model Invoice {
+  id            BigInt        @id @default(autoincrement())
+  // e.g. DNF/2026-27/00001, sequential per financial year.
+  number        String        @unique
+  providerId    BigInt        @map("provider_id")
+  transactionId BigInt        @unique @map("transaction_id")
+  // Snapshot of who it was billed to and by, so later profile edits do not change issued invoices.
+  billedTo      Json          @map("billed_to")
+  seller        Json
+  lines         Json
+  taxable       Decimal       @db.Decimal(10, 2)
+  cgst          Decimal       @default(0) @db.Decimal(10, 2)
+  sgst          Decimal       @default(0) @db.Decimal(10, 2)
+  igst          Decimal       @default(0) @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
+  placeOfSupply String?       @map("place_of_supply")
+  status        InvoiceStatus @default(issued)
+  issuedAt      DateTime      @default(now()) @map("issued_at")
+
+  provider    Provider    @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, issuedAt])
+  @@index([issuedAt])
+  @@map("invoices")
+}
+
+// Next invoice number per financial year ("2026-27").
+model InvoiceSequence {
+  fy   String @id
+  next Int    @default(1)
+
+  @@map("invoice_sequences")
+}
+
+// Every payment webhook received, for idempotency and for the admin webhook log.
+model WebhookEvent {
+  id          BigInt        @id @default(autoincrement())
+  source      WebhookSource
+  eventId     String        @map("event_id")
+  type        String
+  payload     Json
+  providerId  BigInt?       @map("provider_id")
+  processedAt DateTime?     @map("processed_at")
+  error       String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  @@unique([source, eventId])
+  @@index([createdAt])
+  @@map("webhook_events")
 }
 
 model SponsoredListing {

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { isOpenNow, todayHoursLabel } from "../lib/hours.js";
 import { num } from "../lib/serialize.js";
+import { planTier } from "../lib/plans.js";
 
 /** Relations needed to render a provider card anywhere in the product. */
 export const providerCardInclude = {
@@ -11,7 +12,20 @@ export const providerCardInclude = {
   },
   badges: { include: { badge: true } },
   serviceAreas: { select: { areaName: true }, take: 6 },
+  // The live plan, for the partner badge and plan-gated contact options.
+  subscriptions: {
+    where: { status: { in: ["active", "past_due"] } },
+    select: { plan: { select: { code: true, photoLimit: true } } },
+    orderBy: { startDate: "desc" },
+    take: 1,
+  },
 } satisfies Prisma.ProviderInclude;
+
+/** The provider's plan code and portfolio photo limit (free when no live subscription). */
+export function cardPlan(p: { subscriptions: { plan: { code: string; photoLimit: number | null } }[] }, freePhotoLimit: number | null = 3) {
+  const plan = p.subscriptions[0]?.plan;
+  return { code: plan?.code ?? "free", photoLimit: plan ? plan.photoLimit : freePhotoLimit };
+}
 
 export type ProviderWithCard = Prisma.ProviderGetPayload<{ include: typeof providerCardInclude }>;
 
@@ -23,6 +37,9 @@ export function toProviderCard(
   const prices = p.services.map((s) => num(s.startingPrice)).filter((v): v is number => v !== null && v > 0);
   const subcategories = [...new Set(p.services.map((s) => s.subcategory?.name).filter(Boolean))] as string[];
   const description = p.description ?? "";
+  const tier = planTier(cardPlan(p).code);
+  // The WhatsApp button is a paid feature; free listings show Call only.
+  const whatsapp = tier !== null && p.acceptsWhatsapp;
   return {
     id: p.id,
     slug: p.slug,
@@ -33,9 +50,9 @@ export function toProviderCard(
     businessType: p.businessType,
     yearsExperience: p.yearsExperience,
     phone: p.phone,
-    whatsappNumber: p.whatsappNumber ?? p.phone,
+    whatsappNumber: whatsapp ? (p.whatsappNumber ?? p.phone) : null,
     acceptsCalls: p.acceptsCalls,
-    acceptsWhatsapp: p.acceptsWhatsapp,
+    acceptsWhatsapp: whatsapp,
     isAvailable: p.isAvailable,
     locality: p.locality,
     city: p.city,
@@ -57,6 +74,7 @@ export function toProviderCard(
     badges: p.badges.map((b) => ({ id: b.badge.id, name: b.badge.name })),
     isFavorite: extras.isFavorite ?? false,
     isSponsored: extras.isSponsored ?? false,
+    planTier: tier,
   };
 }
 

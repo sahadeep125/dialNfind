@@ -21,8 +21,10 @@ export interface Lead {
   details: { label: string; value: string }[];
   /** A report the provider made about this contact (spam, fake, wrong number) and its outcome. */
   disputeStatus: "none" | "open" | "accepted" | "rejected";
+  /** Past the plan's monthly lead limit: details hidden until the provider upgrades. */
+  locked: boolean;
   /** Not sent by the API today; the row shows call-back actions only when it is present. */
   customerPhone?: string | null;
 }
 
-export type LeadsPage = Paged & { leads: Lead[] };
+export type LeadsPage = Paged & { leads: Lead[]; leadLimit: number | null };

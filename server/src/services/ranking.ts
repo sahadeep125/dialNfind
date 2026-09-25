@@ -72,7 +72,7 @@ export async function recalculateProvider(providerId: bigint): Promise<void> {
     where: { id: providerId },
     include: {
       _count: { select: { businessHours: true, serviceAreas: true, services: true, portfolio: true } },
-      subscriptions: { where: { status: "active" }, include: { plan: true }, take: 1, orderBy: { startDate: "desc" } },
+      subscriptions: { where: { status: { in: ["active", "past_due"] } }, include: { plan: true }, take: 1, orderBy: { startDate: "desc" } },
     },
   });
   if (!provider) return;

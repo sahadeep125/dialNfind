@@ -1,12 +1,14 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, CircleHelp, Flag, Loader2, MessageCircle, Phone, PhoneIncoming, XCircle } from "lucide-react";
+import { CheckCircle2, CircleHelp, Flag, Loader2, Lock, MessageCircle, Phone, PhoneIncoming, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "@/components/page-header";
 import { EmptyState, PageSkeleton, Pager, Stars } from "@/components/common";
+import { PlanBanner } from "@/components/plan";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -27,12 +29,15 @@ interface Lead {
   reviewRating: number | null;
   details: { label: string; value: string }[];
   disputeStatus: "none" | "open" | "accepted" | "rejected";
+  /** Past the plan's monthly lead limit: the details stay hidden until the provider upgrades. */
+  locked: boolean;
 }
 
 const DISPUTE_DAYS = 30;
 
 interface LeadsResponse {
   leads: Lead[];
+  leadLimit: number | null;
   page: number;
   totalPages: number;
   total: number;
@@ -55,6 +60,11 @@ export function LeadsPage() {
   return (
     <>
       <PageHeader title="Leads" description="Every customer who tapped Call or WhatsApp on your listing." />
+      {data.leadLimit !== null && (
+        <div className="mb-4">
+          <PlanBanner />
+        </div>
+      )}
       <Tabs
         value={channel}
         onValueChange={(v) => {
@@ -88,10 +98,16 @@ export function LeadsPage() {
                     {l.channel === "call" ? <Phone className="size-4" /> : <MessageCircle className="size-4" />}
                   </span>
                   <div className="min-w-0">
-                    <div className="truncate font-medium">
-                      {l.customerName}
-                      {l.isGuest && <span className="ml-2 text-xs font-normal text-muted-foreground">not signed in</span>}
-                    </div>
+                    {l.locked ? (
+                      <Link to="/subscription" className="flex items-center gap-1.5 truncate font-medium text-muted-foreground hover:text-primary">
+                        <Lock className="size-3.5 shrink-0" /> {l.customerName}
+                      </Link>
+                    ) : (
+                      <div className="truncate font-medium">
+                        {l.customerName}
+                        {l.isGuest && <span className="ml-2 text-xs font-normal text-muted-foreground">not signed in</span>}
+                      </div>
+                    )}
                     <div className="text-xs text-muted-foreground">
                       {l.channel === "call" ? "Call" : "WhatsApp"} · {formatRelative(l.createdAt)}
                     </div>

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
-import { Flag, MessageCircle, Phone } from "lucide-react-native";
+import { router } from "expo-router";
+import { Flag, Lock, MessageCircle, Phone } from "lucide-react-native";
 
 import { AppBadge, AppButton, AppCard, AppPressable, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
@@ -37,7 +38,8 @@ export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp, onRepor
         <ChannelIcon channel={lead.channel} />
         <View style={styles.main}>
           <View style={[styles.nameRow, { gap: theme.spacing[2] }]}>
-            <AppText variant="label" numberOfLines={1} style={styles.shrink}>
+            {lead.locked ? <Lock size={14} color={theme.colors.brand.primary} /> : null}
+            <AppText variant="label" numberOfLines={1} style={[styles.shrink, lead.locked ? { color: theme.colors.brand.primary } : null]}>
               {lead.customerName}
             </AppText>
             {lead.isGuest ? (
@@ -74,6 +76,18 @@ export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp, onRepor
         </AppText>
         <LeadOutcome lead={lead} />
       </View>
+
+      {lead.locked ? (
+        <AppButton
+          size="sm"
+          variant="soft"
+          leadingIcon={<Lock size={14} color={theme.colors.brand.softText} />}
+          onPress={() => router.push({ pathname: "/paywall", params: { feature: "leads" } })}
+          style={{ marginTop: theme.spacing[3] }}
+        >
+          Upgrade to see this contact
+        </AppButton>
+      ) : null}
 
       {lead.disputeStatus !== "none" ? (
         <View style={{ marginTop: theme.spacing[2] }}>

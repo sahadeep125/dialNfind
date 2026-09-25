@@ -30,6 +30,7 @@ import { SignOutSheet } from "@/components/more/SignOutSheet";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useProfile } from "@/hooks/useProfile";
 import { useSession } from "@/hooks/useSession";
+import { usePlan } from "@/hooks/useSubscription";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
@@ -67,6 +68,7 @@ export default function MoreScreen() {
   const toast = useToast();
   const session = useSession();
   const profile = useProfile();
+  const plan = usePlan();
   const { signOut } = useAuthActions();
   const preference = useThemeStore((s) => s.preference);
   const setPreference = useThemeStore((s) => s.setPreference);
@@ -166,12 +168,14 @@ export default function MoreScreen() {
           <AppListItem
             title="Promote"
             subtitle="Sponsored campaigns in search"
+            value={plan.features.promote ? undefined : "Business"}
             leading={<Megaphone size={18} color={icon} />}
             onPress={() => router.push("/promote")}
           />
           <AppListItem
             title="Plan and billing"
-            subtitle="Your plan, upgrades and payments"
+            subtitle={plan.plan.code === "free" ? "Upgrade for unlimited leads and analytics" : "Your plan, invoices and payments"}
+            value={plan.plan.name}
             leading={<CreditCard size={18} color={icon} />}
             onPress={() => router.push("/subscription")}
           />

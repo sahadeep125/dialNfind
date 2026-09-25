@@ -123,38 +123,61 @@ async function main() {
     { name: "Verified Pro", criteriaDescription: "Phone and business documents verified by DialNFind" },
     { name: "Quick Responder", criteriaDescription: "Most customers report a quick response" },
     { name: "Pro Partner", criteriaDescription: "Active Pro plan subscriber" },
-    { name: "Premium Partner", criteriaDescription: "Active Premium plan subscriber" },
+    { name: "Business Partner", criteriaDescription: "Active Business plan subscriber" },
   ];
   const badges: Record<string, bigint> = {};
   for (const b of badgeDefs) badges[b.name] = (await prisma.badge.create({ data: b })).id;
 
+  // Three plans. The code decides the entitlements (src/lib/plans.ts); prices include GST.
   const plans = {
     Free: await prisma.subscriptionPlan.create({
-      data: { name: "Free", price: 0, leadAccessLimit: 10, analyticsEnabled: false, rankingBoost: 0, featuresJson: ["Business listing", "Up to 10 leads a month", "Customer reviews"] },
-    }),
-    Basic: await prisma.subscriptionPlan.create({
-      data: { name: "Basic", price: 299, leadAccessLimit: 50, analyticsEnabled: false, rankingBoost: 0.01, featuresJson: ["Everything in Free", "Up to 50 leads a month", "WhatsApp button", "Photo gallery"] },
+      data: {
+        code: "free",
+        name: "Free",
+        price: 0,
+        leadAccessLimit: 10,
+        photoLimit: 3,
+        analyticsEnabled: false,
+        rankingBoost: 0,
+        featuresJson: ["Business listing", "10 leads a month with full details", "Customer reviews", "3 portfolio photos"],
+      },
     }),
     Pro: await prisma.subscriptionPlan.create({
       data: {
+        code: "pro",
         name: "Pro",
         price: 599,
         leadAccessLimit: null,
+        photoLimit: 30,
         analyticsEnabled: true,
         rankingBoost: 0.025,
         badgeId: badges["Pro Partner"],
-        featuresJson: ["Everything in Basic", "Unlimited leads", "Profile analytics", "Pro Partner badge"],
+        featuresJson: ["Unlimited leads", "Profile analytics and ranking", "WhatsApp button", "30 portfolio photos", "Pro Partner badge"],
+        prices: {
+          create: [
+            { billingCycle: "monthly", amount: 599, iosProductId: "dnf_pro_monthly", androidProductId: "dnf_pro:monthly" },
+            { billingCycle: "yearly", amount: 5990, iosProductId: "dnf_pro_yearly", androidProductId: "dnf_pro:yearly" },
+          ],
+        },
       },
     }),
-    Premium: await prisma.subscriptionPlan.create({
+    Business: await prisma.subscriptionPlan.create({
       data: {
-        name: "Premium",
+        code: "business",
+        name: "Business",
         price: 999,
         leadAccessLimit: null,
+        photoLimit: null,
         analyticsEnabled: true,
         rankingBoost: 0.04,
-        badgeId: badges["Premium Partner"],
-        featuresJson: ["Everything in Pro", "Priority support", "Premium Partner badge", "Sponsored placement credits"],
+        badgeId: badges["Business Partner"],
+        featuresJson: ["Everything in Pro", "Sponsored campaigns", "Priority support", "Unlimited portfolio photos", "Business Partner badge"],
+        prices: {
+          create: [
+            { billingCycle: "monthly", amount: 999, iosProductId: "dnf_business_monthly", androidProductId: "dnf_business:monthly" },
+            { billingCycle: "yearly", amount: 9990, iosProductId: "dnf_business_yearly", androidProductId: "dnf_business:yearly" },
+          ],
+        },
       },
     }),
   };
@@ -389,18 +412,26 @@ async function main() {
 
   // Demo provider extras ----------------------------------------------------------------------
   if (demoProviderId) {
-    await prisma.providerSubscription.create({
-      data: { providerId: demoProviderId, planId: plans.Pro.id, startDate: daysAgo(20), endDate: new Date(Date.now() + 10 * 864e5), status: "active" },
+    const demoSub = await prisma.providerSubscription.create({
+      data: {
+        providerId: demoProviderId,
+        planId: plans.Business.id,
+        source: "admin",
+        startDate: daysAgo(20),
+        endDate: new Date(Date.now() + 10 * 864e5),
+        status: "active",
+        autoRenew: false,
+      },
     });
     await prisma.transaction.createMany({
       data: [
-        { providerId: demoProviderId, type: "subscription", amount: 599, status: "success", gatewayTxnId: "UPI-DEMO-001", createdAt: daysAgo(50) },
-        { providerId: demoProviderId, type: "subscription", amount: 599, status: "success", gatewayTxnId: "UPI-DEMO-002", createdAt: daysAgo(20) },
+        { providerId: demoProviderId, type: "subscription", amount: 999, status: "success", gatewayTxnId: "UPI-DEMO-001", createdAt: daysAgo(50) },
+        { providerId: demoProviderId, subscriptionId: demoSub.id, type: "subscription", amount: 999, status: "success", gatewayTxnId: "UPI-DEMO-002", createdAt: daysAgo(20) },
       ],
     });
     await prisma.providerBadge.createMany({
       data: [
-        { providerId: demoProviderId, badgeId: badges["Pro Partner"] },
+        { providerId: demoProviderId, badgeId: badges["Business Partner"] },
         { providerId: demoProviderId, badgeId: badges["Top Rated"] },
         { providerId: demoProviderId, badgeId: badges["Quick Responder"] },
       ],

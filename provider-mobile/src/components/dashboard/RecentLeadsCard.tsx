@@ -1,6 +1,8 @@
 import { StyleSheet, View } from "react-native";
+import { router } from "expo-router";
+import { Lock } from "lucide-react-native";
 
-import { AppCard, AppDivider, AppText } from "@/components/design-system";
+import { AppCard, AppDivider, AppPressable, AppText } from "@/components/design-system";
 import { SectionHeader } from "@/components/layout";
 import { ChannelIcon } from "@/components/leads/ChannelIcon";
 import { useTheme } from "@/hooks/useTheme";
@@ -31,9 +33,23 @@ export function RecentLeadsCard({ leads, onViewAll }: Props) {
               >
                 <ChannelIcon channel={l.channel} />
                 <View style={styles.main}>
-                  <AppText variant="label" numberOfLines={1}>
-                    {l.customerName}
-                  </AppText>
+                  {l.locked ? (
+                    <AppPressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Upgrade to see this contact"
+                      onPress={() => router.push({ pathname: "/paywall", params: { feature: "leads" } })}
+                      style={[styles.locked, { gap: theme.spacing[1] }]}
+                    >
+                      <Lock size={13} color={theme.colors.brand.primary} />
+                      <AppText variant="label" numberOfLines={1} style={{ color: theme.colors.brand.primary }}>
+                        {l.customerName}
+                      </AppText>
+                    </AppPressable>
+                  ) : (
+                    <AppText variant="label" numberOfLines={1}>
+                      {l.customerName}
+                    </AppText>
+                  )}
                   <AppText variant="caption" tone="secondary" numberOfLines={1}>
                     {l.channel === "call" ? "Tapped Call" : "Opened WhatsApp"}
                     {l.service ? ` · ${l.service}` : ""}
@@ -54,4 +70,5 @@ export function RecentLeadsCard({ leads, onViewAll }: Props) {
 const styles = StyleSheet.create({
   row: { alignItems: "center", flexDirection: "row" },
   main: { flex: 1, minWidth: 0 },
+  locked: { alignItems: "center", flexDirection: "row" },
 });

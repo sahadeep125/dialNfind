@@ -20,6 +20,8 @@ import { env } from "../env.js";
 import { recalculateProvider } from "../services/ranking.js";
 import { offlinePaymentSchema, recordPayment } from "./admin/records.js";
 import { ticketRef } from "../services/tickets.js";
+import { adminBillingRouter } from "./admin/billing.js";
+import { entitlementsFor } from "../lib/plans.js";
 
 /**
  * Admin endpoints for the super admin and their team. Each path is guarded by the module it
@@ -27,7 +29,7 @@ import { ticketRef } from "../services/tickets.js";
  */
 export const adminRouter = Router();
 adminRouter.use(requireStaff, guardAdminPath);
-adminRouter.use(adminTeamRouter, adminSupportRouter, adminSettingsRouter, adminOpsRouter, adminProvidersRouter, adminUsersRouter, adminRecordsRouter, adminExportRouter);
+adminRouter.use(adminTeamRouter, adminSupportRouter, adminSettingsRouter, adminOpsRouter, adminProvidersRouter, adminUsersRouter, adminRecordsRouter, adminExportRouter, adminBillingRouter);
 
 const queueQuery = z.object({ status: z.enum(["pending", "approved", "rejected"]).default("pending") });
 
@@ -298,10 +300,13 @@ adminRouter.delete("/providers/:id/badges/:badgeId", async (req, res) => {
 // Subscription plans and transactions ------------------------------------------------------------
 
 const planSchema = z.object({
+  // Decides the entitlements (src/lib/plans.ts); set once when the plan is created.
+  code: z.string().trim().toLowerCase().regex(/^[a-z][a-z0-9_]{1,30}$/, "Use lowercase letters, digits and _"),
   name: z.string().trim().min(2).max(40),
   price: z.number().min(0).max(1_000_000),
   billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
   leadAccessLimit: z.number().int().min(0).nullable().optional(),
+  photoLimit: z.number().int().min(0).nullable().optional(),
   analyticsEnabled: z.boolean().optional(),
   rankingBoost: z.number().min(0).max(0.2).optional(),
   badgeId: z.number().int().positive().nullable().optional(),
@@ -321,9 +326,13 @@ function planData(body: Partial<z.infer<typeof planSchema>>) {
 adminRouter.get("/plans", async (_req, res) => {
   const plans = await prisma.subscriptionPlan.findMany({
     orderBy: { price: "asc" },
-    include: { badge: true, _count: { select: { subscriptions: { where: { status: "active" } } } } },
+    include: {
+      badge: true,
+      prices: { orderBy: { billingCycle: "asc" } },
+      _count: { select: { subscriptions: { where: { status: { in: ["active", "past_due"] } } } } },
+    },
   });
-  res.json({ plans });
+  res.json({ plans: plans.map((p) => ({ ...p, entitlements: entitlementsFor(p.code) })) });
 });
 
 adminRouter.post("/plans", async (req, res) => {
@@ -335,7 +344,7 @@ adminRouter.post("/plans", async (req, res) => {
 
 /** Plans are never hard-deleted because subscriptions reference them; set isActive to false instead. */
 adminRouter.patch("/plans/:id", async (req, res) => {
-  const body = parse(planSchema.partial(), req.body);
+  const { code: _code, ...body } = parse(planSchema.partial(), req.body);
   const id = idParam(req.params.id as string);
   const plan = await prisma.subscriptionPlan.update({ where: { id }, data: planData(body) });
   await logAdmin(currentUser(req).id, "plan.update", "subscription_plan", id, body);

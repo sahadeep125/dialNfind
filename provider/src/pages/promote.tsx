@@ -8,6 +8,7 @@ import { formatDate, formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "@/components/page-header";
 import { EmptyState, PageSkeleton } from "@/components/common";
+import { LockedCard } from "@/components/plan";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,8 @@ interface Campaign {
 }
 
 interface PromoteResponse {
+  /** Campaigns need the Business plan; past campaigns stay visible either way. */
+  locked: boolean;
   listings: Campaign[];
   categories: { id: number; name: string }[];
   pricing: { costPerClick: number; minBudget: number; city: string };
@@ -105,7 +108,7 @@ export function PromotePage() {
                         {c.targetLocation && ` · ${c.targetLocation}`}
                       </p>
                     </div>
-                    {!ended && (
+                    {!ended && !(data.locked && c.status === "paused") && (
                       <Button variant="outline" size="sm" onClick={() => toggle.mutate(c)} disabled={toggle.isPending}>
                         {c.status === "active" ? <Pause /> : <Play />} {c.status === "active" ? "Pause" : "Resume"}
                       </Button>
@@ -123,6 +126,9 @@ export function PromotePage() {
           )}
         </div>
 
+        {data.locked ? (
+          <LockedCard feature="promote" className="h-fit" />
+        ) : (
         <Panel title="Request a campaign" className="h-fit">
           {data.categories.length === 0 ? (
             <p className="text-sm text-muted-foreground">Add a service first. You can promote any category you offer.</p>
@@ -191,6 +197,7 @@ export function PromotePage() {
             </form>
           )}
         </Panel>
+        )}
       </div>
     </>
   );

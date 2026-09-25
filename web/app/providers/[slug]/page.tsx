@@ -37,6 +37,7 @@ import { ReviewsList } from "@/components/provider/reviews-list";
 import { ReviewForm } from "@/components/provider/review-form";
 import { ReportListing, ShareButton } from "@/components/provider/share-report";
 import { LocationMap } from "@/components/provider/location-map";
+import { PLAN_BADGES, PlanTierBadge } from "@/components/provider/plan-tier-badge";
 
 type Params = { slug: string };
 
@@ -111,6 +112,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
                     <BadgeCheck /> Verified
                   </Badge>
                 )}
+                {p.planTier && <PlanTierBadge tier={p.planTier} size="md" />}
               </div>
               <p className="mt-1.5 text-muted-foreground">
                 {p.primaryCategory?.name}
@@ -133,9 +135,9 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
                 </span>
                 <OpenStatus provider={p} className="text-sm" />
               </div>
-              {p.badges.length > 0 && (
+              {p.badges.some((b) => !PLAN_BADGES.has(b.name)) && (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {p.badges.map((b) => (
+                  {p.badges.filter((b) => !PLAN_BADGES.has(b.name)).map((b) => (
                     <Badge key={b.id} variant="warning" className="gap-1">
                       <Award /> {b.name}
                     </Badge>

@@ -8,7 +8,13 @@ import { pageMeta, paginationSchema } from "../lib/pagination.js";
 import { DAY_NAMES, formatHours, localNow } from "../lib/hours.js";
 import { num } from "../lib/serialize.js";
 import { optionalAuth } from "../middleware/auth.js";
-import { providerCardInclude, toProviderCard } from "../services/presenter.js";
+import { cardPlan, providerCardInclude, toProviderCard } from "../services/presenter.js";
+
+/** Portfolio photos a free listing shows publicly. */
+async function freePhotoLimit() {
+  const free = await prisma.subscriptionPlan.findUnique({ where: { code: "free" }, select: { photoLimit: true } });
+  return free?.photoLimit ?? null;
+}
 import { recordProfileView, searchProviders } from "../services/search.js";
 import { limits } from "../lib/rate-limit.js";
 
@@ -105,7 +111,8 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
         isPrimary: s.isPrimary,
         details: (serviceValues.get(s.id) ?? []).map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
       })),
-      portfolio: provider.portfolio.map((p) => ({
+      // Only as many photos as the plan includes; extras stay saved for when the provider upgrades.
+      portfolio: provider.portfolio.slice(0, cardPlan(provider, await freePhotoLimit()).photoLimit ?? undefined).map((p) => ({
         id: p.id,
         title: p.title,
         description: p.description,

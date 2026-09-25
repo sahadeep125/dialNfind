@@ -3,12 +3,15 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ImagePlus, Images, Loader2, Pencil, Trash2 } from "lucide-react";
+import { ImagePlus, Images, Loader2, Lock, Pencil, Trash2 } from "lucide-react";
+import { Link } from "react-router";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import type { ProviderProfile } from "@/lib/types";
 import { useProfile } from "@/layouts/app-layout";
 import { PageHeader } from "@/components/page-header";
+import { LockedCard } from "@/components/plan";
+import { usePlan } from "@/lib/plan";
 import { EmptyState, PageSkeleton } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,6 +35,7 @@ export function PortfolioPage() {
   const { data: profile } = useProfile();
   const qc = useQueryClient();
   const [draft, setDraft] = useState<Draft | null>(null);
+  const plan = usePlan();
 
   const save = useMutation({
     mutationFn: (d: Draft) => {
@@ -57,19 +61,32 @@ export function PortfolioPage() {
 
   if (!profile) return <PageSkeleton />;
   const items = profile.portfolio;
+  const photoLimit = plan.limits.photos.limit;
+  const full = photoLimit !== null && items.length >= photoLimit;
   const edit = (i: Item) => setDraft({ id: i.id, title: i.title, description: i.description ?? "", imageUrl: i.imageUrl });
 
   return (
     <>
       <PageHeader
         title="Photos"
-        description="Show your shop, your team and finished jobs. Profiles with photos get noticeably more calls."
+        description={`Show your shop, your team and finished jobs. Profiles with photos get noticeably more calls.${
+          photoLimit !== null ? ` Your ${plan.plan.name} plan shows ${photoLimit} photos (${Math.min(items.length, photoLimit)} of ${photoLimit} used).` : ""
+        }`}
         actions={
-          <Button onClick={() => setDraft(EMPTY)}>
-            <ImagePlus /> Add photo
-          </Button>
+          full ? (
+            <Button asChild variant="outline">
+              <Link to="/subscription">
+                <Lock /> Upgrade for more photos
+              </Link>
+            </Button>
+          ) : (
+            <Button onClick={() => setDraft(EMPTY)}>
+              <ImagePlus /> Add photo
+            </Button>
+          )
         }
       />
+      {full && <LockedCard feature="photos" compact className="mb-4" />}
       {items.length === 0 ? (
         <EmptyState icon={Images} title="No photos yet" text="Add a few photos of recent work so customers can judge the quality before they call.">
           <Button onClick={() => setDraft(EMPTY)}>

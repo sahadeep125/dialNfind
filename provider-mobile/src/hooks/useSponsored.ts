@@ -7,7 +7,12 @@ import {
 } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
-import type { BillingRequestResult, Campaign, NewCampaignInput, SponsoredResponse } from "@/types/billing";
+import type { Campaign, NewCampaignInput, SponsoredResponse } from "@/types/billing";
+
+/** Campaigns are requested, not bought in the app: the request becomes a support ticket. */
+interface BillingRequestResult {
+  ticket: { id: number; reference: string };
+}
 
 const SPONSORED_KEY = ["sponsored"] as const;
 

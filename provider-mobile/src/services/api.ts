@@ -6,9 +6,17 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public fieldErrors: Record<string, string> = {},
+    public code?: string,
   ) {
     super(message);
   }
+}
+
+let onUpgradeRequired: (feature: string) => void = () => undefined;
+
+/** Called when the server answers 402 upgrade_required; the app opens its paywall for that feature. */
+export function setUpgradeHandler(handler: (feature: string) => void): void {
+  onUpgradeRequired = handler;
 }
 
 type Query = Record<string, string | number | boolean | undefined | null>;
@@ -62,13 +70,17 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   if (!res.ok) {
     const body = (json ?? {}) as ApiErrorBody;
     if (res.status === 401 && token) onUnauthorized();
-    const fieldErrors = Object.fromEntries(
-      (body.error?.details ?? []).map((d) => [d.path, d.message]),
-    );
+    const details = body.error?.details;
+    if (res.status === 402 && body.error?.code === "upgrade_required") {
+      onUpgradeRequired((details as { feature?: string } | undefined)?.feature ?? "");
+    }
+    // Validation errors carry a list of fields; other errors may carry an object (e.g. the plan feature).
+    const fieldErrors = Array.isArray(details) ? Object.fromEntries(details.map((d) => [d.path, d.message])) : {};
     throw new ApiError(
       res.status,
       body.error?.message ?? "Something went wrong. Please try again.",
       fieldErrors,
+      body.error?.code,
     );
   }
   return json as T;
