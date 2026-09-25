@@ -11,6 +11,7 @@ dialNfind/
   provider/   React (Vite) + TypeScript + Tailwind CSS + shadcn/ui         (port 5173)
   super-admin/ React (Vite) + TypeScript + Tailwind CSS + shadcn/ui        (port 5174)
   mobile/     Expo SDK 57 + React Native + Expo Router + NativeWind          (customer app)
+  provider-mobile/  same stack                                          (provider app)
   docs/       plan, API reference
 ```
 
@@ -122,6 +123,14 @@ Search, Category, Provider profile, Write review, Sign in, Create account, Profi
 tokens drive both the `App*` design-system components and the NativeWind Tailwind config. The API
 gained `GET /app-config` (support contacts and legal links from Settings) and `DELETE /auth/me`
 (customer account deletion) for it. Standalone npm project in `mobile/`, outside the workspace.
+
+## 8. Provider mobile (Expo)
+
+DialNFind Business: the provider portal as a native app on the same `/provider` endpoints.
+Sign in, then setup (new listing or claim) or the tabs Dashboard, Leads, Reviews, More. Listing
+editors (profile, services, hours, areas, portfolio, verification), Promote, Plan, Support,
+Notifications, Help and legal pages. Account closure goes through a support ticket because
+`DELETE /auth/me` refuses providers. Standalone npm project in `provider-mobile/`.
 
 ## Stubbed until credentials exist
 

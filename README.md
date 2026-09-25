@@ -2,7 +2,7 @@
 
 A hyperlocal service directory: customers find trusted local providers (TV repair, plumbers, tutors...) near them and call or WhatsApp them directly. Providers claim or create a listing and manage it from their own portal.
 
-The repository is a pnpm workspace with four separate apps, plus a mobile app in `mobile/`:
+The repository is a pnpm workspace with four separate apps, plus two mobile apps in `mobile/` and `provider-mobile/`:
 
 | Folder | App | Stack | Dev URL |
 | --- | --- | --- | --- |
@@ -11,6 +11,7 @@ The repository is a pnpm workspace with four separate apps, plus a mobile app in
 | `provider/` | Provider portal | React 19 + Vite, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query | http://localhost:5173 |
 | `super-admin/` | Admin console for the DialNFind team | React 19 + Vite, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, Recharts | http://localhost:5174 |
 | `mobile/` | Customer app for Android and iOS | Expo SDK 57, React Native 0.86, Expo Router, NativeWind, Zustand, MMKV, TanStack Query | Expo dev server on :8081 |
+| `provider-mobile/` | Provider app (DialNFind Business) for Android and iOS | Same stack as `mobile/` | Expo dev server on :8081 |
 
 The architecture, schema decisions and API list are in [docs/PLAN.md](docs/PLAN.md).
 
@@ -99,6 +100,26 @@ npm test                  # renders every screen on the Android code path agains
 After pulling changes to native packages, regenerate the native projects before running again: `npx expo prebuild --clean`. Add packages with `npx expo install`, not `npm install`, so native versions match the SDK; a mismatched native package (for example a newer `react-native-gesture-handler` pulled in as a peer) can crash the app at launch.
 
 On a real phone, point `EXPO_PUBLIC_API_URL` at your computer's LAN address (for example `http://192.168.1.20:4000/api/v1`); the Android emulator reaches the host at `10.0.2.2`. Set the API's `PUBLIC_URL` to the same host so uploaded photos load on the device. `npx expo start --web` runs it in a browser; `http://localhost:8081` is in the API's default `CORS_ORIGINS` for that.
+
+## Provider mobile app
+
+`provider-mobile/` is DialNFind Business, the provider portal as an Android and iOS app on the same `/provider` API. Signing in leads to the dashboard when the account has a business, and to setup (add a new listing or claim an existing one) when it does not.
+
+- **Tabs**: Dashboard (period stats, daily chart, profile checklist), Leads (channel filter, call or WhatsApp back), Reviews (filter and reply), More.
+- **Screens**: Sign in, Create account, Start, Claim a listing (search, phone code or document), Add your business (step by step), Edit profile, Services, Hours, Service areas, Portfolio, Verification, Promote, Plan, Support tickets and chat, Notifications, Help, Terms and Privacy.
+- **Account**: providers cannot delete their account from the app because the API refuses it for businesses; the More tab's Close account row opens a support ticket instead.
+- **Design system**: the same token files and `App*` components as `mobile/`, plus form parts in `src/components/forms` (select sheet, segmented control, switch row, progress bar, image and document upload fields).
+
+```bash
+cd provider-mobile
+npm install
+cp .env.example .env
+npx expo run:android      # or run:ios; MMKV needs a development build, not Expo Go
+npm run typecheck && npm run lint
+npm test                  # walks the provider screens on the Android code path against the running API
+```
+
+Demo login: `provider@dialnfind.com` / `password123` (has a business); `newprovider@dialnfind.com` goes through setup. The development claim code is `123456`. Run only one Expo dev server at a time, or start the second with `--port 8082`.
 
 ## What is stubbed
 
