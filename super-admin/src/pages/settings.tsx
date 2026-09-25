@@ -230,7 +230,7 @@ export function PluginsPage() {
   if (!data) return <PageSkeleton />;
   return (
     <>
-      <PageHeader title="Plugins" description="Connect payment, messaging, maps, sign-in and analytics services. Keys and secrets are stored on the server and are never shown again after saving." />
+      <PageHeader title="Plugins" description="Connect payment, messaging, sign-in and analytics services. Keys and secrets are stored on the server and are never shown again after saving." />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.plugins.map((p) => (
           <div key={p.key} className="flex flex-col rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)]">

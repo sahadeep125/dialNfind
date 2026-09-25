@@ -23,7 +23,7 @@ export interface SettingGroup {
 export interface Plugin {
   key: string;
   name: string;
-  category: "Payments" | "Messaging" | "Maps" | "Sign-in" | "Email" | "Notifications" | "Analytics";
+  category: "Payments" | "Messaging" | "Sign-in" | "Email" | "Notifications" | "Analytics";
   description: string;
   docsUrl: string;
   fields: SettingField[];
@@ -103,14 +103,6 @@ export const PLUGINS: Plugin[] = [
     description: "Send lead alerts to providers on WhatsApp through the Cloud API.",
     docsUrl: "https://developers.facebook.com/docs/whatsapp/cloud-api",
     fields: [enabled("WhatsApp"), { key: "phone_number_id", label: "Phone number ID", type: "text" }, { key: "access_token", label: "Access token", type: "secret" }],
-  },
-  {
-    key: "google_maps",
-    name: "Google Maps",
-    category: "Maps",
-    description: "Place search and geocoding. The apps use OpenStreetMap when this is off.",
-    docsUrl: "https://developers.google.com/maps/documentation",
-    fields: [enabled("Google Maps"), { key: "api_key", label: "API key", type: "secret" }],
   },
   {
     key: "google_oauth",
