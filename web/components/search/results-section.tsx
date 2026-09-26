@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Category, SearchResponse } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ProviderCard } from "@/components/provider/provider-card";
 import { EmptyResultsIllustration } from "@/components/illustrations/spots";
-import { cn } from "@/lib/utils";
+import { Pagination } from "@/components/pagination";
 import { FiltersSidebar } from "./filters";
 import { ResultsToolbar } from "./results-toolbar";
 import { ResultsMapLoader } from "./results-map-loader";
@@ -50,7 +49,7 @@ export function ResultsSection({
           <EmptyState basePath={basePath} />
         ) : view === "map" ? (
           <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_22rem]">
-            <div className="h-[60vh] min-h-[420px] overflow-hidden rounded-2xl border shadow-[var(--shadow-soft)] xl:h-[calc(100dvh-12rem)]">
+            <div role="region" aria-label="Map of results; the same providers are listed beside it" className="h-[60vh] min-h-[420px] overflow-hidden rounded-2xl border shadow-[var(--shadow-soft)] xl:h-[calc(100dvh-12rem)]">
               <ResultsMapLoader providers={data.results} origin={origin} radiusKm={radiusKm} />
             </div>
             <div className="space-y-3 xl:max-h-[calc(100dvh-12rem)] xl:overflow-y-auto xl:pr-1">
@@ -67,49 +66,9 @@ export function ResultsSection({
           </div>
         )}
 
-        {data.totalPages > 1 && <Pagination page={data.page} totalPages={data.totalPages} searchParams={searchParams} basePath={basePath} />}
+        <Pagination page={data.page} totalPages={data.totalPages} searchParams={searchParams} basePath={basePath} />
       </div>
     </div>
-  );
-}
-
-function hrefFor(basePath: string, searchParams: SearchParamsRecord, changes: Record<string, string | null>) {
-  const qs = new URLSearchParams();
-  for (const [k, v] of Object.entries(searchParams)) {
-    const val = one(v);
-    if (val) qs.set(k, val);
-  }
-  for (const [k, v] of Object.entries(changes)) {
-    if (v === null) qs.delete(k);
-    else qs.set(k, v);
-  }
-  const s = qs.toString();
-  return s ? `${basePath}?${s}` : basePath;
-}
-
-function Pagination({ page, totalPages, searchParams, basePath }: { page: number; totalPages: number; searchParams: SearchParamsRecord; basePath: string }) {
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1).filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1);
-  return (
-    <nav className="mt-10 flex items-center justify-center gap-1.5" aria-label="Pagination">
-      <Button asChild variant="outline" size="icon" className={cn(page <= 1 && "pointer-events-none opacity-40")}>
-        <Link href={hrefFor(basePath, searchParams, { page: String(page - 1) })} aria-label="Previous page">
-          <ChevronLeft />
-        </Link>
-      </Button>
-      {pages.map((p, i) => (
-        <span key={p} className="flex items-center gap-1.5">
-          {i > 0 && pages[i - 1] !== p - 1 && <span className="px-1 text-muted-foreground">...</span>}
-          <Button asChild variant={p === page ? "default" : "outline"} size="icon">
-            <Link href={hrefFor(basePath, searchParams, { page: p === 1 ? null : String(p) })}>{p}</Link>
-          </Button>
-        </span>
-      ))}
-      <Button asChild variant="outline" size="icon" className={cn(page >= totalPages && "pointer-events-none opacity-40")}>
-        <Link href={hrefFor(basePath, searchParams, { page: String(page + 1) })} aria-label="Next page">
-          <ChevronRight />
-        </Link>
-      </Button>
-    </nav>
   );
 }
 

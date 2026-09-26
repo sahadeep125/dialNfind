@@ -15,11 +15,12 @@ import type { SearchFilters } from "@/types";
 export default function CategoryScreen() {
   const theme = useTheme();
   const { columns } = useLayout();
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug, sub } = useLocalSearchParams<{ slug: string; sub?: string }>();
   const { data: categories } = useCategories();
   const category = useMemo(() => categories?.find((c) => c.slug === slug), [categories, slug]);
   const [filters, setFilters] = useState<SearchFilters>({
     category: slug,
+    subcategory: sub || undefined,
     sort: "relevance",
     openNow: false,
     verified: false,

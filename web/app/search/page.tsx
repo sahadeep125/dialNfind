@@ -8,7 +8,13 @@ import { SearchBar } from "@/components/search/search-bar";
 import { ResultsSection, one, type SearchParamsRecord } from "@/components/search/results-section";
 import { CategoryIcon } from "@/components/site/category-icon";
 
-export const metadata: Metadata = { title: "Search local services" };
+export const metadata: Metadata = {
+  title: "Search local services",
+  description: "Search trusted local service providers near you by service, rating, distance and who is open now.",
+  alternates: { canonical: "/search" },
+  // Result pages are endless combinations of filters; the category pages are the ones to index.
+  robots: { index: false, follow: true },
+};
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<SearchParamsRecord> }) {
   const sp = await searchParams;

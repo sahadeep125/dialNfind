@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { api } from "@/lib/api";
+import { publicApi } from "@/lib/api";
 import type { Category } from "@/lib/types";
 import { CategoryIcon } from "@/components/site/category-icon";
 
-export const metadata: Metadata = { title: "All services" };
+export const revalidate = 600;
+
+export const metadata: Metadata = pageMetadata({
+  title: "All services",
+  description: "Browse every service on DialNFind: electricians, plumbers, AC and TV repair, cleaning, pest control, tutors, movers and more near you.",
+  path: "/services",
+});
 
 export default async function ServicesPage() {
-  const { categories } = await api<{ categories: Category[] }>("/categories");
+  const { categories } = await publicApi<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] });
   return (
     <div className="container-page py-12">
       <div className="max-w-2xl">

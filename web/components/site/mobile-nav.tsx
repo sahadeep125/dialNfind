@@ -6,18 +6,21 @@ import { Menu, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "./logo";
+import { useSession } from "./session-provider";
 
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/services", label: "All services" },
   { href: "/search", label: "Search" },
   { href: "/about", label: "About" },
+  { href: "/help", label: "Help" },
   { href: "/contact", label: "Contact" },
   { href: "/claim", label: "List your business" },
 ];
 
-export function MobileNav({ signedIn }: { signedIn: boolean }) {
+export function MobileNav() {
   const [open, setOpen] = useState(false);
+  const signedIn = !!useSession().user;
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>

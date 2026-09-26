@@ -83,7 +83,11 @@ export function FileUpload({ value, onChange, purpose, previewClassName = "aspec
               <span className="font-medium">Document uploaded</span>
             </a>
           ) : (
-            <img src={value} alt="Uploaded preview" className={cn("rounded-xl border bg-muted object-cover", previewClassName, "w-auto max-w-full", previewClassName.includes("size-") ? "" : "max-h-48")} />
+            <>
+              {/* Uploads can be private documents, so previews load directly and never go through the shared image optimizer. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={value} alt="Uploaded preview" className={cn("rounded-xl border bg-muted object-cover", previewClassName, "w-auto max-w-full", previewClassName.includes("size-") ? "" : "max-h-48")} />
+            </>
           )}
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={browse} disabled={disabled}>
@@ -190,6 +194,7 @@ export function PhotoListUpload({ value, onChange, purpose, max, id, onUploading
       <div className="flex flex-wrap gap-2">
         {value.map((url, i) => (
           <div key={url} className="group relative size-20 overflow-hidden rounded-lg border bg-muted">
+            {/* eslint-disable-next-line @next/next/no-img-element -- see the preview above */}
             <img src={url} alt={`Photo ${i + 1}`} className="size-full object-cover" />
             <button type="button" onClick={() => onChange(value.filter((u) => u !== url))} className="absolute right-1 top-1 flex size-6 cursor-pointer items-center justify-center rounded-full bg-background/90 text-destructive shadow" aria-label={`Remove photo ${i + 1}`}>
               <Trash2 className="size-3.5" />

@@ -103,6 +103,7 @@ export function LocationPicker({
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search area, locality or city"
             placeholder="Search area, locality or city"
             className="h-11 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
@@ -116,7 +117,7 @@ export function LocationPicker({
           {locating ? <Loader2 className="size-4 animate-spin" /> : <LocateFixed className="size-4" />}
           Use my current location
         </button>
-        <div className="max-h-72 overflow-y-auto border-t p-1">
+        <div className="max-h-72 overflow-y-auto border-t p-1" aria-live="polite" aria-busy={loading}>
           {options.length === 0 && !loading && <p className="px-3 py-6 text-center text-sm text-muted-foreground">No matching areas yet</p>}
           {options.map((o) => (
             <button

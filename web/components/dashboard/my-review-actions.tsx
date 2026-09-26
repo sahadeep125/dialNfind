@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { clientApi } from "@/lib/client";
 
-export function DeleteReviewButton({ id }: { id: number }) {
+export function DeleteReviewButton({ id, providerName }: { id: number; providerName: string }) {
   const router = useRouter();
   async function remove() {
-    if (!confirm("Delete this review? This cannot be undone.")) return;
     try {
       await clientApi(`/reviews/${id}`, { method: "DELETE" });
       toast.success("Review deleted");
@@ -19,8 +19,16 @@ export function DeleteReviewButton({ id }: { id: number }) {
     }
   }
   return (
-    <Button variant="ghost" size="sm" onClick={remove} className="text-muted-foreground hover:text-destructive">
-      <Trash2 /> Delete
-    </Button>
+    <ConfirmDialog
+      title="Delete this review?"
+      description={`Your review of ${providerName} will be removed. This cannot be undone.`}
+      confirmLabel="Delete review"
+      onConfirm={remove}
+      trigger={
+        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" aria-label={`Delete your review of ${providerName}`}>
+          <Trash2 /> Delete
+        </Button>
+      }
+    />
   );
 }

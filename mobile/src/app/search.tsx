@@ -16,14 +16,16 @@ const SORTS: SortOption[] = ["relevance", "distance", "rating", "reviews"];
 export default function SearchScreen() {
   const theme = useTheme();
   const { columns } = useLayout();
-  const params = useLocalSearchParams<{ q?: string; sort?: string }>();
+  const params = useLocalSearchParams<{ q?: string; sort?: string; category?: string; sub?: string }>();
   const addSearch = useSearchHistoryStore((s) => s.addSearch);
   const inputRef = useRef<TextInput>(null);
   const initialSort = SORTS.find((s) => s === params.sort) ?? "relevance";
   const [text, setText] = useState(params.q ?? "");
-  const [editing, setEditing] = useState(!params.q && !params.sort);
+  const [editing, setEditing] = useState(!params.q && !params.sort && !params.category && !params.sub);
   const [filters, setFilters] = useState<SearchFilters>({
     q: params.q,
+    category: params.category,
+    subcategory: params.sub,
     sort: initialSort,
     openNow: false,
     verified: false,

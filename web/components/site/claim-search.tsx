@@ -1,19 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BadgeCheck, Loader2, MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { clientApi } from "@/lib/client";
-import type { ProviderCard, SearchResponse } from "@/lib/types";
+import { readSavedLocation } from "@/lib/saved-location";
+import type { LocationOption, ProviderCard, SearchResponse } from "@/lib/types";
 import { ProviderAvatar } from "@/components/provider/provider-avatar";
-
-const CITIES = ["Siliguri", "Kolkata", "Bengaluru", "Delhi", "Mumbai"];
 
 export function ClaimSearch({ providerAppUrl }: { providerAppUrl: string }) {
   const [q, setQ] = useState("");
-  const [city, setCity] = useState("Siliguri");
+  const [cities, setCities] = useState<string[]>([]);
+  const [city, setCity] = useState("");
+
+  // Cities that have listings, starting with the one the visitor last searched in.
+  useEffect(() => {
+    const saved = readSavedLocation().city;
+    clientApi<{ locations: LocationOption[] }>("/locations")
+      .then(({ locations }) => {
+        const names = locations.filter((l) => l.kind === "city").map((l) => l.name);
+        setCities(names);
+        setCity(names.includes(saved) ? saved : (names[0] ?? ""));
+      })
+      .catch(() => {
+        setCities(saved ? [saved] : []);
+        setCity(saved);
+      });
+  }, []);
   const [results, setResults] = useState<ProviderCard[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,11 +75,11 @@ export function ClaimSearch({ providerAppUrl }: { providerAppUrl: string }) {
           )}
         </div>
         <Select value={city} onValueChange={setCity}>
-          <SelectTrigger className="h-12 sm:w-40">
+          <SelectTrigger className="h-12 sm:w-40" aria-label="City">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {CITIES.map((c) => (
+            {cities.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}
               </SelectItem>

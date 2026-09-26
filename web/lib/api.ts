@@ -48,6 +48,33 @@ export async function api<T>(path: string, init: RequestInit & { query?: Query; 
   return res.json() as Promise<T>;
 }
 
+/**
+ * Cached fetch for data that is the same for every visitor (categories, public profiles, stats).
+ * It sends no cookies or visitor headers, so pages built from it can be served from Next's cache.
+ * Tag it so an edit can refresh the page straight away (see app/providers/[slug]/actions.ts).
+ */
+export async function publicApi<T>(path: string, { query, revalidate = 300, tags }: { query?: Query; revalidate?: number; tags?: string[] } = {}): Promise<T> {
+  const res = await fetch(`${API_URL}${path}${query ? toQuery(query) : ""}`, {
+    headers: { accept: "application/json" },
+    next: { revalidate, tags },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.error?.message ?? res.statusText);
+  }
+  return res.json() as Promise<T>;
+}
+
+/** publicApi, or null when the API answers 404. */
+export async function publicApiOrNull<T>(path: string, options: Parameters<typeof publicApi>[1] = {}): Promise<T | null> {
+  try {
+    return await publicApi<T>(path, options);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
+    throw err;
+  }
+}
+
 export async function apiOrNull<T>(path: string, init: Parameters<typeof api>[1] = {}): Promise<T | null> {
   try {
     return await api<T>(path, init);

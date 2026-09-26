@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/queryKeys";
 import { notificationKeys } from "@/hooks/useNotifications";
 import { supportKeys } from "@/hooks/useSupport";
+import { reportError } from "@/services/monitoring";
 import { pushOptedOut, registerForPush } from "@/services/push";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -44,7 +45,10 @@ export function PushRegistrar() {
   useEffect(() => {
     if (!token || registeredFor.current === token || pushOptedOut()) return;
     registeredFor.current = token;
-    registerForPush({ ask: true }).catch((error: unknown) => console.error("[push] Registration failed", error));
+    registerForPush({ ask: true }).catch((error: unknown) => {
+      console.error("[push] Registration failed", error);
+      reportError(error, { where: "push registration" });
+    });
   }, [token]);
 
   useEffect(() => {

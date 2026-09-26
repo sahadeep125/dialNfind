@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SlidersHorizontal, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -23,8 +23,14 @@ type FilterProps = { categories?: Category[]; lockedCategory?: Category; default
 
 function FilterFields({ categories, lockedCategory, defaultRadius }: FilterProps) {
   const { params, update } = useUrlParams();
-  const [radius, setRadius] = useState(Number(params.get("radius") ?? defaultRadius));
-  useEffect(() => setRadius(Number(params.get("radius") ?? defaultRadius)), [params, defaultRadius]);
+  // The slider moves freely while dragged and follows the URL when that changes (back button, reset).
+  const urlRadius = Number(params.get("radius") ?? defaultRadius);
+  const [radius, setRadius] = useState(urlRadius);
+  const [prevUrlRadius, setPrevUrlRadius] = useState(urlRadius);
+  if (prevUrlRadius !== urlRadius) {
+    setPrevUrlRadius(urlRadius);
+    setRadius(urlRadius);
+  }
 
   const categorySlug = lockedCategory?.slug ?? params.get("category") ?? "";
   const activeCategory = lockedCategory ?? categories?.find((c) => c.slug === categorySlug);

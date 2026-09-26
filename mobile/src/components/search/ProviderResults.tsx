@@ -16,7 +16,8 @@ import { useLayout } from "@/hooks/useLayout";
 import { useSearchProviders } from "@/hooks/useSearchProviders";
 import { useTheme } from "@/hooks/useTheme";
 import type { ProviderCard as ProviderCardData, SearchFilters } from "@/types";
-import { plural } from "@/utils/format";
+import { resultsSummary } from "@/utils/filters";
+import { useLocationStore } from "@/stores/useLocationStore";
 
 interface Props {
   filters: SearchFilters;
@@ -42,6 +43,8 @@ export function ProviderResults({ filters, header, source = "search" }: Props) {
   } = query;
   const results = useMemo(() => data?.pages.flatMap((p) => p.results) ?? [], [data]);
   const total = data?.pages[0]?.total ?? 0;
+  const radiusKm = data?.pages[0]?.radiusKm;
+  const place = useLocationStore((s) => s.location.name);
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<ProviderCardData>) => (
@@ -57,7 +60,7 @@ export function ProviderResults({ filters, header, source = "search" }: Props) {
       {header}
       {!isLoading && !isError ? (
         <AppText variant="caption" tone="secondary">
-          {plural(total, "provider")} found
+          {resultsSummary(total, radiusKm, place)}
         </AppText>
       ) : null}
     </View>

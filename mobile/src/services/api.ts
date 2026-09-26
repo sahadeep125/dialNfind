@@ -1,5 +1,6 @@
 import { API_URL } from "@/constants/config";
 import type { ApiErrorBody } from "@/types";
+import { reportError } from "@/services/monitoring";
 
 export class ApiError extends Error {
   constructor(
@@ -65,11 +66,10 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     const fieldErrors = Object.fromEntries(
       (body.error?.details ?? []).map((d) => [d.path, d.message]),
     );
-    throw new ApiError(
-      res.status,
-      body.error?.message ?? "Something went wrong. Please try again.",
-      fieldErrors,
-    );
+    const error = new ApiError(res.status, body.error?.message ?? "Something went wrong. Please try again.", fieldErrors);
+    // Server errors are bugs worth a look; 4xx answers are expected (wrong password, validation).
+    if (res.status >= 500) reportError(error, { path, status: res.status });
+    throw error;
   }
   return json as T;
 }

@@ -17,6 +17,11 @@ export async function openEmail(address: string, subject: string): Promise<void>
   await Linking.openURL(`mailto:${address}?subject=${encodeURIComponent(subject)}`);
 }
 
+/** The terms or privacy page: the link set in the admin console, or the website's own page. */
+export function legalUrl(doc: "terms" | "privacy", configured: string | null | undefined): string {
+  return configured || `${WEB_URL}/${doc}`;
+}
+
 /** Opens a page of the website (terms, privacy) in an in-app browser. */
 export async function openWebPage(path: string): Promise<void> {
   await WebBrowser.openBrowserAsync(`${WEB_URL}${path}`);

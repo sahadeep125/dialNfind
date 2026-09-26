@@ -83,13 +83,13 @@ describeLive("DialNFind app on Android", () => {
     act(() => jest.advanceTimersByTime(400));
     await find('Search for "electrician"');
     fireEvent(screen.getByPlaceholderText("Service, category or business"), "submitEditing");
-    await find(/providers? found/);
+    await find(/providers? (found|within \d+ km of)/);
     await find("Open now");
   });
 
   test("category screen lists providers with subcategory chips", async () => {
     await launch("/category/electricians");
-    await find(/providers? found/);
+    await find(/providers? (found|within \d+ km of)/);
     await find("All");
   });
 

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { NO_INDEX } from "@/lib/seo";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { ResetPasswordForm } from "@/components/auth/password-reset-forms";
 import { Button } from "@/components/ui/button";
 
-export const metadata: Metadata = { title: "Choose a new password" };
+export const metadata: Metadata = { title: "Choose a new password", robots: NO_INDEX };
 
 export default async function ResetPasswordPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token } = await searchParams;

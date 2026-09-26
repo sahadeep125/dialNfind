@@ -33,6 +33,7 @@ export function useSearchProviders(
           openNow: filters.openNow || undefined,
           verified: filters.verified || undefined,
           minRating: filters.minRating,
+          radiusKm: filters.radiusKm,
           lat: location.latitude,
           lng: location.longitude,
           page: pageParam,

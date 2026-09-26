@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { BarChart3, BadgeCheck, Check, MessageSquareReply, PhoneCall, Sparkles, Store } from "lucide-react";
-import { api } from "@/lib/api";
+import { publicApi } from "@/lib/api";
 import { PROVIDER_APP_URL } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,13 @@ import { BusinessIllustration } from "@/components/illustrations/spots";
 import { ClaimSearch } from "@/components/site/claim-search";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "List or claim your business" };
+export const revalidate = 600;
+
+export const metadata: Metadata = pageMetadata({
+  title: "List or claim your business",
+  description: "List your business on DialNFind for free or claim your existing listing. Get calls from customers nearby, reply to reviews and track leads.",
+  path: "/claim",
+});
 
 interface Plan {
   id: number;
@@ -19,7 +26,7 @@ interface Plan {
 }
 
 export default async function ClaimPage() {
-  const { plans } = await api<{ plans: Plan[] }>("/plans", { auth: false });
+  const { plans } = await publicApi<{ plans: Plan[] }>("/plans", { revalidate: 600 });
   return (
     <div>
       <section className="relative overflow-hidden">

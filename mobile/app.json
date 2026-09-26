@@ -14,7 +14,10 @@
         "NSLocationWhenInUseUsageDescription": "DialNFind uses your location to show service providers near you."
       },
       "appleTeamId": "9HH33XNTUX",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:dialnfind.com"
+      ]
     },
     "android": {
       "package": "com.dialnfind.app",
@@ -28,7 +31,50 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
       ],
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "dialnfind.com",
+              "pathPrefix": "/providers"
+            },
+            {
+              "scheme": "https",
+              "host": "dialnfind.com",
+              "pathPrefix": "/services"
+            },
+            {
+              "scheme": "https",
+              "host": "dialnfind.com",
+              "pathPrefix": "/search"
+            },
+            {
+              "scheme": "https",
+              "host": "dialnfind.com",
+              "pathPrefix": "/dashboard/notifications"
+            },
+            {
+              "scheme": "https",
+              "host": "dialnfind.com",
+              "pathPrefix": "/dashboard/support"
+            },
+            {
+              "scheme": "https",
+              "host": "dialnfind.com",
+              "pathPrefix": "/dashboard/contacts"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.dialnfind.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",

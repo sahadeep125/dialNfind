@@ -48,7 +48,7 @@ export default async function MyReviewsPage() {
                     <PenLine /> Edit
                   </Link>
                 </Button>
-                <DeleteReviewButton id={r.id} />
+                <DeleteReviewButton id={r.id} providerName={r.provider.businessName} />
               </div>
             </div>
             {r.reviewText && <p className="mt-3 text-sm leading-relaxed">{r.reviewText}</p>}

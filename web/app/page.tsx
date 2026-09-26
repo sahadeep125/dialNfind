@@ -1,23 +1,36 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Clock, MessageSquareQuote, PhoneCall, ShieldCheck, Star } from "lucide-react";
-import { api } from "@/lib/api";
-import { getSavedLocation } from "@/lib/session";
-import type { Category, ProviderCard as ProviderCardType } from "@/lib/types";
+import { publicApi } from "@/lib/api";
+import type { Category } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/search/search-bar";
-import { buildSearchHref } from "@/lib/search-href";
 import { HeroIllustration } from "@/components/illustrations/hero-illustration";
 import { BusinessIllustration, CallSpot, CompareSpot, LocationSpot, SearchSpot } from "@/components/illustrations/spots";
 import { CategoryIcon } from "@/components/site/category-icon";
-import { ProviderCard } from "@/components/provider/provider-card";
+import { NearbyProviders } from "@/components/home/nearby-providers";
+import { SectionHeading } from "@/components/site/section-heading";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  ...pageMetadata({
+    title: "DialNFind | Find trusted local service providers near you",
+    description:
+      "Find reliable electricians, plumbers, TV and AC repair, cleaners, tutors and more near you. Compare ratings, check who is open now, and call local pros directly. No booking fees.",
+    path: "/",
+  }),
+  // The home page uses the full title, without the "| DialNFind" suffix.
+  title: { absolute: "DialNFind | Find trusted local service providers near you" },
+};
+
+/** The same for every visitor, so it is cached; the "near you" part loads in the browser. */
+export const revalidate = 600;
 
 export default async function HomePage() {
-  const location = await getSavedLocation();
-  const [{ categories }, { results: featured }, stats, { terms }] = await Promise.all([
-    api<{ categories: Category[] }>("/categories"),
-    api<{ results: ProviderCardType[] }>("/providers/featured", { query: { lat: location.latitude, lng: location.longitude, limit: 6 } }),
-    api<{ providers: number; categories: number; cities: number; reviews: number }>("/stats"),
-    api<{ terms: { term: string }[] }>("/search/popular"),
+  const [{ categories }, stats, { terms }] = await Promise.all([
+    publicApi<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] }),
+    publicApi<{ providers: number; categories: number; cities: number; reviews: number }>("/stats", { revalidate: 3600 }),
+    publicApi<{ terms: { term: string }[] }>("/search/popular", { revalidate: 600 }),
   ]);
   const popular = terms.length ? terms.slice(0, 6).map((t) => t.term) : ["TV repair", "AC service", "Electrician", "Plumber", "Pest control"];
 
@@ -39,13 +52,13 @@ export default async function HomePage() {
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
               Tell us what you need and where you are. We show nearby service providers with ratings, working hours and a direct number, so you can call the one you trust.
             </p>
-            <SearchBar initialLocation={location} className="mt-8" />
+            <SearchBar className="mt-8" />
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <span className="text-sm text-muted-foreground">Popular:</span>
               {popular.map((term) => (
                 <Link
                   key={term}
-                  href={buildSearchHref(term, location)}
+                  href={`/search?q=${encodeURIComponent(term)}`}
                   className="rounded-full border bg-card px-3 py-1 text-sm text-foreground/80 transition-colors hover:border-primary/40 hover:text-primary"
                 >
                   {term}
@@ -100,21 +113,7 @@ export default async function HomePage() {
       </section>
 
       {/* Nearby ------------------------------------------------------------------------------- */}
-      <section className="bg-[linear-gradient(180deg,transparent,oklch(0.965_0.012_262)_20%,oklch(0.965_0.012_262)_80%,transparent)] py-20">
-        <div className="container-page">
-          <SectionHeading
-            eyebrow={`Near ${location.name}`}
-            title="Recommended providers near you"
-            description="Ranked by ratings, verification, responsiveness and distance. Never by who paid the most."
-            action={{ href: buildSearchHref("", location), label: "See all nearby" }}
-          />
-          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {featured.map((p) => (
-              <ProviderCard key={p.id} provider={p} source="search" />
-            ))}
-          </div>
-        </div>
-      </section>
+      <NearbyProviders />
 
       {/* How it works ------------------------------------------------------------------------- */}
       <section id="how" className="container-page scroll-mt-20 py-20">
@@ -207,43 +206,12 @@ export default async function HomePage() {
           <h2 className="relative text-3xl font-bold md:text-4xl">Something stopped working?</h2>
           <p className="relative mx-auto mt-3 max-w-xl text-primary-foreground/85">Find someone nearby who can fix it today. It takes less than a minute.</p>
           <Button asChild size="lg" variant="secondary" className="relative mt-8">
-            <Link href={buildSearchHref("", location)}>
+            <Link href="/search">
               Find a service near me <ArrowRight />
             </Link>
           </Button>
         </div>
       </section>
     </>
-  );
-}
-
-function SectionHeading({
-  eyebrow,
-  title,
-  description,
-  action,
-  align = "left",
-}: {
-  eyebrow: string;
-  title: string;
-  description?: string;
-  action?: { href: string; label: string };
-  align?: "left" | "center";
-}) {
-  return (
-    <div className={align === "center" ? "mx-auto max-w-2xl text-center" : "flex flex-col gap-4 md:flex-row md:items-end md:justify-between"}>
-      <div className={align === "center" ? "" : "max-w-2xl"}>
-        <span className="text-sm font-semibold uppercase tracking-wider text-primary">{eyebrow}</span>
-        <h2 className="mt-2 text-3xl font-bold text-brand-deep md:text-4xl">{title}</h2>
-        {description && <p className="mt-3 text-muted-foreground">{description}</p>}
-      </div>
-      {action && (
-        <Button asChild variant="outline" className="shrink-0">
-          <Link href={action.href}>
-            {action.label} <ArrowRight />
-          </Link>
-        </Button>
-      )}
-    </div>
   );
 }

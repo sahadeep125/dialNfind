@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { api, errorMessage } from "@/services/api";
 import { openPhone, openWhatsApp } from "@/services/links";
+import { recordContact } from "@/services/reviewPrompt";
 import type { ProviderCard } from "@/types";
 import { queryKeys } from "./queryKeys";
 import { useToast } from "./useToast";
@@ -39,6 +40,8 @@ export function useContactProvider(): (
       try {
         if (channel === "call") await openPhone(number);
         else await openWhatsApp(number, `Hi ${provider.businessName}, I found you on DialNFind.`);
+        // Counted now; any rating prompt waits until the person is back in the app (RatingPrompter).
+        recordContact();
       } catch (error: unknown) {
         toast(
           channel === "call"

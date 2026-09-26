@@ -1,5 +1,12 @@
 import { useCallback } from "react";
-import { FlatList, RefreshControl, StyleSheet, View, type ListRenderItemInfo } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  View,
+  type ListRenderItemInfo,
+} from "react-native";
 import { router } from "expo-router";
 import { Heart } from "lucide-react-native";
 
@@ -18,7 +25,10 @@ export default function FavoritesScreen() {
   const theme = useTheme();
   const { columns } = useLayout();
   const signedIn = useAuthStore((s) => !!s.token);
-  const { data, isLoading, isError, error, refetch, isRefetching } = useFavorites();
+  const { data, isLoading, isError, error, refetch, isRefetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useFavorites();
+  const items = data?.pages.flatMap((page) => page.results) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FavoriteProvider>) => (
@@ -42,7 +52,7 @@ export default function FavoritesScreen() {
         </AppText>
         <AppText tone="secondary">
           {signedIn && data
-            ? `${plural(data.length, "saved provider")}`
+            ? `${plural(total, "saved provider")}`
             : "Providers you save for later"}
         </AppText>
       </View>
@@ -55,7 +65,14 @@ export default function FavoritesScreen() {
       ) : (
         <FlatList
           key={`cols-${columns}`}
-          data={isLoading || isError ? [] : (data ?? [])}
+          data={isLoading || isError ? [] : items}
+          onEndReachedThreshold={0.4}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+          }}
+          ListFooterComponent={
+            isFetchingNextPage ? <ActivityIndicator color={theme.colors.brand.primary} /> : null
+          }
           numColumns={columns}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
@@ -85,7 +102,7 @@ export default function FavoritesScreen() {
           }
           refreshControl={
             <RefreshControl
-              refreshing={isRefetching}
+              refreshing={isRefetching && !isFetchingNextPage}
               onRefresh={() => void refetch()}
               tintColor={theme.colors.brand.primary}
             />

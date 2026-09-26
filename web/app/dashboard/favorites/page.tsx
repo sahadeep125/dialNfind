@@ -3,15 +3,19 @@ import Link from "next/link";
 import { Heart } from "lucide-react";
 import { api } from "@/lib/api";
 import { requireSession } from "@/lib/session";
-import type { ProviderCard as ProviderCardType } from "@/lib/types";
+import type { Paged, ProviderCard as ProviderCardType } from "@/lib/types";
+import { Pagination, type SearchParamsRecord } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
 import { ProviderCard } from "@/components/provider/provider-card";
 
 export const metadata: Metadata = { title: "Favorites" };
 
-export default async function FavoritesPage() {
+export default async function FavoritesPage({ searchParams }: { searchParams: Promise<SearchParamsRecord> }) {
   await requireSession("/dashboard/favorites");
-  const { results } = await api<{ results: ProviderCardType[] }>("/me/favorites");
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
+  const data = await api<{ results: ProviderCardType[] } & Paged>("/me/favorites", { query: { page, pageSize: 12 } });
+  const results = data.results;
   return (
     <div>
       <h1 className="text-2xl font-bold text-brand-deep">Favorites</h1>
@@ -22,6 +26,10 @@ export default async function FavoritesPage() {
             <ProviderCard key={p.id} provider={p} />
           ))}
         </div>
+      ) : page > 1 ? (
+        <p className="mt-8 rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          This page is empty. <Link href="/dashboard/favorites" className="font-medium text-primary hover:underline">Back to the first page</Link>
+        </p>
       ) : (
         <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed p-12 text-center">
           <span className="flex size-14 items-center justify-center rounded-full bg-accent text-primary">
@@ -34,6 +42,7 @@ export default async function FavoritesPage() {
           </Button>
         </div>
       )}
+      <Pagination page={data.page} totalPages={data.totalPages} searchParams={sp} basePath="/dashboard/favorites" />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import Image from "next/image";
 import { initials } from "@/lib/format";
 import { isOptimizableImage } from "@/lib/image-hosts";
 import { cn } from "@/lib/utils";
-import { categoryIconComponent, categoryTone } from "@/components/site/category-icon";
+import { CategoryGlyph, categoryTone } from "@/components/site/category-icon";
 
 /** Logo if uploaded, otherwise a monogram on the category's tone with a small category glyph. */
 export function ProviderAvatar({
@@ -26,13 +26,12 @@ export function ProviderAvatar({
       </span>
     );
   }
-  const Icon = categoryIconComponent(categorySlug);
   const tone = categoryTone(categorySlug);
   return (
     <span className={cn("relative flex shrink-0 items-center justify-center font-display font-bold", dims, tone.bg, tone.fg, className)} aria-hidden>
       {initials(name)}
       <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-lg border-2 border-card bg-card shadow-sm">
-        <Icon className="size-3.5" strokeWidth={2} />
+        <CategoryGlyph slug={categorySlug} className="size-3.5" strokeWidth={2} />
       </span>
     </span>
   );

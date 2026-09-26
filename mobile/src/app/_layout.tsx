@@ -1,8 +1,10 @@
 import "../../global.css";
+// Before anything else, so errors during startup are reported too.
+import { navigationIntegration, reportError, setMonitoringUser, wrapRoot } from "@/services/monitoring";
 
 import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, useNavigationContainerRef, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -23,7 +25,15 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 
-import { BrandSplash, OfflineBanner, PushRegistrar, SessionRefresher, ToastPortal } from "@/components/layout";
+import {
+  BrandSplash,
+  ErrorState,
+  OfflineBanner,
+  PushRegistrar,
+  RatingPrompter,
+  SessionRefresher,
+  ToastPortal,
+} from "@/components/layout";
 import { colorVariables } from "@/constants/colors";
 import { useTheme } from "@/hooks/useTheme";
 import { ApiError } from "@/services/api";
@@ -45,7 +55,17 @@ const queryClient = new QueryClient({
   },
 });
 
-export default function RootLayout() {
+/** Shown instead of a screen that crashed while rendering; the error is reported and the person can retry. */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => reportError(error), [error]);
+  return (
+    <View style={[styles.fill, styles.crash]}>
+      <ErrorState error={error} onRetry={() => void retry()} />
+    </View>
+  );
+}
+
+function RootLayout() {
   const theme = useTheme();
   const [showSplash, setShowSplash] = useState(true);
   const [fontsLoaded, fontError] = useFonts({
@@ -59,6 +79,14 @@ export default function RootLayout() {
     PlusJakartaSans_800ExtraBold,
   });
   const hydrated = useAuthStore((s) => s.hydrated);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+
+  const navigationRef = useNavigationContainerRef();
+
+  useEffect(() => setMonitoringUser(userId), [userId]);
+  useEffect(() => {
+    if (navigationRef) navigationIntegration?.registerNavigationContainer(navigationRef);
+  }, [navigationRef]);
   const ready = (fontsLoaded || !!fontError) && hydrated;
 
   useEffect(() => {
@@ -90,6 +118,7 @@ export default function RootLayout() {
           <StatusBar style={showSplash || theme.mode === "dark" ? "light" : "dark"} />
           <SessionRefresher />
           <PushRegistrar />
+          <RatingPrompter />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -126,5 +155,8 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  crash: { justifyContent: "center", padding: 24 },
   fill: { flex: 1 },
 });
+
+export default wrapRoot(RootLayout);

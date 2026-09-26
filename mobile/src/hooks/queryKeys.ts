@@ -19,4 +19,5 @@ export const queryKeys = {
   appConfig: ["app-config"] as const,
   me: ["me"] as const,
   contacts: ["contacts"] as const,
+  addresses: ["addresses"] as const,
 };

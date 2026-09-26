@@ -52,7 +52,7 @@ export default function HomeScreen() {
         <SectionHeader
           title="Browse categories"
           actionLabel="See all"
-          onAction={() => router.push("/search")}
+          onAction={() => router.push("/categories")}
         />
         {categories.isError ? (
           <ErrorState error={categories.error} onRetry={() => void categories.refetch()} />

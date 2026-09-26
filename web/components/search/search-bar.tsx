@@ -9,6 +9,8 @@ import type { LocationOption, Suggestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { LocationPicker } from "./location-picker";
 import { buildSearchHref } from "@/lib/search-href";
+import { DEFAULT_LOCATION } from "@/lib/default-location";
+import { useSavedLocation } from "@/lib/saved-location";
 
 export function SearchBar({
   initialQuery = "",
@@ -17,34 +19,48 @@ export function SearchBar({
   className,
 }: {
   initialQuery?: string;
-  initialLocation: LocationOption;
+  /** Leave out on cached pages; the saved location is read in the browser. */
+  initialLocation?: LocationOption;
   size?: "lg" | "md";
   className?: string;
 }) {
   const router = useRouter();
+  const saved = useSavedLocation();
+  const sourceLocation = initialLocation ?? saved ?? DEFAULT_LOCATION;
   const [query, setQuery] = useState(initialQuery);
-  const [location, setLocation] = useState(initialLocation);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [location, setLocation] = useState(sourceLocation);
+  const [results, setResults] = useState<{ q: string; items: Suggestion[] }>({ q: "", items: [] });
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const boxRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setQuery(initialQuery), [initialQuery]);
-  useEffect(() => setLocation(initialLocation), [initialLocation]);
+  // A new search from the page (or the saved location loading) replaces what is in the box.
+  const [prevQuery, setPrevQuery] = useState(initialQuery);
+  if (prevQuery !== initialQuery) {
+    setPrevQuery(initialQuery);
+    setQuery(initialQuery);
+  }
+  const locationKey = `${sourceLocation.latitude},${sourceLocation.longitude},${sourceLocation.label}`;
+  const [prevLocationKey, setPrevLocationKey] = useState(locationKey);
+  if (prevLocationKey !== locationKey) {
+    setPrevLocationKey(locationKey);
+    setLocation(sourceLocation);
+  }
+
+  // Suggestions only for the text currently typed, and only from two characters.
+  const trimmed = query.trim();
+  const suggestions = trimmed.length >= 2 && results.q === trimmed ? results.items : [];
 
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) {
-      setSuggestions([]);
-      return;
-    }
+    if (q.length < 2) return;
     const handle = setTimeout(async () => {
       try {
         const data = await clientApi<{ suggestions: Suggestion[] }>(`/search/suggest?q=${encodeURIComponent(q)}`);
-        setSuggestions(data.suggestions);
+        setResults({ q, items: data.suggestions });
         setActive(-1);
       } catch {
-        setSuggestions([]);
+        setResults({ q, items: [] });
       }
     }, 150);
     return () => clearTimeout(handle);
@@ -95,6 +111,9 @@ export function SearchBar({
   }
 
   const tall = size === "lg";
+  const listOpen = open && suggestions.length > 0;
+  const listId = `service-suggestions-${size}`;
+  const optionId = (i: number) => `${listId}-${i}`;
 
   return (
     <form
@@ -109,7 +128,7 @@ export function SearchBar({
       role="search"
     >
       <div ref={boxRef} className="relative flex min-w-0 flex-1 items-center gap-3 px-3">
-        <Search className="size-5 shrink-0 text-primary" />
+        <Search className="size-5 shrink-0 text-primary" aria-hidden />
         <div className="min-w-0 flex-1">
           <label htmlFor="service-search" className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             Service
@@ -118,6 +137,11 @@ export function SearchBar({
             id="service-search"
             value={query}
             autoComplete="off"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={listOpen}
+            aria-controls={listId}
+            aria-activedescendant={listOpen && active >= 0 ? optionId(active) : undefined}
             onChange={(e) => {
               setQuery(e.target.value);
               setOpen(true);
@@ -128,14 +152,16 @@ export function SearchBar({
             className={cn("w-full bg-transparent font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground", tall ? "h-7 text-base" : "h-6 text-sm")}
           />
         </div>
-        {open && suggestions.length > 0 && (
-          <div className="absolute left-0 right-0 top-full z-30 mt-3 overflow-hidden rounded-xl border bg-popover p-1 shadow-[var(--shadow-lift)]">
+        {listOpen && (
+          <div id={listId} role="listbox" aria-label="Suggestions" className="absolute left-0 right-0 top-full z-30 mt-3 overflow-hidden rounded-xl border bg-popover p-1 shadow-[var(--shadow-lift)]">
             {suggestions.map((s, i) => {
               const Icon = s.type === "provider" ? Building2 : s.type === "category" ? Layers : Wrench;
               return (
-                <button
-                  type="button"
+                <div
                   key={`${s.type}-${s.slug}`}
+                  id={optionId(i)}
+                  role="option"
+                  aria-selected={i === active}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => go(s)}
                   className={cn("flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left", i === active ? "bg-accent" : "hover:bg-muted")}
@@ -149,7 +175,7 @@ export function SearchBar({
                       {s.type === "provider" ? `Business in ${s.context}` : s.type === "category" ? "Category" : `Service in ${s.context}`}
                     </span>
                   </span>
-                </button>
+                </div>
               );
             })}
           </div>

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,9 +20,8 @@ import {
   Store,
   Wrench,
 } from "lucide-react";
-import { api, apiOrNull } from "@/lib/api";
+import { publicApi, publicApiOrNull } from "@/lib/api";
 import { isOptimizableImage } from "@/lib/image-hosts";
-import { getSession } from "@/lib/session";
 import { PROVIDER_APP_URL } from "@/lib/config";
 import type { Paged, ProviderCard as ProviderCardType, ProviderDetail, Review } from "@/lib/types";
 import { formatDate, formatPhone, formatPrice, telHref } from "@/lib/format";
@@ -32,25 +32,52 @@ import { categoryTone } from "@/components/site/category-icon";
 import { ProviderAvatar } from "@/components/provider/provider-avatar";
 import { RatingStars } from "@/components/provider/rating";
 import { ContactButtons } from "@/components/provider/contact-buttons";
-import { FavoriteButton } from "@/components/provider/favorite-button";
 import { OpenStatus, ProviderCard } from "@/components/provider/provider-card";
 import { ReviewsList } from "@/components/provider/reviews-list";
-import { ReviewForm } from "@/components/provider/review-form";
+import { ProfileFavoriteButton, ProfileReviewForm, ProviderViewerState } from "@/components/provider/viewer-state";
 import { ReportListing, ShareButton } from "@/components/provider/share-report";
 import { LocationMap } from "@/components/provider/location-map";
 import { PLAN_BADGES, PlanTierBadge } from "@/components/provider/plan-tier-badge";
+import { JsonLd } from "@/components/json-ld";
+import { clip, pageMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, providerJsonLd } from "@/lib/structured-data";
 
 type Params = { slug: string };
 
+/** Profiles are cached for everyone and rebuilt every few minutes, or at once after a review (actions.ts). */
+export const revalidate = 300;
+export async function generateStaticParams(): Promise<Params[]> {
+  return [];
+}
+
+const PROVIDER_TTL = 300;
+const tagsFor = (slug: string) => [`provider:${slug}`];
+
+/** One request per render for both the metadata and the page; views are counted in the browser (viewer-state.tsx). */
+const getProvider = cache(async (slug: string) => {
+  const data = await publicApiOrNull<{ provider: ProviderDetail }>(`/providers/${encodeURIComponent(slug)}`, {
+    query: { view: "false" },
+    revalidate: PROVIDER_TTL,
+    tags: tagsFor(slug),
+  });
+  return data?.provider ?? null;
+});
+
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
-  const data = await apiOrNull<{ provider: ProviderDetail }>(`/providers/${slug}`, { auth: false });
-  if (!data) return { title: "Provider not found" };
-  const p = data.provider;
-  return {
-    title: `${p.businessName} - ${p.primaryCategory?.name ?? "Services"} in ${p.locality ?? p.city}`,
-    description: p.description?.slice(0, 155),
-  };
+  const provider = await getProvider(slug);
+  if (!provider) return { title: "Provider not found", robots: { index: false, follow: true } };
+  const p = provider;
+  const place = p.locality ? `${p.locality}, ${p.city}` : p.city;
+  const service = p.primaryCategory?.name ?? "Local services";
+  const rating = p.totalReviews > 0 ? `Rated ${p.avgRating.toFixed(1)}/5 from ${p.totalReviews} reviews. ` : "";
+  const about = (p.description || p.shortDescription || "").replace(/\s+/g, " ").trim();
+  return pageMetadata({
+    title: `${p.businessName}: ${service} in ${place}`,
+    description: clip(`${rating}${about || `${service} in ${place}.`} Call ${p.businessName} directly on DialNFind.`),
+    path: `/providers/${p.slug}`,
+    type: "profile",
+  });
 }
 
 const VERIFICATION_LABEL: Record<string, string> = {
@@ -62,21 +89,27 @@ const VERIFICATION_LABEL: Record<string, string> = {
 
 export default async function ProviderPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
-  const data = await apiOrNull<{ provider: ProviderDetail }>(`/providers/${slug}`);
-  if (!data) notFound();
-  const p = data.provider;
-  const [reviews, { results: similar }, user, { config }] = await Promise.all([
-    api<{ reviews: Review[] } & Paged>(`/providers/${slug}/reviews`, { query: { pageSize: 6 } }),
-    api<{ results: ProviderCardType[] }>(`/providers/${slug}/similar`),
-    getSession(),
-    api<{ config: { min_review_length: number } }>("/app-config", { auth: false }),
+  const p = await getProvider(slug);
+  if (!p) notFound();
+  const [reviews, { results: similar }, { config }] = await Promise.all([
+    publicApi<{ reviews: Review[] } & Paged>(`/providers/${encodeURIComponent(slug)}/reviews`, { query: { pageSize: 6 }, revalidate: PROVIDER_TTL, tags: tagsFor(slug) }),
+    publicApi<{ results: ProviderCardType[] }>(`/providers/${encodeURIComponent(slug)}/similar`, { revalidate: PROVIDER_TTL, tags: tagsFor(slug) }),
+    publicApi<{ config: { min_review_length: number } }>("/app-config", { revalidate: 600, tags: ["app-config"] }),
   ]);
 
   const tone = categoryTone(p.primaryCategory?.slug);
   const maxBreakdown = Math.max(1, ...p.ratingBreakdown.map((b) => b.count));
   const directions = `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
 
+  const crumbs = [
+    { name: "Home", path: "/" },
+    ...(p.primaryCategory ? [{ name: p.primaryCategory.name, path: `/services/${p.primaryCategory.slug}` }] : []),
+    { name: p.businessName, path: `/providers/${p.slug}` },
+  ];
+
   return (
+    <ProviderViewerState slug={p.slug}>
+    <JsonLd data={[providerJsonLd(p, reviews.reviews), breadcrumbJsonLd(crumbs)]} />
     <div className="pb-8">
       {/* Cover */}
       <div className="relative h-40 overflow-hidden md:h-56" style={{ background: `linear-gradient(120deg, ${tone.hex}, oklch(0.27 0.09 268))` }}>
@@ -101,7 +134,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
                 <ChevronRight className="size-3.5" />
               </>
             )}
-            <span className="truncate text-foreground">{p.businessName}</span>
+            <span aria-current="page" className="truncate text-foreground">{p.businessName}</span>
           </nav>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
             <ProviderAvatar name={p.businessName} logoUrl={p.logoUrl} categorySlug={p.primaryCategory?.slug} size="xl" className="-mt-2 ring-4 ring-card" />
@@ -149,7 +182,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
             <div className="flex w-full flex-col gap-3 lg:w-72">
               <ContactButtons provider={p} source="profile" categorySlug={p.primaryCategory?.slug} size="lg" layout="stack" />
               <div className="flex items-center justify-center gap-2">
-                <FavoriteButton providerId={p.id} initial={p.isFavorite} withLabel />
+                <ProfileFavoriteButton providerId={p.id} />
                 <ShareButton title={p.businessName} />
                 <Button asChild variant="outline" size="icon" className="rounded-full" aria-label="Get directions">
                   <a href={directions} target="_blank" rel="noopener noreferrer">
@@ -230,7 +263,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
               </Section>
             )}
 
-            <Section title="Ratings and reviews" id="reviews" action={<ReviewForm providerId={p.id} providerName={p.businessName} signedIn={!!user} existing={p.myReview} minLength={config.min_review_length} />}>
+            <Section title="Ratings and reviews" id="reviews" action={<ProfileReviewForm providerId={p.id} providerName={p.businessName} slug={p.slug} minLength={config.min_review_length} />}>
               {p.totalReviews > 0 && (
                 <div className="mb-8 grid gap-6 rounded-2xl bg-muted/60 p-5 sm:grid-cols-[10rem_1fr]">
                   <div className="text-center sm:border-r sm:pr-6">
@@ -349,6 +382,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
         )}
       </div>
     </div>
+    </ProviderViewerState>
   );
 }
 

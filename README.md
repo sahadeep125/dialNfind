@@ -39,6 +39,25 @@ pnpm --filter server db:seed
 pnpm dev
 ```
 
+## Checks
+
+| App | Commands |
+| --- | --- |
+| `web/` | `pnpm --filter web typecheck`, `lint`, `test` (Vitest), `test:e2e` (Playwright; needs `pnpm dev` running, run `pnpm --filter web exec playwright install chromium` once) |
+| `mobile/` | `npx tsc --noEmit`, `npx expo lint`, `npx jest` (unit tests always; the app walkthrough only when the API runs on :4000) |
+
+## Website settings for production
+
+Besides `API_URL`, set these in `web/.env.local` (see `web/.env.example`):
+
+- `NEXT_PUBLIC_SITE_URL`: the public address, used for canonical links, the sitemap and social previews (defaults to `https://dialnfind.com`).
+- `NEXT_PUBLIC_IMAGE_ORIGINS`: the API's upload origin and any image CDN, so Next can resize those images.
+- `ANDROID_SHA256_CERT_FINGERPRINTS` (and `APPLE_TEAM_ID` if it changes): let links to the site open the mobile app.
+- `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`: error reporting (optional).
+- `GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_OFFICE_ADDRESS`, `NEXT_PUBLIC_OFFICE_REGION`: optional.
+
+Support email, phone and hours, and links to published terms and privacy pages, come from the admin console (Settings).
+
 `pnpm --filter server db:reset` drops and reseeds everything. `pnpm --filter server rank` recalculates ranking scores by hand; the nightly job does the same (see Scheduled jobs).
 
 ## Demo accounts

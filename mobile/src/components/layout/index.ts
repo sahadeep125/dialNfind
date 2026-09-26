@@ -9,3 +9,4 @@ export { ToastPortal } from "./ToastPortal";
 export { SessionRefresher } from "./SessionRefresher";
 export { OfflineBanner } from "./OfflineBanner";
 export { PushRegistrar } from "./PushRegistrar";
+export { RatingPrompter } from "./RatingPrompter";

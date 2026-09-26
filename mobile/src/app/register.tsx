@@ -19,7 +19,7 @@ import { useTheme } from "@/hooks/useTheme";
 import type { SessionUser } from "@/types";
 import { useToast } from "@/hooks/useToast";
 import { ApiError, errorMessage } from "@/services/api";
-import { openUrl } from "@/services/links";
+import { legalUrl, openUrl } from "@/services/links";
 import {
   isValid,
   validateEmail,
@@ -183,7 +183,7 @@ export default function RegisterScreen() {
             <AppText
               variant="caption"
               tone="brand"
-              onPress={config?.terms_url ? () => void openLegal(config.terms_url) : undefined}
+              onPress={() => void openLegal(legalUrl("terms", config?.terms_url))}
             >
               Terms of service
             </AppText>{" "}
@@ -191,7 +191,7 @@ export default function RegisterScreen() {
             <AppText
               variant="caption"
               tone="brand"
-              onPress={config?.privacy_url ? () => void openLegal(config.privacy_url) : undefined}
+              onPress={() => void openLegal(legalUrl("privacy", config?.privacy_url))}
             >
               Privacy policy
             </AppText>

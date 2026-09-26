@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, PenLine, Star } from "lucide-react";
@@ -14,6 +14,7 @@ import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { PhotoListUpload } from "@/components/file-upload";
 import { clientApi, ClientApiError } from "@/lib/client";
 import { cn } from "@/lib/utils";
+import { refreshProvider } from "@/app/providers/[slug]/actions";
 
 const LABELS = ["", "Poor", "Below average", "Good", "Very good", "Excellent"];
 const MAX_PHOTOS = 6;
@@ -34,12 +35,15 @@ type Values = z.infer<ReturnType<typeof makeSchema>>;
 export function ReviewForm({
   providerId,
   providerName,
+  slug,
   signedIn,
   existing,
   minLength,
 }: {
   providerId: number;
   providerName: string;
+  /** The profile's slug, so its cached page is rebuilt after saving. */
+  slug?: string;
   signedIn: boolean;
   minLength: number;
   existing: { id: number; rating: number; reviewText: string | null; photos?: string[] } | null;
@@ -51,17 +55,19 @@ export function ReviewForm({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const defaults: Values = { rating: existing?.rating ?? 0, reviewText: existing?.reviewText ?? "", photos: existing?.photos ?? [] };
-  const { register, control, handleSubmit, reset, watch, formState } = useForm<Values>({ resolver: zodResolver(makeSchema(minLength)), mode: "onTouched", defaultValues: defaults });
+  const { register, control, handleSubmit, reset, formState } = useForm<Values>({ resolver: zodResolver(makeSchema(minLength)), mode: "onTouched", defaultValues: defaults });
   const { errors, isSubmitting } = formState;
-  const rating = watch("rating");
-  const textLength = watch("reviewText").length;
+  const rating = useWatch({ control, name: "rating" });
+  const textLength = useWatch({ control, name: "reviewText" }).length;
 
-  useEffect(() => {
-    if (open) {
+  // Each time the dialog opens it starts from the saved review.
+  const onOpenChange = (next: boolean) => {
+    if (next) {
       reset(defaults);
       setError(null);
     }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+    setOpen(next);
+  };
 
   if (!signedIn) {
     return (
@@ -79,6 +85,7 @@ export function ReviewForm({
       else await clientApi("/reviews", { method: "POST", body: JSON.stringify({ providerId, ...body }) });
       toast.success(existing ? "Review updated" : "Thanks for sharing your experience");
       setOpen(false);
+      if (slug) await refreshProvider(slug);
       router.refresh();
     } catch (err) {
       setError(err instanceof ClientApiError ? err.message : "Could not save your review");
@@ -88,7 +95,7 @@ export function ReviewForm({
   const shown = hover || rating;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <PenLine /> {existing ? "Edit your review" : "Write a review"}

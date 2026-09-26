@@ -1,14 +1,28 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { Clock, Headphones, LifeBuoy, Mail, MapPin, Phone } from "lucide-react";
-import { getSession } from "@/lib/session";
-import { SUPPORT_EMAIL, SUPPORT_PHONE } from "@/lib/config";
-import { formatPhone } from "@/lib/format";
+import { getAppConfig } from "@/lib/app-config";
+import { OFFICE_ADDRESS } from "@/lib/config";
+import { formatPhone, telHref } from "@/lib/format";
 import { ContactForm } from "@/components/site/contact-form";
 
-export const metadata: Metadata = { title: "Contact us" };
+export const metadata: Metadata = pageMetadata({
+  title: "Contact us",
+  description: "Questions, feedback or a problem with a listing? Contact the DialNFind support team and we will get back to you.",
+  path: "/contact",
+});
+
+export const revalidate = 600;
 
 export default async function ContactPage() {
-  const user = await getSession();
+  const config = await getAppConfig();
+  // Only the details the team has filled in under Settings are shown.
+  const cards = [
+    config.support_email && { icon: Mail, title: "Email", body: config.support_email, href: `mailto:${config.support_email}` },
+    config.support_phone && { icon: Phone, title: "Phone", body: formatPhone(config.support_phone), href: telHref(config.support_phone) },
+    config.support_hours && { icon: Clock, title: "Support hours", body: config.support_hours },
+    OFFICE_ADDRESS && { icon: MapPin, title: "Office", body: OFFICE_ADDRESS },
+  ].filter((c): c is { icon: typeof Mail; title: string; body: string; href?: string } => !!c);
   return (
     <div className="container-page py-12 md:py-16">
       <div className="max-w-2xl">
@@ -18,15 +32,10 @@ export default async function ContactPage() {
       </div>
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_22rem]">
         <div className="rounded-3xl border bg-card p-6 shadow-[var(--shadow-soft)] md:p-8">
-          <ContactForm defaultName={user?.name} defaultEmail={user?.email} signedIn={!!user} />
+          <ContactForm />
         </div>
         <aside className="space-y-4">
-          {[
-            { icon: Mail, title: "Email", body: SUPPORT_EMAIL, href: `mailto:${SUPPORT_EMAIL}` },
-            { icon: Phone, title: "Phone", body: formatPhone(SUPPORT_PHONE), href: `tel:${SUPPORT_PHONE}` },
-            { icon: Clock, title: "Support hours", body: "Monday to Saturday, 9 AM to 7 PM IST" },
-            { icon: MapPin, title: "Office", body: "2nd Floor, City Centre, Matigara, Siliguri 734010" },
-          ].map((c) => (
+          {cards.map((c) => (
             <div key={c.title} className="flex gap-4 rounded-2xl border bg-card p-5">
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
                 <c.icon className="size-5" />
@@ -53,7 +62,7 @@ export default async function ContactPage() {
               <li>To report a wrong number, use Report on the listing page.</li>
             </ul>
             <div className="mt-4 flex items-center gap-2 text-sm">
-              <Headphones className="size-4" /> Average reply time: under 6 hours
+              <Headphones className="size-4" aria-hidden /> We usually reply within one working day
             </div>
           </div>
         </aside>

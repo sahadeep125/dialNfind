@@ -1,20 +1,19 @@
 import Link from "next/link";
 import { Store } from "lucide-react";
-import { getSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Logo } from "./logo";
-import { UserMenu } from "./user-menu";
+import { HeaderAccount } from "./header-account";
 import { MobileNav } from "./mobile-nav";
 
 export const NAV_LINKS = [
   { href: "/services", label: "Services" },
   { href: "/search", label: "Search" },
   { href: "/about", label: "About" },
+  { href: "/help", label: "Help" },
   { href: "/contact", label: "Contact" },
 ];
 
-export async function SiteHeader() {
-  const user = await getSession();
+export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-lg">
       <div className="container-page flex h-16 items-center gap-6">
@@ -33,19 +32,8 @@ export async function SiteHeader() {
               List your business
             </Link>
           </Button>
-          {user ? (
-            <UserMenu user={{ name: user.name, email: user.email, role: user.role, profilePhotoUrl: user.profilePhotoUrl }} />
-          ) : (
-            <div className="hidden items-center gap-2 sm:flex">
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/login">Log in</Link>
-              </Button>
-              <Button asChild size="sm">
-                <Link href="/register">Sign up</Link>
-              </Button>
-            </div>
-          )}
-          <MobileNav signedIn={!!user} />
+          <HeaderAccount />
+          <MobileNav />
         </div>
       </div>
     </header>

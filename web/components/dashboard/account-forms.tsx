@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { FileUpload } from "@/components/file-upload";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { clientApi, ClientApiError } from "@/lib/client";
 import { normalizePhone, optionalPhone, password, personName, pincode } from "@/lib/validation";
 import type { Address } from "@/lib/types";
@@ -200,7 +201,6 @@ export function AddressManager({ addresses }: { addresses: Address[] }) {
   }
 
   async function remove(id: number) {
-    if (!confirm("Remove this address?")) return;
     try {
       await clientApi(`/me/addresses/${id}`, { method: "DELETE" });
       toast.success("Address removed");
@@ -231,9 +231,17 @@ export function AddressManager({ addresses }: { addresses: Address[] }) {
                     <Star /> Make default
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => remove(a.id)}>
-                  <Trash2 /> Remove
-                </Button>
+                <ConfirmDialog
+                  title="Remove this address?"
+                  description={`${a.label || "This address"} will be removed from your saved addresses.`}
+                  confirmLabel="Remove"
+                  onConfirm={() => remove(a.id)}
+                  trigger={
+                    <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive">
+                      <Trash2 /> Remove
+                    </Button>
+                  }
+                />
               </div>
             </div>
           </div>
@@ -295,6 +303,7 @@ export function AddressManager({ addresses }: { addresses: Address[] }) {
 
 /** Permanently deletes the account after a password check (accounts made with Google or Apple have none). */
 export function DeleteAccountForm({ hasPassword }: { hasPassword: boolean }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pw, setPw] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -312,7 +321,8 @@ export function DeleteAccountForm({ hasPassword }: { hasPassword: boolean }) {
       // The API has already ended the session; this clears the cookie.
       await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
       toast.success("Your account has been deleted");
-      window.location.assign("/");
+      router.push("/");
+      router.refresh();
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);

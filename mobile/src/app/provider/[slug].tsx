@@ -13,6 +13,7 @@ import {
   AppText,
 } from "@/components/design-system";
 import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
+import { PhotoViewer, type ViewerPhoto } from "@/components/photos/PhotoViewer";
 import {
   ContactButtons,
   DetailSection,
@@ -46,6 +47,7 @@ export default function ProviderScreen() {
   const reviews = useProviderReviews(slug);
   const similar = useSimilarProviders(slug);
   const [reporting, setReporting] = useState<ReportTarget | null>(null);
+  const [viewer, setViewer] = useState<{ photos: ViewerPhoto[]; index: number } | null>(null);
   const reviewList = useMemo(
     () => reviews.data?.pages.flatMap((page) => page.reviews) ?? [],
     [reviews.data],
@@ -168,7 +170,12 @@ export default function ProviderScreen() {
 
           {p.portfolio.length ? (
             <DetailSection title="Past work">
-              <PortfolioStrip items={p.portfolio} />
+              <PortfolioStrip
+                items={p.portfolio}
+                onOpen={(index) =>
+                  setViewer({ photos: p.portfolio.map((i) => ({ uri: i.imageUrl, caption: i.title })), index })
+                }
+              />
             </DetailSection>
           ) : null}
 
@@ -229,6 +236,12 @@ export default function ProviderScreen() {
                   onReport={(review) =>
                     setReporting({ kind: "review", id: review.id, name: review.author.name })
                   }
+                  onOpenPhoto={(review, index) =>
+                    setViewer({
+                      photos: review.photos.map((uri) => ({ uri, caption: `From ${review.author.name}` })),
+                      index,
+                    })
+                  }
                 />
               </View>
             ))}
@@ -274,6 +287,7 @@ export default function ProviderScreen() {
         </View>
       </ScrollView>
       <ReportSheet target={reporting} onClose={() => setReporting(null)} />
+      <PhotoViewer photos={viewer?.photos ?? []} index={viewer?.index ?? null} onClose={() => setViewer(null)} />
       <View
         style={[
           styles.bottomBar,

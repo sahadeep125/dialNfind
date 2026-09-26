@@ -63,6 +63,12 @@ export function CategoryIcon({ slug, className, iconClassName }: { slug?: string
   );
 }
 
+/** Just the category's icon, with no tile around it. */
+export function CategoryGlyph({ slug, className, strokeWidth }: { slug?: string | null; className?: string; strokeWidth?: number }) {
+  const Icon = (slug && ICONS[slug]) || Briefcase;
+  return <Icon className={className} strokeWidth={strokeWidth} aria-hidden />;
+}
+
 export function categoryIconComponent(slug?: string | null): LucideIcon {
   return (slug && ICONS[slug]) || Briefcase;
 }

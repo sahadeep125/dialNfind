@@ -29,6 +29,6 @@ function forbidden() {
 }
 
 /** Reads an API response body, or null when it is not JSON (a proxy error page, for example). */
-export async function readJson(res: Response): Promise<any> {
+export async function readJson<T = unknown>(res: Response): Promise<T | null> {
   return res.json().catch(() => null);
 }

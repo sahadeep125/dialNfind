@@ -41,14 +41,22 @@ meRouter.get("/overview", async (req, res) => {
 
 // Favorites -----------------------------------------------------------------
 
+/** GET /me/favorites — every favorite, or one page of them when `page` is given. */
 meRouter.get("/favorites", async (req, res) => {
   const userId = currentUser(req).id;
-  const favorites = await prisma.favorite.findMany({
-    where: { userId, provider: { status: "active" } },
-    orderBy: { createdAt: "desc" },
-    include: { provider: { include: providerCardInclude } },
-  });
-  res.json({ results: favorites.map((f) => ({ ...toProviderCard(f.provider, { isFavorite: true }), favoritedAt: f.createdAt })) });
+  const where = { userId, provider: { status: "active" as const } };
+  const paged = req.query.page !== undefined ? parse(paginationSchema, req.query) : null;
+  const [favorites, total] = await Promise.all([
+    prisma.favorite.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: { provider: { include: providerCardInclude } },
+      ...(paged ? { skip: (paged.page - 1) * paged.pageSize, take: paged.pageSize } : {}),
+    }),
+    paged ? prisma.favorite.count({ where }) : null,
+  ]);
+  const results = favorites.map((f) => ({ ...toProviderCard(f.provider, { isFavorite: true }), favoritedAt: f.createdAt }));
+  res.json(paged ? { results, ...pageMeta(paged.page, paged.pageSize, total ?? 0) } : { results });
 });
 
 meRouter.put("/favorites/:providerId", async (req, res) => {

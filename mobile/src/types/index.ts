@@ -128,6 +128,8 @@ export interface Paged {
 
 export interface SearchResponse extends Paged {
   results: ProviderCard[];
+  /** The radius the API searched, in km. */
+  radiusKm: number;
   resolved: {
     category: { id: number; name: string; slug: string } | null;
     subcategory: { id: number; name: string; slug: string } | null;
@@ -140,7 +142,7 @@ export interface LocationOption {
   city: string;
   state: string;
   /** "place" comes from the map search: a real place with no providers listed yet. */
-  kind: "city" | "area" | "place" | "current";
+  kind: "city" | "area" | "place" | "current" | "saved";
   latitude: number;
   longitude: number;
   providerCount?: number;
@@ -211,6 +213,8 @@ export interface SearchFilters {
   openNow: boolean;
   verified: boolean;
   minRating?: number;
+  /** Km around the chosen location; undefined uses the default set in the admin console. */
+  radiusKm?: number;
 }
 
 export type ThemePreference = "system" | "light" | "dark";

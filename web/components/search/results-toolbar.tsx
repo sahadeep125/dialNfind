@@ -26,22 +26,21 @@ export function ResultsToolbar({ categories, lockedCategory, defaultRadius }: { 
           <SelectItem value="reviews">Sort: Most reviewed</SelectItem>
         </SelectContent>
       </Select>
-      <div className="ml-auto inline-flex rounded-xl bg-muted p-1 sm:ml-0" role="tablist" aria-label="View">
+      <div className="ml-auto inline-flex rounded-xl bg-muted p-1 sm:ml-0" role="group" aria-label="Show results as">
         {(["list", "map"] as const).map((v) => {
           const Icon = v === "list" ? List : MapIcon;
           return (
             <button
               key={v}
               type="button"
-              role="tab"
-              aria-selected={view === v}
+              aria-pressed={view === v}
               onClick={() => update({ view: v === "list" ? null : "map" }, { resetPage: false })}
               className={cn(
                 "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-sm font-medium capitalize transition-all",
                 view === v ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className="size-4" /> {v}
+              <Icon className="size-4" aria-hidden /> {v}
             </button>
           );
         })}

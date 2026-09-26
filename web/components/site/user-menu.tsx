@@ -13,11 +13,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { initials } from "@/lib/format";
+import { useSession } from "./session-provider";
 
 export function UserMenu({ user }: { user: { name: string; email: string; role: string; profilePhotoUrl?: string | null } }) {
   const router = useRouter();
+  const { refresh } = useSession();
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
+    await refresh();
     router.push("/");
     router.refresh();
   }

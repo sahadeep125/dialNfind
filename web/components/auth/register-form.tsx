@@ -104,7 +104,17 @@ export function RegisterForm() {
                 />
               )}
             />
-            <span>I agree to the terms of use and understand that provider phone numbers are shown publicly with their consent.</span>
+            <span>
+              I agree to the{" "}
+              <Link href="/terms" target="_blank" className="font-medium text-primary hover:underline">
+                terms of use
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" target="_blank" className="font-medium text-primary hover:underline">
+                privacy policy
+              </Link>
+              , and understand that provider phone numbers are shown publicly with their consent.
+            </span>
           </label>
           {errors.acceptTerms && (
             <p id="acceptTerms-error" role="alert" className="pl-7 text-xs font-medium text-destructive">

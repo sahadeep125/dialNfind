@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
+import { useSession } from "@/components/site/session-provider";
 import { clientApi, ClientApiError } from "@/lib/client";
 import { email, normalizePhone, optionalPhone } from "@/lib/validation";
 
@@ -25,13 +26,24 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 
-export function ContactForm({ defaultName = "", defaultEmail = "", signedIn = false }: { defaultName?: string; defaultEmail?: string; signedIn?: boolean }) {
+export function ContactForm() {
+  const { user } = useSession();
+  const signedIn = !!user;
+  const defaultName = user?.name ?? "";
+  const defaultEmail = user?.email ?? "";
   const [sent, setSent] = useState<{ id: number; reference: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const defaults: Values = { name: defaultName, email: defaultEmail, phone: "", subject: TOPICS[0], message: "" };
-  const { register, control, handleSubmit, reset, watch, formState } = useForm<Values>({ resolver: zodResolver(schema), mode: "onTouched", defaultValues: defaults });
+  const { register, control, handleSubmit, reset, formState, getValues, setValue } = useForm<Values>({ resolver: zodResolver(schema), mode: "onTouched", defaultValues: defaults });
   const { errors, isSubmitting } = formState;
-  const messageLength = watch("message").length;
+  const messageLength = useWatch({ control, name: "message" }).length;
+
+  // The page is cached for everyone; fill in the signed-in person's name and email once they are known.
+  useEffect(() => {
+    if (!user) return;
+    if (!getValues("name")) setValue("name", user.name);
+    if (!getValues("email")) setValue("email", user.email);
+  }, [user, getValues, setValue]);
 
   const onSubmit = handleSubmit(async (v) => {
     setError(null);

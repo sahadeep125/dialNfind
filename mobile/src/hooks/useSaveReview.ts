@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
+import { askAfterReview } from "@/services/reviewPrompt";
 
 interface SaveReviewInput {
   providerId: number;
@@ -25,7 +26,9 @@ export function useSaveReview(): UseMutationResult<void, Error, SaveReviewInput>
       if (reviewId) await api(`/reviews/${reviewId}`, { method: "PATCH", body });
       else await api("/reviews", { method: "POST", body: { ...body, providerId } });
     },
-    onSuccess: () => {
+    onSuccess: (_data, input) => {
+      // Only a new review is a moment to ask; editing one is not.
+      if (!input.reviewId) void askAfterReview().catch((e: unknown) => console.error("[rating] Prompt failed", e));
       void qc.invalidateQueries({
         predicate: (q) =>
           ["my-reviews", "provider", "provider-reviews"].includes(String(q.queryKey[0])),

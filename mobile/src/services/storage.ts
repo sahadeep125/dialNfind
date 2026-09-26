@@ -41,6 +41,7 @@ export const STORAGE_KEYS = {
   location: "prefs.location",
   recentSearches: "search.recent",
   pushToken: "push.token",
+  reviewPrompt: "prompt.review",
 } as const;
 
 const SECURE_TOKEN_KEY = "dialnfind.authToken";

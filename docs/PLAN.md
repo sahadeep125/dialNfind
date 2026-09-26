@@ -53,21 +53,25 @@ Small additions the pages need, which the brief does not cover:
 
 ## 2. APIs (server, `/api/v1`)
 
-Auth is email + password with JWT bearer tokens tied to a revocable `auth_sessions` row, plus email
-verification and password reset links sent over SMTP. There is no social sign-in.
+Auth is email + password, or Google / Apple sign-in (see [social-login.md](social-login.md)), with
+JWT bearer tokens tied to a revocable `auth_sessions` row, plus email verification and password
+reset links sent over SMTP.
 
-- **auth**: register, login, logout, me, update profile, change password, verify email, resend verification, forgot and reset password
+- **auth**: register, login, Google and Apple sign-in, logout (also forgets the device's push token), me, update profile, change or set password, verify email, resend verification, forgot and reset password, delete account (customers and providers)
 - **categories**: list (with subcategories and counts), get by slug with attributes; super_admin CRUD with audit logging
 - **search**: provider search (text, category, lat/lng + radius, min rating, open now, verified, sort by relevance/distance/rating/reviews), autocomplete suggestions, location lookup; every search logged to `search_queries`
-- **providers**: public profile by slug (hours, open-now, areas, services, portfolio, badges, rating breakdown), reviews (paged), similar providers, profile-view tracking
+- **providers**: public profile by slug (hours with open and close times, open-now, areas, services, portfolio, badges, rating breakdown), reviews (paged), similar providers, report a listing
+  - `GET /providers/sitemap?page=` lists every active listing's slug and last change for the website's sitemap
+  - profile views: `GET /providers/:slug?view=false` skips counting (the website renders profiles from a shared cache) and `POST /providers/:slug/visit` counts one view per visit and returns the visitor's favorite and review
 - **leads**: create call/WhatsApp lead (guest or user) with optional answers to the category's lead questions, "did they respond?" follow-up; a contact in a promoted category counts as a sponsored click
 - **reviews**: create, edit own, delete own; provider reply; report
-- **me**: favorites, addresses, my reviews, recent contacts, notifications (with unread count)
+- **me**: overview, favorites (all, or paged with `page`), addresses, my reviews, recent contacts (paged), notifications (with unread count, mark some or all read), push tokens
 - **provider (role=provider, own rows only)**: onboarding (create listing), claim search + claim with an ownership document, profile, hours, service areas, services, portfolio, verification submissions, service details (category attribute values, asked once per category), leads, reviews + reply, dashboard stats, plans, plan and campaign requests (they open billing tickets; there is no online payment), campaigns (pause, resume), lead reports
 - **support (signed in)**: my tickets, open a ticket, reply, close
 - **admin (super_admin, or admin with the section on their role)**: me and permissions, team and roles, support tickets (filter, assign, reply, internal notes), overview and analytics, leads, providers (create, CSV import, edit, owner, delete, bulk status) and detail, change plan with an offline payment, claims, verifications, reviews moderation (single and bulk), report flags (resolve, dismiss), users (detail, suspend, sign out, anonymise, bulk), lead disputes, activity log, search insights, badges (CRUD, award, revoke), subscription plans, transactions (record, refund), subscriptions, sponsored listings, CSV exports, announcements, settings; subcategory and attribute edit/delete under **categories**
-- **notifications** are created for new leads and reviews, review replies, claim and verification decisions, listing status changes, badges and plan changes
-- **contact**, **plans**, **health**
+- **notifications** are created for new leads and reviews, review replies, support replies, claim and verification decisions, listing status changes, badges and plan changes, and are pushed to every device the person registered (Expo push, `server/src/services/push.ts`)
+- **contact**, **plans**, **stats**, **app-config** (support contacts and legal links from Settings), **health**
+- **billing**: Razorpay subscriptions on the web and App Store / Google Play through RevenueCat for providers; see [billing.md](billing.md)
 
 Ranking: `ranking_score` = Bayesian-smoothed rating + review volume + profile completeness +
 verification + response signal + a small plan boost. `self_reported_completed_jobs` is excluded,
@@ -86,9 +90,11 @@ services with prices, reviews with text, badges, plans, and demo logins:
 
 ## 4. Web (Next.js)
 
-Pages: Home, Listing (`/services/[category]`), Search (`/search`), Provider detail
-(`/providers/[slug]`), Contact, About, Login, Register, Dashboard, Account (profile + addresses),
-Favorites, My reviews, Claim business (hands off to the provider app).
+Pages: Home, All services, Listing (`/services/[category]`, with `?sub=` pages per service), Search
+(`/search`), Provider detail (`/providers/[slug]`), Contact, About, Help (FAQ), Terms, Privacy,
+Login, Register, Forgot and reset password, Dashboard (overview, favorites, recent contacts, my
+reviews, notifications, help and support tickets, account with addresses, password and account
+deletion), Claim business (hands off to the provider app).
 
 Design: modern SaaS + local marketplace. Inter type, spacious layout, rounded cards, subtle
 shadows, one teal-indigo primary palette, lucide icons, hand-drawn SVG illustrations, no emoji,
@@ -96,6 +102,32 @@ mobile-first. Map/list toggle on listing and search uses Leaflet with OpenStreet
 
 Auth: Next route handlers exchange credentials with the server and keep the JWT in an httpOnly
 cookie; a same-origin proxy route attaches it to client-side calls.
+
+Security: the auth routes and the proxy refuse cross-site requests (Origin and Sec-Fetch-Site
+checks, `lib/same-origin.ts`); every call to the API forwards the visitor's IP so per-IP rate
+limits apply per visitor (`lib/client-ip.ts`); sign-in redirects only go to same-site paths
+(`lib/safe-redirect.ts`); security headers (HSTS, frame blocking, CSP frame-ancestors) are set in
+`next.config.ts`; the image optimizer only fetches from `NEXT_PUBLIC_IMAGE_ORIGINS`.
+
+Caching: public pages (home, services, categories' metadata, provider profiles, about, claim, help,
+legal) are the same for everyone and served from Next's cache (`publicApi` in `lib/api.ts`,
+revalidated every 5 to 60 minutes). Everything personal loads in the browser: the header asks
+`/api/session`, a profile asks `POST /providers/:slug/visit` for the favorite and the visitor's
+review, and the home page loads providers near the saved location. Saving a review rebuilds that
+profile at once (`app/providers/[slug]/actions.ts`). Dashboard pages render per request.
+
+SEO: every public page has its own title, description, canonical URL and social preview
+(`lib/seo.ts`); generated Open Graph images for the site and each provider; JSON-LD for the
+organisation and site search, each business (`LocalBusiness` or a more specific type, with address,
+geo, hours, price range, rating and reviews), breadcrumbs, category result lists and the FAQ
+(`lib/structured-data.ts`); `robots.txt`, a sitemap index at `/sitemap.xml` over
+`/sitemaps/sitemap/<n>.xml`, and a web app manifest. Search results, sign-in pages and the dashboard
+are `noindex`. `/.well-known/apple-app-site-association` and `assetlinks.json` let links to profiles
+and categories open the mobile app.
+
+Quality: `pnpm --filter web lint` (ESLint with Next's core-web-vitals and TypeScript rules),
+`pnpm --filter web test` (Vitest unit tests) and `pnpm --filter web test:e2e` (Playwright smoke
+tests against a running site and API). Errors go to Sentry when `NEXT_PUBLIC_SENTRY_DSN` is set.
 
 ## 5. Provider (React + Vite)
 
@@ -118,26 +150,33 @@ the member's role allows, and the API checks the same permission on every `/admi
 ## 7. Mobile (Expo)
 
 Customer app with the website's listings; guests can browse, search and call. Splash, then Home
-with a profile button (sign in for guests). Tabs: Home, Favorites, My reviews, Settings. Also
-Search, Category, Provider profile, Write review, Sign in, Create account, Profile, Help. Theme
-tokens drive both the `App*` design-system components and the NativeWind Tailwind config. The API
-gained `GET /app-config` (support contacts and legal links from Settings) and `DELETE /auth/me`
-(customer account deletion) for it. Standalone npm project in `mobile/`, outside the workspace.
+with notifications and profile buttons (sign in for guests). Tabs: Home, Favorites, My reviews,
+Settings. Also All services, Search (rating and distance filters), Category, Provider profile
+(share, report, open in Maps, full-screen photos, similar providers), Write review (with photos),
+Sign in, Create account, Forgot password, Profile (photo and password), Saved addresses (also
+offered as search locations), Recent contacts ("did they respond?"), Notifications, Support
+requests and Help. Push notifications for review and support replies; links to the website open
+the matching screen (universal links / app links, `src/utils/links.ts`). The session token is kept
+in the Keychain / Keystore. A store rating prompt appears after a posted review or a few calls.
+Crash reporting through Sentry when `EXPO_PUBLIC_SENTRY_DSN` is set. English only for now.
+Theme tokens drive both the `App*` design-system components and the NativeWind Tailwind config.
+Standalone npm project in `mobile/`, outside the workspace; `eas.json` defines development,
+preview and production builds.
 
 ## 8. Provider mobile (Expo)
 
 DialNFind Business: the provider portal as a native app on the same `/provider` endpoints.
 Sign in, then setup (new listing or claim) or the tabs Dashboard, Leads, Reviews, More. Listing
 editors (profile, services, hours, areas, portfolio, verification), Promote, Plan, Support,
-Notifications, Help and legal pages. Account closure goes through a support ticket because
-`DELETE /auth/me` refuses providers. Standalone npm project in `provider-mobile/`.
+Notifications, Help and legal pages, push alerts for new leads, and account deletion. Plans can be
+bought in the app through RevenueCat. Standalone npm project in `provider-mobile/`.
 
 ## Not built on purpose
 
-Online payments, SMS, WhatsApp alerts, push notifications, Google/Apple sign-in and analytics
-plugins were removed: plans and promotions are arranged by the team and recorded as offline
-payments, and email is the only outgoing channel. Enforcing plan limits (lead access, analytics) is
-planned for later.
+SMS and WhatsApp alerts: email and push notifications are the outgoing channels. Product analytics
+(page and event tracking) is not set up; Sentry covers errors only. The customer app is English
+only; translations are planned for later. Plan limits are enforced by the server
+([billing.md](billing.md)).
 
 File uploads are live: images are stored on the API server's disk and documents in a private folder served only through signed links, behind a `Storage` interface
 (`server/src/storage`) so an S3 implementation can replace it without touching routes or apps.

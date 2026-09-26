@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Eye, Flag, Scale, Search, ShieldCheck, Star, Store, UserCheck } from "lucide-react";
-import { api } from "@/lib/api";
+import { publicApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { BusinessIllustration, TrustIllustration } from "@/components/illustrations/spots";
 import { HeroIllustration } from "@/components/illustrations/hero-illustration";
 
-export const metadata: Metadata = { title: "About DialNFind" };
+export const revalidate = 600;
+
+export const metadata: Metadata = pageMetadata({
+  title: "About DialNFind",
+  description: "How DialNFind helps you find trusted local service providers, how listings are verified and ranked, and how businesses get listed for free.",
+  path: "/about",
+});
 
 export default async function AboutPage() {
-  const stats = await api<{ providers: number; categories: number; cities: number; reviews: number }>("/stats");
+  const stats = await publicApi<{ providers: number; categories: number; cities: number; reviews: number }>("/stats", { revalidate: 3600 });
   return (
     <div>
       <section className="container-page grid items-center gap-10 py-14 lg:grid-cols-2 lg:py-20">

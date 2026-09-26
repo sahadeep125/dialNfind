@@ -43,3 +43,12 @@ jest.mock("@react-native-google-signin/google-signin", () => ({
   isSuccessResponse: jest.fn(() => false),
   statusCodes: {},
 }));
+
+// Sentry's native SDK is not available in Jest; monitoring is off without a DSN anyway.
+jest.mock("@sentry/react-native", () => ({
+  init: jest.fn(),
+  wrap: (component) => component,
+  setUser: jest.fn(),
+  captureException: jest.fn(),
+  reactNavigationIntegration: jest.fn(() => ({ registerNavigationContainer: jest.fn() })),
+}));

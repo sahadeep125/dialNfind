@@ -3,8 +3,11 @@ export const PROVIDER_APP_URL = process.env.NEXT_PUBLIC_PROVIDER_APP_URL ?? "htt
 export const TOKEN_COOKIE = "dnf_token";
 export const LOCATION_COOKIE = "dnf_location";
 export const SITE_NAME = "DialNFind";
-export const SUPPORT_EMAIL = "support@dialnfind.com";
-export const SUPPORT_PHONE = "+918001234567";
+/** Public address of this website: canonical links, the sitemap and social previews use it. */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://dialnfind.com").replace(/\/$/, "");
+/** Office shown on the contact page and footer; leave unset to hide it. */
+export const OFFICE_ADDRESS = process.env.NEXT_PUBLIC_OFFICE_ADDRESS ?? "";
+export const OFFICE_REGION = process.env.NEXT_PUBLIC_OFFICE_REGION ?? "";
 /**
  * Map tiles and the credit their licence requires. OpenStreetMap's own tile servers are for light use;
  * set these to a hosted tile service (MapTiler, Stadia, Carto...) before heavy production traffic.

@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
+import { NO_INDEX } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
 import { initials } from "@/lib/format";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
+
+/** Everything under /dashboard is private. */
+export const metadata: Metadata = { robots: NO_INDEX };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireSession("/dashboard");

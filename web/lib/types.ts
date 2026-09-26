@@ -82,7 +82,7 @@ export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
   selfReportedCompletedJobs: number | null;
   memberSince: string;
   is24x7: boolean;
-  hours: { dayOfWeek: number; day: string; label: string; isToday: boolean }[];
+  hours: { dayOfWeek: number; day: string; label: string; openTime: string | null; closeTime: string | null; isToday: boolean }[];
   serviceAreas: { areaName: string; pincode: string | null }[];
   services: {
     id: number;

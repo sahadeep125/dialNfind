@@ -3,12 +3,15 @@ import { api } from "@/lib/api";
 import { requireSession } from "@/lib/session";
 import type { ContactHistoryItem, Paged } from "@/lib/types";
 import { ContactRow } from "@/components/dashboard/contact-row";
+import { Pagination, type SearchParamsRecord } from "@/components/pagination";
 
 export const metadata: Metadata = { title: "Recent contacts" };
 
-export default async function ContactsPage() {
+export default async function ContactsPage({ searchParams }: { searchParams: Promise<SearchParamsRecord> }) {
   await requireSession("/dashboard/contacts");
-  const data = await api<{ contacts: ContactHistoryItem[] } & Paged>("/me/contacts", { query: { pageSize: 30 } });
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
+  const data = await api<{ contacts: ContactHistoryItem[] } & Paged>("/me/contacts", { query: { page, pageSize: 20 } });
   return (
     <div>
       <h1 className="text-2xl font-bold text-brand-deep">Recent contacts</h1>
@@ -20,6 +23,7 @@ export default async function ContactsPage() {
           <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">No contacts yet.</p>
         )}
       </div>
+      <Pagination page={data.page} totalPages={data.totalPages} searchParams={sp} basePath="/dashboard/contacts" />
     </div>
   );
 }

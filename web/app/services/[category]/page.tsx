@@ -2,24 +2,41 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight, MapPin } from "lucide-react";
-import { api, apiOrNull } from "@/lib/api";
+import { api, publicApiOrNull } from "@/lib/api";
 import type { Category, SearchResponse } from "@/lib/types";
 import { CategoryIcon } from "@/components/site/category-icon";
 import { LocationSwitcher } from "@/components/search/location-switcher";
 import { ResultsSection, one, type SearchParamsRecord } from "@/components/search/results-section";
 import { resolveLocation } from "@/lib/location";
+import { JsonLd } from "@/components/json-ld";
+import { clip, pageMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/structured-data";
 
 type Params = { category: string };
 
-export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const { category } = await params;
-  const data = await apiOrNull<{ category: Category }>(`/categories/${category}`, { auth: false });
-  return { title: data ? `${data.category.name} near you` : "Services" };
+const getCategory = (slug: string) =>
+  publicApiOrNull<{ category: Category }>(`/categories/${encodeURIComponent(slug)}`, { revalidate: 600, tags: ["categories"] });
+
+export async function generateMetadata({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<SearchParamsRecord> }): Promise<Metadata> {
+  const [{ category: slug }, sp] = await Promise.all([params, searchParams]);
+  const data = await getCategory(slug);
+  if (!data) return { title: "Services" };
+  const category = data.category;
+  const sub = category.subcategories.find((s) => s.slug === one(sp.sub));
+  const name = sub ? sub.name : category.name;
+  // Each subcategory is its own page; location, filters and paging all point back to it.
+  const path = `/services/${category.slug}${sub ? `?sub=${encodeURIComponent(sub.slug)}` : ""}`;
+  const count = category.providerCount > 0 ? `${category.providerCount.toLocaleString("en-IN")}+ ` : "";
+  return pageMetadata({
+    title: `${name} near you: verified local pros`,
+    description: clip(`Compare ${count}${name.toLowerCase()} providers near you on DialNFind. See ratings, prices and who is open now, then call directly. ${category.description ?? ""}`),
+    path,
+  });
 }
 
 export default async function CategoryListingPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<SearchParamsRecord> }) {
   const [{ category: slug }, sp] = await Promise.all([params, searchParams]);
-  const categoryData = await apiOrNull<{ category: Category }>(`/categories/${slug}`);
+  const categoryData = await getCategory(slug);
   if (!categoryData) notFound();
   const category = categoryData.category;
   const location = await resolveLocation(sp);
@@ -44,8 +61,21 @@ export default async function CategoryListingPage({ params, searchParams }: { pa
 
   const title = sub ? `${sub.name} services` : category.name;
 
+  const crumbs = [
+    { name: "Home", path: "/" },
+    { name: "Services", path: "/services" },
+    { name: category.name, path: `/services/${category.slug}` },
+    ...(sub ? [{ name: sub.name, path: `/services/${category.slug}?sub=${encodeURIComponent(sub.slug)}` }] : []),
+  ];
+
   return (
     <div>
+      <JsonLd
+        data={[
+          breadcrumbJsonLd(crumbs),
+          itemListJsonLd(data.results.map((r) => ({ name: r.businessName, path: `/providers/${r.slug}` }))),
+        ]}
+      />
       <section className="border-b bg-[linear-gradient(180deg,oklch(0.965_0.02_266),transparent)]">
         <div className="container-page py-10">
           <nav className="flex items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb">
@@ -53,7 +83,15 @@ export default async function CategoryListingPage({ params, searchParams }: { pa
             <ChevronRight className="size-3.5" />
             <Link href="/services" className="hover:text-foreground">Services</Link>
             <ChevronRight className="size-3.5" />
-            <span className="text-foreground">{category.name}</span>
+            {sub ? (
+              <>
+                <Link href={`/services/${category.slug}`} className="hover:text-foreground">{category.name}</Link>
+                <ChevronRight className="size-3.5" />
+                <span aria-current="page" className="text-foreground">{sub.name}</span>
+              </>
+            ) : (
+              <span aria-current="page" className="text-foreground">{category.name}</span>
+            )}
           </nav>
           <div className="mt-5 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="flex items-start gap-4">

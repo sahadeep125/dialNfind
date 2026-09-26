@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { api, ApiError } from "./api";
 import { LOCATION_COOKIE, TOKEN_COOKIE } from "./config";
+import { DEFAULT_LOCATION } from "./default-location";
 import type { LocationOption, SessionUser } from "./types";
 
 export const getSession = cache(async (): Promise<SessionUser | null> => {
@@ -24,15 +25,7 @@ export async function requireSession(next: string): Promise<SessionUser> {
   return user;
 }
 
-export const DEFAULT_LOCATION: LocationOption = {
-  label: "Sevoke Road, Siliguri",
-  name: "Sevoke Road",
-  city: "Siliguri",
-  state: "West Bengal",
-  kind: "area",
-  latitude: 26.734,
-  longitude: 88.433,
-};
+export { DEFAULT_LOCATION };
 
 /** The visitor's chosen location, persisted in a cookie so server-rendered pages can use it. */
 export async function getSavedLocation(): Promise<LocationOption> {

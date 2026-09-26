@@ -43,6 +43,22 @@ providersRouter.get("/featured", optionalAuth, async (req, res) => {
   res.json({ results });
 });
 
+const sitemapSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50000).default(45000),
+});
+
+/** GET /providers/sitemap — every active listing's slug and last change, for the website's sitemap. */
+providersRouter.get("/sitemap", async (req, res) => {
+  const q = parse(sitemapSchema, req.query);
+  const where = { status: "active" as const };
+  const [rows, total] = await Promise.all([
+    prisma.provider.findMany({ where, orderBy: { id: "asc" }, skip: (q.page - 1) * q.pageSize, take: q.pageSize, select: { slug: true, updatedAt: true } }),
+    prisma.provider.count({ where }),
+  ]);
+  res.json({ results: rows, ...pageMeta(q.page, q.pageSize, total) });
+});
+
 async function findActiveBySlug(slug: string) {
   const provider = await prisma.provider.findUnique({ where: { slug }, select: { id: true, status: true } });
   if (!provider || provider.status !== "active") throw notFound("Provider not found");
@@ -67,7 +83,8 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
     req.user ? prisma.favorite.findUnique({ where: { userId_providerId: { userId: req.user.id, providerId: id } } }) : null,
     req.user ? prisma.review.findUnique({ where: { providerId_userId: { providerId: id, userId: req.user.id } }, include: { photos: { select: { photoUrl: true } } } }) : null,
   ]);
-  void recordProfileView(id);
+  // The website renders profiles from a shared cache and counts each visit with /visit instead.
+  if (req.query.view !== "false") void recordProfileView(id);
 
   const serviceValues = await loadAttributeValues(prisma, "provider_service", provider.services.map((s) => s.id));
   const { day } = localNow();
@@ -201,4 +218,21 @@ providersRouter.post("/:slug/report", limits.reviews, optionalAuth, async (req, 
   const { reason } = parse(reportSchema, req.body);
   await prisma.reportFlag.create({ data: { reporterUserId: req.user?.id ?? null, targetType: "provider", targetId: id, reason } });
   res.status(201).json({ ok: true });
+});
+
+/**
+ * POST /providers/:slug/visit — counts a profile view and returns what is personal to the visitor
+ * (favorite, their review), so the profile itself can be served from a shared cache.
+ */
+providersRouter.post("/:slug/visit", optionalAuth, async (req, res) => {
+  const { id } = await findActiveBySlug(req.params.slug as string);
+  void recordProfileView(id);
+  const [favorite, myReview] = await Promise.all([
+    req.user ? prisma.favorite.findUnique({ where: { userId_providerId: { userId: req.user.id, providerId: id } } }) : null,
+    req.user ? prisma.review.findUnique({ where: { providerId_userId: { providerId: id, userId: req.user.id } }, include: { photos: { select: { photoUrl: true } } } }) : null,
+  ]);
+  res.json({
+    isFavorite: !!favorite,
+    myReview: myReview && { id: myReview.id, rating: myReview.rating, reviewText: myReview.reviewText, photos: myReview.photos.map((p) => p.photoUrl) },
+  });
 });

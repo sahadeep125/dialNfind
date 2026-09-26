@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { ShieldCheck } from "lucide-react-native";
 
-import { AppAvatar, AppText } from "@/components/design-system";
+import { AppAvatar, AppPressable, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { Review } from "@/types";
 import { formatRelative } from "@/utils/format";
@@ -13,9 +13,11 @@ interface Props {
   review: Review;
   /** Shows a Report link under the review. */
   onReport?: (review: Review) => void;
+  /** Opens the review's photos full screen, starting at the tapped one. */
+  onOpenPhoto?: (review: Review, index: number) => void;
 }
 
-export const ReviewItem = memo(function ReviewItem({ review, onReport }: Props) {
+export const ReviewItem = memo(function ReviewItem({ review, onReport, onOpenPhoto }: Props) {
   const theme = useTheme();
   return (
     <View style={styles.wrap}>
@@ -44,14 +46,16 @@ export const ReviewItem = memo(function ReviewItem({ review, onReport }: Props) 
       {review.reviewText ? <AppText variant="body">{review.reviewText}</AppText> : null}
       {review.photos.length ? (
         <View style={styles.photos}>
-          {review.photos.map((uri) => (
-            <Image
+          {review.photos.map((uri, i) => (
+            <AppPressable
               key={uri}
-              source={{ uri }}
-              style={[styles.photo, { borderRadius: theme.radius.sm }]}
-              contentFit="cover"
-              accessibilityLabel="Review photo"
-            />
+              accessibilityRole="imagebutton"
+              accessibilityLabel={`Photo ${i + 1} from ${review.author.name}. Open full screen`}
+              disabled={!onOpenPhoto}
+              onPress={() => onOpenPhoto?.(review, i)}
+            >
+              <Image source={{ uri }} style={[styles.photo, { borderRadius: theme.radius.sm }]} contentFit="cover" />
+            </AppPressable>
           ))}
         </View>
       ) : null}

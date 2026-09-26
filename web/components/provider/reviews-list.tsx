@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { BadgeCheck, Loader2, MessageSquareReply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { clientApi } from "@/lib/client";
+import { isOptimizableImage } from "@/lib/image-hosts";
 import { formatRelative, initials } from "@/lib/format";
 import type { Paged, Review } from "@/lib/types";
 import { RatingStars } from "./rating";
@@ -17,14 +19,18 @@ export function ReviewsList({ slug, initial, providerName }: { slug: string; ini
   const [totalPages, setTotalPages] = useState(initial.totalPages);
   const [sort, setSort] = useState("recent");
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState<number | null>(null);
 
   async function load(nextPage: number, nextSort = sort) {
     setLoading(true);
+    setFailed(null);
     try {
       const data = await clientApi<{ reviews: Review[] } & Paged>(`/providers/${slug}/reviews?page=${nextPage}&pageSize=6&sort=${nextSort}`);
       setReviews((prev) => (nextPage === 1 ? data.reviews : [...prev, ...data.reviews]));
       setPage(data.page);
       setTotalPages(data.totalPages);
+    } catch {
+      setFailed(nextPage);
     } finally {
       setLoading(false);
     }
@@ -83,8 +89,15 @@ export function ReviewsList({ slug, initial, providerName }: { slug: string; ini
                 {r.photos.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {r.photos.map((url, i) => (
-                      <a key={url} href={url} target="_blank" rel="noreferrer" className="block size-20 overflow-hidden rounded-lg border bg-muted">
-                        <img src={url} alt={`Photo ${i + 1} from ${r.author.name}`} loading="lazy" className="size-full object-cover transition-transform hover:scale-105" />
+                      <a key={url} href={url} target="_blank" rel="noreferrer" className="relative block size-20 overflow-hidden rounded-lg border bg-muted">
+                        <Image
+                          src={url}
+                          alt={`Photo ${i + 1} from ${r.author.name}`}
+                          fill
+                          sizes="80px"
+                          className="object-cover transition-transform hover:scale-105"
+                          unoptimized={!isOptimizableImage(url)}
+                        />
                       </a>
                     ))}
                   </div>
@@ -102,6 +115,14 @@ export function ReviewsList({ slug, initial, providerName }: { slug: string; ini
           </li>
         ))}
       </ul>
+      {failed !== null && (
+        <p role="alert" className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm text-destructive">
+          Could not load reviews.
+          <Button variant="link" size="sm" className="h-auto p-0" onClick={() => void load(failed)}>
+            Try again
+          </Button>
+        </p>
+      )}
       {page < totalPages && (
         <Button variant="outline" className="mt-4 w-full" onClick={() => load(page + 1)} disabled={loading}>
           {loading && <Loader2 className="animate-spin" />} Show more reviews

@@ -10,6 +10,7 @@ import {
   LogIn,
   LogOut,
   Mail,
+  MapPin,
   Monitor,
   Moon,
   Phone,
@@ -40,9 +41,10 @@ import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { ApiError, errorMessage } from "@/services/api";
-import { openEmail, openPhone, openUrl, openWebPage } from "@/services/links";
+import { legalUrl, openEmail, openPhone, openUrl, openWebPage } from "@/services/links";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { rateApp } from "@/services/reviewPrompt";
 import type { ThemePreference } from "@/types";
 import { formatPhone } from "@/utils/format";
 
@@ -142,6 +144,14 @@ export default function SettingsScreen() {
           ) : null}
           {user ? (
             <AppListItem
+              title="Saved addresses"
+              subtitle="Search around home, work and more"
+              leading={<MapPin size={18} color={icon} />}
+              onPress={() => router.push("/addresses")}
+            />
+          ) : null}
+          {user ? (
+            <AppListItem
               title="Recent contacts"
               subtitle="Providers you called or messaged"
               leading={<PhoneCall size={18} color={icon} />}
@@ -231,37 +241,26 @@ export default function SettingsScreen() {
             title="Rate DialNFind"
             subtitle="Tell us how we are doing"
             leading={<Star size={18} color={icon} />}
-            onPress={() =>
-              void run(
-                () => openEmail(email, "Feedback on the DialNFind app"),
-                "Could not open email.",
-              )
-            }
+            onPress={() => void run(rateApp, "Could not open the store.")}
           />
         </SettingsGroup>
 
-        {config?.terms_url || config?.privacy_url ? (
-          <SettingsGroup title="Legal">
-            {config.terms_url ? (
-              <AppListItem
-                title="Terms of service"
-                leading={<FileText size={18} color={icon} />}
-                onPress={() =>
-                  void run(() => openUrl(config.terms_url ?? ""), "Could not open the page.")
-                }
-              />
-            ) : null}
-            {config.privacy_url ? (
-              <AppListItem
-                title="Privacy policy"
-                leading={<ShieldCheck size={18} color={icon} />}
-                onPress={() =>
-                  void run(() => openUrl(config.privacy_url ?? ""), "Could not open the page.")
-                }
-              />
-            ) : null}
-          </SettingsGroup>
-        ) : null}
+        <SettingsGroup title="Legal">
+          <AppListItem
+            title="Terms of use"
+            leading={<FileText size={18} color={icon} />}
+            onPress={() =>
+              void run(() => openUrl(legalUrl("terms", config?.terms_url)), "Could not open the page.")
+            }
+          />
+          <AppListItem
+            title="Privacy policy"
+            leading={<ShieldCheck size={18} color={icon} />}
+            onPress={() =>
+              void run(() => openUrl(legalUrl("privacy", config?.privacy_url)), "Could not open the page.")
+            }
+          />
+        </SettingsGroup>
 
         {user ? (
           <SettingsGroup>

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
-import { Crosshair, MapPin, Search } from "lucide-react-native";
+import { Crosshair, Home, MapPin, Search } from "lucide-react-native";
 
 import { AppButton, AppInput, AppListItem, AppSheet, AppText } from "@/components/design-system";
+import { useAddresses } from "@/hooks/useAddresses";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLocations } from "@/hooks/useLocations";
 import { useTheme } from "@/hooks/useTheme";
@@ -11,6 +12,7 @@ import { errorMessage } from "@/services/api";
 import { getCurrentLocation } from "@/services/location";
 import { useLocationStore } from "@/stores/useLocationStore";
 import type { LocationOption } from "@/types";
+import { addressToLocation } from "@/utils/addresses";
 import { plural } from "@/utils/format";
 
 interface Props {
@@ -26,7 +28,13 @@ export function LocationSheet({ visible, onClose }: Props) {
   const [query, setQuery] = useState("");
   const [locating, setLocating] = useState(false);
   const term = useDebounce(query, 250);
-  const { data, isLoading } = useLocations(term);
+  const { data, isLoading, isError, refetch } = useLocations(term);
+  const addresses = useAddresses();
+  // Saved addresses with a map position, shown above the directory results until the person types.
+  const saved = useMemo(
+    () => (term ? [] : (addresses.data ?? []).map(addressToLocation).filter((l): l is LocationOption => !!l)),
+    [addresses.data, term],
+  );
 
   const choose = (location: LocationOption): void => {
     setLocation(location);
@@ -68,25 +76,48 @@ export function LocationSheet({ visible, onClose }: Props) {
           <ActivityIndicator color={theme.colors.brand.primary} style={styles.loader} />
         ) : (
           <FlatList
-            data={data ?? []}
+            data={[...saved, ...(data ?? [])]}
             keyExtractor={(item) => `${item.kind}-${item.label}`}
             keyboardShouldPersistTaps="handled"
             style={styles.list}
             ListEmptyComponent={
-              <AppText tone="secondary" align="center" style={styles.empty}>
-                No areas match that search yet.
-              </AppText>
+              isError ? (
+                <View style={styles.empty}>
+                  <AppText tone="secondary" align="center">
+                    Could not load areas. Check your connection.
+                  </AppText>
+                  <AppButton variant="ghost" size="sm" onPress={() => void refetch()}>
+                    Try again
+                  </AppButton>
+                </View>
+              ) : (
+                <AppText tone="secondary" align="center" style={styles.empty}>
+                  No areas match that search yet.
+                </AppText>
+              )
             }
             renderItem={({ item }) => (
               <AppListItem
                 title={item.label}
                 subtitle={[
-                  item.kind === "city" ? "City" : item.kind === "place" ? "No providers listed here yet" : "Area",
+                  item.kind === "saved"
+                    ? "Saved address"
+                    : item.kind === "city"
+                      ? "City"
+                      : item.kind === "place"
+                        ? "No providers listed here yet"
+                        : "Area",
                   item.providerCount ? plural(item.providerCount, "provider") : null,
                 ]
                   .filter(Boolean)
                   .join(" · ")}
-                leading={<MapPin size={18} color={theme.colors.text.secondary} />}
+                leading={
+                  item.kind === "saved" ? (
+                    <Home size={18} color={theme.colors.brand.primary} />
+                  ) : (
+                    <MapPin size={18} color={theme.colors.text.secondary} />
+                  )
+                }
                 onPress={() => choose(item)}
                 showChevron={false}
               />
@@ -102,5 +133,5 @@ const styles = StyleSheet.create({
   body: { gap: 12 },
   list: { maxHeight: 360 },
   loader: { paddingVertical: 24 },
-  empty: { paddingVertical: 24 },
+  empty: { alignItems: "center", gap: 4, paddingVertical: 24 },
 });
