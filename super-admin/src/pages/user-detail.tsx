@@ -76,6 +76,14 @@ export function UserDetailPage() {
     onSuccess: () => toast.success("Confirmation email sent"),
     onError: (e) => toast.error(errorMessage(e)),
   });
+  const markVerified = useMutation({
+    mutationFn: () => api(`/admin/users/${id}/mark-verified`, { method: "POST" }),
+    onSuccess: () => {
+      toast.success("Email marked as confirmed");
+      refresh();
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
 
   if (!data) return <PageSkeleton />;
   const u = data.user;
@@ -106,6 +114,11 @@ export function UserDetailPage() {
               {!u.emailVerifiedAt && u.status === "active" && (
                 <Button variant="outline" disabled={resend.isPending} onClick={() => resend.mutate()}>
                   <MailWarning /> Resend confirmation
+                </Button>
+              )}
+              {!u.emailVerifiedAt && u.status === "active" && (
+                <Button variant="outline" disabled={markVerified.isPending} onClick={() => markVerified.mutate()}>
+                  <MailCheck /> Mark confirmed
                 </Button>
               )}
               <Button variant="outline" onClick={() => setConfirm("sign-out")}>

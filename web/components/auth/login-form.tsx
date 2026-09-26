@@ -45,7 +45,7 @@ export function LoginForm() {
       setError(body?.error?.message ?? "Could not log in");
       return;
     }
-    router.push(next);
+    router.push(body?.user?.emailVerifiedAt === null ? `/verify-email?next=${encodeURIComponent(next)}` : next);
     router.refresh();
   });
 

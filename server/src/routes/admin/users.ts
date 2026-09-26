@@ -7,7 +7,8 @@ import { badRequest, notFound } from "../../lib/errors.js";
 import { pageMeta, paginationSchema } from "../../lib/pagination.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
-import { anonymiseUser, sendVerificationEmail } from "../../services/accounts.js";
+import { anonymiseUser } from "../../services/accounts.js";
+import { sendAccountSuspended, sendVerificationEmail } from "../../services/emails.js";
 import { revokeAllSessions } from "../../services/sessions.js";
 import { ticketRef } from "../../services/tickets.js";
 
@@ -72,8 +73,10 @@ async function editableUser(req: Parameters<typeof currentUser>[0], id: bigint) 
 async function setUserStatus(adminId: bigint, id: bigint, status: UserStatus) {
   if (status === "deleted") await anonymiseUser(id);
   else {
+    const before = await prisma.user.findUniqueOrThrow({ where: { id }, select: { status: true } });
     await prisma.user.update({ where: { id }, data: { status } });
     if (status !== "active") await revokeAllSessions(id);
+    if (status === "suspended" && before.status !== "suspended") void sendAccountSuspended(id);
   }
   await logAdmin(adminId, status === "deleted" ? "user.anonymise" : "user.update", "user", id, { status });
 }
@@ -140,8 +143,17 @@ adminUsersRouter.post("/users/:id/resend-verification", async (req, res) => {
   const target = await editableUser(req, idParam(req.params.id as string));
   if (target.status !== "active") throw badRequest("This account is not active");
   if (target.emailVerifiedAt) throw badRequest("This email address is already confirmed");
-  await sendVerificationEmail(target.id, target.email, target.name);
+  await sendVerificationEmail(target);
   await logAdmin(currentUser(req).id, "user.resend_verification", "user", target.id);
+  res.json({ ok: true });
+});
+
+/** POST /admin/users/:id/mark-verified — for support cases where the person cannot receive the code. */
+adminUsersRouter.post("/users/:id/mark-verified", async (req, res) => {
+  const target = await editableUser(req, idParam(req.params.id as string));
+  if (target.emailVerifiedAt) throw badRequest("This email address is already confirmed");
+  await prisma.user.update({ where: { id: target.id }, data: { emailVerifiedAt: new Date() } });
+  await logAdmin(currentUser(req).id, "user.mark_verified", "user", target.id);
   res.json({ ok: true });
 });
 

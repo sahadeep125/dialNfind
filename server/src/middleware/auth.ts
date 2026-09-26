@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import type { UserRole } from "@prisma/client";
 import { verifyToken } from "../lib/jwt.js";
-import { forbidden, unauthorized } from "../lib/errors.js";
+import { emailUnverified, forbidden, unauthorized } from "../lib/errors.js";
 import { prisma } from "../lib/prisma.js";
 
 export interface AuthUser {
@@ -9,6 +9,7 @@ export interface AuthUser {
   role: UserRole;
   /** The sign-in this request belongs to, so /auth/logout can end just this one. */
   sessionId: string;
+  emailVerified: boolean;
 }
 
 declare global {
@@ -37,18 +38,33 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
       // One lookup checks both the sign-in (not revoked or expired) and the account (still active).
       const session = await prisma.authSession.findUnique({
         where: { id: payload.sid },
-        select: { userId: true, expiresAt: true, revokedAt: true, user: { select: { id: true, role: true, status: true } } },
+        select: { userId: true, expiresAt: true, revokedAt: true, user: { select: { id: true, role: true, status: true, emailVerifiedAt: true } } },
       });
       const valid = session && !session.revokedAt && session.expiresAt > new Date() && session.userId.toString() === payload.sub;
-      if (valid && session.user.status === "active") req.user = { id: session.user.id, role: session.user.role, sessionId: payload.sid };
+      if (valid && session.user.status === "active") {
+        req.user = { id: session.user.id, role: session.user.role, sessionId: payload.sid, emailVerified: session.user.emailVerifiedAt !== null };
+      }
     }
   }
+  next();
+}
+
+/** Customers and businesses must confirm their email before using their account; staff are created confirmed. */
+function checkVerified(user: AuthUser) {
+  if (!user.emailVerified && (user.role === "customer" || user.role === "provider")) throw emailUnverified();
+}
+
+/** Signed in, email not necessarily confirmed. Only for the few routes the "confirm your email" screen needs. */
+export async function requireSignedIn(req: Request, res: Response, next: NextFunction) {
+  await optionalAuth(req, res, () => undefined);
+  if (!req.user) throw unauthorized();
   next();
 }
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   await optionalAuth(req, res, () => undefined);
   if (!req.user) throw unauthorized();
+  checkVerified(req.user);
   next();
 }
 
@@ -57,6 +73,7 @@ export function requireRole(...roles: UserRole[]) {
     await optionalAuth(req, res, () => undefined);
     if (!req.user) throw unauthorized();
     if (!roles.includes(req.user.role)) throw forbidden();
+    checkVerified(req.user);
     next();
   };
 }

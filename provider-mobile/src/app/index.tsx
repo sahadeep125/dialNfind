@@ -13,6 +13,7 @@ export default function Gate() {
   const session = useSession();
 
   if (!token) return <Redirect href="/login" />;
+  if (session.data && !session.data.user.emailVerifiedAt) return <Redirect href="/verify-email" />;
   if (session.data) return <Redirect href={session.data.state.provider ? "/(tabs)" : "/start"} />;
   return (
     <View style={[styles.center, { backgroundColor: theme.colors.background.primary }]}>

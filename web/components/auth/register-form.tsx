@@ -59,7 +59,7 @@ export function RegisterForm() {
       setError(body?.error?.message ?? "Could not create your account");
       return;
     }
-    router.push(next);
+    router.push(`/verify-email?sent=1&next=${encodeURIComponent(next)}`);
     router.refresh();
   });
 

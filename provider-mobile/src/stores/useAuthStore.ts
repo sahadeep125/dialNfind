@@ -53,4 +53,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 configureApi({
   getToken: () => useAuthStore.getState().token,
   onUnauthorized: () => useAuthStore.getState().signOut(),
+  onUnverified: () => {
+    const { user, setUser } = useAuthStore.getState();
+    if (user?.emailVerifiedAt) setUser({ ...user, emailVerifiedAt: null });
+  },
 });

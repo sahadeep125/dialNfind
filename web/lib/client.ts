@@ -7,6 +7,8 @@ export class ClientApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public code = "error",
+    public details?: { retryAfter?: number } & Record<string, unknown>,
   ) {
     super(message);
   }
@@ -18,7 +20,14 @@ export async function clientApi<T>(path: string, init: RequestInit = {}): Promis
   if (init.body && !headers.has("content-type")) headers.set("content-type", "application/json");
   const res = await fetch(`/api/proxy${path}`, { ...init, headers });
   const body = await res.json().catch(() => null);
-  if (!res.ok) throw new ClientApiError(res.status, body?.error?.message ?? "Something went wrong");
+  if (!res.ok) {
+    const code = body?.error?.code ?? "error";
+    // Signed in without a confirmed email: every action leads to the code screen until it is entered.
+    if (code === "email_unverified" && !window.location.pathname.startsWith("/verify-email")) {
+      window.location.assign(`/verify-email?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+    }
+    throw new ClientApiError(res.status, body?.error?.message ?? "Something went wrong", code, body?.error?.details);
+  }
   return body as T;
 }
 

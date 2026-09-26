@@ -19,6 +19,7 @@ import { VerificationPage } from "@/pages/verification";
 import { SubscriptionPage } from "@/pages/subscription";
 import { PromotePage } from "@/pages/promote";
 import { SupportPage, SupportTicketPage } from "@/pages/support";
+import { VerifyEmailPage } from "@/pages/verify-email";
 
 function FullScreenLoader() {
   return (
@@ -33,6 +34,7 @@ function RequireAuth() {
   const location = useLocation();
   if (loading) return <FullScreenLoader />;
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
+  if (!user.emailVerifiedAt) return <Navigate to="/verify-email" replace />;
   return <Outlet />;
 }
 
@@ -58,6 +60,7 @@ export function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       </Route>
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/terms" element={<LegalPage doc="terms" />} />
       <Route path="/privacy" element={<LegalPage doc="privacy" />} />
       <Route element={<RequireAuth />}>

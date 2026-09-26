@@ -29,7 +29,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryKey: ["auth", "me", token],
     enabled: !!token,
     queryFn: async () => {
-      const [{ user }, state] = await Promise.all([api<{ user: User }>("/auth/me"), api<ProviderState>("/provider/me")]);
+      const { user } = await api<{ user: User }>("/auth/me");
+      // Business data is closed until the email address is confirmed.
+      const state = user.emailVerifiedAt ? await api<ProviderState>("/provider/me") : null;
       return { user, state };
     },
     retry: false,

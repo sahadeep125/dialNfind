@@ -5,14 +5,15 @@ import { z } from "zod";
 import { email, optionalPhone, optionalUrl, password, personName } from "../lib/rules.js";
 import { prisma } from "../lib/prisma.js";
 import { parse } from "../lib/validate.js";
-import { badRequest, conflict, forbidden, notConfigured, unauthorized } from "../lib/errors.js";
-import { currentUser, requireAuth } from "../middleware/auth.js";
+import { badRequest, conflict, forbidden, HttpError, notConfigured, unauthorized } from "../lib/errors.js";
+import { currentUser, requireAuth, requireSignedIn } from "../middleware/auth.js";
 import { env } from "../env.js";
 import { sendMail } from "../services/mail.js";
 import { revokeAllSessions, revokeSession, startSession } from "../services/sessions.js";
-import { consumeUserToken, issueUserToken } from "../services/user-tokens.js";
+import { consumeUserToken, consumeVerifyCode, issueUserToken, lastVerifyCodeSentAt } from "../services/user-tokens.js";
 import { limits } from "../lib/rate-limit.js";
-import { anonymiseUser, closeBusinessAccount, sendVerificationEmail } from "../services/accounts.js";
+import { anonymiseUser, closeBusinessAccount } from "../services/accounts.js";
+import { sendAccountDeleted, sendPasswordChanged, sendProviderWelcome, sendVerificationEmail } from "../services/emails.js";
 import { appleEnabled, exchangeAppleCode, verifyAppleIdToken, verifyAppleNotification, verifyGoogleIdToken } from "../lib/oauth.js";
 import { signInWithIdentity, storeAppleRefreshToken } from "../services/social-auth.js";
 
@@ -63,7 +64,7 @@ authRouter.post("/register", limits.auth, async (req, res) => {
       termsAcceptedAt: new Date(),
     },
   });
-  void sendVerificationEmail(user.id, user.email, user.name);
+  void sendVerificationEmail(user);
   res.status(201).json({ token: await startSession(user.id, user.role, req), user: await sessionUser(user.id) });
 });
 
@@ -95,6 +96,7 @@ authRouter.post("/google", limits.auth, async (req, res) => {
   const body = parse(z.object({ idToken, nonce: rawNonce, role: socialRole }), req.body);
   const identity = await verifyGoogleIdToken(body.idToken, body.nonce);
   const { user, isNewUser } = await signInWithIdentity({ provider: "google", identity, role: body.role });
+  if (isNewUser) void sendProviderWelcome(user);
   res.status(isNewUser ? 201 : 200).json({ token: await startSession(user.id, user.role, req), user: await sessionUser(user.id), isNewUser });
 });
 
@@ -117,6 +119,7 @@ authRouter.post("/apple", limits.auth, async (req, res) => {
   const identity = await verifyAppleIdToken(body.idToken, body.nonce);
   const name = [body.name?.givenName, body.name?.familyName].filter(Boolean).join(" ");
   const { user, isNewUser } = await signInWithIdentity({ provider: "apple", identity, role: body.role, name });
+  if (isNewUser) void sendProviderWelcome(user);
   if (body.authorizationCode) {
     const code = body.authorizationCode;
     const link = await prisma.userOAuthAccount.findUnique({
@@ -176,7 +179,7 @@ authRouter.post("/apple/notifications", async (req, res) => {
 });
 
 /** POST /auth/logout — ends this sign-in on the server, so the token stops working straight away. */
-authRouter.post("/logout", requireAuth, async (req, res) => {
+authRouter.post("/logout", requireSignedIn, async (req, res) => {
   // The business app sends its push token so this device stops getting alerts.
   const pushToken = typeof req.body?.pushToken === "string" ? req.body.pushToken : null;
   if (pushToken) await prisma.pushToken.deleteMany({ where: { token: pushToken, userId: currentUser(req).id } });
@@ -184,7 +187,7 @@ authRouter.post("/logout", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-authRouter.get("/me", requireAuth, async (req, res) => {
+authRouter.get("/me", requireSignedIn, async (req, res) => {
   res.json({ user: await sessionUser(currentUser(req).id) });
 });
 
@@ -218,6 +221,7 @@ authRouter.post("/change-password", requireAuth, async (req, res) => {
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(body.newPassword, 10) } });
   // Other devices must sign in again with the new password; this one stays signed in.
   await revokeAllSessions(user.id, currentUser(req).sessionId);
+  void sendPasswordChanged(user);
   res.json({ ok: true });
 });
 
@@ -225,7 +229,7 @@ authRouter.post("/change-password", requireAuth, async (req, res) => {
 const deleteSchema = z.object({ password: z.string().optional(), confirm: z.string().optional() });
 
 // Account deletion for customers and businesses (required by the app stores); see anonymiseUser for what is kept.
-authRouter.delete("/me", requireAuth, async (req, res) => {
+authRouter.delete("/me", requireSignedIn, async (req, res) => {
   const body = parse(deleteSchema, req.body ?? {});
   const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id } });
   if (user.role !== "customer" && user.role !== "provider") throw forbidden("Staff accounts are closed by a super admin");
@@ -237,27 +241,57 @@ authRouter.delete("/me", requireAuth, async (req, res) => {
     throw badRequest("Type DELETE to confirm", [{ path: "confirm", message: "Type DELETE to confirm" }]);
   }
   const { storeSubscription } = user.role === "provider" ? await closeBusinessAccount(user.id) : { storeSubscription: null };
+  // The address is erased next, so the confirmation has to be sent first.
+  await sendAccountDeleted(user, storeSubscription);
   await anonymiseUser(user.id);
   res.json({ ok: true, storeSubscription });
 });
 
 // Email verification and password reset -----------------------------------------------------------
 
+/** Confirms the address and, for a business, sends the one-time welcome. */
+async function markVerified(userId: bigint) {
+  const user = await prisma.user.update({ where: { id: userId }, data: { emailVerifiedAt: new Date() } });
+  void sendProviderWelcome(user);
+}
+
 /** POST /auth/verify-email — the link from the verification email. Works without being signed in. */
 authRouter.post("/verify-email", limits.auth, async (req, res) => {
   const { token } = parse(z.object({ token: z.string().min(20).max(200) }), req.body);
   const userId = await consumeUserToken(token, "verify_email");
-  if (!userId) throw badRequest("This link has expired or was already used. Sign in and ask for a new one.");
-  await prisma.user.update({ where: { id: userId }, data: { emailVerifiedAt: new Date() } });
+  if (!userId) throw badRequest("This link has expired or was already used. Sign in and ask for a new code.");
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { emailVerifiedAt: true } });
+  if (!user.emailVerifiedAt) await markVerified(userId);
   res.json({ ok: true });
 });
 
-/** POST /auth/resend-verification — sends a fresh link to the signed-in user. */
-authRouter.post("/resend-verification", limits.auth, requireAuth, async (req, res) => {
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id }, select: { id: true, email: true, name: true, emailVerifiedAt: true } });
+/** POST /auth/verify-email/code — the 6-digit code from the same email, typed into an app. */
+authRouter.post("/verify-email/code", limits.auth, requireSignedIn, async (req, res) => {
+  const { code } = parse(z.object({ code: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code") }), req.body);
+  const me = currentUser(req);
+  if (!me.emailVerified) {
+    const result = await consumeVerifyCode(me.id, code);
+    if (result === "wrong") throw badRequest("That code is not right. Check the email and try again.", [{ path: "code", message: "Wrong code" }]);
+    if (result === "expired") throw badRequest("This code has expired. Ask for a new one.", [{ path: "code", message: "Code expired" }]);
+    await markVerified(me.id);
+  }
+  res.json({ user: await sessionUser(me.id) });
+});
+
+const RESEND_COOLDOWN_MS = 60_000;
+
+/** POST /auth/resend-verification — sends a fresh code and link to the signed-in user, at most once a minute. */
+authRouter.post("/resend-verification", limits.auth, requireSignedIn, async (req, res) => {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id }, select: { id: true, email: true, name: true, role: true, emailVerifiedAt: true } });
   if (user.emailVerifiedAt) throw badRequest("Your email address is already confirmed");
-  await sendVerificationEmail(user.id, user.email, user.name);
-  res.json({ ok: true });
+  const last = await lastVerifyCodeSentAt(user.id);
+  const waitMs = last ? RESEND_COOLDOWN_MS - (Date.now() - last.getTime()) : 0;
+  if (waitMs > 0) {
+    const retryAfter = Math.ceil(waitMs / 1000);
+    throw new HttpError(429, `Please wait ${retryAfter} seconds before asking for another code`, "rate_limited", { retryAfter });
+  }
+  await sendVerificationEmail(user);
+  res.json({ ok: true, retryAfter: RESEND_COOLDOWN_MS / 1000 });
 });
 
 /** POST /auth/forgot-password — always answers the same way so it cannot be used to find out who has an account. */
@@ -285,12 +319,14 @@ authRouter.post("/reset-password", limits.auth, async (req, res) => {
   const body = parse(z.object({ token: z.string().min(20).max(200), newPassword: password }), req.body);
   const userId = await consumeUserToken(body.token, "reset_password");
   if (!userId) throw badRequest("This link has expired or was already used. Ask for a new one.");
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { status: true, emailVerifiedAt: true } });
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   if (user.status !== "active") throw badRequest("This account is not active");
   await prisma.user.update({
     where: { id: userId },
     data: { passwordHash: await bcrypt.hash(body.newPassword, 10), emailVerifiedAt: user.emailVerifiedAt ?? new Date() },
   });
   await revokeAllSessions(userId);
+  // A first password (staff invite, Google/Apple-only account) is not a change worth a security alert.
+  if (user.passwordHash) void sendPasswordChanged(user);
   res.json({ ok: true });
 });

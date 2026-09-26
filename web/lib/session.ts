@@ -22,6 +22,7 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
 export async function requireSession(next: string): Promise<SessionUser> {
   const user = await getSession();
   if (!user) redirect(`/login?next=${encodeURIComponent(next)}`);
+  if (!user.emailVerifiedAt) redirect(`/verify-email?next=${encodeURIComponent(next)}`);
   return user;
 }
 

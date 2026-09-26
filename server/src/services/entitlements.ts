@@ -3,7 +3,8 @@ import { prisma } from "../lib/prisma.js";
 import { env } from "../env.js";
 import { upgradeRequired } from "../lib/errors.js";
 import { entitlementsFor, FEATURES, GRACE_DAYS, type Entitlement, type Feature, type PlanCode } from "../lib/plans.js";
-import { notifyAndEmail } from "./notify.js";
+import { notify, notifyAndEmail } from "./notify.js";
+import { sendPaymentFailed } from "./emails.js";
 import { recalculateProvider } from "./ranking.js";
 
 /** Statuses in which a subscription still unlocks its plan. */
@@ -134,7 +135,7 @@ export async function applySubscriptionChange(change: SubscriptionChange) {
   const now = new Date();
   const live = LIVE_STATUSES.includes(change.status);
 
-  const { subscription, previous } = await prisma.$transaction(async (tx) => {
+  const { subscription, previous, priorStatus } = await prisma.$transaction(async (tx) => {
     const previous = await liveSubscription(change.providerId, tx);
     const existing = change.externalId
       ? await tx.providerSubscription.findFirst({ where: { source: change.source, externalId: change.externalId }, orderBy: { startDate: "desc" } })
@@ -149,7 +150,7 @@ export async function applySubscriptionChange(change: SubscriptionChange) {
             data: { status: change.status === "cancelled" ? "cancelled" : "expired", autoRenew: false, cancelledAt: now, endDate: change.periodEnd ?? now, graceUntil: null },
           })
         : null;
-      return { subscription: ended, previous };
+      return { subscription: ended, previous, priorStatus: target?.status ?? null };
     }
 
     if (live) {
@@ -171,13 +172,27 @@ export async function applySubscriptionChange(change: SubscriptionChange) {
     const subscription = existing
       ? await tx.providerSubscription.update({ where: { id: existing.id }, data })
       : await tx.providerSubscription.create({ data: { ...data, providerId: change.providerId, externalId: change.externalId ?? null, startDate: now } });
-    return { subscription, previous };
+    return { subscription, previous, priorStatus: (existing ?? previous)?.status ?? null };
   });
 
   const before = previous?.plan.code ?? "free";
   const after = (await liveSubscription(change.providerId))?.plan.code ?? "free";
   if (before !== after) await onPlanChanged(change.providerId, before, after, change.quiet ? null : change.periodEnd);
+  // Once per failed renewal: webhooks and syncs repeat while the gateway retries.
+  if (change.status === "past_due" && priorStatus !== "past_due") await onPaymentFailed(change.providerId, plan.name, change.graceUntil ?? null);
   return subscription;
+}
+
+async function onPaymentFailed(providerId: bigint, planName: string, graceUntil: Date | null) {
+  const provider = await prisma.provider.findUnique({ where: { id: providerId }, select: { userId: true } });
+  void notify(
+    provider?.userId,
+    "subscription",
+    `Payment for your ${planName} plan failed`,
+    graceUntil ? `Your plan keeps working until ${longDate(graceUntil)}. Update your payment method to keep it.` : "Update your payment method to keep your plan.",
+    { plan: planName },
+  );
+  void sendPaymentFailed(provider?.userId, planName, graceUntil);
 }
 
 /** Badge, ranking and a message when a provider moves between plans. */

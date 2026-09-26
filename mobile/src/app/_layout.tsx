@@ -34,6 +34,7 @@ import {
   SessionRefresher,
   ToastPortal,
 } from "@/components/layout";
+import { EmailVerificationGate } from "@/components/auth";
 import { colorVariables } from "@/constants/colors";
 import { useTheme } from "@/hooks/useTheme";
 import { ApiError } from "@/services/api";
@@ -140,7 +141,9 @@ function RootLayout() {
               options={{ presentation: "modal", animation: "slide_from_bottom" }}
             />
             <Stack.Screen name="search" options={{ animation: "fade" }} />
+            <Stack.Screen name="verify-email" options={{ gestureEnabled: false }} />
           </Stack>
+          <EmailVerificationGate />
           <OfflineBanner />
           <ToastPortal />
           {showSplash ? (

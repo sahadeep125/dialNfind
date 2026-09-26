@@ -43,6 +43,9 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
       tokenStore.clear();
       window.dispatchEvent(new Event("dnf:logout"));
     }
+    if (res.status === 403 && body?.error?.code === "email_unverified" && window.location.pathname !== "/verify-email") {
+      window.location.assign("/verify-email");
+    }
     if (res.status === 402 && body?.error?.code === "upgrade_required") {
       window.dispatchEvent(new CustomEvent<UpgradeDetail>(UPGRADE_EVENT, { detail: { ...body.error.details, message: body.error.message } }));
     }

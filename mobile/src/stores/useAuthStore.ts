@@ -54,4 +54,8 @@ configureApi({
     useAuthStore.getState().signOut();
     useUIStore.getState().pushToast("Your session has ended. Please sign in again.", "info");
   },
+  onUnverified: () => {
+    const { user, setUser } = useAuthStore.getState();
+    if (user?.emailVerifiedAt) setUser({ ...user, emailVerifiedAt: null });
+  },
 });

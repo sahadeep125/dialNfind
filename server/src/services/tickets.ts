@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { notify } from "./notify.js";
+import { sendTicketReceived } from "./emails.js";
 import { planOf } from "./entitlements.js";
 
 export const TICKET_CATEGORIES = ["general", "account", "listing", "billing", "verification", "report", "technical"] as const;
@@ -53,5 +54,6 @@ export async function openTicket(userId: bigint, input: { subject: string; categ
     },
   });
   for (const id of await supportStaffIds(null)) void notify(id, "support", `New ticket ${ticketRef(ticket.id)}`, input.subject, { ticketId: Number(ticket.id) });
+  void sendTicketReceived(me.email, me.name, ticketRef(ticket.id), input.subject, true);
   return { ...ticket, reference: ticketRef(ticket.id) };
 }

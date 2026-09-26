@@ -2,6 +2,7 @@ import { Prisma, type OAuthProvider, type User } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { badRequest, forbidden, unauthorized } from "../lib/errors.js";
 import type { VerifiedIdentity } from "../lib/oauth.js";
+import { sendSignInMethodAdded } from "./emails.js";
 
 const isStaff = (user: Pick<User, "role">) => user.role === "admin" || user.role === "super_admin";
 const FALLBACK_NAME = "DialNFind user";
@@ -79,6 +80,7 @@ export async function signInWithIdentity(input: SocialSignIn, attempt = 0): Prom
           data: { lastLoginAt: now, emailVerifiedAt: existing.emailVerifiedAt ?? now },
         }),
       ]);
+      void sendSignInMethodAdded(user, provider);
       return { user, isNewUser: false };
     }
 

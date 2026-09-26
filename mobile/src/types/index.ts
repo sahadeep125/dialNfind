@@ -200,7 +200,7 @@ export interface MyReview {
 }
 
 export interface ApiErrorBody {
-  error?: { message?: string; details?: { path: string; message: string }[] };
+  error?: { code?: string; message?: string; details?: { path: string; message: string }[] | Record<string, unknown> };
 }
 
 export type SortOption = "relevance" | "distance" | "rating" | "reviews";

@@ -10,6 +10,7 @@ import { ADMIN_MODULES, ASSIGNABLE_MODULES } from "../../lib/permissions.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
 import { revokeAllSessions } from "../../services/sessions.js";
+import { sendStaffInvite } from "../../services/emails.js";
 
 /** Who is signed in to the admin app, and the admin team: staff accounts and their roles. */
 export const adminTeamRouter = Router();
@@ -50,10 +51,7 @@ function temporaryPassword() {
 
 const inviteSchema = z.object({ name: personName, email, roleId: z.number().int().positive() });
 
-/**
- * Adds a staff member. Email delivery is not wired yet, so the temporary password is returned
- * once in the response for the super admin to share; the new member should change it after signing in.
- */
+/** Adds a staff member and emails them a link to choose their own password. */
 adminTeamRouter.post("/team", async (req, res) => {
   const body = parse(inviteSchema, req.body);
   const admin = currentUser(req);
@@ -61,16 +59,16 @@ adminTeamRouter.post("/team", async (req, res) => {
   if (!role) throw badRequest("Choose a role");
   const existing = await prisma.user.findUnique({ where: { email: body.email } });
   if (existing && existing.role !== "customer") throw conflict("This email already belongs to a provider or admin account");
-  const password = temporaryPassword();
-  const passwordHash = await bcrypt.hash(password, 10);
   const member = existing
-    ? await prisma.user.update({ where: { id: existing.id }, data: { role: "admin", adminRoleId: role.id, status: "active", passwordHash }, select: staffSelect })
+    ? await prisma.user.update({ where: { id: existing.id }, data: { role: "admin", adminRoleId: role.id, status: "active" }, select: staffSelect })
     : await prisma.user.create({
-        data: { name: body.name, email: body.email, role: "admin", adminRoleId: role.id, passwordHash, emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
+        data: { name: body.name, email: body.email, role: "admin", adminRoleId: role.id, emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
         select: staffSelect,
       });
+  const inviter = await prisma.user.findUniqueOrThrow({ where: { id: admin.id }, select: { name: true } });
+  await sendStaffInvite(member, role.name, inviter.name);
   await logAdmin(admin.id, "team.invite", "user", member.id, { email: body.email, role: role.name });
-  res.status(201).json({ member, temporaryPassword: password });
+  res.status(201).json({ member });
 });
 
 const memberUpdateSchema = z.object({ roleId: z.number().int().positive().optional(), status: z.enum(["active", "suspended"]).optional() });

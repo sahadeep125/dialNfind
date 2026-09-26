@@ -6,6 +6,7 @@ import { parse } from "../lib/validate.js";
 import { optionalAuth } from "../middleware/auth.js";
 import { notify } from "../services/notify.js";
 import { supportStaffIds, ticketRef } from "../services/tickets.js";
+import { sendTicketReceived } from "../services/emails.js";
 import { getNumberSetting, SETTING_FIELDS } from "../services/settings.js";
 import { limits } from "../lib/rate-limit.js";
 
@@ -43,6 +44,7 @@ miscRouter.post("/contact", limits.contact, optionalAuth, async (req, res) => {
     },
   });
   for (const id of await supportStaffIds(null)) void notify(id, "support", `New ticket ${ticketRef(ticket.id)}`, ticket.subject, { ticketId: Number(ticket.id) });
+  void sendTicketReceived(ticket.email, ticket.name, ticketRef(ticket.id), ticket.subject, !!req.user);
   res.status(201).json({ ok: true, id: ticket.id, reference: ticketRef(ticket.id) });
 });
 

@@ -90,7 +90,7 @@ async function main() {
     },
   });
   await prisma.user.create({
-    data: { role: "provider", name: "New Provider", email: "newprovider@dialnfind.com", passwordHash, termsAcceptedAt: new Date() },
+    data: { role: "provider", name: "New Provider", email: "newprovider@dialnfind.com", passwordHash, emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
   });
 
   const customers = [demoCustomer];
@@ -104,6 +104,7 @@ async function main() {
           name: `${first} ${last}`,
           email: `${slugify(first)}.${slugify(last)}${i}@example.com`,
           passwordHash,
+          emailVerifiedAt: new Date(),
           termsAcceptedAt: daysAgo(int(30, 400)),
         },
       }),

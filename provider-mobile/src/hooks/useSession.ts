@@ -6,6 +6,8 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import type { ProviderState, SessionUser } from "@/types";
 import { queryKeys } from "./queryKeys";
 
+const NO_BUSINESS: ProviderState = { provider: null, plan: null, claims: [] };
+
 interface Session {
   user: SessionUser;
   state: ProviderState;
@@ -23,10 +25,9 @@ export function useSession(): UseQueryResult<Session> {
     enabled: !!token,
     retry: false,
     queryFn: async (): Promise<Session> => {
-      const [{ user }, state] = await Promise.all([
-        api<{ user: SessionUser }>("/auth/me"),
-        api<ProviderState>("/provider/me"),
-      ]);
+      const { user } = await api<{ user: SessionUser }>("/auth/me");
+      // Business data is closed until the email address is confirmed.
+      const state = user.emailVerifiedAt ? await api<ProviderState>("/provider/me") : NO_BUSINESS;
       return { user, state };
     },
   });

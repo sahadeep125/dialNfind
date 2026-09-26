@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CheckCircle2, Circle, Eye, Lock, MessageCircle, Phone, Star, Trophy } from "lucide-react";
 import { api } from "@/lib/api";
-import { VerifyEmailBanner } from "@/components/verify-email-banner";
 import { LockedCard, PlanBanner } from "@/components/plan";
 import { usePlan } from "@/lib/plan";
 import { formatDate, formatRelative } from "@/lib/format";
@@ -69,7 +68,6 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <VerifyEmailBanner />
       <PlanBanner />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>

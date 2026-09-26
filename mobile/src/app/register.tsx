@@ -73,6 +73,10 @@ export default function RegisterScreen() {
     if (!isValid(next)) return;
     register.mutate(values, {
       onSuccess: ({ user }) => {
+        if (!user.emailVerifiedAt) {
+          router.replace({ pathname: "/verify-email", params: { sent: "1" } });
+          return;
+        }
         toast(`Welcome to DialNFind, ${user.name.split(" ")[0]}`, "success");
         if (router.canGoBack()) router.back();
         else router.replace("/");

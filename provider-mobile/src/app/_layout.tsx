@@ -24,6 +24,7 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 
 import { BrandSplash, OfflineBanner, PurchasesSync, PushRegistrar, SessionRefresher, ToastPortal } from "@/components/layout";
+import { EmailVerificationGate } from "@/components/auth";
 import { colorVariables } from "@/constants/colors";
 import { useTheme } from "@/hooks/useTheme";
 import { ApiError } from "@/services/api";
@@ -105,7 +106,9 @@ export default function RootLayout() {
             <Stack.Screen name="start" options={{ animation: "fade" }} />
             <Stack.Screen name="register" options={{ animation: "fade" }} />
             <Stack.Screen name="paywall" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
+            <Stack.Screen name="verify-email" options={{ animation: "fade", gestureEnabled: false }} />
           </Stack>
+          <EmailVerificationGate />
           <OfflineBanner />
           <ToastPortal />
           {showSplash ? (

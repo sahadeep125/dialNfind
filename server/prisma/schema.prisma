@@ -328,14 +328,17 @@ model UserOAuthAccount {
 enum UserTokenType {
   verify_email
   reset_password
+  verify_email_code
 }
 
-// Single-use tokens sent by email (verify address, reset password). Only a SHA-256 hash is stored.
+// Single-use tokens sent by email (verify link or 6-digit code, reset password). Only a SHA-256 hash is stored.
 model UserToken {
   id        BigInt        @id @default(autoincrement())
   userId    BigInt        @map("user_id")
   type      UserTokenType
   tokenHash String        @unique @map("token_hash")
+  // Wrong guesses at a 6-digit code; the code stops working after a few.
+  attempts  Int           @default(0)
   expiresAt DateTime      @map("expires_at")
   usedAt    DateTime?     @map("used_at")
   createdAt DateTime      @default(now()) @map("created_at")
@@ -1007,7 +1010,7 @@ model SponsoredOrder {
 // 7. Notifications & platform admin
 // ---------------------------------------------------------------------------
 
-// Expo push tokens for the business app; a user can be signed in on several devices.
+// Expo push tokens for the customer and business apps; a user can be signed in on several devices.
 model PushToken {
   id         BigInt   @id @default(autoincrement())
   userId     BigInt   @map("user_id")

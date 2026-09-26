@@ -7,6 +7,8 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public fieldErrors: Record<string, string> = {},
+    public code?: string,
+    public details?: Record<string, unknown>,
   ) {
     super(message);
   }
@@ -23,14 +25,18 @@ interface RequestOptions {
 
 let tokenGetter: () => string | null = () => null;
 let onUnauthorized: () => void = () => undefined;
+let onUnverified: () => void = () => undefined;
 
 /** Lets the auth store supply the token and react to expired sessions without a circular import. */
 export function configureApi(options: {
   getToken: () => string | null;
   onUnauthorized: () => void;
+  /** The server says the email address is not confirmed yet; the app shows the code screen. */
+  onUnverified: () => void;
 }): void {
   tokenGetter = options.getToken;
   onUnauthorized = options.onUnauthorized;
+  onUnverified = options.onUnverified;
 }
 
 export function toQuery(query: Query): string {
@@ -63,10 +69,17 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   if (!res.ok) {
     const body = (json ?? {}) as ApiErrorBody;
     if (res.status === 401 && token) onUnauthorized();
-    const fieldErrors = Object.fromEntries(
-      (body.error?.details ?? []).map((d) => [d.path, d.message]),
+    if (res.status === 403 && body.error?.code === "email_unverified") onUnverified();
+    const details = body.error?.details;
+    // Validation errors carry a list of fields; other errors may carry an object (e.g. retryAfter).
+    const fieldErrors = Array.isArray(details) ? Object.fromEntries(details.map((d) => [d.path, d.message])) : {};
+    const error = new ApiError(
+      res.status,
+      body.error?.message ?? "Something went wrong. Please try again.",
+      fieldErrors,
+      body.error?.code,
+      Array.isArray(details) ? undefined : details,
     );
-    const error = new ApiError(res.status, body.error?.message ?? "Something went wrong. Please try again.", fieldErrors);
     // Server errors are bugs worth a look; 4xx answers are expected (wrong password, validation).
     if (res.status >= 500) reportError(error, { path, status: res.status });
     throw error;

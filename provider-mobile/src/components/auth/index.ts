@@ -1,2 +1,2 @@
 export { SocialSignInButtons } from "./SocialSignInButtons";
-export { VerifyEmailCallout } from "./VerifyEmailCallout";
+export { EmailVerificationGate } from "./EmailVerificationGate";

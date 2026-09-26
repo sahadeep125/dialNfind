@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
 import { BusinessIllustration } from "@/components/illustrations";
 
-function Shell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+export function Shell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
       <div className="flex flex-col px-6 py-8 md:px-12">
@@ -148,7 +148,7 @@ export function RegisterPage() {
         json: { ...values, phone: values.phone ? normalizePhone(values.phone) : undefined, role: "provider" },
       });
       await signIn(res.token);
-      navigate(next, { replace: true });
+      navigate("/verify-email?sent=1", { replace: true });
     } catch (err) {
       setError(errorMessage(err));
     }

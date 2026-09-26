@@ -41,6 +41,10 @@ export default function LoginScreen() {
       { email, password },
       {
         onSuccess: ({ user }) => {
+          if (!user.emailVerifiedAt) {
+            router.replace("/verify-email");
+            return;
+          }
           toast(`Welcome back, ${user.name.split(" ")[0]}`, "success");
           router.replace("/");
         },

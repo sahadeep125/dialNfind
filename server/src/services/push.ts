@@ -10,7 +10,7 @@ interface ExpoTicket {
 }
 
 /**
- * Sends a push notification to every device the person is signed in on (the business app registers
+ * Sends a push notification to every device the person is signed in on (the customer and business apps register
  * them). Never throws: a failed push must not fail the request that caused it. Tokens Expo reports as
  * no longer registered (app uninstalled) are removed.
  */

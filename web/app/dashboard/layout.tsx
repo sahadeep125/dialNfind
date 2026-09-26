@@ -3,7 +3,6 @@ import { NO_INDEX } from "@/lib/seo";
 import { requireSession } from "@/lib/session";
 import { initials } from "@/lib/format";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
-import { VerifyEmailBanner } from "@/components/dashboard/verify-email-banner";
 
 /** Everything under /dashboard is private. */
 export const metadata: Metadata = { robots: NO_INDEX };
@@ -24,7 +23,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <DashboardNav />
         </aside>
         <div className="min-w-0">
-          {!user.emailVerifiedAt && <VerifyEmailBanner email={user.email} />}
           {children}
         </div>
       </div>

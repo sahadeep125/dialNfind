@@ -13,7 +13,7 @@ import { locationsRouter } from "./routes/locations.js";
 import { providersRouter } from "./routes/providers.js";
 import { leadsRouter } from "./routes/leads.js";
 import { reviewsRouter } from "./routes/reviews.js";
-import { meRouter } from "./routes/me.js";
+import { meRouter, pushTokensRouter } from "./routes/me.js";
 import { miscRouter } from "./routes/misc.js";
 import { adminRouter } from "./routes/admin.js";
 import { supportRouter } from "./routes/support.js";
@@ -93,6 +93,7 @@ export function createApp() {
   api.use("/providers", providersRouter);
   api.use("/leads", leadsRouter);
   api.use("/reviews", reviewsRouter);
+  api.use("/me/push-tokens", pushTokensRouter);
   api.use("/me", meRouter);
   api.use("/admin", adminRouter);
   api.use("/uploads", limits.uploads, uploadsRouter);

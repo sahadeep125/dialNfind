@@ -5,7 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { notFound } from "../lib/errors.js";
 import { pageMeta, paginationSchema } from "../lib/pagination.js";
-import { currentUser, requireAuth } from "../middleware/auth.js";
+import { currentUser, requireAuth, requireSignedIn } from "../middleware/auth.js";
 import { providerCardInclude, toProviderCard } from "../services/presenter.js";
 
 /** Customer-owned data: favorites, addresses, reviews, contact history, notifications. */
@@ -193,6 +193,10 @@ meRouter.post("/notifications/read", async (req, res) => {
 });
 
 // Push tokens ------------------------------------------------------------------------------------
+// Registered right after sign-in, before the email is confirmed, so these skip the confirmation check.
+
+export const pushTokensRouter = Router();
+pushTokensRouter.use(requireSignedIn);
 
 const pushTokenSchema = z.object({
   token: z.string().trim().regex(/^(Expo|Exponent)PushToken\[.+\]$/, "Not an Expo push token").max(200),
@@ -200,7 +204,7 @@ const pushTokenSchema = z.object({
 });
 
 /** POST /me/push-tokens — registers this device for push alerts. A token moves to whoever signed in last. */
-meRouter.post("/push-tokens", async (req, res) => {
+pushTokensRouter.post("/", async (req, res) => {
   const { token, platform } = parse(pushTokenSchema, req.body);
   const userId = currentUser(req).id;
   await prisma.pushToken.upsert({
@@ -212,7 +216,7 @@ meRouter.post("/push-tokens", async (req, res) => {
 });
 
 /** DELETE /me/push-tokens — stops alerts on this device (the person turned them off). */
-meRouter.delete("/push-tokens", async (req, res) => {
+pushTokensRouter.delete("/", async (req, res) => {
   const { token } = parse(z.object({ token: z.string().trim().max(200) }), req.body ?? {});
   await prisma.pushToken.deleteMany({ where: { token, userId: currentUser(req).id } });
   res.json({ ok: true });

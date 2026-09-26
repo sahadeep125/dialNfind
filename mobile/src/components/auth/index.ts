@@ -1,4 +1,4 @@
 export { PasswordInput } from "./PasswordInput";
 export { SignInPrompt } from "./SignInPrompt";
-export { VerifyEmailCallout } from "./VerifyEmailCallout";
+export { EmailVerificationGate } from "./EmailVerificationGate";
 export { SocialSignInButtons } from "./SocialSignInButtons";

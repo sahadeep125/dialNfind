@@ -7,7 +7,6 @@ import { AppCallout } from "@/components/design-system";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
 import { AvailabilityCard } from "@/components/dashboard/AvailabilityCard";
 import { CompletenessCard } from "@/components/dashboard/CompletenessCard";
-import { VerifyEmailCallout } from "@/components/auth/VerifyEmailCallout";
 import { LockedCard } from "@/components/subscription/LockedCard";
 import { PlanBanner } from "@/components/subscription/PlanBanner";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -81,7 +80,6 @@ export default function DashboardScreen() {
           onOpenNotifications={() => router.push("/notifications")}
         />
 
-        <VerifyEmailCallout />
         <PlanBanner />
 
         <AppSegmented

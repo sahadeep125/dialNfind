@@ -224,7 +224,7 @@ export function TeamPage() {
           onClose={() => setInviting(false)}
           onInvited={(r) => {
             setInviting(false);
-            setPassword(r);
+            toast.success(`Invite sent to ${r.email}`);
             refresh();
           }}
         />
@@ -264,13 +264,13 @@ export function TeamPage() {
 const inviteSchema = z.object({ name: personName, email, roleId: z.string().min(1, "Choose a role") });
 type InviteValues = z.infer<typeof inviteSchema>;
 
-function InviteDialog({ roles, onClose, onInvited }: { roles: Role[]; onClose: () => void; onInvited: (r: { name: string; email: string; password: string }) => void }) {
+function InviteDialog({ roles, onClose, onInvited }: { roles: Role[]; onClose: () => void; onInvited: (r: { email: string }) => void }) {
   const [serverError, setServerError] = useState<string | null>(null);
   const { register, control, handleSubmit, formState } = useForm<InviteValues>({ resolver: zodResolver(inviteSchema), defaultValues: { name: "", email: "", roleId: "" }, mode: "onTouched" });
   const { errors } = formState;
   const invite = useMutation({
-    mutationFn: (v: InviteValues) => api<{ temporaryPassword: string }>("/admin/team", { method: "POST", json: { name: v.name.trim(), email: v.email.trim(), roleId: Number(v.roleId) } }),
-    onSuccess: (r, v) => onInvited({ name: v.name, email: v.email, password: r.temporaryPassword }),
+    mutationFn: (v: InviteValues) => api("/admin/team", { method: "POST", json: { name: v.name.trim(), email: v.email.trim(), roleId: Number(v.roleId) } }),
+    onSuccess: (_r, v) => onInvited({ email: v.email.trim() }),
     onError: (e) => setServerError(errorMessage(e)),
   });
   return (
@@ -278,7 +278,7 @@ function InviteDialog({ roles, onClose, onInvited }: { roles: Role[]; onClose: (
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add a team member</DialogTitle>
-          <DialogDescription>They get a temporary password to sign in with. An existing customer account with this email is upgraded.</DialogDescription>
+          <DialogDescription>We email them a link to choose their password. An existing customer account with this email is upgraded.</DialogDescription>
         </DialogHeader>
         <form id="invite-form" className="space-y-4" noValidate onSubmit={handleSubmit((v) => (setServerError(null), invite.mutate(v)))}>
           <FormAlert message={serverError} />

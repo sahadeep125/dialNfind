@@ -31,7 +31,7 @@ import {
   AppSheet,
   AppText,
 } from "@/components/design-system";
-import { PasswordInput, VerifyEmailCallout } from "@/components/auth";
+import { PasswordInput } from "@/components/auth";
 import { Screen } from "@/components/layout";
 import { SettingsGroup } from "@/components/settings";
 import { SUPPORT_EMAIL, SUPPORT_PHONE } from "@/constants/config";
@@ -115,7 +115,6 @@ export default function SettingsScreen() {
           Settings
         </AppText>
 
-        <VerifyEmailCallout />
 
         <SettingsGroup title="Account">
           {user ? (

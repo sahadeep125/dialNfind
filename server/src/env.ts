@@ -29,6 +29,7 @@ export const env = {
   /** Where links in emails point. Password reset and email verification pages live on the website. */
   webUrl: (process.env.WEB_URL ?? "http://localhost:3000").replace(/\/$/, ""),
   providerUrl: (process.env.PROVIDER_URL ?? "http://localhost:5173").replace(/\/$/, ""),
+  adminUrl: (process.env.ADMIN_URL ?? "http://localhost:5174").replace(/\/$/, ""),
   /** Outgoing email. With no SMTP_HOST, emails are printed to the console instead of sent. */
   smtp: {
     host: process.env.SMTP_HOST ?? "",
@@ -36,6 +37,8 @@ export const env = {
     user: process.env.SMTP_USER ?? "",
     pass: process.env.SMTP_PASS ?? "",
     from: process.env.SMTP_FROM ?? "DialNFind <no-reply@dialnfind.com>",
+    /** Where replies to account emails go, so people who answer a no-reply message still reach someone. */
+    replyTo: process.env.SUPPORT_EMAIL ?? "support@dialnfind.com",
   },
   /** Public origin of this API, used to build URLs for uploaded files. */
   publicUrl: (process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 4000}`).replace(/\/$/, ""),

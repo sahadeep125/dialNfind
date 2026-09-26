@@ -2,9 +2,6 @@ import { prisma } from "../lib/prisma.js";
 import { storage } from "../storage/index.js";
 import { recalculateProvider } from "./ranking.js";
 import { revokeAllSessions } from "./sessions.js";
-import { env } from "../env.js";
-import { sendMail } from "./mail.js";
-import { issueUserToken } from "./user-tokens.js";
 import { revokeAppleToken } from "../lib/oauth.js";
 import { liveSubscription } from "./entitlements.js";
 import { razorpay, razorpayConfigured } from "./razorpay.js";
@@ -71,15 +68,4 @@ export async function anonymiseUser(userId: bigint): Promise<void> {
   for (const r of reviews) for (const p of r.photos) void storage.remove(p.photoUrl);
   for (const providerId of new Set(reviews.map((r) => r.providerId))) await recalculateProvider(providerId);
   if (user.profilePhotoUrl) void storage.remove(user.profilePhotoUrl);
-}
-
-/** Emails a fresh "confirm your address" link; earlier links stop working. */
-export async function sendVerificationEmail(userId: bigint, email: string, name: string) {
-  const token = await issueUserToken(userId, "verify_email");
-  await sendMail({
-    to: email,
-    subject: "Confirm your email address",
-    lines: [`Hi ${name.split(" ")[0]},`, "Please confirm that this is your email address so we can reach you about your account. The link works for 3 days."],
-    action: { label: "Confirm email", url: `${env.webUrl}/verify-email?token=${token}` },
-  });
 }

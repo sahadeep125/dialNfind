@@ -51,6 +51,10 @@ await call("DELETE", `/me/addresses/${addr.id}`, { token: cust });
 await call("GET", "/me/reviews", { token: cust });
 // Account deletion: a fresh customer confirms with their password and can no longer sign in.
 const temp = (await call("POST", "/auth/register", { body: { name: "Smoke Delete", email: `smoke.delete.${Date.now()}@example.com`, password: "password123", role: "customer", acceptTerms: true } })).token;
+await call("GET", "/me/overview", { token: temp, expect: 403, label: "unconfirmed email is gated" });
+await call("GET", "/auth/me", { token: temp, label: "unconfirmed account can still load itself" });
+await call("POST", "/auth/verify-email/code", { token: temp, body: { code: "000000" }, expect: 400, label: "wrong email code" });
+await call("POST", "/auth/resend-verification", { token: temp, expect: 429, label: "resend has a cooldown" });
 await call("DELETE", "/auth/me", { token: temp, body: { password: "wrong-password1" }, expect: 400, label: "delete account wrong password" });
 await call("DELETE", "/auth/me", { token: temp, body: { password: "password123" } });
 await call("GET", "/auth/me", { token: temp, expect: 401, label: "deleted account is signed out" });
@@ -217,7 +221,9 @@ const roles = (await call("GET", "/admin/roles", { token: admin })).roles;
 const role = (await call("POST", "/admin/roles", { token: admin, body: { name: "Smoke Role", permissions: ["support"] } })).role;
 await call("POST", "/admin/roles", { token: admin, body: { name: "Escalate", permissions: ["team"] }, expect: 400, label: "team module not assignable" });
 const invited = await call("POST", "/admin/team", { token: admin, body: { name: "Smoke Staff", email: "smoke.staff@example.com", roleId: role.id } });
-const staff = (await call("POST", "/auth/login", { body: { email: "smoke.staff@example.com", password: invited.temporaryPassword } })).token;
+// The invite is emailed; the reset endpoint hands the admin a password so the test can sign in.
+const staffPassword = (await call("POST", `/admin/team/${invited.member.id}/reset-password`, { token: admin })).temporaryPassword;
+const staff = (await call("POST", "/auth/login", { body: { email: "smoke.staff@example.com", password: staffPassword } })).token;
 await call("GET", "/admin/tickets", { token: staff, label: "staff with support can list tickets" });
 await call("GET", "/admin/providers", { token: staff, expect: 403, label: "staff without providers blocked" });
 await call("GET", "/admin/team", { token: staff, expect: 403, label: "staff cannot open team" });
