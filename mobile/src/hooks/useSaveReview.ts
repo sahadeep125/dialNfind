@@ -7,6 +7,7 @@ interface SaveReviewInput {
   reviewId?: number;
   rating: number;
   reviewText: string;
+  photos: string[];
 }
 
 /** Creates a review, or updates the person's existing one when reviewId is given. */
@@ -18,8 +19,9 @@ export function useSaveReview(): UseMutationResult<void, Error, SaveReviewInput>
       reviewId,
       rating,
       reviewText,
+      photos,
     }: SaveReviewInput): Promise<void> => {
-      const body = { rating, reviewText: reviewText.trim() };
+      const body = { rating, reviewText: reviewText.trim(), photos };
       if (reviewId) await api(`/reviews/${reviewId}`, { method: "PATCH", body });
       else await api("/reviews", { method: "POST", body: { ...body, providerId } });
     },

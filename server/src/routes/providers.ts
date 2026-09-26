@@ -57,7 +57,7 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
     include: {
       ...providerCardInclude,
       serviceAreas: { orderBy: { areaName: "asc" } },
-      portfolio: { orderBy: { createdAt: "desc" }, include: { category: { select: { name: true } } } },
+      portfolio: { orderBy: [{ isCover: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }], include: { category: { select: { name: true } } } },
       verifications: { where: { status: "approved" }, select: { type: true, verifiedAt: true } },
     },
   });

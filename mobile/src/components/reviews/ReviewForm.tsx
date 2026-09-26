@@ -9,6 +9,7 @@ import { ApiError, errorMessage } from "@/services/api";
 import type { ProviderDetail } from "@/types";
 import { validateReviewText } from "@/utils/validation";
 import { useAppConfig } from "@/hooks/useAppConfig";
+import { ReviewPhotosField } from "./ReviewPhotosField";
 import { StarPicker } from "./StarPicker";
 
 interface Props {
@@ -26,6 +27,7 @@ export function ReviewForm({ provider: p, onSaved }: Props) {
   const config = useAppConfig();
   const [rating, setRating] = useState(p.myReview?.rating ?? 0);
   const [text, setText] = useState(p.myReview?.reviewText ?? "");
+  const [photos, setPhotos] = useState<string[]>(p.myReview?.photos ?? []);
   const [errors, setErrors] = useState<{ rating: string | null; text: string | null }>({
     rating: null,
     text: null,
@@ -38,7 +40,7 @@ export function ReviewForm({ provider: p, onSaved }: Props) {
     setFormError(null);
     if (next.rating || next.text) return;
     save.mutate(
-      { providerId: p.id, reviewId: p.myReview?.id, rating, reviewText: text },
+      { providerId: p.id, reviewId: p.myReview?.id, rating, reviewText: text, photos },
       {
         onSuccess: () => {
           toast(p.myReview ? "Review updated" : "Thanks for your review", "success");
@@ -97,6 +99,8 @@ export function ReviewForm({ provider: p, onSaved }: Props) {
           placeholder="Share details that would help others decide"
           maxLength={MAX_LENGTH}
         />
+
+        <ReviewPhotosField photos={photos} onChange={setPhotos} />
 
         <AppButton size="lg" fullWidth loading={save.isPending} onPress={submit}>
           {p.myReview ? "Update review" : "Post review"}

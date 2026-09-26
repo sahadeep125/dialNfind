@@ -3,7 +3,9 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { AppLayout } from "@/layouts/app-layout";
 import { OnboardingLayout } from "@/layouts/onboarding-layout";
-import { LoginPage, RegisterPage } from "@/pages/auth";
+import { ForgotPasswordPage, LoginPage, RegisterPage } from "@/pages/auth";
+import { AccountPage } from "@/pages/account";
+import { LegalPage } from "@/pages/legal";
 import { StartPage } from "@/pages/start";
 import { ClaimPage } from "@/pages/claim";
 import { OnboardingPage } from "@/pages/onboarding";
@@ -54,7 +56,10 @@ export function App() {
       <Route element={<PublicOnly />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       </Route>
+      <Route path="/terms" element={<LegalPage doc="terms" />} />
+      <Route path="/privacy" element={<LegalPage doc="privacy" />} />
       <Route element={<RequireAuth />}>
         <Route element={<OnboardingLayout />}>
           <Route path="/start" element={<StartPage />} />
@@ -76,6 +81,7 @@ export function App() {
             <Route path="/subscription" element={<SubscriptionPage />} />
             <Route path="/support" element={<SupportPage />} />
             <Route path="/support/:id" element={<SupportTicketPage />} />
+            <Route path="/account" element={<AccountPage />} />
           </Route>
         </Route>
       </Route>

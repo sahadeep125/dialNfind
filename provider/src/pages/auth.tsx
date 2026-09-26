@@ -3,11 +3,10 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { BarChart3, BadgeCheck, Loader2, PhoneCall } from "lucide-react";
+import { BarChart3, BadgeCheck, Loader2, MailCheck, PhoneCall } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
-import { WEB_URL } from "@/lib/config";
 import { email, normalizePhone, optionalPhone, password, personName } from "@/lib/validation";
 import { Field, fieldA11y, FormAlert } from "@/components/form";
 import { SocialButtons } from "@/components/social-buttons";
@@ -85,9 +84,9 @@ export function LoginPage() {
         </Field>
         <div className="space-y-2">
           <div className="flex justify-end">
-            <a href={`${WEB_URL}/forgot-password`} className="-mb-7 text-xs font-medium text-primary hover:underline">
+            <Link to="/forgot-password" className="-mb-7 text-xs font-medium text-primary hover:underline">
               Forgot password?
-            </a>
+            </Link>
           </div>
           <Field id="password" label="Password" error={errors.password}>
             <Input type="password" autoComplete="current-password" {...fieldA11y("password", errors.password)} {...register("password")} />
@@ -190,7 +189,17 @@ export function RegisterPage() {
                 />
               )}
             />
-            <span>I agree to the provider terms and consent to my business phone number being shown to customers.</span>
+            <span>
+              I agree to the{" "}
+              <Link to="/terms" target="_blank" className="font-medium text-primary hover:underline">
+                terms for businesses
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy" target="_blank" className="font-medium text-primary hover:underline">
+                privacy policy
+              </Link>
+              , and consent to my business phone number being shown to customers.
+            </span>
           </label>
           {errors.acceptTerms && (
             <p id="terms-error" role="alert" className="pl-7 text-xs font-medium text-destructive">
@@ -204,6 +213,57 @@ export function RegisterPage() {
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Already registered?{" "}
+        <Link to="/login" className="font-semibold text-primary hover:underline">
+          Log in
+        </Link>
+      </p>
+    </Shell>
+  );
+}
+
+const forgotSchema = z.object({ email });
+
+/** Sends the reset link. The link opens the DialNFind website, which works for business accounts too. */
+export function ForgotPasswordPage() {
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { register, handleSubmit, formState } = useForm<z.infer<typeof forgotSchema>>({ resolver: zodResolver(forgotSchema), defaultValues: { email: "" } });
+  const { errors, isSubmitting } = formState;
+  const onSubmit = handleSubmit(async (values) => {
+    setError(null);
+    try {
+      await api("/auth/forgot-password", { method: "POST", json: values });
+      setSentTo(values.email);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  });
+
+  return (
+    <Shell title="Reset your password" subtitle="We will email you a link to choose a new password.">
+      {sentTo ? (
+        <div role="status" className="space-y-4 rounded-xl border bg-card p-5">
+          <MailCheck className="size-8 text-success" />
+          <p className="text-sm">
+            If an account exists for <span className="font-medium">{sentTo}</span>, a reset link is on its way. It works for one hour. Check your spam folder if it does not arrive in a few minutes.
+          </p>
+          <Button variant="outline" className="w-full" onClick={() => setSentTo(null)}>
+            Use a different email
+          </Button>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} noValidate className="space-y-5">
+          <FormAlert message={error} />
+          <Field id="email" label="Email" error={errors.email}>
+            <Input type="email" autoComplete="email" inputMode="email" autoFocus {...fieldA11y("email", errors.email)} {...register("email")} />
+          </Field>
+          <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="animate-spin" />} Send reset link
+          </Button>
+        </form>
+      )}
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Remembered it?{" "}
         <Link to="/login" className="font-semibold text-primary hover:underline">
           Log in
         </Link>

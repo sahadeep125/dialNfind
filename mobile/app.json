@@ -26,9 +26,7 @@
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -63,6 +61,21 @@
       ],
       "expo-asset",
       "expo-apple-authentication",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "DialNFind uses your photos for your profile picture, review photos and support requests.",
+          "cameraPermission": "DialNFind uses the camera to take photos for your reviews and support requests."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#355EDD"
+        }
+      ],
       "./plugins/withSceneLifecycle"
     ],
     "experiments": {

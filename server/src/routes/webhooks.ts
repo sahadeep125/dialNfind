@@ -5,6 +5,7 @@ import { env } from "../env.js";
 import { verifyWebhookSignature, type RazorpayPayment, type RazorpaySubscription } from "../services/razorpay.js";
 import { providerIdFromAppUserId, type RcWebhookEvent } from "../services/revenuecat.js";
 import { recordGatewayPayment, syncRazorpaySubscription, syncRevenueCatProvider } from "../services/billing-sync.js";
+import { activateSponsoredOrder } from "../services/sponsored-orders.js";
 import { liveSubscription } from "../services/entitlements.js";
 
 /**
@@ -49,6 +50,7 @@ interface RazorpayEvent {
   payload: {
     subscription?: { entity: RazorpaySubscription };
     payment?: { entity: RazorpayPayment };
+    order?: { entity: { id: string } };
     refund?: { entity: { id: string; payment_id: string; amount: number } };
   };
 }
@@ -73,6 +75,15 @@ export async function handleRazorpay(body: RazorpayEvent): Promise<bigint | null
     const payment = body.event === "subscription.charged" || body.event === "subscription.activated" ? body.payload.payment?.entity : null;
     const saved = await syncRazorpaySubscription(sub, payment);
     return saved?.providerId ?? null;
+  }
+  // One-off payments for promotions (Razorpay orders). Covers a Checkout tab closed before it could confirm.
+  const orderId = body.payload.order?.entity.id ?? body.payload.payment?.entity.order_id;
+  if ((body.event === "order.paid" || body.event === "payment.captured") && orderId) {
+    const order = await prisma.sponsoredOrder.findUnique({ where: { razorpayOrderId: orderId } });
+    const paymentId = body.payload.payment?.entity.id;
+    if (!order || !paymentId) return null;
+    await activateSponsoredOrder(order, paymentId);
+    return order.providerId;
   }
   const refund = body.payload.refund?.entity;
   if (body.event === "refund.processed" && refund) {

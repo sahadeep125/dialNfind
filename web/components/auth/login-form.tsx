@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { SocialButtons } from "@/components/auth/social-buttons";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { email } from "@/lib/validation";
 
 const schema = z.object({
@@ -22,9 +23,9 @@ type Values = z.infer<typeof schema>;
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/dashboard";
+  const next = safeRedirect(params.get("next"));
   const onSocialSignedIn = useCallback(() => {
-    router.push(next.startsWith("/") ? next : "/dashboard");
+    router.push(next);
     router.refresh();
   }, [router, next]);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export function LoginForm() {
       setError(body?.error?.message ?? "Could not log in");
       return;
     }
-    router.push(next.startsWith("/") ? next : "/dashboard");
+    router.push(next);
     router.refresh();
   });
 
@@ -83,9 +84,11 @@ export function LoginForm() {
           Create an account
         </Link>
       </p>
-      <div className="mt-6 rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">
-        Demo account: <span className="font-mono text-foreground">demo@dialnfind.com</span> / <span className="font-mono text-foreground">password123</span>
-      </div>
+      {process.env.NODE_ENV !== "production" && (
+        <div className="mt-6 rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">
+          Demo account: <span className="font-mono text-foreground">demo@dialnfind.com</span> / <span className="font-mono text-foreground">password123</span>
+        </div>
+      )}
     </>
   );
 }

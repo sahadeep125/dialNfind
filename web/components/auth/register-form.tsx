@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { SocialButtons } from "@/components/auth/social-buttons";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { email, normalizePhone, optionalPhone, password, personName } from "@/lib/validation";
 
 const schema = z.object({
@@ -26,9 +27,9 @@ type Values = z.input<typeof schema>;
 export function RegisterForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/dashboard";
+  const next = safeRedirect(params.get("next"));
   const onSocialSignedIn = useCallback(() => {
-    router.push(next.startsWith("/") ? next : "/dashboard");
+    router.push(next);
     router.refresh();
   }, [router, next]);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +59,7 @@ export function RegisterForm() {
       setError(body?.error?.message ?? "Could not create your account");
       return;
     }
-    router.push(next.startsWith("/") ? next : "/dashboard");
+    router.push(next);
     router.refresh();
   });
 
@@ -117,7 +118,7 @@ export function RegisterForm() {
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-primary hover:underline">
+        <Link href={`/login${next !== "/dashboard" ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-semibold text-primary hover:underline">
           Log in
         </Link>
       </p>

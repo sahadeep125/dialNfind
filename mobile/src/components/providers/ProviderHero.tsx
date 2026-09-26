@@ -1,11 +1,14 @@
 import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { ArrowLeft, BadgeCheck, MapPin } from "lucide-react-native";
+import { ArrowLeft, BadgeCheck, MapPin, Share2 } from "lucide-react-native";
 
 import { AppAvatar, AppBadge, AppIconButton, AppText } from "@/components/design-system";
 import { palette } from "@/constants/colors";
 import { useTheme } from "@/hooks/useTheme";
+import { useToast } from "@/hooks/useToast";
+import { errorMessage } from "@/services/api";
+import { shareProvider } from "@/services/links";
 import type { ProviderDetail } from "@/types";
 import { formatDistance } from "@/utils/format";
 import { FavoriteButton } from "./FavoriteButton";
@@ -19,6 +22,7 @@ interface Props {
 /** Cover photo, logo, name and the key facts at the top of a provider profile. */
 export function ProviderHero({ provider: p, topInset }: Props) {
   const theme = useTheme();
+  const toast = useToast();
   const distance = formatDistance(p.distanceKm);
   const place = [p.locality, p.city].filter(Boolean).join(", ");
 
@@ -40,12 +44,24 @@ export function ProviderHero({ provider: p, topInset }: Props) {
             icon={<ArrowLeft size={22} color={theme.colors.text.primary} />}
             onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           />
-          <FavoriteButton
-            providerId={p.id}
-            businessName={p.businessName}
-            isFavorite={p.isFavorite}
-            variant="surface"
-          />
+          <View style={styles.coverActions}>
+            <AppIconButton
+              accessibilityLabel={`Share ${p.businessName}`}
+              variant="surface"
+              icon={<Share2 size={20} color={theme.colors.text.primary} />}
+              onPress={() =>
+                void shareProvider(p.slug, p.businessName).catch((error: unknown) =>
+                  toast(errorMessage(error), "error"),
+                )
+              }
+            />
+            <FavoriteButton
+              providerId={p.id}
+              businessName={p.businessName}
+              isFavorite={p.isFavorite}
+              variant="surface"
+            />
+          </View>
         </View>
       </View>
       <View style={[styles.body, { paddingHorizontal: theme.spacing[4], gap: theme.spacing[2] }]}>
@@ -101,6 +117,7 @@ export function ProviderHero({ provider: p, topInset }: Props) {
 }
 
 const styles = StyleSheet.create({
+  coverActions: { flexDirection: "row", gap: 8 },
   cover: { overflow: "hidden", width: "100%" },
   coverBar: {
     flexDirection: "row",

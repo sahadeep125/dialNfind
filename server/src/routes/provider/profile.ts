@@ -24,7 +24,7 @@ export async function loadProfile(providerId: bigint) {
       businessHours: { orderBy: { dayOfWeek: "asc" } },
       serviceAreas: { orderBy: { areaName: "asc" } },
       services: { include: { category: true, subcategory: true }, orderBy: [{ isPrimary: "desc" }, { id: "asc" }] },
-      portfolio: { orderBy: { createdAt: "desc" } },
+      portfolio: { orderBy: [{ isCover: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }] },
       badges: { include: { badge: true } },
       _count: { select: { businessHours: true, serviceAreas: true, services: true, portfolio: true } },
     },
@@ -166,24 +166,45 @@ profileRouter.post("/portfolio", async (req, res) => {
   if (plan?.photoLimit != null && (await prisma.providerPortfolio.count({ where: { providerId: provider.id } })) >= plan.photoLimit) {
     throw upgradeRequired(`Your ${plan.name} plan includes ${plan.photoLimit} photos. Upgrade to add more.`, "provider_pro", "photos");
   }
+  // New photos go first, as before ordering existed; the provider can move them afterwards.
+  const first = await prisma.providerPortfolio.aggregate({ where: { providerId: provider.id }, _min: { sortOrder: true } });
   const item = await prisma.providerPortfolio.create({
-    data: { ...body, categoryId: body.categoryId ? BigInt(body.categoryId) : null, providerId: provider.id },
+    data: { ...body, categoryId: body.categoryId ? BigInt(body.categoryId) : null, providerId: provider.id, sortOrder: (first._min.sortOrder ?? 1) - 1 },
   });
   await recalculateProvider(provider.id);
   res.status(201).json({ item });
 });
 
+const portfolioOrderSchema = z.object({ ids: z.array(z.number().int().positive()).min(1).max(500) });
+
+/** PUT /provider/portfolio/order — the photos in the order the provider wants them shown. */
+profileRouter.put("/portfolio/order", async (req, res) => {
+  const provider = await ownProvider(req);
+  const { ids } = parse(portfolioOrderSchema, req.body);
+  const owned = await prisma.providerPortfolio.findMany({ where: { providerId: provider.id }, select: { id: true } });
+  const ownedIds = new Set(owned.map((o) => Number(o.id)));
+  if (new Set(ids).size !== ids.length || ids.length !== ownedIds.size || ids.some((id) => !ownedIds.has(id))) {
+    throw badRequest("Send every photo exactly once");
+  }
+  await prisma.$transaction(ids.map((id, i) => prisma.providerPortfolio.update({ where: { id: BigInt(id) }, data: { sortOrder: i } })));
+  res.json({ ok: true });
+});
+
 profileRouter.patch("/portfolio/:id", async (req, res) => {
   const provider = await ownProvider(req);
-  const body = parse(portfolioSchema.partial(), req.body);
+  const body = parse(portfolioSchema.partial().extend({ isCover: z.literal(true).optional() }), req.body);
   const id = idParam(req.params.id as string);
   const existing = await prisma.providerPortfolio.findUnique({ where: { id } });
   if (!existing || existing.providerId !== provider.id) throw notFound("Portfolio item not found");
   if (body.imageUrl && body.imageUrl !== existing.imageUrl) void storage.remove(existing.imageUrl);
-  const item = await prisma.providerPortfolio.update({
-    where: { id },
-    data: { ...body, categoryId: body.categoryId === undefined ? undefined : body.categoryId ? BigInt(body.categoryId) : null },
-  });
+  const [, item] = await prisma.$transaction([
+    // Only one cover photo per listing.
+    prisma.providerPortfolio.updateMany({ where: { providerId: provider.id, isCover: true, id: { not: id } }, data: body.isCover ? { isCover: false } : {} }),
+    prisma.providerPortfolio.update({
+      where: { id },
+      data: { ...body, categoryId: body.categoryId === undefined ? undefined : body.categoryId ? BigInt(body.categoryId) : null },
+    }),
+  ]);
   res.json({ item });
 });
 

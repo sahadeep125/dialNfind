@@ -12,7 +12,7 @@ import { sendMail } from "../services/mail.js";
 import { revokeAllSessions, revokeSession, startSession } from "../services/sessions.js";
 import { consumeUserToken, issueUserToken } from "../services/user-tokens.js";
 import { limits } from "../lib/rate-limit.js";
-import { anonymiseUser, sendVerificationEmail } from "../services/accounts.js";
+import { anonymiseUser, closeBusinessAccount, sendVerificationEmail } from "../services/accounts.js";
 import { appleEnabled, exchangeAppleCode, verifyAppleIdToken, verifyAppleNotification, verifyGoogleIdToken } from "../lib/oauth.js";
 import { signInWithIdentity, storeAppleRefreshToken } from "../services/social-auth.js";
 
@@ -177,6 +177,9 @@ authRouter.post("/apple/notifications", async (req, res) => {
 
 /** POST /auth/logout — ends this sign-in on the server, so the token stops working straight away. */
 authRouter.post("/logout", requireAuth, async (req, res) => {
+  // The business app sends its push token so this device stops getting alerts.
+  const pushToken = typeof req.body?.pushToken === "string" ? req.body.pushToken : null;
+  if (pushToken) await prisma.pushToken.deleteMany({ where: { token: pushToken, userId: currentUser(req).id } });
   await revokeSession(currentUser(req).sessionId);
   res.json({ ok: true });
 });
@@ -218,18 +221,24 @@ authRouter.post("/change-password", requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-const deleteSchema = z.object({ password: z.string().optional() });
+// Business accounts without a password (Google/Apple only) confirm by typing DELETE instead.
+const deleteSchema = z.object({ password: z.string().optional(), confirm: z.string().optional() });
 
-// Account deletion for customers (required by the app stores); see anonymiseUser for what is kept.
+// Account deletion for customers and businesses (required by the app stores); see anonymiseUser for what is kept.
 authRouter.delete("/me", requireAuth, async (req, res) => {
   const body = parse(deleteSchema, req.body ?? {});
   const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id } });
-  if (user.role !== "customer") throw forbidden("Business and staff accounts are closed by contacting DialNFind support");
-  if (user.passwordHash && (!body.password || !(await bcrypt.compare(body.password, user.passwordHash)))) {
-    throw badRequest("Password is incorrect", [{ path: "password", message: "Password is incorrect" }]);
+  if (user.role !== "customer" && user.role !== "provider") throw forbidden("Staff accounts are closed by a super admin");
+  if (user.passwordHash) {
+    if (!body.password || !(await bcrypt.compare(body.password, user.passwordHash))) {
+      throw badRequest("Password is incorrect", [{ path: "password", message: "Password is incorrect" }]);
+    }
+  } else if (user.role === "provider" && body.confirm?.trim().toUpperCase() !== "DELETE") {
+    throw badRequest("Type DELETE to confirm", [{ path: "confirm", message: "Type DELETE to confirm" }]);
   }
+  const { storeSubscription } = user.role === "provider" ? await closeBusinessAccount(user.id) : { storeSubscription: null };
   await anonymiseUser(user.id);
-  res.json({ ok: true });
+  res.json({ ok: true, storeSubscription });
 });
 
 // Email verification and password reset -----------------------------------------------------------

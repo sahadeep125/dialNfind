@@ -8,6 +8,7 @@ import {
 } from "@/services/socialAuth";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { resetPurchases } from "@/services/purchases";
+import { forgetPushToken, storedPushToken } from "@/services/push";
 import type { SessionUser } from "@/types";
 import { normalizePhone } from "@/utils/validation";
 
@@ -29,6 +30,11 @@ interface AuthResponse {
 type SocialInput =
   | { provider: "google"; payload: GooglePayload }
   | { provider: "apple"; payload: ApplePayload };
+
+interface DeleteResult {
+  ok: boolean;
+  storeSubscription: "app_store" | "play_store" | null;
+}
 
 interface SocialResponse extends AuthResponse {
   isNewUser: boolean;
@@ -97,12 +103,31 @@ export function useAuthActions() {
 
   const signOut = (): void => {
     // Ends the session on the server too; the request carries the token before the store clears it.
-    void api("/auth/logout", { method: "POST" }).catch(() => undefined);
+    // The push token goes with it so this device stops getting the account's alerts.
+    const pushToken = storedPushToken();
+    void api("/auth/logout", { method: "POST", body: pushToken ? { pushToken } : undefined }).catch(() => undefined);
+    forgetPushToken();
     signOutStore();
     void socialSignOut();
     void resetPurchases();
     qc.clear();
   };
 
-  return { login, register, socialLogin, applyToken, signOut };
+  /**
+   * Deletes the business account: the listing leaves search, the plan stops renewing and the session
+   * ends. Returns the store a plan was bought in, which the person must cancel there.
+   */
+  const deleteAccount = useMutation<DeleteResult, Error, { password?: string; confirm?: string }>({
+    mutationFn: (input) => api<DeleteResult>("/auth/me", { method: "DELETE", body: input }),
+    onSuccess: () => {
+      // The server already ended the session; clear everything local without calling logout.
+      forgetPushToken();
+      signOutStore();
+      void socialSignOut();
+      void resetPurchases();
+      qc.clear();
+    },
+  });
+
+  return { login, register, socialLogin, applyToken, signOut, deleteAccount };
 }

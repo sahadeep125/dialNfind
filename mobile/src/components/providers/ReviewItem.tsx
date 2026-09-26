@@ -9,7 +9,13 @@ import type { Review } from "@/types";
 import { formatRelative } from "@/utils/format";
 import { RatingStars } from "./RatingStars";
 
-export const ReviewItem = memo(function ReviewItem({ review }: { review: Review }) {
+interface Props {
+  review: Review;
+  /** Shows a Report link under the review. */
+  onReport?: (review: Review) => void;
+}
+
+export const ReviewItem = memo(function ReviewItem({ review, onReport }: Props) {
   const theme = useTheme();
   return (
     <View style={styles.wrap}>
@@ -62,6 +68,18 @@ export const ReviewItem = memo(function ReviewItem({ review }: { review: Review 
           <AppText variant="caption">{review.providerReply}</AppText>
         </View>
       ) : null}
+      {onReport ? (
+        <AppText
+          variant="caption"
+          tone="tertiary"
+          accessibilityRole="button"
+          accessibilityLabel={`Report the review by ${review.author.name}`}
+          onPress={() => onReport(review)}
+          style={styles.report}
+        >
+          Report
+        </AppText>
+      ) : null}
     </View>
   );
 });
@@ -75,4 +93,5 @@ const styles = StyleSheet.create({
   photos: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   photo: { height: 72, width: 72 },
   reply: { gap: 4, padding: 12 },
+  report: { alignSelf: "flex-start", paddingVertical: 4 },
 });

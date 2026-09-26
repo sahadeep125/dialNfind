@@ -1,9 +1,10 @@
 import { Fragment, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { FileText, Receipt } from "lucide-react-native";
+import { Building2, FileText, Receipt } from "lucide-react-native";
 
-import { AppButton, AppCard, AppDivider, AppPressable, AppSkeleton, AppText } from "@/components/design-system";
+import { AppButton, AppCard, AppDivider, AppListItem, AppPressable, AppSkeleton, AppText } from "@/components/design-system";
 import { ErrorState, Screen, ScreenHeader, SectionHeader } from "@/components/layout";
+import { BillingDetailsSheet } from "@/components/subscription/BillingDetailsSheet";
 import { CurrentPlanCard } from "@/components/subscription/CurrentPlanCard";
 import { PlanBanner } from "@/components/subscription/PlanBanner";
 import { PlanPicker } from "@/components/subscription/PlanPicker";
@@ -24,6 +25,7 @@ export default function SubscriptionScreen() {
   const offerings = useOfferings();
   const restore = useRestore();
   const [refreshing, setRefreshing] = useState(false);
+  const [editingBilling, setEditingBilling] = useState(false);
   const data = billing.data;
 
   const onRefresh = async (): Promise<void> => {
@@ -103,6 +105,22 @@ export default function SubscriptionScreen() {
           ) : null}
 
           <View style={{ gap: theme.spacing[3] }}>
+            <SectionHeader title="Billing details" />
+            <AppCard padding={0}>
+              <AppListItem
+                title={data.billingProfile.billingName || "Add billing details"}
+                subtitle={
+                  data.billingProfile.billingStateCode
+                    ? [data.billingProfile.gstin ? `GSTIN ${data.billingProfile.gstin}` : "No GSTIN", data.billingProfile.billingAddress].filter(Boolean).join(" · ")
+                    : "Name, address and GSTIN for your invoices"
+                }
+                leading={<Building2 size={18} color={theme.colors.brand.primary} />}
+                onPress={() => setEditingBilling(true)}
+              />
+            </AppCard>
+          </View>
+
+          <View style={{ gap: theme.spacing[3] }}>
             <SectionHeader title="Payment history" />
             <AppCard padding={0}>
               {data.transactions.length === 0 ? (
@@ -122,6 +140,7 @@ export default function SubscriptionScreen() {
           </View>
         </ScrollView>
       )}
+      {data ? <BillingDetailsSheet visible={editingBilling} profile={data.billingProfile} onClose={() => setEditingBilling(false)} /> : null}
     </Screen>
   );
 }

@@ -12,9 +12,11 @@ export const queryKeys = {
   popular: ["popular"] as const,
   provider: (slug: string) => ["provider", slug] as const,
   providerReviews: (slug: string) => ["provider-reviews", slug] as const,
+  similar: (slug: string) => ["similar", slug] as const,
   favorites: ["favorites"] as const,
   myReviews: ["my-reviews"] as const,
   locations: (q: string) => ["locations", q] as const,
   appConfig: ["app-config"] as const,
   me: ["me"] as const,
+  contacts: ["contacts"] as const,
 };

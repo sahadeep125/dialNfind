@@ -54,7 +54,12 @@ const temp = (await call("POST", "/auth/register", { body: { name: "Smoke Delete
 await call("DELETE", "/auth/me", { token: temp, body: { password: "wrong-password1" }, expect: 400, label: "delete account wrong password" });
 await call("DELETE", "/auth/me", { token: temp, body: { password: "password123" } });
 await call("GET", "/auth/me", { token: temp, expect: 401, label: "deleted account is signed out" });
-await call("DELETE", "/auth/me", { token: prov, body: { password: "password123" }, expect: 403, label: "providers cannot self-delete" });
+await call("DELETE", "/auth/me", { token: prov, body: { password: "wrong-password1" }, expect: 400, label: "business delete checks the password" });
+await call("DELETE", "/auth/me", { token: admin, body: { password: "password123" }, expect: 403, label: "staff cannot self-delete" });
+// A business account can delete itself; the response says whether a store plan must be cancelled there.
+const tempProv = (await call("POST", "/auth/register", { body: { name: "Smoke Business", email: `smoke.biz.${Date.now()}@example.com`, password: "password123", role: "provider", acceptTerms: true } })).token;
+const bizDeleted = await call("DELETE", "/auth/me", { token: tempProv, body: { password: "password123" }, label: "business account deletion" });
+results.push(`     business delete: ${JSON.stringify(bizDeleted)}`);
 await call("GET", "/me/contacts", { token: cust });
 
 // email links, sessions and rate limits
@@ -93,9 +98,16 @@ await call("GET", "/provider/profile", { token: prov });
 await call("PATCH", "/provider/profile", { token: prov, body: { isAvailable: true } });
 await call("GET", "/provider/dashboard?days=30", { token: prov });
 const leads = await call("GET", "/provider/leads", { token: prov });
+results.push(`     lead fields: ${Object.keys(leads.leads[0] ?? {}).join(",")}`);
 results.push(`     newest lead details: ${JSON.stringify(leads.leads[0].details)}`);
 const prevs = await call("GET", "/provider/reviews?filter=unreplied", { token: prov });
 if (prevs.reviews[0]) await call("PUT", `/provider/reviews/${prevs.reviews[0].id}/reply`, { token: prov, body: { reply: "Thank you, glad we could help." } });
+const allRevs = await call("GET", "/provider/reviews", { token: prov });
+const toReport = allRevs.reviews.find((r) => !r.reported);
+if (toReport) {
+  await call("POST", `/provider/reviews/${toReport.id}/report`, { token: prov, body: { reason: "This person never contacted us, looks fake" }, label: "report a review" });
+  await call("POST", `/provider/reviews/${toReport.id}/report`, { token: prov, body: { reason: "Reporting the same review twice" }, expect: 409, label: "a review is reported once while open" });
+}
 const profile = (await call("GET", "/provider/profile", { token: prov })).provider;
 await call("PUT", "/provider/hours", { token: prov, body: { hours: profile.businessHours } });
 await call("PUT", "/provider/service-areas", { token: prov, body: { serviceAreas: profile.serviceAreas.map(({ areaName }) => ({ areaName })) } });
@@ -112,7 +124,34 @@ results.push(`     answer after removing anchor service: ${JSON.stringify(after.
 await call("PUT", "/provider/services", { token: prov, body: { services: svcs } });
 const pf = (await call("POST", "/provider/portfolio", { token: prov, body: { title: "Smoke photo", imageUrl: "https://example.com/a.jpg" } })).item;
 await call("PATCH", `/provider/portfolio/${pf.id}`, { token: prov, body: { title: "Smoke photo 2" } });
+const pf2 = (await call("POST", "/provider/portfolio", { token: prov, body: { title: "Smoke photo B", imageUrl: "https://example.com/b.jpg" } })).item;
+await call("PATCH", `/provider/portfolio/${pf2.id}`, { token: prov, body: { isCover: true }, label: "set cover photo" });
+const pfAll = (await call("GET", "/provider/profile", { token: prov })).provider.portfolio;
+await call("PUT", "/provider/portfolio/order", { token: prov, body: { ids: [...pfAll].reverse().map((p) => Number(p.id)) }, label: "reorder photos" });
+await call("PUT", "/provider/portfolio/order", { token: prov, body: { ids: [Number(pf.id)] }, expect: 400, label: "reorder must list every photo" });
 await call("DELETE", `/provider/portfolio/${pf.id}`, { token: prov });
+await call("DELETE", `/provider/portfolio/${pf2.id}`, { token: prov });
+
+// lead follow-up, filters and export
+const lead0 = leads.leads[0];
+if (lead0) {
+  await call("PATCH", `/provider/leads/${lead0.id}`, { token: prov, body: { status: "contacted", note: "Called back, visiting Monday" }, label: "lead status and note" });
+  const contacted = await call("GET", "/provider/leads?status=contacted", { token: prov, label: "filter by status" });
+  contacted.leads.some((l) => l.id === lead0.id && l.providerNote) ? pass++ : (fail++, results.push("FAIL the updated lead should show under Contacted with its note"));
+  await call("PATCH", `/provider/leads/${lead0.id}`, { token: prov, body: { status: "new", note: null } });
+}
+await call("GET", "/provider/leads?q=repair&from=2020-01-01&to=2099-12-31", { token: prov, label: "search and date range" });
+const leadCsv = await fetch(`${B}/provider/leads/export.csv`, { headers: { authorization: `Bearer ${prov}` } });
+const csvText = await leadCsv.text();
+const csvOk = leadCsv.status === 200 && leadCsv.headers.get("content-type")?.startsWith("text/csv") && csvText.includes("Customer");
+csvOk ? pass++ : fail++;
+results.push(`${csvOk ? "ok  " : "FAIL"} ${leadCsv.status} GET /provider/leads/export.csv (${csvText.split("\r\n").length - 1} rows)`);
+
+// push tokens
+const pushToken = `ExponentPushToken[smoke-${Date.now()}]`;
+await call("POST", "/me/push-tokens", { token: prov, body: { token: pushToken, platform: "android" }, label: "register push token" });
+await call("POST", "/me/push-tokens", { token: prov, body: { token: "not-a-token", platform: "android" }, expect: 400, label: "rejects non-Expo tokens" });
+await call("DELETE", "/me/push-tokens", { token: prov, body: { token: pushToken } });
 await call("GET", "/provider/verifications", { token: prov });
 const upload = await (await fetch(B + "/uploads?purpose=document", { method: "POST", headers: { "content-type": "application/pdf", authorization: `Bearer ${prov}` }, body: Buffer.from("%PDF-1.4\n% smoke test document\n") })).json();
 results.push(`     document upload returns a signed link: ${/\/files\/documents\/.+\?exp=\d+&sig=/.test(upload.url)}`);

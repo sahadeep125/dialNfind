@@ -48,6 +48,8 @@ export const limits = {
   disputes: limiter(60 * MINUTE, 30, "You have reported many contacts already. Please wait before reporting more."),
   /** New reviews and reports. */
   reviews: limiter(60 * MINUTE, 20, "Too many reviews or reports in a short time. Please try again later."),
+  /** Lead spreadsheet downloads. */
+  exports: limiter(60 * MINUTE, 20, "You have downloaded several exports already. Please wait before downloading another."),
   uploads: limiter(10 * MINUTE, 30, "Too many uploads. Please wait a few minutes."),
   /** Search, suggestions and location lookups. */
   search: limiter(1 * MINUTE, 120, "Too many searches. Please slow down for a moment."),

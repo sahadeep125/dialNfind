@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, LayoutDashboard, LogOut, MessageSquare, Settings, History } from "lucide-react";
+import { Bell, Heart, History, LayoutDashboard, LifeBuoy, LogOut, MessageSquare, Settings } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -53,6 +53,16 @@ export function UserMenu({ user }: { user: { name: string; email: string; role: 
         <DropdownMenuItem asChild>
           <Link href="/dashboard/reviews">
             <MessageSquare /> My reviews
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/notifications">
+            <Bell /> Notifications
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/support">
+            <LifeBuoy /> Help and support
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

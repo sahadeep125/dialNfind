@@ -5,6 +5,7 @@ import { Eye, MessageCircle, Phone, Star } from "lucide-react-native";
 
 import { AppCallout } from "@/components/design-system";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
+import { AvailabilityCard } from "@/components/dashboard/AvailabilityCard";
 import { CompletenessCard } from "@/components/dashboard/CompletenessCard";
 import { VerifyEmailCallout } from "@/components/auth/VerifyEmailCallout";
 import { LockedCard } from "@/components/subscription/LockedCard";
@@ -98,6 +99,7 @@ export default function DashboardScreen() {
 
         {data ? (
           <View style={{ gap: theme.spacing[4] }}>
+            {status === "active" ? <AvailabilityCard isAvailable={data.provider.isAvailable} /> : null}
             <StatGrid columns={columns}>
               <StatCard
                 label="Total leads"

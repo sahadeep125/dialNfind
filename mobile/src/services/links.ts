@@ -1,4 +1,4 @@
-import { Linking } from "react-native";
+import { Linking, Platform, Share } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 
 import { WEB_URL } from "@/constants/config";
@@ -25,4 +25,28 @@ export async function openWebPage(path: string): Promise<void> {
 /** Opens any https link (for example legal pages set in the admin console) in an in-app browser. */
 export async function openUrl(url: string): Promise<void> {
   await WebBrowser.openBrowserAsync(url);
+}
+
+/** Opens the address in the phone's maps app, or Google Maps in the browser if none answers. */
+export async function openMaps(latitude: number, longitude: number, label: string): Promise<void> {
+  const q = encodeURIComponent(label);
+  const native =
+    Platform.OS === "ios"
+      ? `maps:?q=${q}&ll=${latitude},${longitude}`
+      : `geo:${latitude},${longitude}?q=${latitude},${longitude}(${q})`;
+  try {
+    await Linking.openURL(native);
+  } catch {
+    await Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`);
+  }
+}
+
+/** Opens the share sheet with a link to the provider's page on the website. */
+export async function shareProvider(slug: string, businessName: string): Promise<void> {
+  const url = `${WEB_URL}/providers/${encodeURIComponent(slug)}`;
+  await Share.share(
+    Platform.OS === "ios"
+      ? { message: `${businessName} on DialNFind`, url }
+      : { message: `${businessName} on DialNFind: ${url}` },
+  );
 }

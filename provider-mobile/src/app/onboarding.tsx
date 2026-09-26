@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { Redirect, router } from "expo-router";
 import { ArrowLeft, ArrowRight } from "lucide-react-native";
@@ -17,6 +17,7 @@ import { useSession } from "@/hooks/useSession";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
+import { STORAGE_KEYS, readJson, storage, writeJson } from "@/services/storage";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { OnboardingDraft, StepErrors } from "@/types/onboarding";
 import { ONBOARDING_STEPS, initialDraft, validateStep } from "@/utils/onboarding";
@@ -31,10 +32,18 @@ export default function OnboardingScreen() {
   const createListing = useCreateListing();
   const scrollRef = useRef<ScrollView>(null);
 
-  const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<OnboardingDraft>(() => initialDraft(user));
+  // Unfinished setup is kept on the device, so closing the app does not lose it.
+  const draftKey = `${STORAGE_KEYS.onboardingDraft}.${user?.id ?? "anon"}`;
+  const [saved] = useState(() => readJson<{ step: number; draft: OnboardingDraft }>(draftKey));
+  const [step, setStep] = useState(saved?.step ?? 0);
+  const [draft, setDraft] = useState<OnboardingDraft>(() => saved?.draft ?? initialDraft(user));
   const [errors, setErrors] = useState<StepErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => writeJson(draftKey, { step, draft }), 400);
+    return () => clearTimeout(timer);
+  }, [draftKey, step, draft]);
 
   if (session.data?.state.provider && !createListing.isPending && !createListing.isSuccess)
     return <Redirect href="/" />;
@@ -58,6 +67,7 @@ export default function OnboardingScreen() {
     setFormError(null);
     createListing.mutate(draft, {
       onSuccess: async (res) => {
+        storage.remove(draftKey);
         await applyToken(res.token);
         if (!res.imagesSaved)
           toast("Your listing is live. Add your logo and cover again from your profile.", "info");

@@ -6,6 +6,30 @@ import { env } from "../env.js";
 import { sendMail } from "./mail.js";
 import { issueUserToken } from "./user-tokens.js";
 import { revokeAppleToken } from "../lib/oauth.js";
+import { liveSubscription } from "./entitlements.js";
+import { razorpay, razorpayConfigured } from "./razorpay.js";
+
+/**
+ * Closes a business before its owner's account is anonymised: the listing leaves search (suspended),
+ * the plan stops renewing, running promotions end and push tokens are dropped. Store subscriptions
+ * cannot be cancelled from here, so the store is returned for the app to send the person there.
+ */
+export async function closeBusinessAccount(userId: bigint): Promise<{ storeSubscription: "app_store" | "play_store" | null }> {
+  await prisma.pushToken.deleteMany({ where: { userId } });
+  const provider = await prisma.provider.findUnique({ where: { userId }, select: { id: true } });
+  if (!provider) return { storeSubscription: null };
+  const live = await liveSubscription(provider.id);
+  if (live?.source === "razorpay" && live.autoRenew && live.externalId && razorpayConfigured()) {
+    await razorpay.cancelSubscription(live.externalId, true).catch((err: unknown) => console.error("[accounts] Razorpay cancel failed", err));
+  }
+  await prisma.$transaction([
+    prisma.provider.update({ where: { id: provider.id }, data: { status: "suspended", isAvailable: false } }),
+    prisma.providerSubscription.updateMany({ where: { providerId: provider.id, autoRenew: true }, data: { autoRenew: false } }),
+    prisma.sponsoredListing.updateMany({ where: { providerId: provider.id, status: { in: ["active", "paused"] } }, data: { status: "completed" } }),
+  ]);
+  const store = live?.source === "app_store" || live?.source === "play_store" ? live.source : null;
+  return { storeSubscription: store };
+}
 
 /**
  * Deletes a person's account: the row is kept so leads, tickets and the audit log stay consistent,

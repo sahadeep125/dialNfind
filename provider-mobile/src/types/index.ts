@@ -99,6 +99,9 @@ export interface PortfolioItem {
   description: string | null;
   imageUrl: string;
   categoryId: number | null;
+  sortOrder: number;
+  /** Shown first on the public listing. */
+  isCover: boolean;
 }
 
 /** GET /provider/profile: the full editable business profile. */

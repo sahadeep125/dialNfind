@@ -183,3 +183,29 @@ meRouter.post("/notifications/read", async (req, res) => {
   });
   res.json({ ok: true });
 });
+
+// Push tokens ------------------------------------------------------------------------------------
+
+const pushTokenSchema = z.object({
+  token: z.string().trim().regex(/^(Expo|Exponent)PushToken\[.+\]$/, "Not an Expo push token").max(200),
+  platform: z.enum(["ios", "android"]),
+});
+
+/** POST /me/push-tokens — registers this device for push alerts. A token moves to whoever signed in last. */
+meRouter.post("/push-tokens", async (req, res) => {
+  const { token, platform } = parse(pushTokenSchema, req.body);
+  const userId = currentUser(req).id;
+  await prisma.pushToken.upsert({
+    where: { token },
+    create: { token, platform, userId },
+    update: { userId, platform, lastSeenAt: new Date() },
+  });
+  res.status(201).json({ ok: true });
+});
+
+/** DELETE /me/push-tokens — stops alerts on this device (the person turned them off). */
+meRouter.delete("/push-tokens", async (req, res) => {
+  const { token } = parse(z.object({ token: z.string().trim().max(200) }), req.body ?? {});
+  await prisma.pushToken.deleteMany({ where: { token, userId: currentUser(req).id } });
+  res.json({ ok: true });
+});

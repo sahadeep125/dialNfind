@@ -1,9 +1,9 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
-import { Pencil, Trash2 } from "lucide-react-native";
+import { ArrowUpDown, Pencil, Star, Trash2 } from "lucide-react-native";
 
-import { AppCard, AppIconButton, AppText } from "@/components/design-system";
+import { AppBadge, AppCard, AppIconButton, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { PortfolioItem } from "@/types";
 
@@ -12,9 +12,11 @@ interface Props {
   width: number;
   onEdit: (item: PortfolioItem) => void;
   onDelete: (item: PortfolioItem) => void;
+  /** Opens move and set-as-cover actions. */
+  onArrange: (item: PortfolioItem) => void;
 }
 
-export const PortfolioTile = memo(function PortfolioTile({ item, width, onEdit, onDelete }: Props) {
+export const PortfolioTile = memo(function PortfolioTile({ item, width, onEdit, onDelete, onArrange }: Props) {
   const theme = useTheme();
   return (
     <View style={{ width }}>
@@ -32,7 +34,19 @@ export const PortfolioTile = memo(function PortfolioTile({ item, width, onEdit, 
             transition={150}
             accessibilityLabel={item.title}
           />
+          {item.isCover ? (
+            <View style={[styles.cover, { padding: theme.spacing[1.5] }]}>
+              <AppBadge label="Cover" tone="brand" icon={<Star size={11} color={theme.colors.brand.primary} />} />
+            </View>
+          ) : null}
           <View style={[styles.actions, { gap: theme.spacing[1.5], padding: theme.spacing[1.5] }]}>
+            <AppIconButton
+              size="sm"
+              variant="surface"
+              accessibilityLabel={`Move or set ${item.title} as cover`}
+              icon={<ArrowUpDown size={15} color={theme.colors.text.primary} />}
+              onPress={() => onArrange(item)}
+            />
             <AppIconButton
               size="sm"
               variant="surface"
@@ -68,4 +82,5 @@ const styles = StyleSheet.create({
   card: { overflow: "hidden" },
   imageWrap: { aspectRatio: 4 / 3, width: "100%" },
   actions: { flexDirection: "row", position: "absolute", right: 0, top: 0 },
+  cover: { left: 0, position: "absolute", top: 0 },
 });

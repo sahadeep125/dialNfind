@@ -102,6 +102,8 @@ describeLive("DialNFind Business on Android", () => {
     ["/notifications", "Notifications"],
     ["/help", "Help and FAQ"],
     ["/legal/terms", "Terms"],
+    ["/account", "Change password"],
+    ["/forgot-password", "Send reset link"],
   ])("%s renders", async (path, text) => {
     signInAs("provider@dialnfind.com");
     await launch();

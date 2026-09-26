@@ -29,6 +29,8 @@ export interface SponsoredResponse {
   listings: Campaign[];
   categories: { id: number; name: string }[];
   pricing: SponsoredPricing;
+  /** Campaigns can be paid for online on the provider website and start straight away. */
+  checkoutEnabled: boolean;
 }
 
 export type CampaignDays = 7 | 14 | 30;
@@ -117,4 +119,13 @@ export interface BillingResponse {
   managedIn: "web" | "app_store" | "play_store" | "support" | null;
   manageUrl: string | null;
   store: { enabled: boolean };
+  /** Printed on GST invoices; the state and GSTIN decide how tax is split. */
+  billingProfile: BillingProfile;
+}
+
+export interface BillingProfile {
+  billingName: string;
+  billingAddress: string | null;
+  billingStateCode: string | null;
+  gstin: string | null;
 }

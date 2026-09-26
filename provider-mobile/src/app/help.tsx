@@ -3,10 +3,9 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { LifeBuoy, Mail, Phone } from "lucide-react-native";
 
-import { AppButton, AppCard, AppText } from "@/components/design-system";
+import { AppButton, AppCard, AppSkeleton, AppText } from "@/components/design-system";
 import { Screen, ScreenHeader } from "@/components/layout";
 import { FaqItem } from "@/components/more/FaqItem";
-import { SUPPORT_EMAIL, SUPPORT_PHONE } from "@/constants/config";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
@@ -21,7 +20,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What is a lead?",
-    a: "A lead is a customer who tapped Call or WhatsApp on your listing, or sent you an enquiry. The Leads tab lists them with the service they looked at and any details they shared, so you can follow up quickly.",
+    a: "A lead is a customer who tapped Call or WhatsApp on your listing. The Leads tab lists them with the service they looked at and any details they shared. Tap a lead to mark it contacted, won or lost and add a private note.",
   },
   {
     q: "Is DialNFind taking a cut of my jobs?",
@@ -33,7 +32,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Can I remove a bad review?",
-    a: "You cannot delete reviews yourself. If a review is fake, abusive or about a different business, open a support request with the topic Report a customer or review and our team will check it against the review guidelines.",
+    a: "You cannot delete reviews yourself. If a review is fake, abusive or about a different business, tap Report on the review and our team will check it against the review guidelines.",
   },
   {
     q: "How do I get the Verified badge?",
@@ -52,18 +51,19 @@ const FAQ: { q: string; a: string }[] = [
     a: "New listings are checked by our team before they go live, usually within one working day. You can keep improving your profile in the meantime. If we need changes, we will let you know.",
   },
   {
-    q: "How do I close my business account?",
-    a: "Business accounts are closed by our support team so that your listing, reviews and any plan are handled properly. Go to More, then Close account, and send the request. We will confirm with you before anything is removed.",
+    q: "How do I delete my business account?",
+    a: "Go to More, then Delete account. Your listing is removed from search, any plan stops renewing and running promotions end. This cannot be undone. A plan bought in the App Store or Google Play must also be cancelled in the store.",
   },
 ];
 
 export default function HelpScreen() {
   const theme = useTheme();
   const toast = useToast();
-  const { data: config } = useAppConfig();
+  const { data: config, isLoading: configLoading } = useAppConfig();
   const [open, setOpen] = useState<number | null>(0);
-  const email = config?.support_email || SUPPORT_EMAIL;
-  const phone = config?.support_phone || SUPPORT_PHONE;
+  // Contacts are set by the DialNFind team in the admin console; a channel without one is not offered.
+  const email = config?.support_email || null;
+  const phone = config?.support_phone || null;
 
   const onToggle = useCallback(
     (index: number): void => setOpen((current) => (current === index ? null : index)),
@@ -116,32 +116,42 @@ export default function HelpScreen() {
             >
               Contact support
             </AppButton>
-            <View style={[styles.row, { gap: theme.spacing[2] }]}>
-              <AppButton
-                variant="secondary"
-                style={styles.button}
-                leadingIcon={<Mail size={16} color={theme.colors.text.primary} />}
-                onPress={() =>
-                  void run(
-                    () => openEmail(email, "Help with DialNFind Business"),
-                    "Could not open email.",
-                  )
-                }
-              >
-                Email us
-              </AppButton>
-              <AppButton
-                variant="secondary"
-                style={styles.button}
-                leadingIcon={<Phone size={16} color={theme.colors.text.primary} />}
-                onPress={() => void run(() => openPhone(phone), "Calling is not available.")}
-              >
-                Call us
-              </AppButton>
-            </View>
-            <AppText variant="caption" tone="secondary" align="center">
-              {email} · {formatPhone(phone)}
-            </AppText>
+            {configLoading ? (
+              <AppSkeleton shape="block" height={44} />
+            ) : email || phone ? (
+              <>
+                <View style={[styles.row, { gap: theme.spacing[2] }]}>
+                  {email ? (
+                    <AppButton
+                      variant="secondary"
+                      style={styles.button}
+                      leadingIcon={<Mail size={16} color={theme.colors.text.primary} />}
+                      onPress={() =>
+                        void run(
+                          () => openEmail(email, "Help with DialNFind Business"),
+                          "Could not open email.",
+                        )
+                      }
+                    >
+                      Email us
+                    </AppButton>
+                  ) : null}
+                  {phone ? (
+                    <AppButton
+                      variant="secondary"
+                      style={styles.button}
+                      leadingIcon={<Phone size={16} color={theme.colors.text.primary} />}
+                      onPress={() => void run(() => openPhone(phone), "Calling is not available.")}
+                    >
+                      Call us
+                    </AppButton>
+                  ) : null}
+                </View>
+                <AppText variant="caption" tone="secondary" align="center">
+                  {[email, phone ? formatPhone(phone) : null].filter(Boolean).join(" · ")}
+                </AppText>
+              </>
+            ) : null}
           </View>
         </AppCard>
       </ScrollView>

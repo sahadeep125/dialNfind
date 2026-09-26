@@ -3,8 +3,10 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "re
 import { Redirect } from "expo-router";
 import { Mail, Phone, UserRound } from "lucide-react-native";
 
-import { AppAvatar, AppButton, AppInput, AppText } from "@/components/design-system";
+import { AppButton, AppInput, AppText } from "@/components/design-system";
 import { Screen, ScreenHeader } from "@/components/layout";
+import { AvatarPicker } from "@/components/profile/AvatarPicker";
+import { PasswordSection } from "@/components/profile/PasswordSection";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { useUpdateProfile } from "@/hooks/useUpdateProfile";
@@ -52,10 +54,10 @@ export default function ProfileScreen() {
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[5] }}
+          contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[5], paddingBottom: theme.spacing[10] }}
         >
           <View style={[styles.hero, { gap: theme.spacing[2] }]}>
-            <AppAvatar name={user.name} uri={user.profilePhotoUrl} size={84} />
+            <AvatarPicker user={user} />
             <AppText variant="heading" align="center">
               {user.name}
             </AppText>
@@ -99,6 +101,7 @@ export default function ProfileScreen() {
           >
             Save changes
           </AppButton>
+          <PasswordSection user={user} />
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>

@@ -92,6 +92,8 @@ export async function recordGatewayPayment(input: {
   currency: string;
   reference?: string | null;
   note?: string | null;
+  /** What was paid for; plans unless said otherwise. */
+  type?: "subscription" | "sponsored_ad";
 }) {
   const existing = await prisma.transaction.findUnique({ where: { gatewayPaymentId: input.paymentId } });
   if (existing) return existing;
@@ -99,7 +101,7 @@ export async function recordGatewayPayment(input: {
     data: {
       providerId: input.providerId,
       subscriptionId: input.subscriptionId,
-      type: "subscription",
+      type: input.type ?? "subscription",
       gateway: input.gateway,
       amount: input.amount,
       currency: input.currency,

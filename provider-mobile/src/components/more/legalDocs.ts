@@ -45,7 +45,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
       },
       {
         heading: "Suspension and closing your account",
-        body: "We may pause or remove a listing that breaks these terms, receives repeated genuine complaints or appears to be fraudulent. You can ask to close your business account at any time by contacting DialNFind support from the app.",
+        body: "We may pause or remove a listing that breaks these terms, receives repeated genuine complaints or appears to be fraudulent. You can delete your business account at any time from your account settings. Deleting it removes your listing from search and stops any plan from renewing; it cannot be undone.",
       },
       {
         heading: "Liability",
@@ -85,7 +85,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
       },
       {
         heading: "Your choices",
-        body: "You can edit your listing at any time in the app. To get a copy of your data, correct something you cannot edit, or close your account, contact DialNFind support from the app.",
+        body: "You can edit your listing at any time in the app. You can delete your account yourself from your account settings. To get a copy of your data or correct something you cannot edit, contact DialNFind support.",
       },
     ],
   },

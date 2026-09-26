@@ -1,23 +1,36 @@
 import { create } from "zustand";
 
 import { configureApi } from "@/services/api";
-import { STORAGE_KEYS, readJson, storage, writeJson } from "@/services/storage";
+import { STORAGE_KEYS, readJson, secureToken, storage, writeJson } from "@/services/storage";
+import { useUIStore } from "@/stores/useUIStore";
 import type { SessionUser } from "@/types";
 
 interface AuthState {
   token: string | null;
   user: SessionUser | null;
+  /** False until the token has been read from the secure store at launch. */
+  hydrated: boolean;
+  hydrate: () => Promise<void>;
   signIn: (token: string, user: SessionUser) => void;
   setUser: (user: SessionUser) => void;
   signOut: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  // Read synchronously so the first render already knows whether someone is signed in.
-  token: storage.getString(STORAGE_KEYS.authToken) ?? null,
+  token: null,
   user: readJson<SessionUser>(STORAGE_KEYS.authUser),
+  hydrated: false,
+  hydrate: async () => {
+    if (get().hydrated) return;
+    const stored = await secureToken.get();
+    // Someone may have signed in while the store was being read; that session wins.
+    const token = get().token ?? stored;
+    // A cached user without a token is not a session.
+    if (!token) storage.remove(STORAGE_KEYS.authUser);
+    set({ token, user: token ? get().user : null, hydrated: true });
+  },
   signIn: (token: string, user: SessionUser) => {
-    storage.set(STORAGE_KEYS.authToken, token);
+    secureToken.set(token);
     writeJson(STORAGE_KEYS.authUser, user);
     set({ token, user });
   },
@@ -27,7 +40,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user });
   },
   signOut: () => {
-    storage.remove(STORAGE_KEYS.authToken);
+    secureToken.clear();
     storage.remove(STORAGE_KEYS.authUser);
     set({ token: null, user: null });
   },
@@ -35,5 +48,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
 configureApi({
   getToken: () => useAuthStore.getState().token,
-  onUnauthorized: () => useAuthStore.getState().signOut(),
+  onUnauthorized: () => {
+    // Several requests can fail at once; only the first one signs out and tells the user.
+    if (!useAuthStore.getState().token) return;
+    useAuthStore.getState().signOut();
+    useUIStore.getState().pushToast("Your session has ended. Please sign in again.", "info");
+  },
 });

@@ -1,8 +1,9 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
-import { badRequest, conflict, notFound } from "../../lib/errors.js";
+import { badRequest, conflict, notConfigured, notFound } from "../../lib/errors.js";
 import { pageMeta, paginationSchema } from "../../lib/pagination.js";
 import { num } from "../../lib/serialize.js";
 import { completenessChecklist } from "../../services/ranking.js";
@@ -13,6 +14,10 @@ import { currentUser } from "../../middleware/auth.js";
 import { getNumberSetting } from "../../services/settings.js";
 import { openTicket } from "../../services/tickets.js";
 import { limits } from "../../lib/rate-limit.js";
+import { env } from "../../env.js";
+import { stateCodeFor } from "../../lib/gst.js";
+import { razorpay, razorpayConfigured, toPaise, verifyOrderSignature } from "../../services/razorpay.js";
+import { activateSponsoredOrder } from "../../services/sponsored-orders.js";
 import { assertFeature, getPlanState, hasEntitlement, lockedLeadIds, planOf } from "../../services/entitlements.js";
 
 /** What a locked lead shows instead of the customer's details. */
@@ -51,7 +56,7 @@ insightsRouter.get("/dashboard", async (req, res) => {
       where: { providerId: provider.id },
       orderBy: { createdAt: "desc" },
       take: 5,
-      include: { user: { select: { name: true } }, subcategory: { select: { name: true } }, category: { select: { name: true } } },
+      include: { user: { select: { name: true, phone: true } }, subcategory: { select: { name: true } }, category: { select: { name: true } } },
     }),
     prisma.review.findMany({
       where: { providerId: provider.id, status: "published" },
@@ -128,6 +133,7 @@ insightsRouter.get("/dashboard", async (req, res) => {
         createdAt: l.createdAt,
         locked,
         customerName: locked ? LOCKED : (l.user?.name ?? "Guest visitor"),
+        customerPhone: locked ? null : (l.user?.phone ?? null),
         service: l.subcategory?.name ?? l.category?.name ?? null,
         description: locked ? null : l.description,
       };
@@ -149,53 +155,149 @@ insightsRouter.get("/dashboard", async (req, res) => {
 
 // Leads ------------------------------------------------------------------------------------
 
-const leadsQuery = paginationSchema.extend({ channel: z.enum(["call", "whatsapp"]).optional() });
+const LEAD_STATUSES = ["new", "contacted", "won", "lost"] as const;
+
+const leadFilters = z.object({
+  channel: z.enum(["call", "whatsapp"]).optional(),
+  status: z.enum(LEAD_STATUSES).optional(),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  q: z.string().trim().max(100).optional(),
+});
+const leadsQuery = paginationSchema.merge(leadFilters);
+
+function leadWhere(providerId: bigint, f: z.infer<typeof leadFilters>): Prisma.LeadWhereInput {
+  const to = f.to ? new Date(f.to) : null;
+  // "to" is a date: include the whole day.
+  if (to) to.setUTCHours(23, 59, 59, 999);
+  const text = f.q ? { contains: f.q, mode: "insensitive" as const } : null;
+  return {
+    providerId,
+    ...(f.channel ? { channel: f.channel } : {}),
+    ...(f.status ? { providerStatus: f.status } : {}),
+    ...(f.from || to ? { createdAt: { ...(f.from ? { gte: f.from } : {}), ...(to ? { lte: to } : {}) } } : {}),
+    ...(text
+      ? { OR: [{ user: { name: text } }, { description: text }, { category: { name: text } }, { subcategory: { name: text } }] }
+      : {}),
+  };
+}
+
+const leadInclude = {
+  user: { select: { name: true, phone: true } },
+  category: { select: { name: true } },
+  subcategory: { select: { name: true } },
+  review: { select: { rating: true } },
+} as const;
+
+type LeadRow = Prisma.LeadGetPayload<{ include: typeof leadInclude }>;
+
+function presentLead(l: LeadRow, hidden: boolean, details: { label: string; value: string }[]) {
+  return {
+    id: l.id,
+    channel: l.channel,
+    source: l.source,
+    locked: hidden,
+    description: hidden ? null : l.description,
+    createdAt: l.createdAt,
+    customerName: hidden ? LOCKED : (l.user?.name ?? "Guest visitor"),
+    // Only signed-in customers have a number on file; hidden until the provider can see the lead.
+    customerPhone: hidden ? null : (l.user?.phone ?? null),
+    isGuest: !l.user,
+    service: l.subcategory?.name ?? l.category?.name ?? null,
+    customerReportedResponse: l.customerReportedResponse,
+    reviewRating: l.review?.rating ?? null,
+    disputeStatus: l.disputeStatus,
+    disputeReason: l.disputeReason,
+    providerStatus: l.providerStatus,
+    providerNote: l.providerNote,
+    details: hidden ? [] : details,
+  };
+}
+
+async function presentLeads(providerId: bigint, leads: LeadRow[]) {
+  const [values, { plan }] = await Promise.all([loadAttributeValues(prisma, "lead", leads.map((l) => l.id)), planOf(providerId)]);
+  // Past the plan's monthly lead limit, a lead is still delivered but its details stay hidden until the provider upgrades.
+  const locked = await lockedLeadIds(providerId, plan?.leadAccessLimit ?? null, leads.map((l) => l.id));
+  const rows = leads.map((l) =>
+    presentLead(
+      l,
+      locked.has(l.id),
+      (values.get(l.id) ?? []).map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
+    ),
+  );
+  return { rows, leadLimit: plan?.leadAccessLimit ?? null };
+}
 
 insightsRouter.get("/leads", async (req, res) => {
   const provider = await ownProvider(req);
   const q = parse(leadsQuery, req.query);
-  const where = { providerId: provider.id, ...(q.channel ? { channel: q.channel } : {}) };
+  const where = leadWhere(provider.id, q);
   const [leads, total] = await Promise.all([
-    prisma.lead.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (q.page - 1) * q.pageSize,
-      take: q.pageSize,
-      include: {
-        user: { select: { name: true, email: true } },
-        category: { select: { name: true } },
-        subcategory: { select: { name: true } },
-        review: { select: { rating: true } },
-      },
-    }),
+    prisma.lead.findMany({ where, orderBy: { createdAt: "desc" }, skip: (q.page - 1) * q.pageSize, take: q.pageSize, include: leadInclude }),
     prisma.lead.count({ where }),
   ]);
-  const [details, { plan }] = await Promise.all([loadAttributeValues(prisma, "lead", leads.map((l) => l.id)), planOf(provider.id)]);
-  // Past the plan's monthly lead limit, a lead is still delivered but its details stay hidden until the provider upgrades.
-  const locked = await lockedLeadIds(provider.id, plan?.leadAccessLimit ?? null, leads.map((l) => l.id));
-  res.json({
-    leads: leads.map((l) => {
-      const hidden = locked.has(l.id);
-      return {
-        id: l.id,
-        channel: l.channel,
-        source: l.source,
-        locked: hidden,
-        description: hidden ? null : l.description,
-        createdAt: l.createdAt,
-        customerName: hidden ? LOCKED : (l.user?.name ?? "Guest visitor"),
-        isGuest: !l.user,
-        service: l.subcategory?.name ?? l.category?.name ?? null,
-        customerReportedResponse: l.customerReportedResponse,
-        reviewRating: l.review?.rating ?? null,
-        disputeStatus: l.disputeStatus,
-        disputeReason: l.disputeReason,
-        details: hidden ? [] : (details.get(l.id) ?? []).map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
-      };
-    }),
-    leadLimit: plan?.leadAccessLimit ?? null,
-    ...pageMeta(q.page, q.pageSize, total),
+  const { rows, leadLimit } = await presentLeads(provider.id, leads);
+  res.json({ leads: rows, leadLimit, ...pageMeta(q.page, q.pageSize, total) });
+});
+
+const EXPORT_LIMIT = 5000;
+const csvCell = (v: unknown) => {
+  const t = v === null || v === undefined ? "" : String(v);
+  // Quote every cell and neutralise spreadsheet formulas.
+  const safe = /^[=+\-@]/.test(t) ? `'${t}` : t;
+  return `"${safe.replace(/"/g, '""')}"`;
+};
+
+/** GET /provider/leads/export.csv — the filtered leads (newest first, up to 5,000) as a spreadsheet. */
+insightsRouter.get("/leads/export.csv", limits.exports, async (req, res) => {
+  const provider = await ownProvider(req);
+  const f = parse(leadFilters, req.query);
+  const leads = await prisma.lead.findMany({ where: leadWhere(provider.id, f), orderBy: { createdAt: "desc" }, take: EXPORT_LIMIT, include: leadInclude });
+  const { rows } = await presentLeads(provider.id, leads);
+  const header = ["Date", "Channel", "Customer", "Phone", "Service", "Came from", "Status", "Note", "Customer said", "Rating", "Details", "Message"];
+  const lines = rows.map((l) =>
+    [
+      l.createdAt.toISOString(),
+      l.channel === "call" ? "Call" : "WhatsApp",
+      l.customerName,
+      l.customerPhone,
+      l.service,
+      l.source,
+      l.providerStatus,
+      l.providerNote,
+      l.customerReportedResponse === null ? "" : l.customerReportedResponse ? "Responded" : "No response",
+      l.reviewRating,
+      l.details.map((d) => `${d.label}: ${d.value}`).join("; "),
+      l.description,
+    ]
+      .map(csvCell)
+      .join(","),
+  );
+  const stamp = new Date().toISOString().slice(0, 10);
+  res.set({ "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="dialnfind-leads-${stamp}.csv"`, "Cache-Control": "private, no-store" });
+  // BOM so Excel opens it as UTF-8.
+  res.send("\ufeff" + [header.map(csvCell).join(","), ...lines].join("\r\n"));
+});
+
+const leadUpdateSchema = z
+  .object({ status: z.enum(LEAD_STATUSES).optional(), note: z.string().trim().max(1000).nullable().optional() })
+  .refine((b) => b.status !== undefined || b.note !== undefined, "Nothing to update");
+
+/** PATCH /provider/leads/:id — the provider's own follow-up: status and a private note. */
+insightsRouter.patch("/leads/:id", async (req, res) => {
+  const provider = await ownProvider(req);
+  const body = parse(leadUpdateSchema, req.body);
+  const lead = await prisma.lead.findUnique({ where: { id: idParam(req.params.id as string) } });
+  if (!lead || lead.providerId !== provider.id) throw notFound("Lead not found");
+  const updated = await prisma.lead.update({
+    where: { id: lead.id },
+    data: {
+      ...(body.status ? { providerStatus: body.status } : {}),
+      ...(body.note !== undefined ? { providerNote: body.note || null } : {}),
+      providerUpdatedAt: new Date(),
+    },
   });
+  res.json({ lead: { id: updated.id, providerStatus: updated.providerStatus, providerNote: updated.providerNote } });
 });
 
 const DISPUTE_WINDOW_DAYS = 30;
@@ -239,6 +341,11 @@ insightsRouter.get("/reviews", async (req, res) => {
     prisma.review.count({ where }),
     prisma.review.groupBy({ by: ["rating"], where: { providerId: provider.id, status: "published" }, _count: true }),
   ]);
+  const flags = await prisma.reportFlag.findMany({
+    where: { targetType: "review", targetId: { in: reviews.map((r) => r.id) }, reporterUserId: currentUser(req).id },
+    select: { targetId: true },
+  });
+  const reported = new Set(flags.map((f) => f.targetId));
   res.json({
     summary: {
       avgRating: num(provider.avgRating),
@@ -256,6 +363,7 @@ insightsRouter.get("/reviews", async (req, res) => {
       createdAt: r.createdAt,
       author: r.user.name,
       photos: r.photos.map((p) => p.photoUrl),
+      reported: reported.has(r.id),
     })),
     ...pageMeta(q.page, q.pageSize, total),
   });
@@ -278,6 +386,21 @@ insightsRouter.put("/reviews/:id/reply", async (req, res) => {
     void notify(review.userId, "review_reply", `${provider.businessName} replied to your review`, reply.slice(0, 120), { providerSlug: provider.slug, reviewId: Number(id) });
   }
   res.json({ review: updated });
+});
+
+const reviewReportSchema = z.object({ reason: z.string().trim().min(10, "Tell us what is wrong with this review, at least 10 characters").max(500) });
+
+/** POST /provider/reviews/:id/report — flags a fake or abusive review for the moderation team. */
+insightsRouter.post("/reviews/:id/report", limits.reviews, async (req, res) => {
+  const provider = await ownProvider(req);
+  const { reason } = parse(reviewReportSchema, req.body);
+  const review = await prisma.review.findUnique({ where: { id: idParam(req.params.id as string) }, select: { id: true, providerId: true } });
+  if (!review || review.providerId !== provider.id) throw notFound("Review not found");
+  const reporterUserId = currentUser(req).id;
+  const open = await prisma.reportFlag.findFirst({ where: { targetType: "review", targetId: review.id, reporterUserId, status: "open" } });
+  if (open) throw conflict("You already reported this review. Our team is looking at it.");
+  await prisma.reportFlag.create({ data: { reporterUserId, targetType: "review", targetId: review.id, reason } });
+  res.status(201).json({ ok: true });
 });
 
 // Sponsored listings ---------------------------------------------------------------------------
@@ -308,7 +431,9 @@ insightsRouter.get("/sponsored", async (req, res) => {
       ctrPct: l.impressions ? Math.round((l.clicks / l.impressions) * 1000) / 10 : null,
     })),
     categories: services.map((s) => s.category),
-    pricing: { ...pricing, city: provider.city },
+    pricing: { ...pricing, city: provider.city, gstRate: await getNumberSetting("invoice_gst_rate", 18) },
+    // Online payment starts the campaign straight away; otherwise the provider sends a request to the team.
+    checkoutEnabled: razorpayConfigured(),
   });
 });
 
@@ -319,10 +444,8 @@ const sponsorSchema = z.object({
   note: z.string().trim().max(1000).optional(),
 });
 
-/** POST /provider/sponsored/request — asks the team to set up a campaign; it is created from the admin console once paid. */
-insightsRouter.post("/sponsored/request", limits.billing, async (req, res) => {
-  const provider = await ownProvider(req);
-  const body = parse(sponsorSchema, req.body);
+/** The checks every new campaign passes, online or by request. Returns the category being promoted. */
+async function assertCanPromote(provider: { id: bigint; status: string }, body: { categoryId: number; budget: number }) {
   await assertFeature(provider.id, "promote");
   if (provider.status !== "active") throw badRequest("Your listing must be live before you can promote it");
   const { minBudget } = await sponsoredPricing();
@@ -333,11 +456,19 @@ insightsRouter.post("/sponsored/request", limits.billing, async (req, res) => {
     where: { providerId: provider.id, categoryId: BigInt(body.categoryId), status: { in: ["active", "paused"] }, endDate: { gte: new Date() } },
   });
   if (running) throw conflict("You already have a campaign running in this category");
+  return service.category;
+}
+
+/** POST /provider/sponsored/request — asks the team to set up a campaign; it is created from the admin console once paid. */
+insightsRouter.post("/sponsored/request", limits.billing, async (req, res) => {
+  const provider = await ownProvider(req);
+  const body = parse(sponsorSchema, req.body);
+  const category = await assertCanPromote(provider, body);
   const ticket = await openTicket(currentUser(req).id, {
-    subject: `Promotion request: ${service.category.name}`,
+    subject: `Promotion request: ${category.name}`,
     category: "billing",
     message: [
-      `${provider.businessName} (${provider.city}) would like to promote their listing in ${service.category.name}.`,
+      `${provider.businessName} (${provider.city}) would like to promote their listing in ${category.name}.`,
       `Duration: ${body.days} days. Budget: Rs ${body.budget}.`,
       body.note ? `Note from the provider: ${body.note}` : null,
     ]
@@ -345,6 +476,53 @@ insightsRouter.post("/sponsored/request", limits.billing, async (req, res) => {
       .join("\n"),
   });
   res.status(201).json({ ticket: { id: ticket.id, reference: ticket.reference } });
+});
+
+/**
+ * POST /provider/sponsored/checkout — pay for a campaign online. Creates a Razorpay order for the budget
+ * plus GST; the campaign starts as soon as the payment is confirmed (Checkout handler or webhook).
+ */
+insightsRouter.post("/sponsored/checkout", limits.billing, async (req, res) => {
+  const provider = await ownProvider(req);
+  const body = parse(sponsorSchema, req.body);
+  if (!razorpayConfigured()) throw notConfigured("Online payments are not set up yet. Send a request and our team will help.");
+  const category = await assertCanPromote(provider, body);
+  if (!(provider.billingStateCode ?? stateCodeFor(provider.state))) throw badRequest("Add your billing details first");
+  const rate = await getNumberSetting("invoice_gst_rate", 18);
+  const amount = Math.round(body.budget * (1 + rate / 100) * 100) / 100;
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id }, select: { name: true, email: true, phone: true } });
+  const rzp = await razorpay.createOrder({
+    amountPaise: toPaise(amount),
+    receipt: `promo-${provider.id}-${Date.now()}`,
+    notes: { providerId: String(provider.id), categoryId: String(body.categoryId), days: String(body.days), kind: "sponsored" },
+  });
+  await prisma.sponsoredOrder.create({
+    data: { providerId: provider.id, categoryId: BigInt(body.categoryId), days: body.days, budget: body.budget, amount, razorpayOrderId: rzp.id },
+  });
+  res.status(201).json({
+    orderId: rzp.id,
+    keyId: env.razorpay.keyId,
+    name: "DialNFind",
+    description: `Sponsored in ${category.name}, ${body.days} days`,
+    amount,
+    currency: "INR",
+    prefill: { name: user.name, email: user.email, contact: user.phone ?? undefined },
+  });
+});
+
+const orderVerifySchema = z.object({ razorpay_order_id: z.string(), razorpay_payment_id: z.string(), razorpay_signature: z.string() });
+
+/** POST /provider/sponsored/verify — Checkout success. Starts the campaign without waiting for the webhook. */
+insightsRouter.post("/sponsored/verify", async (req, res) => {
+  const provider = await ownProvider(req);
+  const body = parse(orderVerifySchema, req.body);
+  if (!verifyOrderSignature(body.razorpay_order_id, body.razorpay_payment_id, body.razorpay_signature)) {
+    throw badRequest("We could not confirm this payment. If you were charged, your campaign starts within a few minutes.");
+  }
+  const order = await prisma.sponsoredOrder.findUnique({ where: { razorpayOrderId: body.razorpay_order_id } });
+  if (!order || order.providerId !== provider.id) throw notFound("Order not found");
+  const done = await activateSponsoredOrder(order, body.razorpay_payment_id);
+  res.json({ campaignId: done.sponsoredListingId });
 });
 
 insightsRouter.patch("/sponsored/:id", async (req, res) => {

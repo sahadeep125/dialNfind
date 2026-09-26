@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Linking, Platform, ScrollView, View } from "react-native";
+import { Platform, ScrollView, View } from "react-native";
 import { router } from "expo-router";
 import Constants from "expo-constants";
+import * as StoreReview from "expo-store-review";
 import {
   BadgeCheck,
   Clock,
   CreditCard,
+  ExternalLink,
   FileText,
   HelpCircle,
   Images,
@@ -16,6 +18,7 @@ import {
   ShieldCheck,
   Star,
   Store,
+  UserCog,
   UserX,
   Wrench,
 } from "lucide-react-native";
@@ -24,8 +27,9 @@ import { AppListItem, AppSkeleton, AppText } from "@/components/design-system";
 import { AppSegmented } from "@/components/forms";
 import { Screen } from "@/components/layout";
 import { BusinessHeader } from "@/components/more/BusinessHeader";
-import { CloseAccountSheet } from "@/components/more/CloseAccountSheet";
+import { DeleteAccountSheet } from "@/components/more/DeleteAccountSheet";
 import { MoreGroup } from "@/components/more/MoreGroup";
+import { PushAlertsRow } from "@/components/more/PushAlertsRow";
 import { SignOutSheet } from "@/components/more/SignOutSheet";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useProfile } from "@/hooks/useProfile";
@@ -35,6 +39,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
 import { openUrl } from "@/services/links";
+import { WEB_URL } from "@/constants/config";
 import { useThemeStore } from "@/stores/useThemeStore";
 import type { SelectOption, ThemePreference } from "@/types";
 
@@ -44,23 +49,22 @@ const THEME_OPTIONS: SelectOption<ThemePreference>[] = [
   { value: "dark", label: "Dark" },
 ];
 
-const ANDROID_PACKAGE = Constants.expoConfig?.android?.package ?? "com.dialnfind.business";
-const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`;
-// No App Store id is configured yet, so iOS falls back to an App Store search for the app.
-const APP_STORE_URL = "https://apps.apple.com/search?term=DialNFind%20Business";
-
-/** Opens the store listing so the person can rate the app (expo-store-review is not installed). */
-async function openStoreListing(): Promise<void> {
-  if (Platform.OS === "android") {
-    const market = `market://details?id=${ANDROID_PACKAGE}`;
-    if (await Linking.canOpenURL(market)) {
-      await Linking.openURL(market);
-      return;
-    }
-    await openUrl(PLAY_STORE_URL);
+/**
+ * Shows the native in-app rating prompt. The OS decides whether it appears (it is rate-limited), so when
+ * it cannot, the store listing opens instead: `ios.appStoreUrl` / `android.playStoreUrl` in app.json.
+ */
+async function rateApp(): Promise<void> {
+  if (await StoreReview.hasAction()) {
+    await StoreReview.requestReview();
     return;
   }
-  await openUrl(Platform.OS === "ios" ? APP_STORE_URL : PLAY_STORE_URL);
+  const url = StoreReview.storeUrl();
+  if (url) {
+    await openUrl(url);
+    return;
+  }
+  // No App Store id configured yet on iOS: fall back to a store search.
+  await openUrl(Platform.OS === "ios" ? "https://apps.apple.com/search?term=DialNFind%20Business" : "https://play.google.com/store/search?q=DialNFind%20Business");
 }
 
 export default function MoreScreen() {
@@ -73,7 +77,7 @@ export default function MoreScreen() {
   const preference = useThemeStore((s) => s.preference);
   const setPreference = useThemeStore((s) => s.setPreference);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const provider = session.data?.state.provider ?? null;
   const user = session.data?.user;
@@ -83,7 +87,7 @@ export default function MoreScreen() {
 
   const rate = async (): Promise<void> => {
     try {
-      await openStoreListing();
+      await rateApp();
     } catch (error: unknown) {
       toast(`Could not open the store. ${errorMessage(error)}`, "error");
     }
@@ -145,6 +149,14 @@ export default function MoreScreen() {
             leading={<MapPin size={18} color={icon} />}
             onPress={() => router.push("/areas")}
           />
+          {provider?.slug ? (
+            <AppListItem
+              title="View public listing"
+              subtitle="See your page as customers do"
+              leading={<ExternalLink size={18} color={icon} />}
+              onPress={() => void openUrl(`${WEB_URL}/providers/${provider.slug}`)}
+            />
+          ) : null}
           <AppListItem
             title="Portfolio"
             leading={<Images size={18} color={icon} />}
@@ -231,7 +243,17 @@ export default function MoreScreen() {
           />
         </MoreGroup>
 
+        <MoreGroup title="Notifications">
+          <PushAlertsRow />
+        </MoreGroup>
+
         <MoreGroup title="Account">
+          <AppListItem
+            title="Account settings"
+            subtitle="Name, phone and password"
+            leading={<UserCog size={18} color={icon} />}
+            onPress={() => router.push("/account")}
+          />
           <AppListItem
             title="Sign out"
             subtitle={user?.email}
@@ -240,10 +262,11 @@ export default function MoreScreen() {
             showChevron={false}
           />
           <AppListItem
-            title="Close account"
+            title="Delete account"
+            subtitle="Remove your listing and erase your account"
             destructive
             leading={<UserX size={18} color={theme.colors.semantic.danger} />}
-            onPress={() => setClosing(true)}
+            onPress={() => setDeleting(true)}
             showChevron={false}
           />
         </MoreGroup>
@@ -258,10 +281,11 @@ export default function MoreScreen() {
         onClose={() => setConfirmSignOut(false)}
         onConfirm={doSignOut}
       />
-      <CloseAccountSheet
-        visible={closing}
-        onClose={() => setClosing(false)}
+      <DeleteAccountSheet
+        visible={deleting}
+        onClose={() => setDeleting(false)}
         businessName={businessName}
+        hasPassword={user?.hasPassword ?? true}
       />
     </Screen>
   );

@@ -28,8 +28,18 @@ export interface RazorpayPayment {
   status: string;
   method?: string;
   invoice_id?: string | null;
+  order_id?: string | null;
   email?: string;
   contact?: string;
+}
+
+export interface RazorpayOrder {
+  id: string;
+  amount: number;
+  currency: string;
+  status: "created" | "attempted" | "paid";
+  receipt?: string | null;
+  notes: Record<string, string> | [];
 }
 
 export interface RazorpayPlan {
@@ -83,6 +93,10 @@ export const razorpay = {
   /** Switch plan now. Only card mandates support this; UPI and e-mandates need a new subscription. */
   changePlan: (id: string, planId: string) =>
     call<RazorpaySubscription>("PATCH", `/subscriptions/${encodeURIComponent(id)}`, { plan_id: planId, schedule_change_at: "now", customer_notify: 1 }),
+  /** One-off payment (promotions); amount in paise. */
+  createOrder: (input: { amountPaise: number; receipt: string; notes: Record<string, string> }) =>
+    call<RazorpayOrder>("POST", "/orders", { amount: input.amountPaise, currency: "INR", receipt: input.receipt, notes: input.notes }),
+  fetchOrder: (id: string) => call<RazorpayOrder>("GET", `/orders/${encodeURIComponent(id)}`),
   fetchPayment: (id: string) => call<RazorpayPayment>("GET", `/payments/${encodeURIComponent(id)}`),
   refund: (paymentId: string, amountPaise?: number) =>
     call<{ id: string; amount: number; status: string }>("POST", `/payments/${encodeURIComponent(paymentId)}/refund`, amountPaise ? { amount: amountPaise } : {}),
@@ -98,6 +112,11 @@ const hmac = (secret: string, payload: string | Buffer) => crypto.createHmac("sh
 /** Checkout success handler signature: HMAC(payment_id|subscription_id) with the key secret. */
 export function verifyCheckoutSignature(paymentId: string, subscriptionId: string, signature: string): boolean {
   return !!env.razorpay.keySecret && safeEqual(hmac(env.razorpay.keySecret, `${paymentId}|${subscriptionId}`), signature);
+}
+
+/** Checkout success signature for an order: HMAC(order_id|payment_id) with the key secret. */
+export function verifyOrderSignature(orderId: string, paymentId: string, signature: string): boolean {
+  return !!env.razorpay.keySecret && safeEqual(hmac(env.razorpay.keySecret, `${orderId}|${paymentId}`), signature);
 }
 
 /** X-Razorpay-Signature: HMAC of the raw request body with the webhook secret. */

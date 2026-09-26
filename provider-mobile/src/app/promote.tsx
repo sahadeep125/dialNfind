@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
-import { Megaphone, Plus } from "lucide-react-native";
+import { FlatList, Platform, RefreshControl, StyleSheet, View } from "react-native";
+import { ExternalLink, Megaphone, Plus } from "lucide-react-native";
 
 import { AppButton, AppCallout, AppSkeleton, AppText } from "@/components/design-system";
 import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
@@ -11,6 +11,8 @@ import { useSponsored, useToggleCampaign } from "@/hooks/useSponsored";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
+import { openUrl } from "@/services/links";
+import { PROVIDER_WEB_URL } from "@/constants/config";
 import type { Campaign } from "@/types/billing";
 
 export default function PromoteScreen() {
@@ -96,13 +98,26 @@ export default function PromoteScreen() {
               {data.locked ? (
                 <LockedCard feature="promote" />
               ) : canStart ? (
-                <AppButton
-                  fullWidth
-                  leadingIcon={<Plus size={18} color={plusColor} />}
-                  onPress={() => setCreating(true)}
-                >
-                  Request a campaign
-                </AppButton>
+                <View style={{ gap: theme.spacing[2] }}>
+                  <AppButton
+                    fullWidth
+                    leadingIcon={<Plus size={18} color={plusColor} />}
+                    onPress={() => setCreating(true)}
+                  >
+                    Request a campaign
+                  </AppButton>
+                  {/* Paying for ads inside an iOS app needs in-app purchase, so only Android links to the website. */}
+                  {data.checkoutEnabled && Platform.OS === "android" ? (
+                    <AppButton
+                      variant="ghost"
+                      fullWidth
+                      leadingIcon={<ExternalLink size={16} color={theme.colors.text.primary} />}
+                      onPress={() => void openUrl(`${PROVIDER_WEB_URL}/promote`).catch((e: unknown) => toast(errorMessage(e), "error"))}
+                    >
+                      Pay online and start now
+                    </AppButton>
+                  ) : null}
+                </View>
               ) : (
                 <AppCallout title="Add a service first">
                   You can promote any category you offer.

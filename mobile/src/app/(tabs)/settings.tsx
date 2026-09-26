@@ -3,16 +3,20 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import Constants from "expo-constants";
 import {
+  Bell,
   FileText,
   HelpCircle,
+  LifeBuoy,
   LogIn,
   LogOut,
   Mail,
   Monitor,
   Moon,
   Phone,
+  PhoneCall,
   ShieldCheck,
   Star,
+  Store,
   Sun,
   Trash2,
   UserRound,
@@ -36,7 +40,7 @@ import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { ApiError, errorMessage } from "@/services/api";
-import { openEmail, openPhone, openUrl } from "@/services/links";
+import { openEmail, openPhone, openUrl, openWebPage } from "@/services/links";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import type { ThemePreference } from "@/types";
@@ -136,6 +140,30 @@ export default function SettingsScreen() {
               onPress={() => router.push("/profile")}
             />
           ) : null}
+          {user ? (
+            <AppListItem
+              title="Recent contacts"
+              subtitle="Providers you called or messaged"
+              leading={<PhoneCall size={18} color={icon} />}
+              onPress={() => router.push("/contacts")}
+            />
+          ) : null}
+          {user ? (
+            <AppListItem
+              title="Notifications"
+              subtitle="Replies to your reviews and support updates"
+              leading={<Bell size={18} color={icon} />}
+              onPress={() => router.push("/notifications")}
+            />
+          ) : null}
+          {user ? (
+            <AppListItem
+              title="Support requests"
+              subtitle="Ask the DialNFind team and follow the replies"
+              leading={<LifeBuoy size={18} color={icon} />}
+              onPress={() => router.push("/support")}
+            />
+          ) : null}
         </SettingsGroup>
 
         <View style={{ gap: theme.spacing[2] }}>
@@ -192,6 +220,12 @@ export default function SettingsScreen() {
             }
             leading={<Phone size={18} color={icon} />}
             onPress={() => void run(() => openPhone(phone), "Calling is not available.")}
+          />
+          <AppListItem
+            title="Own a business?"
+            subtitle="List it on DialNFind for free, or claim your listing"
+            leading={<Store size={18} color={icon} />}
+            onPress={() => void run(() => openWebPage("/claim"), "Could not open the page.")}
           />
           <AppListItem
             title="Rate DialNFind"

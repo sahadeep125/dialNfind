@@ -100,6 +100,20 @@ enum LeadDisputeStatus {
   rejected
 }
 
+// The provider's own follow-up on a lead.
+enum LeadProviderStatus {
+  new
+  contacted
+  won
+  lost
+}
+
+enum SponsoredOrderStatus {
+  created
+  paid
+  failed
+}
+
 enum LeadSource {
   search
   ai_match
@@ -258,6 +272,7 @@ model User {
   attributesCreated    CategoryAttribute[]
   claims               ProviderClaim[]     @relation("ClaimClaimant")
   claimsReviewed       ProviderClaim[]     @relation("ClaimReviewer")
+  pushTokens           PushToken[]
   contactMessages      ContactMessage[]
   adminRole            AdminRole?          @relation(fields: [adminRoleId], references: [id], onDelete: SetNull)
   tickets              SupportTicket[]     @relation("TicketRequester")
@@ -417,6 +432,7 @@ model Provider {
   invoices          Invoice[]
   tickets           SupportTicket[]
   sponsoredListings SponsoredListing[]
+  sponsoredOrders   SponsoredOrder[]
   claims            ProviderClaim[]
   dailyStats        ProviderDailyStat[]
 
@@ -463,12 +479,15 @@ model ProviderPortfolio {
   title       String
   description String?
   imageUrl    String   @map("image_url")
+  sortOrder   Int      @default(0) @map("sort_order")
+  // The photo shown first on the public listing.
+  isCover     Boolean  @default(false) @map("is_cover")
   createdAt   DateTime @default(now()) @map("created_at")
 
   provider Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
   category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  @@index([providerId])
+  @@index([providerId, sortOrder])
   @@map("provider_portfolio")
 }
 
@@ -580,6 +599,7 @@ model Category {
   searchQueries     SearchQuery[]
   leads             Lead[]
   sponsoredListings SponsoredListing[]
+  sponsoredOrders   SponsoredOrder[]
 
   @@map("categories")
 }
@@ -690,27 +710,31 @@ model SearchQuery {
 
 // A lead is the event of a customer tapping Call or WhatsApp on a provider.
 model Lead {
-  id                         BigInt            @id @default(autoincrement())
+  id                         BigInt             @id @default(autoincrement())
   // Nullable so guest taps are still counted.
-  userId                     BigInt?           @map("user_id")
-  providerId                 BigInt            @map("provider_id")
-  categoryId                 BigInt?           @map("category_id")
-  subcategoryId              BigInt?           @map("subcategory_id")
+  userId                     BigInt?            @map("user_id")
+  providerId                 BigInt             @map("provider_id")
+  categoryId                 BigInt?            @map("category_id")
+  subcategoryId              BigInt?            @map("subcategory_id")
   channel                    LeadChannel
-  source                     LeadSource        @default(search)
+  source                     LeadSource         @default(search)
   description                String?
-  customerReportedResponse   Boolean?          @map("customer_reported_response")
-  customerReportedResponseAt DateTime?         @map("customer_reported_response_at")
+  customerReportedResponse   Boolean?           @map("customer_reported_response")
+  customerReportedResponseAt DateTime?          @map("customer_reported_response_at")
   // Set when the contact was charged to a promotion, so an accepted dispute can refund it.
-  sponsoredListingId         BigInt?           @map("sponsored_listing_id")
-  sponsoredCharge            Decimal?          @map("sponsored_charge") @db.Decimal(10, 2)
+  sponsoredListingId         BigInt?            @map("sponsored_listing_id")
+  sponsoredCharge            Decimal?           @map("sponsored_charge") @db.Decimal(10, 2)
   // A provider can report a contact as spam or fake; the admin team decides.
-  disputeStatus              LeadDisputeStatus @default(none) @map("dispute_status")
-  disputeReason              String?           @map("dispute_reason")
-  disputedAt                 DateTime?         @map("disputed_at")
-  disputeResolvedBy          BigInt?           @map("dispute_resolved_by")
-  disputeResolvedAt          DateTime?         @map("dispute_resolved_at")
-  createdAt                  DateTime          @default(now()) @map("created_at")
+  disputeStatus              LeadDisputeStatus  @default(none) @map("dispute_status")
+  disputeReason              String?            @map("dispute_reason")
+  disputedAt                 DateTime?          @map("disputed_at")
+  disputeResolvedBy          BigInt?            @map("dispute_resolved_by")
+  disputeResolvedAt          DateTime?          @map("dispute_resolved_at")
+  // The provider's own tracking: where the job stands and a private note.
+  providerStatus             LeadProviderStatus @default(new) @map("provider_status")
+  providerNote               String?            @map("provider_note")
+  providerUpdatedAt          DateTime?          @map("provider_updated_at")
+  createdAt                  DateTime           @default(now()) @map("created_at")
 
   user        User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   provider    Provider          @relation(fields: [providerId], references: [id], onDelete: Cascade)
@@ -721,6 +745,7 @@ model Lead {
   review      Review?
 
   @@index([providerId, createdAt])
+  @@index([providerId, providerStatus])
   @@index([disputeStatus])
   @@index([userId])
   @@map("leads")
@@ -947,17 +972,55 @@ model SponsoredListing {
   clicks         Int             @default(0)
   status         SponsoredStatus @default(active)
 
-  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  provider Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   leads    Lead[]
+  orders   SponsoredOrder[]
 
   @@index([categoryId, status])
   @@map("sponsored_listings")
 }
 
+// A campaign the provider pays for online. The campaign is created once Razorpay confirms the payment.
+model SponsoredOrder {
+  id                 BigInt               @id @default(autoincrement())
+  providerId         BigInt               @map("provider_id")
+  categoryId         BigInt               @map("category_id")
+  days               Int
+  budget             Decimal              @db.Decimal(10, 2)
+  // Budget plus GST: what the provider is charged.
+  amount             Decimal              @db.Decimal(10, 2)
+  razorpayOrderId    String               @unique @map("razorpay_order_id")
+  status             SponsoredOrderStatus @default(created)
+  sponsoredListingId BigInt?              @map("sponsored_listing_id")
+  createdAt          DateTime             @default(now()) @map("created_at")
+
+  provider  Provider          @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category  Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  sponsored SponsoredListing? @relation(fields: [sponsoredListingId], references: [id], onDelete: SetNull)
+
+  @@index([providerId])
+  @@map("sponsored_orders")
+}
+
 // ---------------------------------------------------------------------------
 // 7. Notifications & platform admin
 // ---------------------------------------------------------------------------
+
+// Expo push tokens for the business app; a user can be signed in on several devices.
+model PushToken {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt   @map("user_id")
+  token      String   @unique
+  platform   String   @db.VarChar(10)
+  createdAt  DateTime @default(now()) @map("created_at")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_tokens")
+}
 
 model Notification {
   id        BigInt   @id @default(autoincrement())

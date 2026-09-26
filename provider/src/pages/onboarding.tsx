@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +6,7 @@ import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Hours, ProviderService, ServiceArea } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/draft";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,15 +46,28 @@ function collect(result: z.SafeParseReturnType<unknown, unknown>): Errors {
   return out;
 }
 
+interface Draft {
+  step: number;
+  business: { businessName: string; businessType: "individual" | "company"; yearsExperience: string; description: string };
+  services: ProviderService[];
+  location: LocationValue;
+  areas: ServiceArea[];
+  hours: Hours[];
+  contact: { phone: string; whatsappNumber: string; email: string; website: string; acceptsCalls: boolean; acceptsWhatsapp: boolean };
+}
+
 export function OnboardingPage() {
   const { user, providerState, signIn, refresh } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  const draftKey = `dnf_onboarding_${user?.id ?? "anon"}`;
+  // Picks up where the person left off if they refreshed or came back later.
+  const [draft] = useState(() => loadDraft<Draft>(draftKey));
+  const [step, setStep] = useState(draft?.step ?? 0);
   const [saving, setSaving] = useState(false);
 
-  const [business, setBusiness] = useState({ businessName: "", businessType: "individual" as "individual" | "company", yearsExperience: "", description: "" });
-  const [services, setServices] = useState<ProviderService[]>([]);
-  const [location, setLocation] = useState<LocationValue>({
+  const [business, setBusiness] = useState<Draft["business"]>(draft?.business ?? { businessName: "", businessType: "individual", yearsExperience: "", description: "" });
+  const [services, setServices] = useState<ProviderService[]>(draft?.services ?? []);
+  const [location, setLocation] = useState<LocationValue>(draft?.location ?? {
     addressLine: "",
     locality: "",
     city: "Siliguri",
@@ -63,13 +77,20 @@ export function OnboardingPage() {
     longitude: 88.3953,
     serviceRadiusKm: 10,
   });
-  const [areas, setAreas] = useState<ServiceArea[]>([]);
-  const [hours, setHours] = useState<Hours[]>(DEFAULT_HOURS);
-  const [contact, setContact] = useState({ phone: user?.phone ?? "", whatsappNumber: "", email: user?.email ?? "", website: "", acceptsCalls: true, acceptsWhatsapp: true });
+  const [areas, setAreas] = useState<ServiceArea[]>(draft?.areas ?? []);
+  const [hours, setHours] = useState<Hours[]>(draft?.hours ?? DEFAULT_HOURS);
+  const [contact, setContact] = useState<Draft["contact"]>(
+    draft?.contact ?? { phone: user?.phone ?? "", whatsappNumber: "", email: user?.email ?? "", website: "", acceptsCalls: true, acceptsWhatsapp: true },
+  );
   const [errors, setErrors] = useState<Errors>({});
   const [locationErrors, setLocationErrors] = useState<LocationErrors | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const clear = (key: string) => errors[key] && setErrors(({ [key]: _, ...rest }) => rest);
+
+  useEffect(() => {
+    const t = setTimeout(() => saveDraft(draftKey, { step, business, services, location, areas, hours, contact } satisfies Draft), 400);
+    return () => clearTimeout(t);
+  }, [draftKey, step, business, services, location, areas, hours, contact]);
 
   if (providerState?.provider) return <Navigate to="/" replace />;
 
@@ -132,6 +153,7 @@ export function OnboardingPage() {
           hours,
         },
       });
+      clearDraft(draftKey);
       if (res.token) await signIn(res.token);
       else await refresh();
       toast.success("Your business is live on DialNFind");

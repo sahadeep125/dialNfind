@@ -6,7 +6,7 @@ import { AppButton, AppInput, AppPressable, AppText } from "@/components/design-
 import { useTheme } from "@/hooks/useTheme";
 import type { ServiceArea } from "@/types";
 import { areaError } from "@/utils/onboarding";
-import { LocationSearchField } from "./LocationSearchField";
+import { LocationSearchField } from "@/components/areas/LocationSearchField";
 
 interface Props {
   value: ServiceArea[];

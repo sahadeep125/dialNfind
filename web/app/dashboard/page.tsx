@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     { label: "Favorites", value: overview.stats.favorites, icon: Heart, href: "/dashboard/favorites" },
     { label: "Providers contacted", value: overview.stats.contacts, icon: History, href: "/dashboard/contacts" },
     { label: "Reviews written", value: overview.stats.reviews, icon: MessageSquare, href: "/dashboard/reviews" },
-    { label: "Unread updates", value: overview.stats.unreadNotifications, icon: Bell, href: "/dashboard" },
+    { label: "Unread updates", value: overview.stats.unreadNotifications, icon: Bell, href: "/dashboard/notifications" },
   ];
 
   return (

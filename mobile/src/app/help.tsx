@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { ChevronDown, Mail, Phone } from "lucide-react-native";
+import { router } from "expo-router";
+import { ChevronDown, LifeBuoy, Mail, Phone } from "lucide-react-native";
 
 import { AppButton, AppCard, AppDivider, AppPressable, AppText } from "@/components/design-system";
 import { Screen, ScreenHeader } from "@/components/layout";
@@ -9,6 +10,7 @@ import { useAppConfig } from "@/hooks/useAppConfig";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { openEmail, openPhone } from "@/services/links";
 
 const FAQ: { q: string; a: string }[] = [
@@ -42,11 +44,12 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How do I delete my account?",
-    a: "Go to Settings and tap Delete account. You will be asked for your password to confirm.",
+    a: "Go to Settings and tap Delete account. If you sign in with a password, you will be asked for it to confirm.",
   },
 ];
 
 export default function HelpScreen() {
+  const signedIn = useAuthStore((s) => !!s.token);
   const theme = useTheme();
   const toast = useToast();
   const { data: config } = useAppConfig();
@@ -115,10 +118,19 @@ export default function HelpScreen() {
                 ? `Our team is available ${config.support_hours}.`
                 : "Our team usually replies within one working day."}
             </AppText>
+            {signedIn ? (
+              <AppButton
+                leadingIcon={<LifeBuoy size={16} color="#FFFFFF" />}
+                onPress={() => router.push("/support")}
+              >
+                Open a support request
+              </AppButton>
+            ) : null}
             <View style={styles.row}>
               <AppButton
+                variant={signedIn ? "secondary" : "primary"}
                 style={styles.flex}
-                leadingIcon={<Mail size={16} color="#FFFFFF" />}
+                leadingIcon={<Mail size={16} color={signedIn ? theme.colors.text.primary : "#FFFFFF"} />}
                 onPress={() => void run(() => openEmail(email, "Help with DialNFind"))}
               >
                 Email us

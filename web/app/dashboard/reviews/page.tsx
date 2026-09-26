@@ -4,6 +4,7 @@ import { MessageSquareReply, PenLine } from "lucide-react";
 import { api } from "@/lib/api";
 import { requireSession } from "@/lib/session";
 import { formatDate } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RatingStars } from "@/components/provider/rating";
 import { DeleteReviewButton } from "@/components/dashboard/my-review-actions";
@@ -38,6 +39,7 @@ export default async function MyReviewsPage() {
                 </Link>
                 <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                   <RatingStars value={r.rating} /> {formatDate(r.createdAt)} · {r.provider.locality ?? r.provider.city}
+                  {r.status !== "published" && <Badge variant="secondary">{r.status === "flagged" ? "Under review" : "Removed"}</Badge>}
                 </div>
               </div>
               <div className="flex gap-1">

@@ -92,9 +92,20 @@ export interface ProviderProfile {
   businessHours: Hours[];
   serviceAreas: ServiceArea[];
   services: ProviderService[];
-  portfolio: { id: number; title: string; description: string | null; imageUrl: string; categoryId: number | null }[];
+  portfolio: PortfolioItem[];
   badges: { badge: { id: number; name: string } }[];
   checklist: ChecklistItem[];
+}
+
+export interface PortfolioItem {
+  id: number;
+  title: string;
+  description: string | null;
+  imageUrl: string;
+  categoryId: number | null;
+  sortOrder: number;
+  /** Shown first on the public listing. */
+  isCover: boolean;
 }
 
 export interface LocationOption {
@@ -174,4 +185,100 @@ export interface BillingResponse {
   web: { enabled: boolean; keyId: string | null };
   managedIn: "web" | "app_store" | "play_store" | "support" | null;
   manageUrl: string | null;
+}
+
+// Leads ------------------------------------------------------------------------------------------
+
+export type LeadChannel = "call" | "whatsapp";
+/** The provider's own follow-up on a lead. */
+export type LeadStatus = "new" | "contacted" | "won" | "lost";
+
+export interface Lead {
+  id: number;
+  channel: LeadChannel;
+  source: string;
+  description: string | null;
+  createdAt: string;
+  customerName: string;
+  /** Only for signed-in customers with a number on file; null while the lead is locked. */
+  customerPhone: string | null;
+  isGuest: boolean;
+  service: string | null;
+  customerReportedResponse: boolean | null;
+  reviewRating: number | null;
+  details: { label: string; value: string }[];
+  disputeStatus: "none" | "open" | "accepted" | "rejected";
+  disputeReason: string | null;
+  providerStatus: LeadStatus;
+  providerNote: string | null;
+  /** Past the plan's monthly lead limit: the details stay hidden until the provider upgrades. */
+  locked: boolean;
+}
+
+export interface LeadsResponse {
+  leads: Lead[];
+  leadLimit: number | null;
+  page: number;
+  totalPages: number;
+  total: number;
+}
+
+// Reviews ----------------------------------------------------------------------------------------
+
+export interface ProviderReview {
+  id: number;
+  rating: number;
+  reviewText: string | null;
+  providerReply: string | null;
+  providerReplyAt: string | null;
+  status: string;
+  isVerifiedContact: boolean;
+  createdAt: string;
+  author: string;
+  photos: string[];
+  /** The provider already reported it to the moderation team. */
+  reported: boolean;
+}
+
+export interface ReviewsResponse {
+  summary: { avgRating: number; totalReviews: number; breakdown: { rating: number; count: number }[] };
+  reviews: ProviderReview[];
+  page: number;
+  totalPages: number;
+}
+
+// Promotions -------------------------------------------------------------------------------------
+
+export interface Campaign {
+  id: number;
+  status: "active" | "paused" | "completed";
+  startDate: string;
+  endDate: string;
+  budget: number;
+  amountSpent: number;
+  impressions: number;
+  clicks: number;
+  ctrPct: number | null;
+  targetLocation: string | null;
+  category: { id: number; name: string };
+}
+
+export interface PromoteResponse {
+  /** Campaigns need the Business plan; past campaigns stay visible either way. */
+  locked: boolean;
+  listings: Campaign[];
+  categories: { id: number; name: string }[];
+  pricing: { costPerClick: number; minBudget: number; city: string; gstRate: number };
+  /** Online payment is available; otherwise campaigns are requested from the team. */
+  checkoutEnabled: boolean;
+}
+
+export interface SponsoredCheckout {
+  orderId: string;
+  keyId: string;
+  name: string;
+  description: string;
+  amount: number;
+  currency: string;
+  prefill: { name?: string; email?: string; contact?: string };
 }

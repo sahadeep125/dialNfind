@@ -292,3 +292,74 @@ export function AddressManager({ addresses }: { addresses: Address[] }) {
     </div>
   );
 }
+
+/** Permanently deletes the account after a password check (accounts made with Google or Apple have none). */
+export function DeleteAccountForm({ hasPassword }: { hasPassword: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function confirmDelete() {
+    if (hasPassword && !pw) {
+      setError("Enter your password to confirm");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await clientApi("/auth/me", { method: "DELETE", body: JSON.stringify(hasPassword ? { password: pw } : {}) });
+      // The API has already ended the session; this clears the cookie.
+      await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+      toast.success("Your account has been deleted");
+      window.location.assign("/");
+    } catch (err) {
+      setError(errorMessage(err));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) {
+          setPw("");
+          setError(null);
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="destructive">
+          <Trash2 /> Delete account
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete your account?</DialogTitle>
+          <DialogDescription>
+            Your profile, reviews, favorites and saved addresses are removed and you are signed out everywhere. This cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        {error && <FormAlert message={error} />}
+        {hasPassword && (
+          <div className="grid gap-2">
+            <label htmlFor="delete-password" className="text-sm font-medium">
+              Your password
+            </label>
+            <Input id="delete-password" type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} />
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={confirmDelete} disabled={busy}>
+            {busy && <Loader2 className="animate-spin" />} Delete account
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,35 +1,17 @@
 import { useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, Loader2, MessageSquare, Pencil, Reply } from "lucide-react";
+import { BadgeCheck, Flag, Loader2, MessageSquare, Pencil, Reply } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { formatRelative, initials } from "@/lib/format";
+import type { ProviderReview, ReviewsResponse } from "@/lib/types";
+import { ReportDialog } from "@/components/report-dialog";
 import { PageHeader, Panel } from "@/components/page-header";
 import { EmptyState, PageSkeleton, Pager, Stars } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-
-interface Review {
-  id: number;
-  rating: number;
-  reviewText: string | null;
-  providerReply: string | null;
-  providerReplyAt: string | null;
-  status: string;
-  isVerifiedContact: boolean;
-  createdAt: string;
-  author: string;
-  photos: string[];
-}
-
-interface ReviewsResponse {
-  summary: { avgRating: number; totalReviews: number; breakdown: { rating: number; count: number }[] };
-  reviews: Review[];
-  page: number;
-  totalPages: number;
-}
 
 export function ReviewsPage() {
   const [filter, setFilter] = useState<"all" | "unreplied">("all");
@@ -93,9 +75,18 @@ export function ReviewsPage() {
   );
 }
 
-function ReviewCard({ review }: { review: Review }) {
+function ReviewCard({ review }: { review: ProviderReview }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const report = useMutation({
+    mutationFn: (reason: string) => api(`/provider/reviews/${review.id}/report`, { method: "POST", json: { reason } }),
+    onSuccess: () => {
+      toast.success("Thanks. Our team will check this review against the guidelines.");
+      setReporting(false);
+      void qc.invalidateQueries({ queryKey: ["reviews"] });
+    },
+  });
   const [text, setText] = useState(review.providerReply ?? "");
   const [error, setError] = useState<string | null>(null);
   const publish = () => {
@@ -127,6 +118,15 @@ function ReviewCard({ review }: { review: Review }) {
                 <BadgeCheck className="size-3.5" /> Contacted via DialNFind
               </span>
             )}
+            <span className="ml-auto">
+              {review.reported ? (
+                <span className="text-xs text-muted-foreground">Reported to our team</span>
+              ) : (
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground" onClick={() => setReporting(true)}>
+                  <Flag className="size-3" /> Report
+                </Button>
+              )}
+            </span>
           </div>
           <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
             <Stars rating={review.rating} /> {formatRelative(review.createdAt)}
@@ -194,6 +194,16 @@ function ReviewCard({ review }: { review: Review }) {
           )}
         </div>
       </div>
+      <ReportDialog
+        open={reporting}
+        title="Report this review"
+        description="For fake, abusive or wrong-business reviews. Our team checks it against the review guidelines and removes it if it breaks them."
+        label="What is wrong with this review?"
+        sending={report.isPending}
+        error={report.error ? errorMessage(report.error) : null}
+        onSend={(reason) => report.mutate(reason)}
+        onClose={() => (report.reset(), setReporting(false))}
+      />
     </Panel>
   );
 }

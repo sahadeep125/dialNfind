@@ -4,6 +4,10 @@ export function formatPhone(phone: string): string {
   return phone;
 }
 
+/** tel: and WhatsApp links for a stored number (+91XXXXXXXXXX). */
+export const telLink = (phone: string) => `tel:${phone.replace(/[^\d+]/g, "")}`;
+export const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
+
 export function formatPrice(n: number | null | undefined) {
   if (n === null || n === undefined) return "";
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);

@@ -7,20 +7,23 @@ import {
   View,
   type ListRenderItemInfo,
 } from "react-native";
-import { PhoneIncoming } from "lucide-react-native";
+import { PhoneIncoming, Search } from "lucide-react-native";
 
-import { AppChip, AppText } from "@/components/design-system";
+import { AppChip, AppInput, AppText } from "@/components/design-system";
 import { EmptyState, ErrorState, Screen } from "@/components/layout";
 import { PlanBanner } from "@/components/subscription/PlanBanner";
 import { LeadRow } from "@/components/leads/LeadRow";
 import { LeadRowSkeleton } from "@/components/leads/LeadRowSkeleton";
 import { ReportLeadSheet } from "@/components/leads/ReportLeadSheet";
+import { LeadActionsSheet } from "@/components/leads/LeadActionsSheet";
+import { LEAD_STATUS_OPTIONS, isReportable } from "@/components/leads/leadStatus";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useLeads } from "@/hooks/useLeads";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
 import { openPhone, openWhatsApp } from "@/services/links";
-import type { Lead, LeadFilter } from "@/types/leads";
+import type { Lead, LeadFilter, LeadStatus } from "@/types/leads";
 import { plural } from "@/utils/format";
 
 const FILTERS: { value: LeadFilter; label: string }[] = [
@@ -33,7 +36,11 @@ export default function LeadsScreen() {
   const theme = useTheme();
   const toast = useToast();
   const [channel, setChannel] = useState<LeadFilter>("all");
+  const [status, setStatus] = useState<LeadStatus | "all">("all");
+  const [search, setSearch] = useState("");
+  const q = useDebounce(search.trim());
   const [reporting, setReporting] = useState<Lead | null>(null);
+  const [managing, setManaging] = useState<Lead | null>(null);
   const {
     data,
     error,
@@ -44,7 +51,8 @@ export default function LeadsScreen() {
     hasNextPage,
     fetchNextPage,
     refetch,
-  } = useLeads(channel);
+  } = useLeads({ channel, status, q });
+  const filtered = channel !== "all" || status !== "all" || q !== "";
 
   const leads = useMemo(() => data?.pages.flatMap((p) => p.leads) ?? [], [data]);
   const total = data?.pages[0]?.total;
@@ -64,7 +72,7 @@ export default function LeadsScreen() {
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<Lead>) => (
-      <LeadRow lead={item} onCall={onCall} onWhatsApp={onWhatsApp} onReport={setReporting} />
+      <LeadRow lead={item} onCall={onCall} onWhatsApp={onWhatsApp} onReport={setReporting} onManage={setManaging} />
     ),
     [onCall, onWhatsApp],
   );
@@ -80,6 +88,16 @@ export default function LeadsScreen() {
         </AppText>
       </View>
       <PlanBanner />
+      <AppInput
+        value={search}
+        onChangeText={setSearch}
+        placeholder="Search name, service or message"
+        accessibilityLabel="Search leads"
+        autoCorrect={false}
+        returnKeyType="search"
+        maxLength={100}
+        leadingIcon={<Search size={18} color={theme.colors.text.tertiary} />}
+      />
       <View style={[styles.chips, { gap: theme.spacing[2] }]}>
         {FILTERS.map((f) => (
           <AppChip
@@ -88,6 +106,17 @@ export default function LeadsScreen() {
             size="sm"
             selected={channel === f.value}
             onPress={() => setChannel(f.value)}
+          />
+        ))}
+      </View>
+      <View style={[styles.chips, { gap: theme.spacing[2] }]}>
+        {[{ value: "all" as const, label: "Any status" }, ...LEAD_STATUS_OPTIONS].map((f) => (
+          <AppChip
+            key={f.value}
+            label={f.label}
+            size="sm"
+            selected={status === f.value}
+            onPress={() => setStatus(f.value)}
           />
         ))}
       </View>
@@ -119,6 +148,8 @@ export default function LeadsScreen() {
             </View>
           ) : isError ? (
             <ErrorState error={error} onRetry={() => void refetch()} />
+          ) : filtered ? (
+            <EmptyState icon={Search} title="No leads match" text="Try a different status or search." />
           ) : (
             <EmptyState
               icon={PhoneIncoming}
@@ -148,6 +179,11 @@ export default function LeadsScreen() {
         windowSize={9}
       />
       <ReportLeadSheet lead={reporting} onClose={() => setReporting(null)} />
+      <LeadActionsSheet
+        lead={managing}
+        onClose={() => setManaging(null)}
+        onReport={managing && isReportable(managing) ? setReporting : undefined}
+      />
     </Screen>
   );
 }

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
+import { forgetPushToken, storedPushToken } from "@/services/push";
 import {
   socialSignOut,
   type ApplePayload,
@@ -88,7 +89,9 @@ export function useAuthActions() {
 
   const signOut = (): void => {
     // Ends the session on the server too; the request carries the token before the store clears it.
-    void api("/auth/logout", { method: "POST" }).catch(() => undefined);
+    const pushToken = storedPushToken();
+    void api("/auth/logout", { method: "POST", body: pushToken ? { pushToken } : undefined }).catch(() => undefined);
+    forgetPushToken();
     signOutStore();
     void socialSignOut();
     qc.removeQueries({

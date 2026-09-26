@@ -1,6 +1,7 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers as requestHeaders } from "next/headers";
 import { API_URL, TOKEN_COOKIE } from "./config";
+import { forwardClientIp } from "./client-ip";
 
 export class ApiError extends Error {
   constructor(
@@ -32,6 +33,7 @@ export async function api<T>(path: string, init: RequestInit & { query?: Query; 
     const token = (await cookies()).get(TOKEN_COOKIE)?.value;
     if (token) headers.set("authorization", `Bearer ${token}`);
   }
+  forwardClientIp(await requestHeaders(), headers);
   const res = await fetch(`${API_URL}${path}${query ? toQuery(query) : ""}`, { cache: "no-store", ...rest, headers });
   if (!res.ok) {
     let message = res.statusText;

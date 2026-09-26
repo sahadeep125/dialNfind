@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
-import { Flag, Lock, MessageCircle, Phone } from "lucide-react-native";
+import { ClipboardList, Flag, Lock, MessageCircle, Phone, StickyNote } from "lucide-react-native";
 
 import { AppBadge, AppButton, AppCard, AppPressable, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
@@ -9,6 +9,7 @@ import type { Lead } from "@/types/leads";
 import { formatRelative } from "@/utils/format";
 import { ChannelIcon } from "./ChannelIcon";
 import { LeadOutcome } from "./LeadOutcome";
+import { LEAD_STATUS, isReportable } from "./leadStatus";
 
 const SOURCE_LABEL: Record<string, string> = {
   search: "Search results",
@@ -17,7 +18,6 @@ const SOURCE_LABEL: Record<string, string> = {
   ai_match: "Smart match",
 };
 
-const DISPUTE_DAYS = 30;
 const DISPUTE_LABEL = { open: "Reported, under review", accepted: "Report accepted", rejected: "Report not accepted" } as const;
 
 interface Props {
@@ -25,10 +25,12 @@ interface Props {
   onCall: (phone: string) => void;
   onWhatsApp: (phone: string) => void;
   onReport: (lead: Lead) => void;
+  /** Opens the follow-up sheet (status and note). */
+  onManage: (lead: Lead) => void;
 }
 
-export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp, onReport }: Props) {
-  const canReport = lead.disputeStatus === "none" && Date.now() - new Date(lead.createdAt).getTime() <= DISPUTE_DAYS * 86_400_000;
+export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp, onReport, onManage }: Props) {
+  const canReport = isReportable(lead);
   const theme = useTheme();
   const phone = lead.customerPhone;
   const details = lead.details.map((d) => `${d.label}: ${d.value}`).join(" · ");
@@ -52,6 +54,7 @@ export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp, onRepor
             {lead.channel === "call" ? "Call" : "WhatsApp"} · {formatRelative(lead.createdAt)}
           </AppText>
         </View>
+        {lead.locked ? null : <AppBadge label={LEAD_STATUS[lead.providerStatus].label} tone={LEAD_STATUS[lead.providerStatus].tone} />}
       </View>
 
       <View style={[{ gap: theme.spacing[1], marginTop: theme.spacing[3] }]}>
@@ -69,6 +72,15 @@ export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp, onRepor
           </AppText>
         ) : null}
       </View>
+
+      {lead.providerNote ? (
+        <View style={[styles.note, { gap: theme.spacing[2], marginTop: theme.spacing[3], padding: theme.spacing[3], borderRadius: theme.radius.md, backgroundColor: theme.colors.background.secondary }]}>
+          <StickyNote size={14} color={theme.colors.text.tertiary} />
+          <AppText variant="caption" tone="secondary" numberOfLines={3} style={styles.shrink}>
+            {lead.providerNote}
+          </AppText>
+        </View>
+      ) : null}
 
       <View style={[styles.footer, { gap: theme.spacing[2], marginTop: theme.spacing[3] }]}>
         <AppText variant="caption" tone="tertiary" style={styles.shrink} numberOfLines={1}>
@@ -93,7 +105,7 @@ export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp, onRepor
         <View style={{ marginTop: theme.spacing[2] }}>
           <AppBadge label={DISPUTE_LABEL[lead.disputeStatus]} tone="neutral" />
         </View>
-      ) : canReport ? (
+      ) : canReport && lead.locked ? (
         <AppPressable
           accessibilityRole="button"
           accessibilityLabel={`Report the contact from ${lead.customerName}`}
@@ -108,28 +120,42 @@ export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp, onRepor
         </AppPressable>
       ) : null}
 
-      {phone ? (
+      {lead.locked ? null : (
         <View style={[styles.actions, { gap: theme.spacing[2], marginTop: theme.spacing[3] }]}>
+          {phone ? (
+            <>
+              <AppButton
+                variant="soft"
+                size="sm"
+                leadingIcon={<Phone size={16} color={theme.colors.brand.softText} />}
+                onPress={() => onCall(phone)}
+                style={styles.action}
+              >
+                Call back
+              </AppButton>
+              <AppButton
+                variant="secondary"
+                size="sm"
+                leadingIcon={<MessageCircle size={16} color={theme.colors.semantic.success} />}
+                onPress={() => onWhatsApp(phone)}
+                style={styles.action}
+              >
+                WhatsApp
+              </AppButton>
+            </>
+          ) : null}
           <AppButton
-            variant="soft"
+            variant="ghost"
             size="sm"
-            leadingIcon={<Phone size={16} color={theme.colors.brand.softText} />}
-            onPress={() => onCall(phone)}
+            accessibilityLabel={`Follow up on ${lead.customerName}: status, note${canReport ? " or report" : ""}`}
+            leadingIcon={<ClipboardList size={16} color={theme.colors.text.primary} />}
+            onPress={() => onManage(lead)}
             style={styles.action}
           >
-            Call back
-          </AppButton>
-          <AppButton
-            variant="secondary"
-            size="sm"
-            leadingIcon={<MessageCircle size={16} color={theme.colors.semantic.success} />}
-            onPress={() => onWhatsApp(phone)}
-            style={styles.action}
-          >
-            WhatsApp
+            Follow up
           </AppButton>
         </View>
-      ) : null}
+      )}
     </AppCard>
   );
 });
@@ -148,4 +174,5 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", flexWrap: "wrap" },
   action: { flexGrow: 1 },
   report: { alignItems: "center", alignSelf: "flex-start", flexDirection: "row" },
+  note: { alignItems: "flex-start", flexDirection: "row" },
 });

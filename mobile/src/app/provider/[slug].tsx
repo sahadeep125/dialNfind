@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Globe, Mail, MapPin, PenLine, SearchX } from "lucide-react-native";
+import { Flag, Globe, Mail, MapPin, PenLine, SearchX } from "lucide-react-native";
 
 import {
   AppButton,
@@ -18,17 +18,21 @@ import {
   DetailSection,
   HoursList,
   PortfolioStrip,
+  ProviderCard,
   ProviderHero,
   RatingBreakdown,
+  ReportSheet,
   ReviewItem,
 } from "@/components/providers";
 import { MAX_CONTENT_WIDTH } from "@/constants/spacing";
 import { useProvider } from "@/hooks/useProvider";
 import { useProviderReviews } from "@/hooks/useProviderReviews";
+import type { ReportTarget } from "@/hooks/useReport";
+import { useSimilarProviders } from "@/hooks/useSimilarProviders";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { ApiError, errorMessage } from "@/services/api";
-import { openEmail, openUrl } from "@/services/links";
+import { openEmail, openMaps, openUrl } from "@/services/links";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatDate, formatPrice } from "@/utils/format";
 
@@ -40,6 +44,8 @@ export default function ProviderScreen() {
   const signedIn = useAuthStore((s) => !!s.token);
   const { data: p, isLoading, isError, error, refetch } = useProvider(slug);
   const reviews = useProviderReviews(slug);
+  const similar = useSimilarProviders(slug);
+  const [reporting, setReporting] = useState<ReportTarget | null>(null);
   const reviewList = useMemo(
     () => reviews.data?.pages.flatMap((page) => page.reviews) ?? [],
     [reviews.data],
@@ -173,6 +179,9 @@ export default function ProviderScreen() {
                   title={p.addressLine}
                   subtitle={[p.locality, p.city, p.pincode].filter(Boolean).join(", ")}
                   leading={<MapPin size={18} color={theme.colors.brand.primary} />}
+                  onPress={() =>
+                    void open(() => openMaps(p.latitude, p.longitude, `${p.businessName}, ${p.addressLine}`))
+                  }
                 />
               ) : null}
               {p.email ? (
@@ -215,11 +224,19 @@ export default function ProviderScreen() {
             {reviewList.map((r) => (
               <View key={r.id} style={{ gap: theme.spacing[3] }}>
                 <AppDivider />
-                <ReviewItem review={r} />
+                <ReviewItem
+                  review={r}
+                  onReport={(review) =>
+                    setReporting({ kind: "review", id: review.id, name: review.author.name })
+                  }
+                />
               </View>
             ))}
             {reviews.isLoading ? <ActivityIndicator color={theme.colors.brand.primary} /> : null}
-            {!reviews.isLoading && !reviewList.length ? (
+            {reviews.isError && !reviewList.length ? (
+              <ErrorState error={reviews.error} onRetry={() => void reviews.refetch()} />
+            ) : null}
+            {!reviews.isLoading && !reviews.isError && !reviewList.length ? (
               <AppText tone="secondary">
                 No reviews yet. Be the first to share your experience.
               </AppText>
@@ -234,8 +251,29 @@ export default function ProviderScreen() {
               </AppButton>
             ) : null}
           </DetailSection>
+
+          {similar.data?.length ? (
+            <DetailSection title="Similar providers nearby">
+              <View style={{ gap: theme.spacing[3] }}>
+                {similar.data.map((s) => (
+                  <ProviderCard key={s.id} provider={s} source="profile" />
+                ))}
+              </View>
+            </DetailSection>
+          ) : null}
+
+          <AppButton
+            variant="ghost"
+            size="sm"
+            leadingIcon={<Flag size={14} color={theme.colors.text.secondary} />}
+            onPress={() => setReporting({ kind: "provider", slug: p.slug, name: p.businessName })}
+            style={styles.reportListing}
+          >
+            Report this listing
+          </AppButton>
         </View>
       </ScrollView>
+      <ReportSheet target={reporting} onClose={() => setReporting(null)} />
       <View
         style={[
           styles.bottomBar,
@@ -264,6 +302,7 @@ const styles = StyleSheet.create({
   },
   detailValue: { flexShrink: 1, textAlign: "right" },
   flex: { flex: 1 },
+  reportListing: { alignSelf: "center" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   bottomBar: { borderTopWidth: 1, paddingHorizontal: 16, paddingTop: 12 },
   bottomInner: { alignSelf: "center", maxWidth: MAX_CONTENT_WIDTH, width: "100%" },

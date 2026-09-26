@@ -11,7 +11,7 @@ import type { ServiceArea } from "@/types";
 import type { LocationDraft, StepErrors } from "@/types/onboarding";
 import { RADIUS_OPTIONS } from "@/utils/onboarding";
 import { AreasEditor } from "./AreasEditor";
-import { LocationSearchField } from "./LocationSearchField";
+import { LocationSearchField } from "@/components/areas/LocationSearchField";
 import { StepTitle } from "./StepTitle";
 
 interface Props {

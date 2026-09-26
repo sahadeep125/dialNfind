@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import { Loader2 } from "lucide-react";
 import { APPLE_REDIRECT_URI, APPLE_SERVICES_ID, GOOGLE_CLIENT_ID } from "@/lib/config";
 import { api, errorMessage } from "@/lib/api";
@@ -86,7 +87,17 @@ export function SocialButtons({ mode, onError, onSignedIn }: Props) {
             )}
           </div>
         )}
-        <p className="text-center text-xs text-muted-foreground">By continuing you agree to the provider terms and to your business phone number being shown to customers.</p>
+        <p className="text-center text-xs text-muted-foreground">
+          By continuing you agree to the{" "}
+          <Link to="/terms" target="_blank" className="text-primary hover:underline">
+            terms for businesses
+          </Link>{" "}
+          and{" "}
+          <Link to="/privacy" target="_blank" className="text-primary hover:underline">
+            privacy policy
+          </Link>
+          , and to your business phone number being shown to customers.
+        </p>
       </div>
       <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
         <span className="h-px flex-1 bg-border" />

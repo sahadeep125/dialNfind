@@ -237,3 +237,23 @@ export interface AppConfig {
   privacy_url: string | null;
   min_review_length: number;
 }
+
+export type UploadPurpose = "avatar" | "logo" | "cover" | "portfolio" | "review" | "document";
+
+/** A file chosen from the photo library, camera or document picker, ready to upload. */
+export interface PickedFile {
+  uri: string;
+  name: string;
+  mimeType: string;
+  size: number | null;
+}
+
+export interface SelectOption<T extends string | number> {
+  value: T;
+  label: string;
+  description?: string;
+}
+
+export interface ContactsPage extends Paged {
+  contacts: ContactHistoryItem[];
+}

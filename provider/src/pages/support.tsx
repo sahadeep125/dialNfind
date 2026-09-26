@@ -4,13 +4,15 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, FileText, Headset, LifeBuoy, Loader2, Paperclip, Plus, Send, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Clock, FileText, Headset, LifeBuoy, Loader2, Mail, Paperclip, Phone, Plus, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
-import { formatDate, formatRelative } from "@/lib/format";
+import { formatDate, formatPhone, formatRelative, telLink } from "@/lib/format";
+import { useAppConfig } from "@/lib/app-config";
+import { FAQ } from "@/lib/help";
 import { checkFile, uploadFile } from "@/lib/upload";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader, Panel } from "@/components/page-header";
 import { EmptyState, Pager, PageSkeleton } from "@/components/common";
 import { Field, fieldA11y, FormAlert } from "@/components/form";
 import { Badge } from "@/components/ui/badge";
@@ -103,8 +105,66 @@ export function SupportPage() {
         </ul>
       )}
       {data && <Pager page={data.page} totalPages={data.totalPages} onPage={setPage} />}
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
+        <Panel title="Common questions">
+          <div className="divide-y">
+            {FAQ.map((f) => (
+              <details key={f.q} className="group py-3 first:pt-0 last:pb-0">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium [&::-webkit-details-marker]:hidden">
+                  {f.q}
+                  <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+                </summary>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </Panel>
+        <ContactPanel />
+      </div>
       {creating && <NewTicketDialog onClose={() => setCreating(false)} />}
     </>
+  );
+}
+
+/** Support contacts come from the admin console, so they are only shown once set there. */
+function ContactPanel() {
+  const { data: config, isLoading } = useAppConfig();
+  const email = config?.support_email;
+  const phone = config?.support_phone;
+  return (
+    <Panel title="Other ways to reach us" className="h-fit">
+      {isLoading ? (
+        <div className="h-16 animate-pulse rounded-lg bg-muted" />
+      ) : (
+        <div className="space-y-3 text-sm">
+          {email && (
+            <a href={`mailto:${email}`} className="flex items-center gap-2 text-primary hover:underline">
+              <Mail className="size-4" /> {email}
+            </a>
+          )}
+          {phone && (
+            <a href={telLink(phone)} className="flex items-center gap-2 text-primary hover:underline">
+              <Phone className="size-4" /> {formatPhone(phone)}
+            </a>
+          )}
+          {config?.support_hours && (
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="size-4" /> {config.support_hours}
+            </p>
+          )}
+          {!email && !phone && <p className="text-muted-foreground">Send a request above and the team will reply here.</p>}
+          <p className="border-t pt-3 text-xs text-muted-foreground">
+            <Link to="/terms" className="hover:underline">
+              Terms for businesses
+            </Link>{" "}
+            ·{" "}
+            <Link to="/privacy" className="hover:underline">
+              Privacy policy
+            </Link>
+          </p>
+        </div>
+      )}
+    </Panel>
   );
 }
 

@@ -54,3 +54,22 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
 export function errorMessage(err: unknown) {
   return err instanceof Error ? err.message : "Something went wrong";
 }
+
+/** Downloads a file the API returns (e.g. a CSV export) with the session token and saves it in the browser. */
+export async function download(path: string, fallbackName: string): Promise<void> {
+  const token = tokenStore.get();
+  const res = await fetch(`${API_URL}${path}`, { headers: token ? { authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.error?.message ?? "Could not download the file", body?.error?.code);
+  }
+  const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

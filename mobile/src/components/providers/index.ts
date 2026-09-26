@@ -9,4 +9,5 @@ export { ProviderHero } from "./ProviderHero";
 export { RatingBreakdown } from "./RatingBreakdown";
 export { RatingStars } from "./RatingStars";
 export { RatingSummary } from "./RatingSummary";
+export { ReportSheet } from "./ReportSheet";
 export { ReviewItem } from "./ReviewItem";

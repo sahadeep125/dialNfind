@@ -7,11 +7,12 @@ import { AppButton, AppIconButton, AppSkeleton, AppText } from "@/components/des
 import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { PortfolioSheet } from "@/components/portfolio/PortfolioSheet";
 import { PortfolioTile } from "@/components/portfolio/PortfolioTile";
+import { PortfolioArrangeSheet } from "@/components/portfolio/PortfolioArrangeSheet";
 import { LockedCard } from "@/components/subscription/LockedCard";
 import { ConfirmSheet } from "@/components/profile/ConfirmSheet";
 import { MAX_CONTENT_WIDTH } from "@/constants/spacing";
 import { useLayout } from "@/hooks/useLayout";
-import { useDeletePortfolioItem, useSavePortfolioItem } from "@/hooks/usePortfolio";
+import { useDeletePortfolioItem, useReorderPortfolio, useSavePortfolioItem, useSetCoverPhoto } from "@/hooks/usePortfolio";
 import { useProfile } from "@/hooks/useProfile";
 import { usePlan } from "@/hooks/useSubscription";
 import { useTheme } from "@/hooks/useTheme";
@@ -34,6 +35,9 @@ export default function PortfolioScreen() {
   const deleteItem = useDeletePortfolioItem();
   const [draft, setDraft] = useState<PortfolioDraft | null>(null);
   const [removing, setRemoving] = useState<PortfolioItem | null>(null);
+  const [arrangingId, setArrangingId] = useState<number | null>(null);
+  const reorder = useReorderPortfolio();
+  const setCover = useSetCoverPhoto();
   const [refreshing, setRefreshing] = useState(false);
 
   const columns = width >= 1024 ? 4 : width >= 600 ? 3 : 2;
@@ -61,6 +65,25 @@ export default function PortfolioScreen() {
     [],
   );
   const onDelete = useCallback((i: PortfolioItem) => setRemoving(i), []);
+  const onArrange = useCallback((i: PortfolioItem) => setArrangingId(i.id), []);
+  const arranging = items.find((i) => i.id === arrangingId) ?? null;
+  const arrangingIndex = arranging ? items.indexOf(arranging) : -1;
+  const firstMovable = items[0]?.isCover ? 1 : 0;
+
+  const move = (item: PortfolioItem, by: -1 | 1): void => {
+    const ids = items.map((i) => i.id);
+    const at = ids.indexOf(item.id);
+    [ids[at], ids[at + by]] = [ids[at + by]!, ids[at]!];
+    reorder.mutate(ids, { onError: (e: Error) => toast(errorMessage(e), "error") });
+  };
+  const makeCover = (item: PortfolioItem): void =>
+    setCover.mutate(item.id, {
+      onSuccess: () => {
+        setArrangingId(null);
+        toast("Cover photo set", "success");
+      },
+      onError: (e: Error) => toast(errorMessage(e), "error"),
+    });
 
   const save = (body: PortfolioBody): void => {
     const id = draft?.id;
@@ -95,9 +118,9 @@ export default function PortfolioScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: PortfolioItem }) => (
-      <PortfolioTile item={item} width={tileWidth} onEdit={onEdit} onDelete={onDelete} />
+      <PortfolioTile item={item} width={tileWidth} onEdit={onEdit} onDelete={onDelete} onArrange={onArrange} />
     ),
-    [tileWidth, onEdit, onDelete],
+    [tileWidth, onEdit, onDelete, onArrange],
   );
 
   const photoLimit = plan.limits.photos.limit;
@@ -203,6 +226,16 @@ export default function PortfolioScreen() {
         loading={deleteItem.isPending}
         onConfirm={confirmDelete}
         onClose={() => setRemoving(null)}
+      />
+      <PortfolioArrangeSheet
+        item={arranging}
+        index={arrangingIndex}
+        count={items.length}
+        firstMovable={firstMovable}
+        busy={reorder.isPending || setCover.isPending}
+        onMove={move}
+        onCover={makeCover}
+        onClose={() => setArrangingId(null)}
       />
     </Screen>
   );

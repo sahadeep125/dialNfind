@@ -14,6 +14,7 @@ import { EmptyState, ErrorState, Screen } from "@/components/layout";
 import { RatingSummary } from "@/components/reviews/RatingSummary";
 import { ReplySheet } from "@/components/reviews/ReplySheet";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
+import { ReportReviewSheet } from "@/components/reviews/ReportReviewSheet";
 import { ReviewCardSkeleton } from "@/components/reviews/ReviewCardSkeleton";
 import { useReviews } from "@/hooks/useReviews";
 import { useTheme } from "@/hooks/useTheme";
@@ -28,6 +29,7 @@ export default function ReviewsScreen() {
   const theme = useTheme();
   const [filter, setFilter] = useState<ReviewFilter>("all");
   const [replyingTo, setReplyingTo] = useState<ProviderReview | null>(null);
+  const [reporting, setReporting] = useState<ProviderReview | null>(null);
   const {
     data,
     error,
@@ -48,7 +50,7 @@ export default function ReviewsScreen() {
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<ProviderReview>) => (
-      <ReviewCard review={item} onReply={onReply} />
+      <ReviewCard review={item} onReply={onReply} onReport={setReporting} />
     ),
     [onReply],
   );
@@ -136,6 +138,7 @@ export default function ReviewsScreen() {
         windowSize={9}
       />
       <ReplySheet review={replyingTo} onClose={closeSheet} />
+      <ReportReviewSheet review={reporting} onClose={() => setReporting(null)} />
     </Screen>
   );
 }

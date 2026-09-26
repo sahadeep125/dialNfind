@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { api } from "@/lib/api";
 import { requireSession } from "@/lib/session";
 import type { Address } from "@/lib/types";
-import { AddressManager, PasswordForm, ProfileForm } from "@/components/dashboard/account-forms";
+import { AddressManager, DeleteAccountForm, PasswordForm, ProfileForm } from "@/components/dashboard/account-forms";
 
 export const metadata: Metadata = { title: "Account settings" };
 
@@ -23,6 +23,9 @@ export default async function AccountPage() {
       </Panel>
       <Panel title="Password" description={passwordDescription(user.hasPassword, user.linkedAccounts)}>
         <PasswordForm hasPassword={user.hasPassword} />
+      </Panel>
+      <Panel title="Delete account" description="Permanently remove your account and everything saved in it.">
+        <DeleteAccountForm hasPassword={user.hasPassword} />
       </Panel>
     </div>
   );

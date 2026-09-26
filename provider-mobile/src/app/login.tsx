@@ -19,7 +19,6 @@ import { useTheme } from "@/hooks/useTheme";
 import type { SessionUser } from "@/types";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
-import { openWebPage } from "@/services/links";
 import { isValid, validateEmail } from "@/utils/validation";
 
 /** Sign in to a DialNFind business account. */
@@ -125,7 +124,7 @@ export default function LoginScreen() {
             accessibilityRole="link"
             hitSlop={10}
             style={styles.forgot}
-            onPress={() => void openWebPage("/forgot-password")}
+            onPress={() => router.push("/forgot-password")}
           >
             <AppText variant="label" tone="brand">
               Forgot password?

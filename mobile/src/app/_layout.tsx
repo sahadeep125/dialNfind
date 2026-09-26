@@ -23,10 +23,11 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 
-import { BrandSplash, SessionRefresher, ToastPortal } from "@/components/layout";
+import { BrandSplash, OfflineBanner, PushRegistrar, SessionRefresher, ToastPortal } from "@/components/layout";
 import { colorVariables } from "@/constants/colors";
 import { useTheme } from "@/hooks/useTheme";
 import { ApiError } from "@/services/api";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 // Keep the native splash up until fonts are ready, then hand over to the branded splash.
 SplashScreen.preventAutoHideAsync().catch((error: unknown) =>
@@ -57,7 +58,12 @@ export default function RootLayout() {
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
   });
-  const ready = fontsLoaded || !!fontError;
+  const hydrated = useAuthStore((s) => s.hydrated);
+  const ready = (fontsLoaded || !!fontError) && hydrated;
+
+  useEffect(() => {
+    void useAuthStore.getState().hydrate();
+  }, []);
 
   useEffect(() => {
     if (fontError) console.error("[fonts] Falling back to system fonts", fontError);
@@ -83,6 +89,7 @@ export default function RootLayout() {
         >
           <StatusBar style={showSplash || theme.mode === "dark" ? "light" : "dark"} />
           <SessionRefresher />
+          <PushRegistrar />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -105,6 +112,7 @@ export default function RootLayout() {
             />
             <Stack.Screen name="search" options={{ animation: "fade" }} />
           </Stack>
+          <OfflineBanner />
           <ToastPortal />
           {showSplash ? (
             <Animated.View exiting={FadeOut.duration(250)} style={StyleSheet.absoluteFill}>

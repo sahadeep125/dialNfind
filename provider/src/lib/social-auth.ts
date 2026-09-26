@@ -126,6 +126,6 @@ export async function appleSignIn(clientId: string, redirectUri: string): Promis
     const code = (err as { error?: string })?.error;
     if (code === "popup_closed_by_user" || code === "user_cancelled_authorize") throw new SocialCancelled();
     if (err instanceof Error) throw err;
-    throw new Error("Apple sign-in did not complete. Please try again.");
+    throw new Error("Apple sign-in did not complete. Please try again.", { cause: err });
   }
 }

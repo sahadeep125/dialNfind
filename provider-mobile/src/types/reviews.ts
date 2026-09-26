@@ -14,6 +14,8 @@ export interface ProviderReview {
   createdAt: string;
   author: string;
   photos: string[];
+  /** Already reported to the moderation team. */
+  reported: boolean;
 }
 
 export interface ReviewsSummary {

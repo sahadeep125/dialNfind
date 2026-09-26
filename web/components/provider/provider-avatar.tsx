@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { initials } from "@/lib/format";
+import { isOptimizableImage } from "@/lib/image-hosts";
 import { cn } from "@/lib/utils";
 import { categoryIconComponent, categoryTone } from "@/components/site/category-icon";
 
@@ -21,7 +22,7 @@ export function ProviderAvatar({
   if (logoUrl) {
     return (
       <span className={cn("relative block shrink-0 overflow-hidden bg-muted", dims, className)}>
-        <Image src={logoUrl} alt={name} fill className="object-cover" sizes="96px" />
+        <Image src={logoUrl} alt={name} fill className="object-cover" sizes="96px" unoptimized={!isOptimizableImage(logoUrl)} />
       </span>
     );
   }

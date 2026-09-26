@@ -1,8 +1,10 @@
 import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { api, errorMessage } from "@/services/api";
 import { openPhone, openWhatsApp } from "@/services/links";
 import type { ProviderCard } from "@/types";
+import { queryKeys } from "./queryKeys";
 import { useToast } from "./useToast";
 
 type Channel = "call" | "whatsapp";
@@ -15,6 +17,7 @@ export function useContactProvider(): (
   source?: Source,
 ) => Promise<void> {
   const toast = useToast();
+  const qc = useQueryClient();
   return useCallback(
     async (
       provider: Pick<ProviderCard, "id" | "businessName" | "phone" | "whatsappNumber">,
@@ -28,6 +31,7 @@ export function useContactProvider(): (
           body: { providerId: provider.id, channel, source },
         });
         number = res.contact.number || number;
+        void qc.invalidateQueries({ queryKey: queryKeys.contacts });
       } catch (error: unknown) {
         // Counting the lead should never stop someone from reaching the provider.
         console.error("[leads] Could not record lead", error);
@@ -44,6 +48,6 @@ export function useContactProvider(): (
         );
       }
     },
-    [toast],
+    [qc, toast],
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck,
@@ -16,6 +16,7 @@ import {
   Menu,
   MessageSquare,
   PhoneIncoming,
+  Settings,
   Store,
   Wrench,
 } from "lucide-react";
@@ -188,6 +189,17 @@ export function AppLayout() {
                   <div className="truncate">{user?.name}</div>
                   <div className="truncate text-xs font-normal text-muted-foreground">{user?.email}</div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/account">
+                    <Settings /> Account settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/support">
+                    <LifeBuoy /> Help and support
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={signOut}>
                   <LogOut /> Log out

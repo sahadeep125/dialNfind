@@ -1,3 +1,5 @@
+import * as SecureStore from "expo-secure-store";
+
 /** The part of MMKV the app uses, so a fallback can stand in for it. */
 interface KeyValueStore {
   getString: (key: string) => string | undefined;
@@ -32,12 +34,51 @@ function createStore(): KeyValueStore {
 export const storage: KeyValueStore = createStore();
 
 export const STORAGE_KEYS = {
-  authToken: "auth.token",
+  /** Only read to move tokens saved by older versions into the secure store. */
+  legacyAuthToken: "auth.token",
   authUser: "auth.user",
   themePreference: "prefs.theme",
   location: "prefs.location",
   recentSearches: "search.recent",
+  pushToken: "push.token",
 } as const;
+
+const SECURE_TOKEN_KEY = "dialnfind.authToken";
+
+/**
+ * The session token lives in the Keychain (iOS) / Keystore (Android), not in MMKV. If the secure
+ * store is unavailable, the token is kept for this launch only.
+ */
+export const secureToken = {
+  async get(): Promise<string | null> {
+    try {
+      const token = await SecureStore.getItemAsync(SECURE_TOKEN_KEY);
+      if (token) return token;
+      // One-time move from the plain store used before.
+      const legacy = storage.getString(STORAGE_KEYS.legacyAuthToken);
+      if (legacy) {
+        await SecureStore.setItemAsync(SECURE_TOKEN_KEY, legacy);
+        storage.remove(STORAGE_KEYS.legacyAuthToken);
+      }
+      return legacy ?? null;
+    } catch (error: unknown) {
+      console.error("[storage] Secure store unavailable", error);
+      return storage.getString(STORAGE_KEYS.legacyAuthToken) ?? null;
+    }
+  },
+  set(token: string): void {
+    storage.remove(STORAGE_KEYS.legacyAuthToken);
+    SecureStore.setItemAsync(SECURE_TOKEN_KEY, token).catch((error: unknown) =>
+      console.error("[storage] Could not save the session securely", error),
+    );
+  },
+  clear(): void {
+    storage.remove(STORAGE_KEYS.legacyAuthToken);
+    SecureStore.deleteItemAsync(SECURE_TOKEN_KEY).catch((error: unknown) =>
+      console.error("[storage] Could not clear the session", error),
+    );
+  },
+};
 
 export function readJson<T>(key: string): T | null {
   const raw = storage.getString(key);

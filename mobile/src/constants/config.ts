@@ -2,6 +2,12 @@
 
 export const API_URL: string = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
 export const WEB_URL: string = process.env.EXPO_PUBLIC_WEB_URL ?? "http://localhost:3000";
+
+// The localhost defaults are for development only. Release builds get these from the EAS environment
+// named in eas.json; a missing one means the build cannot reach DialNFind.
+if (!__DEV__ && (!process.env.EXPO_PUBLIC_API_URL || !process.env.EXPO_PUBLIC_WEB_URL)) {
+  console.error("[config] EXPO_PUBLIC_API_URL or EXPO_PUBLIC_WEB_URL is not set for this build; using localhost.");
+}
 export const SUPPORT_EMAIL = "support@dialnfind.com";
 export const SUPPORT_PHONE = "+918001234567";
 

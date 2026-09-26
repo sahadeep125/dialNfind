@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
-import { BadgeCheck, Pencil, Reply } from "lucide-react-native";
+import { BadgeCheck, Flag, Pencil, Reply } from "lucide-react-native";
 
-import { AppAvatar, AppButton, AppCard, AppText } from "@/components/design-system";
+import { AppAvatar, AppButton, AppCard, AppPressable, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { ProviderReview } from "@/types/reviews";
 import { formatRelative } from "@/utils/format";
@@ -11,18 +11,39 @@ import { StarRating } from "./StarRating";
 interface Props {
   review: ProviderReview;
   onReply: (review: ProviderReview) => void;
+  onReport: (review: ProviderReview) => void;
 }
 
-export const ReviewCard = memo(function ReviewCard({ review, onReply }: Props) {
+export const ReviewCard = memo(function ReviewCard({ review, onReply, onReport }: Props) {
   const theme = useTheme();
   return (
     <AppCard>
       <View style={[styles.head, { gap: theme.spacing[3] }]}>
         <AppAvatar name={review.author} size={40} />
         <View style={[styles.main, { gap: theme.spacing[1] }]}>
-          <AppText variant="label" numberOfLines={1}>
-            {review.author}
-          </AppText>
+          <View style={[styles.meta, { gap: theme.spacing[2] }]}>
+            <AppText variant="label" numberOfLines={1} style={styles.fill}>
+              {review.author}
+            </AppText>
+            {review.reported ? (
+              <AppText variant="caption" tone="tertiary">
+                Reported
+              </AppText>
+            ) : (
+              <AppPressable
+                accessibilityRole="button"
+                accessibilityLabel={`Report the review from ${review.author}`}
+                hitSlop={10}
+                onPress={() => onReport(review)}
+                style={[styles.meta, { gap: theme.spacing[1] }]}
+              >
+                <Flag size={13} color={theme.colors.text.tertiary} />
+                <AppText variant="caption" tone="tertiary">
+                  Report
+                </AppText>
+              </AppPressable>
+            )}
+          </View>
           <View style={[styles.meta, { gap: theme.spacing[2] }]}>
             <StarRating rating={review.rating} size={13} />
             <AppText variant="caption" tone="secondary">

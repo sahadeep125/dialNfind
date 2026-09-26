@@ -52,3 +52,15 @@ export function useReplyToReview(): UseMutationResult<unknown, Error, ReplyInput
     },
   });
 }
+
+/** Flags a fake or abusive review for the moderation team. */
+export function useReportReview(): UseMutationResult<unknown, Error, { reviewId: number; reason: string }> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reviewId, reason }: { reviewId: number; reason: string }) =>
+      api(`/provider/reviews/${reviewId}/report`, { method: "POST", body: { reason } }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: reviewKeys.all });
+    },
+  });
+}

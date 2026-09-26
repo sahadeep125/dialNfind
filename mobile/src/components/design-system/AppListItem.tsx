@@ -68,7 +68,7 @@ export function AppListItem({
   return (
     <AppPressable
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={[title, subtitle, value].filter(Boolean).join(", ")}
       onPress={onPress}
       scale={false}
     >

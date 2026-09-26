@@ -20,6 +20,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { api, apiOrNull } from "@/lib/api";
+import { isOptimizableImage } from "@/lib/image-hosts";
 import { getSession } from "@/lib/session";
 import { PROVIDER_APP_URL } from "@/lib/config";
 import type { Paged, ProviderCard as ProviderCardType, ProviderDetail, Review } from "@/lib/types";
@@ -80,7 +81,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
       {/* Cover */}
       <div className="relative h-40 overflow-hidden md:h-56" style={{ background: `linear-gradient(120deg, ${tone.hex}, oklch(0.27 0.09 268))` }}>
         {p.coverUrl ? (
-          <Image src={p.coverUrl} alt="" fill className="object-cover opacity-80" priority />
+          <Image src={p.coverUrl} alt="" fill className="object-cover opacity-80" priority unoptimized={!isOptimizableImage(p.coverUrl)} />
         ) : (
           <div className="bg-grid absolute inset-0 opacity-40 [background-size:32px_32px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
         )}
@@ -220,7 +221,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
                   {p.portfolio.map((item) => (
                     <figure key={item.id} className="group overflow-hidden rounded-xl border bg-muted">
                       <div className="relative aspect-[4/3]">
-                        <Image src={item.imageUrl} alt={item.title} fill className="object-cover transition-transform group-hover:scale-105" sizes="(min-width: 768px) 33vw, 50vw" />
+                        <Image src={item.imageUrl} alt={item.title} fill className="object-cover transition-transform group-hover:scale-105" sizes="(min-width: 768px) 33vw, 50vw" unoptimized={!isOptimizableImage(item.imageUrl)} />
                       </div>
                       <figcaption className="px-3 py-2 text-sm font-medium">{item.title}</figcaption>
                     </figure>
