@@ -33,8 +33,8 @@ export function localToday(offsetDays = 0, date = new Date()): Date {
 }
 
 function openAt(row: HoursRow | undefined, time: string): boolean {
+  // 24x7 rows never get here: isOpenNow answers for them first.
   if (!row) return false;
-  if (row.is24x7) return true;
   if (!row.openTime || !row.closeTime) return false;
   if (row.closeTime > row.openTime) return time >= row.openTime && time < row.closeTime;
   // Overnight window, e.g. 20:00 - 02:00

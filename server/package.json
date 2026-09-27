@@ -18,7 +18,9 @@
     "rank": "tsx src/scripts/recalculate-rankings.ts",
     "smoke": "node scripts/smoke.mjs",
     "move-documents": "tsx src/scripts/move-documents.ts",
-    "job": "tsx src/scripts/run-job.ts"
+    "job": "tsx src/scripts/run-job.ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -51,6 +53,10 @@
     "@types/node": "^22.15.0",
     "@types/nodemailer": "^8.0.2",
     "@types/pdfkit": "^0.17.6",
-    "typescript": "^5.8.3"
+    "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "^5.0.2",
+    "supertest": "^7.3.0",
+    "typescript": "^5.8.3",
+    "vitest": "^5.0.2"
   }
 }

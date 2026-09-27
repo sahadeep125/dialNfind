@@ -1,0 +1,113 @@
+name: dialnfind
+
+services:
+  # 1. PostgreSQL Database with PostGIS extension (Required for location-based provider search)
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: dialnfind-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dialnfind}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dialnfind_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-dialnfind}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dialnfind} -d ${POSTGRES_DB:-dialnfind}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Express Backend API Server (Port 4000)
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: dialnfind-server
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dialnfind}:${POSTGRES_PASSWORD:-dialnfind_secret}@db:5432/${POSTGRES_DB:-dialnfind}?schema=public
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-secure-random-32-char-string-for-prod}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4000}
+      WEB_URL: ${WEB_URL:-http://localhost:3000}
+      PROVIDER_URL: ${PROVIDER_URL:-http://localhost:5173}
+      ADMIN_URL: ${ADMIN_URL:-http://localhost:5174}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:5174}
+      UPLOAD_DIR: uploads/public
+      UPLOAD_PRIVATE_DIR: uploads/private
+      RUN_JOBS: "true"
+      TRUST_PROXY_HOPS: "1"
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@dialnfind.com}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-AdminPass123456!}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-DialNFind <no-reply@dialnfind.com>}
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. Next.js Main Website (Port 3000 - SEO Friendly)
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${WEB_URL:-http://localhost:3000}
+        NEXT_PUBLIC_IMAGE_ORIGINS: ${PUBLIC_URL:-http://localhost:4000}
+        NEXT_PUBLIC_PROVIDER_APP_URL: ${PROVIDER_URL:-http://localhost:5173}
+        API_URL: ${PUBLIC_URL:-http://localhost:4000}/api/v1
+    container_name: dialnfind-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_URL: ${PUBLIC_URL:-http://localhost:4000}/api/v1
+    depends_on:
+      - server
+
+  # 4. React Provider Portal (Port 5173)
+  provider:
+    build:
+      context: .
+      dockerfile: deploy/spa.Dockerfile
+      args:
+        APP: provider
+        VITE_API_URL: ${PUBLIC_URL:-http://localhost:4000}/api/v1
+        VITE_WEB_URL: ${WEB_URL:-http://localhost:3000}
+    container_name: dialnfind-provider
+    restart: unless-stopped
+    ports:
+      - "5173:8080"
+    depends_on:
+      - server
+
+  # 5. React Super Admin Console (Port 5174)
+  super-admin:
+    build:
+      context: .
+      dockerfile: deploy/spa.Dockerfile
+      args:
+        APP: super-admin
+        VITE_API_URL: ${PUBLIC_URL:-http://localhost:4000}/api/v1
+        VITE_WEB_URL: ${WEB_URL:-http://localhost:3000}
+    container_name: dialnfind-super-admin
+    restart: unless-stopped
+    ports:
+      - "5174:8080"
+    depends_on:
+      - server
+
+volumes:
+  postgres_data:

@@ -32,7 +32,7 @@ adminSettingsRouter.get("/settings", async (_req, res) => {
   });
 });
 
-function check(field: SettingField, key: string, value: string): string {
+function check(field: SettingField, value: string): string {
   const v = value.trim();
   if (v === "") return "";
   switch (field.type) {
@@ -59,7 +59,6 @@ function check(field: SettingField, key: string, value: string): string {
       if (v.length > (field.type === "textarea" ? 5000 : 300)) throw badRequest(`${field.label} is too long`);
       return v;
   }
-  void key;
 }
 
 const saveSchema = z.object({ values: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])) });
@@ -71,7 +70,7 @@ adminSettingsRouter.put("/settings", async (req, res) => {
   for (const [key, raw] of Object.entries(values)) {
     const field = SETTING_FIELDS.get(key);
     if (!field) throw badRequest(`Unknown setting ${key}`);
-    writes.push({ key, value: check(field, key, raw === null ? "" : String(raw)) });
+    writes.push({ key, value: check(field, raw === null ? "" : String(raw)) });
   }
   await prisma.$transaction(writes.map((w) => (w.value === "" ? prisma.setting.deleteMany({ where: { key: w.key } }) : prisma.setting.upsert({ where: { key: w.key }, create: w, update: { value: w.value } }))));
   clearSettingsCache();
