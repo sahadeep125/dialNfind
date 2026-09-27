@@ -66,14 +66,25 @@ export async function publicApi<T>(path: string, { query, revalidate = 300, tags
     return (await res.json()) as Promise<T>;
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    // Log network/fetch failure (e.g. API unreachable during container build)
     console.warn(`[publicApi] API fetch fallback for ${path}:`, err instanceof Error ? err.message : err);
-    if (path.includes("/categories")) return { categories: [] } as unknown as T;
     if (path.includes("/stats")) return { providers: 0, categories: 0, cities: 0, reviews: 0 } as unknown as T;
-    if (path.includes("/search/popular")) return { terms: [] } as unknown as T;
+    if (path.includes("/sitemap")) return { providers: [], totalPages: 0, page: 1, pageSize: 50 } as unknown as T;
+    if (path.includes("/reviews")) return { reviews: [], page: 1, totalPages: 0, totalCount: 0 } as unknown as T;
+    if (path.includes("/categories")) return { categories: [] } as unknown as T;
+    if (path.includes("/popular")) return { terms: [] } as unknown as T;
     if (path.includes("/plans")) return { plans: [] } as unknown as T;
     if (path.includes("/app-config")) return { config: { min_review_length: 10 } } as unknown as T;
-    return {} as T;
+    if (path.includes("/similar")) return { results: [] } as unknown as T;
+
+    return new Proxy({} as any, {
+      get(_, prop: string) {
+        if (typeof prop === "symbol" || prop === "then") return undefined;
+        if (["categories", "reviews", "terms", "plans", "results", "providers", "items"].includes(prop)) return [];
+        if (["config"].includes(prop)) return { min_review_length: 10 };
+        if (["page", "pageSize", "totalPages", "totalCount", "cities", "count"].includes(prop)) return 0;
+        return undefined;
+      },
+    }) as T;
   }
 }
 
