@@ -16,7 +16,6 @@ interface Props extends Omit<PressableProps, "style"> {
 
 /** Core press feedback: subtle scale and fade on iOS and web, ripple on Android, optional light haptic. */
 export function AppPressable({
-  style,
   haptic = false,
   scale = true,
   onPress,
@@ -32,12 +31,6 @@ export function AppPressable({
         if (haptic && Platform.OS !== "web") void Haptics.selectionAsync().catch(() => undefined);
         onPress?.(event);
       }}
-      style={(state) => [
-        Platform.OS !== "android" && state.pressed && !disabled
-          ? { opacity: 0.85, transform: scale ? [{ scale: 0.98 }] : undefined }
-          : null,
-        typeof style === "function" ? style(state) : style,
-      ]}
       {...props}
     />
   );

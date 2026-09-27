@@ -50,7 +50,7 @@ export function LocationStep({ value, areas, errors, onChange, onAreasChange }: 
   };
 
   return (
-    <View style={{ gap: theme.spacing[5] }}>
+    <View style={{ gap: theme.layout.sectionGap }}>
       <StepTitle
         title="Where are you based?"
         subtitle="We show you to customers within your travel distance."
@@ -80,7 +80,7 @@ export function LocationStep({ value, areas, errors, onChange, onAreasChange }: 
         </AppButton>
         <View style={[styles.coords, { gap: theme.spacing[1.5] }]}>
           <MapPin size={14} color={theme.colors.text.tertiary} />
-          <AppText variant="caption" tone="tertiary" style={styles.flex}>
+          <AppText variant="meta" style={styles.flex}>
             {`Pinned at ${value.latitude.toFixed(4)}, ${value.longitude.toFixed(4)}. Customers nearby see you first.`}
           </AppText>
         </View>
@@ -149,7 +149,7 @@ export function LocationStep({ value, areas, errors, onChange, onAreasChange }: 
 
       <View style={{ gap: theme.spacing[2] }}>
         <View style={styles.radiusHead}>
-          <AppText variant="label" tone="secondary">
+          <AppText variant="caption" tone="secondary" weight="semibold">
             How far will you travel?
           </AppText>
           <AppText variant="label" tone="brand">
@@ -170,7 +170,7 @@ export function LocationStep({ value, areas, errors, onChange, onAreasChange }: 
       </View>
 
       <View style={{ gap: theme.spacing[2] }}>
-        <AppText variant="label" tone="secondary">
+        <AppText variant="caption" tone="secondary" weight="semibold">
           Localities you serve (optional)
         </AppText>
         <AreasEditor value={areas} onChange={onAreasChange} />

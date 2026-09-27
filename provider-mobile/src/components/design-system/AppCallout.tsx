@@ -8,41 +8,68 @@ import { AppText } from "./AppText";
 interface Props {
   tone?: "info" | "warning" | "success" | "danger";
   title?: string;
-  children: ReactNode;
+  children?: ReactNode;
   action?: ReactNode;
 }
 
+/** An inline notice. Title carries the message; the body is one short supporting line. */
 export function AppCallout({ tone = "info", title, children, action }: Props) {
   const theme = useTheme();
   const { semantic, brand } = theme.colors;
   const map = {
-    info: { bg: brand.soft, fg: brand.softText, Icon: Info },
-    warning: { bg: semantic.warningSoft, fg: semantic.warningText, Icon: AlertTriangle },
-    success: { bg: semantic.successSoft, fg: semantic.success, Icon: CheckCircle2 },
-    danger: { bg: semantic.dangerSoft, fg: semantic.danger, Icon: XCircle },
+    info: { bg: brand.soft, fg: brand.softText, icon: brand.primary, Icon: Info },
+    warning: {
+      bg: semantic.warningSoft,
+      fg: semantic.warningText,
+      icon: semantic.warning,
+      Icon: AlertTriangle,
+    },
+    success: {
+      bg: semantic.successSoft,
+      fg: semantic.successText,
+      icon: semantic.success,
+      Icon: CheckCircle2,
+    },
+    danger: {
+      bg: semantic.dangerSoft,
+      fg: semantic.dangerText,
+      icon: semantic.danger,
+      Icon: XCircle,
+    },
   }[tone];
   return (
     <View
       accessibilityRole="alert"
-      style={[styles.base, { backgroundColor: map.bg, borderRadius: theme.radius.md }]}
+      style={[
+        styles.base,
+        {
+          backgroundColor: map.bg,
+          borderRadius: theme.radius.md,
+          gap: theme.spacing[2.5],
+          padding: theme.spacing[3],
+        },
+      ]}
     >
-      <map.Icon size={18} color={map.fg} />
+      <map.Icon size={16} color={map.icon} style={styles.icon} />
       <View style={styles.body}>
         {title ? (
           <AppText variant="label" style={{ color: map.fg }}>
             {title}
           </AppText>
         ) : null}
-        <AppText variant="caption" style={{ color: map.fg }}>
-          {children}
-        </AppText>
-        {action}
+        {children ? (
+          <AppText variant="meta" style={{ color: map.fg }}>
+            {children}
+          </AppText>
+        ) : null}
+        {action ? <View style={{ marginTop: theme.spacing[1.5] }}>{action}</View> : null}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  base: { flexDirection: "row", gap: 10, padding: 12 },
-  body: { flex: 1, gap: 4 },
+  base: { flexDirection: "row" },
+  icon: { marginTop: 2 },
+  body: { flex: 1, gap: 2 },
 });

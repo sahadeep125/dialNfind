@@ -114,7 +114,7 @@ export function ServiceForm({
           />
         </View>
       </View>
-      <AppText variant="caption" tone="tertiary">
+      <AppText variant="meta">
         A starting price makes customers far more likely to call. Leave it empty to show no price.
       </AppText>
       <AppSwitchRow

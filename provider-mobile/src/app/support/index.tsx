@@ -42,12 +42,13 @@ export default function SupportScreen() {
   return (
     <Screen edges={["top", "bottom"]}>
       <ScreenHeader
-        title="Support"
+        title="Support requests"
         right={
           <AppIconButton
             accessibilityLabel="New request"
             variant="soft"
-            icon={<Plus size={20} color={theme.colors.brand.softText} />}
+            size="sm"
+            icon={<Plus size={16} color={theme.colors.brand.primary} />}
             onPress={() => setCreating(true)}
           />
         }
@@ -55,9 +56,9 @@ export default function SupportScreen() {
       {tickets.isError && !tickets.data ? (
         <ErrorState error={tickets.error} onRetry={() => void tickets.refetch()} />
       ) : !tickets.data ? (
-        <View style={{ padding: theme.spacing[4], gap: theme.spacing[3] }}>
+        <View style={{ padding: theme.layout.screenPadding, gap: theme.spacing[2] }}>
           {[0, 1, 2, 3].map((i) => (
-            <AppSkeleton key={i} shape="block" height={88} />
+            <AppSkeleton key={i} shape="block" height={68} />
           ))}
         </View>
       ) : (
@@ -66,8 +67,9 @@ export default function SupportScreen() {
           keyExtractor={(t) => String(t.id)}
           renderItem={renderItem}
           contentContainerStyle={{
-            padding: theme.spacing[4],
-            gap: theme.spacing[3],
+            padding: theme.layout.screenPadding,
+            paddingTop: theme.spacing[1],
+            gap: theme.spacing[2],
             paddingBottom: theme.spacing[10],
             flexGrow: 1,
           }}
@@ -84,9 +86,8 @@ export default function SupportScreen() {
           }
           ListHeaderComponent={
             items.length > 0 ? (
-              <AppText tone="secondary" style={styles.intro}>
-                Ask the DialNFind team about your listing, payments or anything else. We usually
-                reply within one working day.
+              <AppText variant="meta" style={styles.intro}>
+                We usually reply within one working day.
               </AppText>
             ) : null
           }
@@ -97,7 +98,7 @@ export default function SupportScreen() {
               text="When you contact support, your conversations with the team appear here."
               action={
                 <AppButton
-                  leadingIcon={<Plus size={18} color={plusColor} />}
+                  leadingIcon={<Plus size={16} color={plusColor} />}
                   onPress={() => setCreating(true)}
                 >
                   Contact support

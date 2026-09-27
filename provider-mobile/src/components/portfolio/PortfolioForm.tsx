@@ -51,7 +51,7 @@ export function PortfolioForm({ initial, saving, onSave }: Props) {
         paddingTop: 0,
       }}
     >
-      <AppText variant="caption" tone="secondary">
+      <AppText variant="meta" tone="secondary">
         Show a finished job, your shop or your team. Clear, well-lit photos work best.
       </AppText>
       <ImageUploadField
@@ -61,7 +61,7 @@ export function PortfolioForm({ initial, saving, onSave }: Props) {
         onChange={(imageUrl) => set({ imageUrl })}
       />
       {errors.imageUrl ? (
-        <AppText variant="caption" tone="danger">
+        <AppText variant="meta" tone="danger">
           {errors.imageUrl}
         </AppText>
       ) : null}

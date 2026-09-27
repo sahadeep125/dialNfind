@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "@/hooks/useSession";
 import { pushOptedOut, registerForPush } from "@/services/push";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logError } from "@/utils/log";
 
 type PushData = { type?: string; leadId?: number; reviewId?: number; ticketId?: number; campaignId?: number };
 
@@ -48,7 +49,7 @@ export function PushRegistrar() {
   useEffect(() => {
     if (!token || !hasBusiness || registeredFor.current === token || pushOptedOut()) return;
     registeredFor.current = token;
-    registerForPush({ ask: true }).catch((error: unknown) => console.error("[push] Registration failed", error));
+    registerForPush({ ask: true }).catch((error: unknown) => logError("[push] Registration failed", error));
   }, [token, hasBusiness]);
 
   useEffect(() => {

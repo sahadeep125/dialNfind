@@ -1,12 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
-import { Copy } from "lucide-react-native";
+import { StyleSheet, View } from "react-native";
 
-import { AppButton, AppCard, AppDivider, AppText } from "@/components/design-system";
+import { AppSection } from "@/components/design-system";
 import { AppSwitchRow } from "@/components/forms";
+import { ScreenScroll } from "@/components/layout";
 import { SaveBar } from "@/components/profile/SaveBar";
 import { useSaveHours } from "@/hooks/useHours";
-import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
 import type { Hours } from "@/types";
@@ -25,7 +24,6 @@ interface Props {
 }
 
 export function HoursEditor({ saved }: Props) {
-  const theme = useTheme();
   const toast = useToast();
   const save = useSaveHours();
   const initial = useMemo(() => (saved.length ? normalizeHours(saved) : DEFAULT_HOURS), [saved]);
@@ -77,45 +75,33 @@ export function HoursEditor({ saved }: Props) {
 
   return (
     <View style={styles.flex}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[4] }}
-      >
-        <AppText tone="secondary">Customers see an Open now label during these hours.</AppText>
-        <AppCard>
+      <ScreenScroll keyboard>
+        <AppSection footer="Customers see an Open now label during these hours.">
           <AppSwitchRow
+            inset
             label="Open 24 hours, 7 days"
             description="For emergency services that take calls any time."
             value={allDay}
             onValueChange={setAllDay}
           />
-        </AppCard>
+        </AppSection>
         {allDay ? null : (
-          <AppCard>
-            {mondayOpen ? (
-              <AppButton
-                size="sm"
-                variant="soft"
-                style={styles.copy}
-                leadingIcon={<Copy size={16} color={theme.colors.brand.softText} />}
-                onPress={copyMonday}
-              >
-                Copy Monday to all days
-              </AppButton>
-            ) : null}
-            {DAY_ORDER.map((d, i) => (
-              <View key={d}>
-                {i > 0 ? <AppDivider /> : null}
-                <DayHoursRow
-                  hours={hours[d]}
-                  error={showErrors ? errors[d] : undefined}
-                  onChange={setDay}
-                />
-              </View>
+          <AppSection
+            title="Weekly hours"
+            action={mondayOpen ? { label: "Copy Monday to all", onPress: copyMonday } : undefined}
+            dividerInset={14}
+          >
+            {DAY_ORDER.map((d) => (
+              <DayHoursRow
+                key={d}
+                hours={hours[d]}
+                error={showErrors ? errors[d] : undefined}
+                onChange={setDay}
+              />
             ))}
-          </AppCard>
+          </AppSection>
         )}
-      </ScrollView>
+      </ScreenScroll>
       <SaveBar
         dirty={dirty}
         saving={save.isPending}
@@ -128,5 +114,4 @@ export function HoursEditor({ saved }: Props) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  copy: { alignSelf: "flex-start", marginBottom: 4 },
 });

@@ -62,9 +62,7 @@ export function AttachmentPicker({ files, onChange, onBusyChange }: Props) {
         </AppButton>
       </View>
       {busy ? <AppProgress value={progress ?? 0} height={4} /> : null}
-      <AppText variant="caption" tone="tertiary">
-        JPG, PNG, WebP or PDF, up to 10 MB, {MAX_ATTACHMENTS} files
-      </AppText>
+      <AppText variant="meta">JPG, PNG, WebP or PDF, up to 10 MB, {MAX_ATTACHMENTS} files</AppText>
     </View>
   );
 }

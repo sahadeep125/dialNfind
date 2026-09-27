@@ -1,19 +1,11 @@
 import { useRef, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-  type TextInput,
-} from "react-native";
+import { StyleSheet, View, type TextInput } from "react-native";
 import { router } from "expo-router";
 import { Mail } from "lucide-react-native";
 
 import { AppButton, AppCallout, AppInput, AppPressable, AppText } from "@/components/design-system";
-import { SocialSignInButtons } from "@/components/auth";
+import { AuthLayout, SocialSignInButtons } from "@/components/auth";
 import { PasswordInput } from "@/components/forms";
-import { BrandMark, Screen } from "@/components/layout";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useTheme } from "@/hooks/useTheme";
 import type { SessionUser } from "@/types";
@@ -54,120 +46,117 @@ export default function LoginScreen() {
   };
 
   // The home screen sends new business accounts through setup.
-  const onSocialSignedIn = ({ user, isNewUser }: { user: SessionUser; isNewUser: boolean }): void => {
+  const onSocialSignedIn = ({
+    user,
+    isNewUser,
+  }: {
+    user: SessionUser;
+    isNewUser: boolean;
+  }): void => {
     const first = user.name.split(" ")[0];
     toast(isNewUser ? `Welcome to DialNFind, ${first}` : `Welcome back, ${first}`, "success");
     router.replace("/");
   };
 
   return (
-    <Screen edges={["top", "bottom"]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.flex}
-      >
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[
-            styles.content,
-            { padding: theme.spacing[6], gap: theme.spacing[5] },
-          ]}
-        >
-          <View style={[styles.brand, { gap: theme.spacing[3] }]}>
-            <BrandMark size={56} />
-            <AppText variant="overline" tone="brand" align="center">
-              DialNFind for Business
-            </AppText>
-            <AppText variant="title" align="center" accessibilityRole="header">
-              Log in to your business
-            </AppText>
-            <AppText tone="secondary" align="center">
-              Manage your listing, leads and reviews.
-            </AppText>
-          </View>
-
-          {formError ? <AppCallout tone="danger">{formError}</AppCallout> : null}
-
-          <SocialSignInButtons mode="signin" onError={setFormError} onSignedIn={onSocialSignedIn} />
-
-          <AppInput
-            label="Email"
-            value={email}
-            onChangeText={(v) => {
-              setEmail(v);
-              setErrors((e) => ({ ...e, email: null }));
-            }}
-            error={errors.email}
-            placeholder="you@business.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="email"
-            textContentType="emailAddress"
-            returnKeyType="next"
-            onSubmitEditing={() => passwordRef.current?.focus()}
-            leadingIcon={<Mail size={18} color={theme.colors.text.tertiary} />}
-          />
-          <PasswordInput
-            ref={passwordRef}
-            label="Password"
-            value={password}
-            onChangeText={(v) => {
-              setPassword(v);
-              setErrors((e) => ({ ...e, password: null }));
-            }}
-            error={errors.password}
-            placeholder="Your password"
-            autoComplete="current-password"
-            textContentType="password"
-            returnKeyType="go"
-            onSubmitEditing={submit}
-          />
-
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Log in to manage your leads, reviews and listing."
+      footer={
+        <View style={styles.switchRow}>
+          <AppText variant="meta" tone="secondary">
+            New to DialNFind?
+          </AppText>
           <AppPressable
             accessibilityRole="link"
             hitSlop={10}
-            style={styles.forgot}
-            onPress={() => router.push("/forgot-password")}
+            onPress={() => router.replace("/register")}
           >
-            <AppText variant="label" tone="brand">
-              Forgot password?
+            <AppText
+              variant="caption"
+              tone="brand"
+              style={{ fontFamily: theme.typography.label.fontFamily }}
+            >
+              Create a business account
             </AppText>
           </AppPressable>
+        </View>
+      }
+    >
+      {formError ? <AppCallout tone="danger" title={formError} /> : null}
 
-          <AppButton size="lg" fullWidth loading={login.isPending} onPress={submit}>
-            Log in
-          </AppButton>
+      <AppInput
+        label="Email"
+        value={email}
+        onChangeText={(v) => {
+          setEmail(v);
+          setErrors((e) => ({ ...e, email: null }));
+        }}
+        error={errors.email}
+        placeholder="you@business.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="email"
+        textContentType="emailAddress"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
+        leadingIcon={<Mail size={16} color={theme.colors.text.tertiary} />}
+      />
+      <View style={{ gap: theme.spacing[2] }}>
+        <PasswordInput
+          ref={passwordRef}
+          label="Password"
+          value={password}
+          onChangeText={(v) => {
+            setPassword(v);
+            setErrors((e) => ({ ...e, password: null }));
+          }}
+          error={errors.password}
+          placeholder="Your password"
+          autoComplete="current-password"
+          textContentType="password"
+          returnKeyType="go"
+          onSubmitEditing={submit}
+        />
+        <AppPressable
+          accessibilityRole="link"
+          hitSlop={10}
+          style={styles.forgot}
+          onPress={() => router.push("/forgot-password")}
+        >
+          <AppText
+            variant="caption"
+            tone="brand"
+            style={{ fontFamily: theme.typography.label.fontFamily }}
+          >
+            Forgot password?
+          </AppText>
+        </AppPressable>
+      </View>
 
-          <View style={styles.switchRow}>
-            <AppText tone="secondary">New here?</AppText>
-            <AppPressable
-              accessibilityRole="link"
-              hitSlop={10}
-              onPress={() => router.replace("/register")}
-            >
-              <AppText variant="label" tone="brand">
-                Create a business account
-              </AppText>
-            </AppPressable>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Screen>
+      <AppButton
+        size="lg"
+        fullWidth
+        loading={login.isPending}
+        onPress={submit}
+        style={{ marginTop: theme.spacing[1] }}
+      >
+        Log in
+      </AppButton>
+
+      <SocialSignInButtons
+        mode="signin"
+        placement="bottom"
+        onError={setFormError}
+        onSignedIn={onSocialSignedIn}
+      />
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: {
-    alignSelf: "center",
-    flexGrow: 1,
-    justifyContent: "center",
-    maxWidth: 440,
-    width: "100%",
-  },
-  brand: { alignItems: "center" },
-  forgot: { alignSelf: "flex-end", marginTop: -8 },
+  forgot: { alignSelf: "flex-end" },
   switchRow: {
     alignItems: "center",
     flexDirection: "row",

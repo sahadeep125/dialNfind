@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
-import { AppButton, AppCard, AppDivider, AppSkeleton, AppText } from "@/components/design-system";
+import {
+  AppButton,
+  AppCard,
+  AppDivider,
+  AppSection,
+  AppSkeleton,
+  AppText,
+} from "@/components/design-system";
 import { useAttributes, useSaveAttributes } from "@/hooks/useAttributes";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
@@ -95,55 +102,53 @@ export function ServiceDetailsCard() {
   };
 
   return (
-    <AppCard>
-      <View style={{ gap: theme.spacing[1], marginBottom: theme.spacing[4] }}>
-        <AppText variant="heading" accessibilityRole="header">
-          Service details
-        </AppText>
-        <AppText variant="caption" tone="secondary">
-          Answer a few questions about your work. These show on your public profile and help
-          customers choose you.
-        </AppText>
-      </View>
-      <View style={{ gap: theme.spacing[4] }}>
-        {groups.map((g, i) => (
-          <View key={g.providerServiceId} style={{ gap: theme.spacing[4] }}>
-            {i > 0 ? <AppDivider /> : null}
-            {groups.length > 1 ? (
-              <AppText variant="overline" tone="secondary">
-                {g.title}
-              </AppText>
+    <AppSection
+      title="Service details"
+      subtitle="Shown on your public page to help customers choose"
+      kind="plain"
+    >
+      <AppCard>
+        <View style={{ gap: 14 }}>
+          {groups.map((g, i) => (
+            <View key={g.providerServiceId} style={{ gap: 14 }}>
+              {i > 0 ? <AppDivider /> : null}
+              {groups.length > 1 ? (
+                <AppText variant="overline" tone="tertiary">
+                  {g.title.toUpperCase()}
+                </AppText>
+              ) : null}
+              {g.attributes.map((a) => (
+                <AttributeField
+                  key={a.id}
+                  attribute={a}
+                  value={valueOf(g, a)}
+                  error={errors[keyOf(g, a)]}
+                  onChange={(v) => set(g, a, v)}
+                />
+              ))}
+            </View>
+          ))}
+          <View style={[styles.actions, { gap: theme.spacing[2] }]}>
+            {dirty ? (
+              <AppButton
+                variant="ghost"
+                size="sm"
+                disabled={save.isPending}
+                onPress={() => {
+                  setEdits({});
+                  setErrors({});
+                }}
+              >
+                Discard
+              </AppButton>
             ) : null}
-            {g.attributes.map((a) => (
-              <AttributeField
-                key={a.id}
-                attribute={a}
-                value={valueOf(g, a)}
-                error={errors[keyOf(g, a)]}
-                onChange={(v) => set(g, a, v)}
-              />
-            ))}
-          </View>
-        ))}
-        <View style={[styles.actions, { gap: theme.spacing[3] }]}>
-          {dirty ? (
-            <AppButton
-              variant="ghost"
-              disabled={save.isPending}
-              onPress={() => {
-                setEdits({});
-                setErrors({});
-              }}
-            >
-              Discard
+            <AppButton size="sm" onPress={submit} loading={save.isPending} disabled={!dirty}>
+              Save details
             </AppButton>
-          ) : null}
-          <AppButton onPress={submit} loading={save.isPending} disabled={!dirty}>
-            Save details
-          </AppButton>
+          </View>
         </View>
-      </View>
-    </AppCard>
+      </AppCard>
+    </AppSection>
   );
 }
 

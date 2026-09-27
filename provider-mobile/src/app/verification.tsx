@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 
-import { AppCard, AppSkeleton } from "@/components/design-system";
+import { AppCard, AppSection, AppSkeleton } from "@/components/design-system";
 import { ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { VerificationCard } from "@/components/verification/VerificationCard";
 import { VerificationStatusCard } from "@/components/verification/VerificationStatusCard";
@@ -26,7 +26,12 @@ export default function VerificationScreen() {
       {query.data ? (
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[4] }}
+          contentContainerStyle={{
+            padding: theme.layout.screenPadding,
+            paddingTop: theme.spacing[1],
+            gap: theme.layout.sectionGap,
+            paddingBottom: theme.spacing[10],
+          }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -36,19 +41,23 @@ export default function VerificationScreen() {
           }
         >
           <VerificationStatusCard status={query.data.verificationStatus} />
-          {VERIFICATION_TYPES.map((info) => (
-            <VerificationCard
-              key={info.type}
-              info={info}
-              // Newest first from the API, so the first match is the latest submission.
-              latest={query.data.verifications.find((v) => v.type === info.type)}
-            />
-          ))}
+          <AppSection title="Documents" subtitle="Each one you add builds more trust" kind="plain">
+            <View style={{ gap: theme.spacing[2.5] }}>
+              {VERIFICATION_TYPES.map((info) => (
+                <VerificationCard
+                  key={info.type}
+                  info={info}
+                  // Newest first from the API, so the first match is the latest submission.
+                  latest={query.data.verifications.find((v) => v.type === info.type)}
+                />
+              ))}
+            </View>
+          </AppSection>
         </ScrollView>
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
       ) : (
-        <View style={{ padding: theme.spacing[4], gap: theme.spacing[4] }}>
+        <View style={{ padding: theme.layout.screenPadding, gap: theme.spacing[3] }}>
           {[0, 1, 2].map((i) => (
             <AppCard key={i}>
               <View style={{ gap: theme.spacing[3] }}>

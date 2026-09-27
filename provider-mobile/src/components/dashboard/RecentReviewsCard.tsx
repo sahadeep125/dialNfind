@@ -1,7 +1,8 @@
 import { StyleSheet, View } from "react-native";
+import { MessageSquareText } from "lucide-react-native";
 
-import { AppBadge, AppCard, AppDivider, AppPressable, AppText } from "@/components/design-system";
-import { SectionHeader } from "@/components/layout";
+import { AppAvatar, AppBadge, AppPressable, AppSection, AppText } from "@/components/design-system";
+import { EmptyState } from "@/components/layout";
 import { StarRating } from "@/components/reviews/StarRating";
 import { useTheme } from "@/hooks/useTheme";
 import type { DashboardRecentReview } from "@/types/dashboard";
@@ -15,58 +16,73 @@ interface Props {
 
 export function RecentReviewsCard({ reviews, unreplied, onViewAll }: Props) {
   const theme = useTheme();
+  const shown = reviews.slice(0, 3);
   return (
-    <AppCard>
-      <View style={{ gap: theme.spacing[2] }}>
-        <SectionHeader title="Latest reviews" actionLabel="View all" onAction={onViewAll} />
-        {unreplied > 0 ? (
-          <AppPressable accessibilityRole="link" onPress={onViewAll} style={styles.badge}>
-            <AppBadge tone="warning" label={`${unreplied} need a reply`} />
-          </AppPressable>
-        ) : null}
-        {reviews.length === 0 ? (
-          <AppText tone="secondary" style={{ paddingVertical: theme.spacing[4] }} align="center">
-            No reviews yet.
-          </AppText>
-        ) : (
-          reviews.map((r, i) => (
-            <View key={r.id}>
-              {i > 0 ? <AppDivider /> : null}
-              <View style={{ gap: theme.spacing[1], paddingVertical: theme.spacing[3] }}>
+    <AppSection
+      title="Latest reviews"
+      subtitle={unreplied > 0 ? `${unreplied} waiting for your reply` : undefined}
+      action={{ label: "See all", onPress: onViewAll }}
+      dividerInset={14 + 32 + 12}
+    >
+      {shown.length === 0 ? (
+        <EmptyState
+          compact
+          icon={MessageSquareText}
+          title="No reviews yet"
+          text="Ask happy customers to rate you on DialNFind."
+        />
+      ) : (
+        shown.map((r) => (
+          <AppPressable
+            key={r.id}
+            accessibilityRole="button"
+            accessibilityLabel={`${r.author}, ${r.rating} stars`}
+            onPress={onViewAll}
+            scale={false}
+          >
+            <View
+              style={[
+                styles.row,
+                {
+                  gap: theme.spacing[3],
+                  paddingHorizontal: 14,
+                  paddingVertical: theme.spacing[2.5],
+                },
+              ]}
+            >
+              <AppAvatar name={r.author} size={32} />
+              <View style={styles.main}>
                 <View style={[styles.head, { gap: theme.spacing[2] }]}>
-                  <AppText variant="label" numberOfLines={1} style={styles.name}>
+                  <AppText variant="label" numberOfLines={1} style={styles.shrink}>
                     {r.author}
                   </AppText>
-                  <StarRating rating={r.rating} size={12} />
+                  <StarRating rating={r.rating} size={11} />
+                  <View style={styles.spacer} />
+                  <AppText variant="meta">{formatRelative(r.createdAt)}</AppText>
                 </View>
                 {r.reviewText ? (
-                  <AppText tone="secondary" numberOfLines={2}>
+                  <AppText variant="meta" tone="secondary" numberOfLines={2}>
                     {r.reviewText}
                   </AppText>
                 ) : null}
-                <View style={[styles.head, { gap: theme.spacing[2] }]}>
-                  <AppText variant="caption" tone="tertiary" style={styles.name}>
-                    {formatRelative(r.createdAt)}
-                  </AppText>
-                  {!r.providerReply ? (
-                    <AppPressable accessibilityRole="link" hitSlop={10} onPress={onViewAll}>
-                      <AppText variant="label" tone="brand">
-                        Reply
-                      </AppText>
-                    </AppPressable>
-                  ) : null}
-                </View>
+                {!r.providerReply ? (
+                  <View style={{ marginTop: 4 }}>
+                    <AppBadge label="Needs reply" tone="warning" />
+                  </View>
+                ) : null}
               </View>
             </View>
-          ))
-        )}
-      </View>
-    </AppCard>
+          </AppPressable>
+        ))
+      )}
+    </AppSection>
   );
 }
 
 const styles = StyleSheet.create({
-  badge: { alignSelf: "flex-start" },
+  row: { alignItems: "flex-start", flexDirection: "row" },
+  main: { flex: 1, gap: 2, minWidth: 0 },
   head: { alignItems: "center", flexDirection: "row" },
-  name: { flex: 1 },
+  shrink: { flexShrink: 1 },
+  spacer: { flex: 1 },
 });

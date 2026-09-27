@@ -50,8 +50,8 @@ export function ReplyComposer({ ticketId, onSent }: Props) {
       style={[
         styles.box,
         {
-          gap: theme.spacing[3],
-          padding: theme.spacing[4],
+          gap: theme.spacing[2.5],
+          padding: theme.spacing[3],
           backgroundColor: theme.components.card.background,
           borderColor: theme.components.card.border,
           borderRadius: theme.components.card.radius,
@@ -72,11 +72,12 @@ export function ReplyComposer({ ticketId, onSent }: Props) {
       />
       <AttachmentPicker files={files} onChange={setFiles} onBusyChange={setUploading} />
       <AppButton
+        size="sm"
         style={styles.send}
         loading={reply.isPending}
         disabled={uploading}
         onPress={send}
-        leadingIcon={<Send size={16} color={theme.components.button.primary.text} />}
+        leadingIcon={<Send size={14} color={theme.components.button.primary.text} />}
       >
         Send
       </AppButton>

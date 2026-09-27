@@ -52,3 +52,10 @@ jest.mock("@react-native-google-signin/google-signin", () => ({
 
 // NetInfo's own Jest mock (the native module is not available in tests).
 jest.mock("@react-native-community/netinfo", () => require("@react-native-community/netinfo/jest/netinfo-mock.js"));
+
+// The native date/time picker is not in Jest; a plain view stands in, and the Android dialog is a no-op.
+jest.mock("@react-native-community/datetimepicker", () => {
+  const { View } = require("react-native");
+  const Picker = (props) => require("react").createElement(View, { testID: "datetimepicker", ...props });
+  return { __esModule: true, default: Picker, DateTimePickerAndroid: { open: jest.fn(), dismiss: jest.fn(async () => true) } };
+});

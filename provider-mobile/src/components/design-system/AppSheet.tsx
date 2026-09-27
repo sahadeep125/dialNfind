@@ -12,11 +12,13 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   title?: string;
+  /** One line under the title. */
+  subtitle?: string;
   children: ReactNode;
 }
 
 /** Bottom sheet: slides up from the bottom, closes on backdrop tap, the close button or the back gesture. */
-export function AppSheet({ visible, onClose, title, children }: Props) {
+export function AppSheet({ visible, onClose, title, subtitle, children }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   return (
@@ -48,15 +50,22 @@ export function AppSheet({ visible, onClose, title, children }: Props) {
           ]}
         >
           <View style={[styles.handle, { backgroundColor: theme.colors.border.secondary }]} />
-          <View style={styles.header}>
-            <AppText variant="heading" style={styles.title} numberOfLines={1}>
-              {title ?? ""}
-            </AppText>
+          <View style={[styles.header, { gap: theme.spacing[3] }]}>
+            <View style={styles.title}>
+              <AppText variant="heading" numberOfLines={1} accessibilityRole="header">
+                {title ?? ""}
+              </AppText>
+              {subtitle ? (
+                <AppText variant="meta" numberOfLines={2}>
+                  {subtitle}
+                </AppText>
+              ) : null}
+            </View>
             <AppIconButton
               accessibilityLabel="Close"
               size="sm"
-              variant="soft"
-              icon={<X size={18} color={theme.colors.brand.softText} />}
+              variant="neutral"
+              icon={<X size={16} color={theme.colors.text.secondary} />}
               onPress={onClose}
             />
           </View>
@@ -71,18 +80,17 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   sheet: {
     alignSelf: "center",
-    maxHeight: "88%",
+    maxHeight: "90%",
     maxWidth: MAX_CONTENT_WIDTH,
-    paddingTop: 8,
+    paddingTop: 6,
     width: "100%",
   },
-  handle: { alignSelf: "center", borderRadius: 3, height: 5, marginBottom: 8, width: 40 },
+  handle: { alignSelf: "center", borderRadius: 3, height: 4, marginBottom: 6, width: 36 },
   header: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 12,
+    paddingBottom: 12,
     paddingHorizontal: 16,
-    paddingBottom: 8,
   },
-  title: { flex: 1 },
+  title: { flex: 1, gap: 2 },
 });

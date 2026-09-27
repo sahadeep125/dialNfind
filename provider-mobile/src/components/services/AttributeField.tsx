@@ -26,7 +26,7 @@ export function AttributeField({ attribute: a, value, error, onChange }: Props) 
           onValueChange={onChange}
         />
         {error ? (
-          <AppText variant="caption" tone="danger">
+          <AppText variant="meta" tone="danger">
             {error}
           </AppText>
         ) : null}
@@ -52,7 +52,7 @@ export function AttributeField({ attribute: a, value, error, onChange }: Props) 
     const list = Array.isArray(value) ? value : [];
     return (
       <View style={{ gap: theme.spacing[2] }}>
-        <AppText variant="label" tone="secondary">
+        <AppText variant="caption" tone="secondary" weight="semibold">
           {a.label}
           {a.isRequired ? (
             <AppText variant="label" tone="danger">
@@ -76,7 +76,7 @@ export function AttributeField({ attribute: a, value, error, onChange }: Props) 
           })}
         </View>
         {error ? (
-          <AppText variant="caption" tone="danger">
+          <AppText variant="meta" tone="danger">
             {error}
           </AppText>
         ) : null}

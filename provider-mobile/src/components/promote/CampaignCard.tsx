@@ -30,27 +30,28 @@ export const CampaignCard = memo(function CampaignCard({ campaign, onToggle, bus
   const spentPct = (campaign.amountSpent / Math.max(1, campaign.budget)) * 100;
 
   return (
-    <AppCard>
-      <View style={{ gap: theme.spacing[4] }}>
+    <AppCard padding={14}>
+      <View style={{ gap: theme.spacing[3] }}>
         <View style={[styles.top, { gap: theme.spacing[3] }]}>
           <View style={[styles.titles, { gap: theme.spacing[1] }]}>
             <View style={[styles.titleRow, { gap: theme.spacing[2] }]}>
-              <AppText variant="subheading" numberOfLines={1} style={styles.shrink}>
+              <AppText variant="label" numberOfLines={1} style={styles.shrink}>
                 {campaign.category.name}
               </AppText>
               <AppBadge
                 label={ended ? "Ended" : running ? "Running" : "Paused"}
                 tone={running ? "success" : ended ? "neutral" : "warning"}
+                dot
               />
             </View>
-            <AppText variant="caption" tone="secondary">
+            <AppText variant="meta" tone="secondary">
               {formatDate(campaign.startDate)} to {formatDate(campaign.endDate)}
               {campaign.targetLocation ? ` · ${campaign.targetLocation}` : ""}
             </AppText>
           </View>
           {!ended ? (
             <AppButton
-              size="sm"
+              size="xs"
               variant="secondary"
               disabled={busy}
               onPress={() => onToggle(campaign)}
@@ -87,7 +88,7 @@ export const CampaignCard = memo(function CampaignCard({ campaign, onToggle, bus
             hint={`of ${formatPrice(campaign.budget) ?? ""}`}
           />
         </View>
-        <AppProgress value={spentPct} height={6} tone={running ? "success" : "brand"} />
+        <AppProgress value={spentPct} height={4} tone={running ? "success" : "brand"} />
       </View>
     </AppCard>
   );

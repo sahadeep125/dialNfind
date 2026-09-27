@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { View } from "react-native";
 
-import { AppCard, AppDivider, AppText } from "@/components/design-system";
+import { AppSection, AppText } from "@/components/design-system";
 import { AppSwitchRow } from "@/components/forms";
 import { useTheme } from "@/hooks/useTheme";
 import type { Hours } from "@/types";
@@ -42,13 +42,14 @@ export function HoursStep({ value, errors, onChange }: Props) {
   };
 
   return (
-    <View style={{ gap: theme.spacing[5] }}>
+    <View style={{ gap: theme.layout.sectionGap }}>
       <StepTitle
         title="When can customers call you?"
         subtitle="We show an Open now label during these hours."
       />
-      <AppCard variant="flat">
+      <AppSection>
         <AppSwitchRow
+          inset
           label="Open 24 hours, 7 days"
           description="For emergency services that take calls any time."
           value={allDay}
@@ -63,12 +64,11 @@ export function HoursStep({ value, errors, onChange }: Props) {
             )
           }
         />
-      </AppCard>
+      </AppSection>
       {!allDay ? (
-        <AppCard variant="flat" padding={theme.spacing[4]}>
-          {DAY_ORDER.map((d, i) => (
+        <AppSection title="Weekly hours" dividerInset={14}>
+          {DAY_ORDER.map((d) => (
             <Fragment key={d}>
-              {i > 0 ? <AppDivider /> : null}
               <HourRow
                 hours={byDay(d)}
                 error={dayErrors[d]}
@@ -77,10 +77,10 @@ export function HoursStep({ value, errors, onChange }: Props) {
               />
             </Fragment>
           ))}
-        </AppCard>
+        </AppSection>
       ) : null}
       {errors.hours && Object.keys(dayErrors).length ? (
-        <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
+        <AppText variant="meta" tone="danger" accessibilityLiveRegion="polite">
           {errors.hours}
         </AppText>
       ) : null}

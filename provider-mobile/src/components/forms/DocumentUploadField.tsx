@@ -26,7 +26,7 @@ export function DocumentUploadField({ label, helper, value, onChange }: Props) {
 
   return (
     <View style={styles.wrapper}>
-      <AppText variant="label" tone="secondary">
+      <AppText variant="caption" tone="secondary" weight="semibold">
         {label}
       </AppText>
       {value ? (
@@ -68,11 +68,7 @@ export function DocumentUploadField({ label, helper, value, onChange }: Props) {
         </AppButton>
       </View>
       {busy ? <AppProgress value={progress ?? 0} height={4} /> : null}
-      {helper ? (
-        <AppText variant="caption" tone="tertiary">
-          {helper}
-        </AppText>
-      ) : null}
+      {helper ? <AppText variant="meta">{helper}</AppText> : null}
     </View>
   );
 }

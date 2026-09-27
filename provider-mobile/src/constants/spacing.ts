@@ -25,12 +25,23 @@ export type SpacingKey = keyof typeof spacing;
 
 export const radius = {
   none: 0,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  "2xl": 24,
+  xs: 4,
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 18,
+  "2xl": 22,
   full: 9999,
+} as const;
+
+/** Page rhythm shared by every screen, so all of them breathe the same way. */
+export const layout = {
+  screenPadding: 16,
+  sectionGap: 20,
+  groupGap: 8,
+  rowMinHeight: 48,
+  rowPaddingVertical: 10,
+  iconTile: 32,
 } as const;
 
 export const borderWidth = {

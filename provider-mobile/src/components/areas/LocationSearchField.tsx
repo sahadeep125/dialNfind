@@ -51,9 +51,7 @@ export function LocationSearchField({
         <ActivityIndicator color={theme.colors.brand.primary} style={styles.spinner} />
       ) : null}
       {active && !locations.isFetching && !results.length ? (
-        <AppText variant="caption" tone="tertiary">
-          No places match. You can type the area name below instead.
-        </AppText>
+        <AppText variant="meta">No places match. You can type the area name below instead.</AppText>
       ) : null}
       {results.length ? (
         <View

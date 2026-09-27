@@ -13,6 +13,7 @@ export const palette = {
   teal100: "#D8F6F4",
   green600: "#00986C",
   green700: "#005D3F",
+  red700: "#B3141F",
   green100: "#DDFAEC",
   amber500: "#EB9F2C",
   amber800: "#7D460B",
@@ -20,6 +21,8 @@ export const palette = {
   red600: "#DF202E",
   red100: "#FDE7E8",
   slate0: "#FFFFFF",
+  canvas: "#F5F7FA",
+  slate75: "#EDF1F6",
   slate25: "#FBFDFE",
   slate50: "#F2F5F8",
   slate100: "#EFF4FC",
@@ -45,9 +48,11 @@ export interface ColorScheme {
     tertiary: string;
     elevated: string;
     inverse: string;
+    /** Neutral fill for icon tiles, tracks and inset blocks. Never tinted. */
+    subtle: string;
   };
   text: { primary: string; secondary: string; tertiary: string; inverse: string; disabled: string };
-  border: { primary: string; secondary: string; tertiary: string };
+  border: { primary: string; secondary: string; tertiary: string; strong: string };
   brand: {
     primary: string;
     pressed: string;
@@ -59,11 +64,13 @@ export interface ColorScheme {
   semantic: {
     success: string;
     successSoft: string;
+    successText: string;
     warning: string;
     warningSoft: string;
     warningText: string;
     danger: string;
     dangerSoft: string;
+    dangerText: string;
     info: string;
   };
   overlay: string;
@@ -72,11 +79,12 @@ export interface ColorScheme {
 
 export const lightColors: ColorScheme = {
   background: {
-    primary: palette.slate25,
+    primary: palette.canvas,
     secondary: palette.slate0,
     tertiary: palette.slate50,
     elevated: palette.slate0,
     inverse: palette.slate900,
+    subtle: palette.slate75,
   },
   text: {
     primary: palette.slate900,
@@ -85,7 +93,12 @@ export const lightColors: ColorScheme = {
     inverse: palette.slate0,
     disabled: palette.slate300,
   },
-  border: { primary: palette.slate200, secondary: palette.slate300, tertiary: palette.slate50 },
+  border: {
+    primary: palette.slate200,
+    secondary: palette.slate300,
+    tertiary: palette.slate50,
+    strong: palette.slate400,
+  },
   brand: {
     primary: palette.indigo500,
     pressed: palette.indigo600,
@@ -97,11 +110,13 @@ export const lightColors: ColorScheme = {
   semantic: {
     success: palette.green600,
     successSoft: palette.green100,
+    successText: palette.green700,
     warning: palette.amber500,
     warningSoft: palette.amber100,
     warningText: palette.amber800,
     danger: palette.red600,
     dangerSoft: palette.red100,
+    dangerText: palette.red700,
     info: palette.indigo500,
   },
   overlay: "rgba(15, 24, 40, 0.45)",
@@ -115,6 +130,7 @@ export const darkColors: ColorScheme = {
     tertiary: palette.night800,
     elevated: palette.night900,
     inverse: palette.night50,
+    subtle: palette.night800,
   },
   text: {
     primary: palette.night50,
@@ -123,7 +139,12 @@ export const darkColors: ColorScheme = {
     inverse: palette.night950,
     disabled: palette.night600,
   },
-  border: { primary: palette.night700, secondary: palette.night600, tertiary: palette.night800 },
+  border: {
+    primary: palette.night700,
+    secondary: palette.night600,
+    tertiary: palette.night800,
+    strong: palette.night300,
+  },
   brand: {
     primary: palette.indigo400,
     pressed: palette.indigo500,
@@ -135,11 +156,13 @@ export const darkColors: ColorScheme = {
   semantic: {
     success: "#2BC592",
     successSoft: "#0E2A22",
+    successText: "#5FD9AE",
     warning: "#F2B452",
     warningSoft: "#2E2410",
     warningText: "#F2C987",
     danger: "#F25561",
     dangerSoft: "#351519",
+    dangerText: "#FF8A93",
     info: palette.indigo400,
   },
   overlay: "rgba(0, 0, 0, 0.6)",

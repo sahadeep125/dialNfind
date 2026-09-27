@@ -5,6 +5,7 @@ import * as Notifications from "expo-notifications";
 
 import { api } from "@/services/api";
 import { STORAGE_KEYS, storage } from "@/services/storage";
+import { logWarn } from "@/utils/log";
 
 /** Android channel the API sends to (server/src/services/push.ts). */
 const CHANNEL_ID = "alerts";
@@ -46,7 +47,7 @@ export async function registerForPush({ ask }: { ask: boolean }): Promise<PushSt
   if (!Device.isDevice) return "unsupported";
   const id = projectId();
   if (!id) {
-    console.warn("[push] No EAS projectId in app config (run `eas init`); push alerts are off.");
+    logWarn("[push] No EAS projectId in app config (run `eas init`); push alerts are off.");
     return "unsupported";
   }
   if (Platform.OS === "android") {

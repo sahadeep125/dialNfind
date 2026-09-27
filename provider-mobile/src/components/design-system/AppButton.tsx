@@ -12,8 +12,17 @@ import { useTheme } from "@/hooks/useTheme";
 import { AppPressable } from "./AppPressable";
 import { AppText } from "./AppText";
 
-export type ButtonVariant = "primary" | "secondary" | "soft" | "success" | "destructive" | "ghost";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "outline"
+  | "soft"
+  | "neutral"
+  | "success"
+  | "destructive"
+  | "danger"
+  | "ghost";
+export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 interface Props extends Omit<PressableProps, "style" | "children"> {
   children: ReactNode;
@@ -26,6 +35,7 @@ interface Props extends Omit<PressableProps, "style" | "children"> {
   style?: StyleProp<ViewStyle>;
 }
 
+/** One filled primary per screen; everything else is secondary, soft, neutral or ghost. */
 export function AppButton({
   children,
   variant = "primary",
@@ -41,6 +51,7 @@ export function AppButton({
   const theme = useTheme();
   const tokens = theme.components.button[variant];
   const inactive = disabled || loading;
+  const small = size === "xs" || size === "sm";
 
   return (
     <AppPressable
@@ -54,11 +65,17 @@ export function AppButton({
         {
           backgroundColor: tokens.background,
           borderColor: tokens.border,
-          borderRadius: theme.components.button.radius,
+          borderRadius: small ? theme.radius.sm : theme.components.button.radius,
           height: theme.components.button.height[size],
-          paddingHorizontal: size === "sm" ? theme.spacing[3] : theme.spacing[5],
+          paddingHorizontal:
+            size === "xs"
+              ? theme.spacing[2.5]
+              : size === "sm"
+                ? theme.spacing[3]
+                : theme.spacing[4],
+          gap: small ? 6 : 8,
           alignSelf: fullWidth ? "stretch" : "auto",
-          opacity: disabled ? 0.5 : 1,
+          opacity: disabled ? 0.45 : 1,
         },
         style,
       ]}
@@ -69,12 +86,12 @@ export function AppButton({
         <>
           {leadingIcon ? <View>{leadingIcon}</View> : null}
           <AppText
-            variant="label"
+            variant={small ? "caption" : "label"}
             numberOfLines={1}
-            style={{
-              color: tokens.text,
-              fontSize: size === "sm" ? theme.typography.caption.fontSize : undefined,
-            }}
+            style={[
+              { color: tokens.text },
+              small ? { fontFamily: theme.typography.label.fontFamily } : null,
+            ]}
           >
             {children}
           </AppText>
@@ -91,7 +108,6 @@ const styles = StyleSheet.create({
     borderCurve: "continuous",
     borderWidth: 1,
     flexDirection: "row",
-    gap: 8,
     justifyContent: "center",
     overflow: "hidden",
   },

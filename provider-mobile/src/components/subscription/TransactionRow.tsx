@@ -10,7 +10,12 @@ interface Props {
   transaction: Transaction;
 }
 
-const GATEWAY_LABEL = { manual: "Paid to our team", razorpay: "Paid online", app_store: "App Store", play_store: "Google Play" } as const;
+const GATEWAY_LABEL = {
+  manual: "Paid to our team",
+  razorpay: "Paid online",
+  app_store: "App Store",
+  play_store: "Google Play",
+} as const;
 
 const TYPE_LABEL: Record<string, string> = {
   subscription: "Plan payment",
@@ -21,21 +26,30 @@ export const TransactionRow = memo(function TransactionRow({ transaction: t }: P
   const theme = useTheme();
   const label = TYPE_LABEL[t.type] ?? t.type.replace(/_/g, " ");
   return (
-    <View style={[styles.row, { gap: theme.spacing[3], padding: theme.spacing[4] }]}>
+    <View
+      style={[
+        styles.row,
+        { gap: theme.spacing[3], paddingHorizontal: 14, paddingVertical: theme.spacing[2.5] },
+      ]}
+    >
       <View style={styles.flex}>
         <AppText variant="label" numberOfLines={1}>
           {label}
           {t.status !== "success" ? (
-            <AppText variant="caption" tone="danger">
+            <AppText variant="meta" tone="danger">
               {`  ${t.status}`}
             </AppText>
           ) : null}
         </AppText>
-        <AppText variant="caption" tone="secondary" numberOfLines={1}>
-          {[formatDate(t.createdAt), GATEWAY_LABEL[t.gateway], t.invoiceNumber].filter(Boolean).join(" · ")}
+        <AppText variant="meta" tone="secondary" numberOfLines={1}>
+          {[formatDate(t.createdAt), GATEWAY_LABEL[t.gateway], t.invoiceNumber]
+            .filter(Boolean)
+            .join(" · ")}
         </AppText>
       </View>
-      <AppText variant="label">{t.currency === "INR" ? formatPrice(t.amount) : `${t.currency} ${t.amount.toFixed(2)}`}</AppText>
+      <AppText variant="label" numeric>
+        {t.currency === "INR" ? formatPrice(t.amount) : `${t.currency} ${t.amount.toFixed(2)}`}
+      </AppText>
     </View>
   );
 });

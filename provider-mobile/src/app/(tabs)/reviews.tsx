@@ -9,8 +9,9 @@ import {
 } from "react-native";
 import { MessageSquare } from "lucide-react-native";
 
-import { AppChip, AppSkeleton, AppText } from "@/components/design-system";
-import { EmptyState, ErrorState, Screen } from "@/components/layout";
+import { AppSkeleton } from "@/components/design-system";
+import { AppSegmented } from "@/components/forms";
+import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { RatingSummary } from "@/components/reviews/RatingSummary";
 import { ReplySheet } from "@/components/reviews/ReplySheet";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
@@ -21,7 +22,7 @@ import { useTheme } from "@/hooks/useTheme";
 import type { ProviderReview, ReviewFilter } from "@/types/reviews";
 
 const FILTERS: { value: ReviewFilter; label: string }[] = [
-  { value: "all", label: "All reviews" },
+  { value: "all", label: "All" },
   { value: "unreplied", label: "Needs a reply" },
 ];
 
@@ -56,43 +57,39 @@ export default function ReviewsScreen() {
   );
 
   const header = (
-    <View style={{ gap: theme.spacing[4], marginBottom: theme.spacing[1] }}>
-      <View style={{ gap: theme.spacing[1] }}>
-        <AppText variant="title" accessibilityRole="header">
-          Reviews
-        </AppText>
-        <AppText tone="secondary">
-          Replying to reviews shows customers you care and improves your ranking.
-        </AppText>
-      </View>
+    <View style={{ gap: theme.spacing[3], marginBottom: theme.spacing[1] }}>
       {summary ? (
         <RatingSummary summary={summary} />
       ) : isLoading ? (
-        <AppSkeleton shape="block" height={132} />
+        <AppSkeleton shape="block" height={112} />
       ) : null}
-      <View style={[styles.chips, { gap: theme.spacing[2] }]}>
-        {FILTERS.map((f) => (
-          <AppChip
-            key={f.value}
-            label={f.label}
-            size="sm"
-            selected={filter === f.value}
-            onPress={() => setFilter(f.value)}
-          />
-        ))}
-      </View>
+      <AppSegmented
+        options={FILTERS}
+        value={filter}
+        onChange={setFilter}
+        accessibilityLabel="Filter reviews"
+      />
     </View>
   );
 
   return (
     <Screen>
+      <ScreenHeader
+        variant="large"
+        title="Reviews"
+        subtitle="Replies build trust and lift your ranking"
+      />
       <FlatList
         data={isLoading || isError ? [] : reviews}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         contentContainerStyle={[
           styles.content,
-          { padding: theme.spacing[4], gap: theme.spacing[3] },
+          {
+            paddingHorizontal: theme.layout.screenPadding,
+            paddingTop: theme.spacing[1],
+            gap: theme.spacing[2.5],
+          },
         ]}
         ListHeaderComponent={header}
         ListEmptyComponent={
@@ -145,6 +142,5 @@ export default function ReviewsScreen() {
 
 const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingBottom: 32 },
-  chips: { flexDirection: "row", flexWrap: "wrap" },
   footer: { paddingVertical: 16 },
 });

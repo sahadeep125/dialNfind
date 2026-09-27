@@ -9,8 +9,14 @@ import {
 } from "react-native";
 import { PhoneIncoming, Search } from "lucide-react-native";
 
-import { AppChip, AppInput, AppText } from "@/components/design-system";
-import { EmptyState, ErrorState, Screen } from "@/components/layout";
+import {
+  AppChip,
+  AppChipDivider,
+  AppChipRow,
+  AppDivider,
+  AppInput,
+} from "@/components/design-system";
+import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { PlanBanner } from "@/components/subscription/PlanBanner";
 import { LeadRow } from "@/components/leads/LeadRow";
 import { LeadRowSkeleton } from "@/components/leads/LeadRowSkeleton";
@@ -70,25 +76,46 @@ export default function LeadsScreen() {
     [toast],
   );
 
+  const count = leads.length;
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<Lead>) => (
-      <LeadRow lead={item} onCall={onCall} onWhatsApp={onWhatsApp} onReport={setReporting} onManage={setManaging} />
-    ),
-    [onCall, onWhatsApp],
+    ({ item, index }: ListRenderItemInfo<Lead>) => {
+      const first = index === 0;
+      const last = index === count - 1;
+      return (
+        <View
+          style={[
+            styles.item,
+            {
+              backgroundColor: theme.colors.background.elevated,
+              borderColor: theme.colors.border.primary,
+              borderTopWidth: first ? 1 : 0,
+              borderBottomWidth: last ? 1 : 0,
+              borderTopLeftRadius: first ? theme.radius.lg : 0,
+              borderTopRightRadius: first ? theme.radius.lg : 0,
+              borderBottomLeftRadius: last ? theme.radius.lg : 0,
+              borderBottomRightRadius: last ? theme.radius.lg : 0,
+            },
+          ]}
+        >
+          {first ? null : <AppDivider inset={14 + 36 + 12} />}
+          <LeadRow
+            lead={item}
+            onCall={onCall}
+            onWhatsApp={onWhatsApp}
+            onReport={setReporting}
+            onManage={setManaging}
+          />
+        </View>
+      );
+    },
+    [onCall, onWhatsApp, count, theme],
   );
 
   const header = (
-    <View style={{ gap: theme.spacing[3], marginBottom: theme.spacing[1] }}>
-      <View style={{ gap: theme.spacing[1] }}>
-        <AppText variant="title" accessibilityRole="header">
-          Leads
-        </AppText>
-        <AppText tone="secondary">
-          Every customer who tapped Call or WhatsApp on your listing.
-        </AppText>
-      </View>
+    <View style={{ gap: theme.spacing[3], marginBottom: theme.spacing[3] }}>
       <PlanBanner />
       <AppInput
+        size="sm"
         value={search}
         onChangeText={setSearch}
         placeholder="Search name, service or message"
@@ -96,52 +123,62 @@ export default function LeadsScreen() {
         autoCorrect={false}
         returnKeyType="search"
         maxLength={100}
-        leadingIcon={<Search size={18} color={theme.colors.text.tertiary} />}
+        leadingIcon={<Search size={16} color={theme.colors.text.tertiary} />}
       />
-      <View style={[styles.chips, { gap: theme.spacing[2] }]}>
+      <AppChipRow>
         {FILTERS.map((f) => (
           <AppChip
             key={f.value}
             label={f.label}
-            size="sm"
             selected={channel === f.value}
             onPress={() => setChannel(f.value)}
           />
         ))}
-      </View>
-      <View style={[styles.chips, { gap: theme.spacing[2] }]}>
+        <AppChipDivider />
         {[{ value: "all" as const, label: "Any status" }, ...LEAD_STATUS_OPTIONS].map((f) => (
           <AppChip
             key={f.value}
             label={f.label}
-            size="sm"
             selected={status === f.value}
             onPress={() => setStatus(f.value)}
           />
         ))}
-      </View>
-      {total !== undefined && !isError ? (
-        <AppText variant="caption" tone="secondary">
-          {plural(total, "lead")}
-        </AppText>
-      ) : null}
+      </AppChipRow>
     </View>
   );
 
   return (
     <Screen>
+      <ScreenHeader
+        variant="large"
+        title="Leads"
+        subtitle={
+          total !== undefined && !isError
+            ? `${plural(total, "customer")} contacted you`
+            : "Customers who tapped Call or WhatsApp"
+        }
+      />
       <FlatList
         data={isLoading || isError ? [] : leads}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         contentContainerStyle={[
           styles.content,
-          { padding: theme.spacing[4], gap: theme.spacing[3] },
+          { paddingHorizontal: theme.layout.screenPadding, paddingTop: theme.spacing[1] },
         ]}
         ListHeaderComponent={header}
         ListEmptyComponent={
           isLoading ? (
-            <View style={{ gap: theme.spacing[3] }}>
+            <View
+              style={[
+                styles.skeleton,
+                {
+                  backgroundColor: theme.colors.background.elevated,
+                  borderColor: theme.colors.border.primary,
+                  borderRadius: theme.radius.lg,
+                },
+              ]}
+            >
               <LeadRowSkeleton />
               <LeadRowSkeleton />
               <LeadRowSkeleton />
@@ -149,7 +186,11 @@ export default function LeadsScreen() {
           ) : isError ? (
             <ErrorState error={error} onRetry={() => void refetch()} />
           ) : filtered ? (
-            <EmptyState icon={Search} title="No leads match" text="Try a different status or search." />
+            <EmptyState
+              icon={Search}
+              title="No leads match"
+              text="Try a different status or search."
+            />
           ) : (
             <EmptyState
               icon={PhoneIncoming}
@@ -190,6 +231,7 @@ export default function LeadsScreen() {
 
 const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingBottom: 32 },
-  chips: { flexDirection: "row", flexWrap: "wrap" },
+  item: { overflow: "hidden" },
+  skeleton: { borderWidth: 1, overflow: "hidden" },
   footer: { paddingVertical: 16 },
 });

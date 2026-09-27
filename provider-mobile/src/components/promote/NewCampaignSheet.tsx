@@ -75,7 +75,7 @@ export function NewCampaignSheet({ visible, onClose, categories, pricing }: Prop
         keyboardShouldPersistTaps="handled"
         style={styles.scroll}
         contentContainerStyle={{
-          gap: theme.spacing[5],
+          gap: theme.spacing[4],
           paddingHorizontal: theme.spacing[4],
           paddingBottom: theme.spacing[2],
         }}
@@ -87,7 +87,7 @@ export function NewCampaignSheet({ visible, onClose, categories, pricing }: Prop
           onChange={setCategoryId}
         />
         <View style={styles.field}>
-          <AppText variant="label" tone="secondary">
+          <AppText variant="caption" tone="secondary" weight="semibold">
             Duration
           </AppText>
           <AppSegmented
@@ -113,8 +113,9 @@ export function NewCampaignSheet({ visible, onClose, categories, pricing }: Prop
           onBlur={() => setBudgetError(budgetProblem())}
           returnKeyType="done"
         />
-        <AppText variant="caption" tone="tertiary">
-          Your campaign runs in {pricing.city}. Each customer call or message uses part of the budget. Our team sets it up once payment is arranged.
+        <AppText variant="meta">
+          Your campaign runs in {pricing.city}. Each customer call or message uses part of the
+          budget. Our team sets it up once payment is arranged.
         </AppText>
         <AppButton
           fullWidth

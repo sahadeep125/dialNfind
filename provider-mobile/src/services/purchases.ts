@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import Purchases, { LOG_LEVEL, type CustomerInfo } from "react-native-purchases";
 
 import { REVENUECAT_ANDROID_KEY, REVENUECAT_IOS_KEY } from "@/constants/config";
+import { logError } from "@/utils/log";
 
 /**
  * RevenueCat for App Store and Google Play subscriptions. Purchases belong to the business, so the
@@ -36,7 +37,7 @@ export async function identifyProvider(providerId: number): Promise<CustomerInfo
     currentUserId = id;
     return customerInfo;
   } catch (error: unknown) {
-    console.error("[purchases] Could not identify the business", error);
+    logError("[purchases] Could not identify the business", error);
     return null;
   }
 }
@@ -48,7 +49,7 @@ export async function resetPurchases(): Promise<void> {
   try {
     await Purchases.logOut();
   } catch (error: unknown) {
-    console.error("[purchases] Could not sign out of RevenueCat", error);
+    logError("[purchases] Could not sign out of RevenueCat", error);
   }
 }
 

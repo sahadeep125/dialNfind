@@ -4,6 +4,7 @@ import { api } from "@/services/api";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { OnboardingDraft, OnboardingResponse } from "@/types/onboarding";
 import { toPayload } from "@/utils/onboarding";
+import { logError } from "@/utils/log";
 
 /**
  * Creates the listing. The onboarding endpoint does not take images, so a chosen logo or cover is
@@ -34,7 +35,7 @@ export function useCreateListing() {
           });
         } catch (error: unknown) {
           // The listing exists; photos can be added again from the profile screen.
-          console.error("[onboarding] Could not save listing images", error);
+          logError("[onboarding] Could not save listing images", error);
           imagesSaved = false;
         }
       }

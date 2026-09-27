@@ -1,5 +1,6 @@
 import { API_URL } from "@/constants/config";
 import type { ApiErrorBody } from "@/types";
+import { logError } from "@/utils/log";
 
 export class ApiError extends Error {
   constructor(
@@ -67,7 +68,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
   } catch (error: unknown) {
-    console.error("[api] Network error", path, error);
+    logError("[api] Network error", path, error);
     throw new ApiError(0, "Could not reach DialNFind. Check your connection and try again.");
   }
 

@@ -17,10 +17,15 @@ export function LockedCard({ feature, compact }: { feature: Feature; compact?: b
   return (
     <AppCard>
       <View style={[styles.body, { gap: theme.spacing[2] }]}>
-        <View style={[styles.icon, { backgroundColor: theme.colors.brand.soft, borderRadius: theme.radius.lg }]}>
+        <View
+          style={[
+            styles.icon,
+            { backgroundColor: theme.colors.brand.soft, borderRadius: theme.radius.lg },
+          ]}
+        >
           <Lock size={20} color={theme.colors.brand.primary} />
         </View>
-        <AppText variant="subheading" align="center">
+        <AppText variant="section" align="center">
           {copy.title}
         </AppText>
         {!compact ? (
@@ -28,7 +33,10 @@ export function LockedCard({ feature, compact }: { feature: Feature; compact?: b
             {copy.text}
           </AppText>
         ) : null}
-        <AppButton size="sm" onPress={() => router.push({ pathname: "/paywall", params: { feature } })}>
+        <AppButton
+          size="sm"
+          onPress={() => router.push({ pathname: "/paywall", params: { feature } })}
+        >
           {`Upgrade to ${planFor(copy.entitlement)}`}
         </AppButton>
       </View>

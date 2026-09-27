@@ -44,6 +44,7 @@ export function ToastPortal() {
               style={[
                 styles.toast,
                 { backgroundColor: theme.colors.background.inverse, borderRadius: theme.radius.md },
+                theme.shadow.floating,
               ]}
             >
               <Icon size={18} color={color} />

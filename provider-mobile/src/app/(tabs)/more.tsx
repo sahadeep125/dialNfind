@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Platform, ScrollView, View } from "react-native";
+import { Platform, View } from "react-native";
 import { router } from "expo-router";
 import Constants from "expo-constants";
 import * as StoreReview from "expo-store-review";
 import {
   BadgeCheck,
+  Check,
+  Moon,
   Clock,
   CreditCard,
   ExternalLink,
@@ -23,12 +25,16 @@ import {
   Wrench,
 } from "lucide-react-native";
 
-import { AppListItem, AppSkeleton, AppText } from "@/components/design-system";
-import { AppSegmented } from "@/components/forms";
-import { Screen } from "@/components/layout";
+import {
+  AppListItem,
+  AppSection,
+  AppSheet,
+  AppSkeleton,
+  AppText,
+} from "@/components/design-system";
+import { Screen, ScreenHeader, ScreenScroll } from "@/components/layout";
 import { BusinessHeader } from "@/components/more/BusinessHeader";
 import { DeleteAccountSheet } from "@/components/more/DeleteAccountSheet";
-import { MoreGroup } from "@/components/more/MoreGroup";
 import { PushAlertsRow } from "@/components/more/PushAlertsRow";
 import { SignOutSheet } from "@/components/more/SignOutSheet";
 import { useAuthActions } from "@/hooks/useAuthActions";
@@ -64,7 +70,11 @@ async function rateApp(): Promise<void> {
     return;
   }
   // No App Store id configured yet on iOS: fall back to a store search.
-  await openUrl(Platform.OS === "ios" ? "https://apps.apple.com/search?term=DialNFind%20Business" : "https://play.google.com/store/search?q=DialNFind%20Business");
+  await openUrl(
+    Platform.OS === "ios"
+      ? "https://apps.apple.com/search?term=DialNFind%20Business"
+      : "https://play.google.com/store/search?q=DialNFind%20Business",
+  );
 }
 
 export default function MoreScreen() {
@@ -78,11 +88,12 @@ export default function MoreScreen() {
   const setPreference = useThemeStore((s) => s.setPreference);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [pickingTheme, setPickingTheme] = useState(false);
 
   const provider = session.data?.state.provider ?? null;
   const user = session.data?.user;
   const businessName = provider?.businessName ?? profile.data?.businessName ?? "Your business";
-  const icon = theme.colors.brand.primary;
+  const icon = theme.colors.text.secondary;
   const version = Constants.expoConfig?.version ?? "1.0.0";
 
   const rate = async (): Promise<void> => {
@@ -99,19 +110,17 @@ export default function MoreScreen() {
     router.replace("/login");
   };
 
+  const verification =
+    provider?.verificationStatus === "verified"
+      ? "Verified"
+      : provider?.verificationStatus === "partial"
+        ? "Partly"
+        : "Not yet";
+
   return (
     <Screen>
-      <ScrollView
-        contentContainerStyle={{
-          padding: theme.spacing[4],
-          gap: theme.spacing[6],
-          paddingBottom: theme.spacing[10],
-        }}
-      >
-        <AppText variant="title" accessibilityRole="header">
-          More
-        </AppText>
-
+      <ScreenHeader variant="large" title="More" />
+      <ScreenScroll>
         {provider ? (
           <BusinessHeader
             name={businessName}
@@ -119,163 +128,183 @@ export default function MoreScreen() {
             status={provider.status}
             verification={provider.verificationStatus}
             email={user?.email}
+            planName={plan.plan.name}
+            completeness={provider.profileCompletenessPct}
             onPress={() => router.push("/profile")}
           />
         ) : (
-          <AppSkeleton shape="block" height={88} />
+          <AppSkeleton shape="block" height={84} />
         )}
 
-        <MoreGroup title="Business">
+        <AppSection title="Your listing">
           <AppListItem
-            title="Edit profile"
-            subtitle={
-              provider ? `${provider.profileCompletenessPct}% complete` : "Name, contact, photos"
-            }
-            leading={<Store size={18} color={icon} />}
+            title="Business details"
+            subtitle="Name, about, contact, photos"
+            leading={<Store size={16} color={icon} />}
             onPress={() => router.push("/profile")}
           />
           <AppListItem
-            title="Services"
-            leading={<Wrench size={18} color={icon} />}
+            title="Services and prices"
+            leading={<Wrench size={16} color={icon} />}
             onPress={() => router.push("/services")}
           />
           <AppListItem
-            title="Hours"
-            leading={<Clock size={18} color={icon} />}
+            title="Working hours"
+            leading={<Clock size={16} color={icon} />}
             onPress={() => router.push("/hours")}
           />
           <AppListItem
             title="Service areas"
-            leading={<MapPin size={18} color={icon} />}
+            leading={<MapPin size={16} color={icon} />}
             onPress={() => router.push("/areas")}
           />
-          {provider?.slug ? (
-            <AppListItem
-              title="View public listing"
-              subtitle="See your page as customers do"
-              leading={<ExternalLink size={18} color={icon} />}
-              onPress={() => void openUrl(`${WEB_URL}/providers/${provider.slug}`)}
-            />
-          ) : null}
           <AppListItem
-            title="Portfolio"
-            leading={<Images size={18} color={icon} />}
+            title="Photos of your work"
+            leading={<Images size={16} color={icon} />}
             onPress={() => router.push("/portfolio")}
           />
           <AppListItem
             title="Verification"
-            value={
-              provider?.verificationStatus === "verified"
-                ? "Verified"
-                : provider?.verificationStatus === "partial"
-                  ? "Partly"
-                  : undefined
+            value={verification}
+            accent={provider?.verificationStatus !== "verified"}
+            leading={
+              <BadgeCheck
+                size={16}
+                color={
+                  provider?.verificationStatus !== "verified" ? theme.colors.brand.primary : icon
+                }
+              />
             }
-            leading={<BadgeCheck size={18} color={icon} />}
             onPress={() => router.push("/verification")}
           />
-        </MoreGroup>
+          {provider?.slug ? (
+            <AppListItem
+              title="View public page"
+              leading={<ExternalLink size={16} color={icon} />}
+              onPress={() => void openUrl(`${WEB_URL}/providers/${provider.slug}`)}
+            />
+          ) : null}
+        </AppSection>
 
-        <MoreGroup title="Grow">
-          <AppListItem
-            title="Promote"
-            subtitle="Sponsored campaigns in search"
-            value={plan.features.promote ? undefined : "Business"}
-            leading={<Megaphone size={18} color={icon} />}
-            onPress={() => router.push("/promote")}
-          />
+        <AppSection title="Grow">
           <AppListItem
             title="Plan and billing"
-            subtitle={plan.plan.code === "free" ? "Upgrade for unlimited leads and analytics" : "Your plan, invoices and payments"}
+            subtitle={
+              plan.plan.code === "free"
+                ? "Unlimited leads and analytics on Pro"
+                : "Invoices and payments"
+            }
             value={plan.plan.name}
-            leading={<CreditCard size={18} color={icon} />}
+            accent={plan.plan.code === "free"}
+            leading={
+              <CreditCard
+                size={16}
+                color={plan.plan.code === "free" ? theme.colors.brand.primary : icon}
+              />
+            }
             onPress={() => router.push("/subscription")}
           />
-        </MoreGroup>
+          <AppListItem
+            title="Promote"
+            subtitle="Sponsored spots in search"
+            value={plan.features.promote ? undefined : "Business"}
+            leading={<Megaphone size={16} color={icon} />}
+            onPress={() => router.push("/promote")}
+          />
+        </AppSection>
 
-        <MoreGroup title="Help">
+        <AppSection title="Preferences">
+          <PushAlertsRow />
+          <AppListItem
+            title="Appearance"
+            value={THEME_OPTIONS.find((o) => o.value === preference)?.label}
+            leading={<Moon size={16} color={icon} />}
+            onPress={() => setPickingTheme(true)}
+          />
+        </AppSection>
+
+        <AppSection title="Help">
           <AppListItem
             title="Support requests"
-            subtitle="Talk to the DialNFind team"
-            leading={<LifeBuoy size={18} color={icon} />}
+            leading={<LifeBuoy size={16} color={icon} />}
             onPress={() => router.push("/support")}
           />
           <AppListItem
             title="Help and FAQ"
-            leading={<HelpCircle size={18} color={icon} />}
+            leading={<HelpCircle size={16} color={icon} />}
             onPress={() => router.push("/help")}
           />
           <AppListItem
             title="Rate the app"
-            subtitle="Tell us how we are doing"
-            leading={<Star size={18} color={icon} />}
+            leading={<Star size={16} color={icon} />}
             onPress={() => void rate()}
           />
-        </MoreGroup>
+        </AppSection>
 
-        <View style={{ gap: theme.spacing[2] }}>
-          <AppText
-            variant="overline"
-            tone="tertiary"
-            accessibilityRole="header"
-            style={{ paddingHorizontal: theme.spacing[1] }}
-          >
-            Appearance
-          </AppText>
-          <AppSegmented
-            accessibilityLabel="Theme"
-            options={THEME_OPTIONS}
-            value={preference}
-            onChange={setPreference}
-          />
-        </View>
-
-        <MoreGroup title="Legal">
+        <AppSection title="Legal">
           <AppListItem
             title="Terms for businesses"
-            leading={<FileText size={18} color={icon} />}
+            leading={<FileText size={16} color={icon} />}
             onPress={() => router.push("/legal/terms")}
           />
           <AppListItem
             title="Privacy"
-            leading={<ShieldCheck size={18} color={icon} />}
+            leading={<ShieldCheck size={16} color={icon} />}
             onPress={() => router.push("/legal/privacy")}
           />
-        </MoreGroup>
+        </AppSection>
 
-        <MoreGroup title="Notifications">
-          <PushAlertsRow />
-        </MoreGroup>
-
-        <MoreGroup title="Account">
+        <AppSection title="Account">
           <AppListItem
             title="Account settings"
             subtitle="Name, phone and password"
-            leading={<UserCog size={18} color={icon} />}
+            leading={<UserCog size={16} color={icon} />}
             onPress={() => router.push("/account")}
           />
           <AppListItem
             title="Sign out"
             subtitle={user?.email}
-            leading={<LogOut size={18} color={icon} />}
+            leading={<LogOut size={16} color={icon} />}
             onPress={() => setConfirmSignOut(true)}
             showChevron={false}
           />
           <AppListItem
             title="Delete account"
-            subtitle="Remove your listing and erase your account"
             destructive
-            leading={<UserX size={18} color={theme.colors.semantic.danger} />}
+            leading={<UserX size={16} color={theme.colors.semantic.danger} />}
             onPress={() => setDeleting(true)}
             showChevron={false}
           />
-        </MoreGroup>
+        </AppSection>
 
-        <AppText variant="caption" tone="tertiary" align="center">
+        <AppText variant="meta" align="center">
           DialNFind Business {version}
         </AppText>
-      </ScrollView>
+      </ScreenScroll>
 
+      <AppSheet visible={pickingTheme} onClose={() => setPickingTheme(false)} title="Appearance">
+        <View style={{ paddingHorizontal: theme.spacing[4] }}>
+          <AppSection dividerInset={14}>
+            {THEME_OPTIONS.map((o) => (
+              <AppListItem
+                key={o.value}
+                title={o.label}
+                subtitle={o.value === "system" ? "Match your phone's setting" : undefined}
+                showChevron={false}
+                trailing={
+                  preference === o.value ? (
+                    <Check size={16} color={theme.colors.brand.primary} />
+                  ) : undefined
+                }
+                onPress={() => {
+                  setPreference(o.value);
+                  setPickingTheme(false);
+                }}
+              />
+            ))}
+          </AppSection>
+        </View>
+      </AppSheet>
       <SignOutSheet
         visible={confirmSignOut}
         onClose={() => setConfirmSignOut(false)}

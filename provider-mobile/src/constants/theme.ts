@@ -2,7 +2,7 @@
 import { moderateScale } from "react-native-size-matters";
 
 import { darkColors, lightColors, type ColorScheme } from "./colors";
-import { borderWidth, radius, spacing } from "./spacing";
+import { borderWidth, layout, radius, spacing } from "./spacing";
 import { typography, type TypeStyle, type TypographyVariant } from "./typography";
 
 const scaleType = (style: TypeStyle): TypeStyle => ({
@@ -17,19 +17,45 @@ function buildTheme(colors: ColorScheme, mode: "light" | "dark") {
     colors,
     spacing,
     radius,
+    layout,
     borderWidth,
     typography: Object.fromEntries(
       Object.entries(typography).map(([k, v]) => [k, scaleType(v)]),
     ) as Record<TypographyVariant, TypeStyle>,
     shadow: {
-      card:
+      /** Resting surfaces are separated by borders, not shadows. Kept as a token so it can come back in one place. */
+      card: {
+        shadowColor: "#000000",
+        shadowOpacity: 0,
+        shadowRadius: 0,
+        shadowOffset: { width: 0, height: 0 },
+        elevation: 0,
+      },
+      /** Only for things that float above content: the save bar, toasts, segmented thumbs. */
+      floating:
         mode === "light"
           ? {
               shadowColor: "#0F1828",
-              shadowOpacity: 0.06,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 2,
+              shadowOpacity: 0.1,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 6,
+            }
+          : {
+              shadowColor: "#000000",
+              shadowOpacity: 0.4,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 6,
+            },
+      thumb:
+        mode === "light"
+          ? {
+              shadowColor: "#0F1828",
+              shadowOpacity: 0.08,
+              shadowRadius: 3,
+              shadowOffset: { width: 0, height: 1 },
+              elevation: 1,
             }
           : {
               shadowColor: "#000000",
@@ -43,9 +69,10 @@ function buildTheme(colors: ColorScheme, mode: "light" | "dark") {
       button: {
         radius: radius.md,
         height: {
-          sm: Math.round(moderateScale(36, 0.3)),
-          md: Math.round(moderateScale(46, 0.3)),
-          lg: Math.round(moderateScale(52, 0.3)),
+          xs: Math.round(moderateScale(28, 0.3)),
+          sm: Math.round(moderateScale(34, 0.3)),
+          md: Math.round(moderateScale(44, 0.3)),
+          lg: Math.round(moderateScale(48, 0.3)),
         },
         primary: {
           background: colors.brand.primary,
@@ -57,7 +84,19 @@ function buildTheme(colors: ColorScheme, mode: "light" | "dark") {
           background: colors.background.elevated,
           pressed: colors.background.tertiary,
           text: colors.text.primary,
-          border: colors.border.secondary,
+          border: colors.border.primary,
+        },
+        outline: {
+          background: "transparent",
+          pressed: colors.brand.soft,
+          text: colors.brand.primary,
+          border: colors.brand.primary,
+        },
+        neutral: {
+          background: colors.background.subtle,
+          pressed: colors.border.primary,
+          text: colors.text.primary,
+          border: colors.background.subtle,
         },
         soft: {
           background: colors.brand.soft,
@@ -74,8 +113,14 @@ function buildTheme(colors: ColorScheme, mode: "light" | "dark") {
         destructive: {
           background: colors.semantic.dangerSoft,
           pressed: colors.border.primary,
-          text: colors.semantic.danger,
+          text: colors.semantic.dangerText,
           border: colors.semantic.dangerSoft,
+        },
+        danger: {
+          background: colors.semantic.danger,
+          pressed: colors.semantic.danger,
+          text: "#FFFFFF",
+          border: colors.semantic.danger,
         },
         ghost: {
           background: "transparent",
@@ -85,22 +130,23 @@ function buildTheme(colors: ColorScheme, mode: "light" | "dark") {
         },
       },
       input: {
-        height: Math.round(moderateScale(48, 0.3)),
+        height: Math.round(moderateScale(44, 0.3)),
+        heightSm: Math.round(moderateScale(36, 0.3)),
         radius: radius.md,
-        paddingHorizontal: spacing[4],
+        paddingHorizontal: spacing[3],
         background: colors.background.elevated,
-        border: colors.border.secondary,
+        border: colors.border.primary,
         focusBorder: colors.brand.primary,
         errorBorder: colors.semantic.danger,
         placeholder: colors.text.tertiary,
       },
       card: {
         radius: radius.lg,
-        padding: spacing[4],
+        padding: 14,
         background: colors.background.elevated,
         border: colors.border.primary,
       },
-      tabBar: { height: Math.round(moderateScale(58, 0.3)) },
+      tabBar: { height: Math.round(moderateScale(52, 0.3)) },
     },
   };
 }

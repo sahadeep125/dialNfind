@@ -20,7 +20,7 @@ export function ContactStep({ value, errors, onChange, summary }: Props) {
   const theme = useTheme();
   const icon = theme.colors.text.tertiary;
   return (
-    <View style={{ gap: theme.spacing[5] }}>
+    <View style={{ gap: theme.layout.sectionGap }}>
       <StepTitle
         title="How should customers reach you?"
         subtitle="Your number is shown on your profile so customers can call directly."
@@ -101,7 +101,7 @@ export function ContactStep({ value, errors, onChange, summary }: Props) {
           onValueChange={(acceptsWhatsapp) => onChange({ acceptsWhatsapp })}
         />
         {errors.acceptsCalls ? (
-          <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
+          <AppText variant="meta" tone="danger" accessibilityLiveRegion="polite">
             {errors.acceptsCalls}
           </AppText>
         ) : null}
@@ -111,7 +111,7 @@ export function ContactStep({ value, errors, onChange, summary }: Props) {
         <AppText variant="label" style={{ color: theme.colors.brand.softText }}>
           Ready to go live
         </AppText>
-        <AppText variant="caption" tone="secondary">
+        <AppText variant="meta" tone="secondary">
           {summary}
         </AppText>
       </AppCard>

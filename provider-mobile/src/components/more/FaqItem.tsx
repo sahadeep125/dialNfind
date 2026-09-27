@@ -2,7 +2,7 @@ import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { ChevronDown } from "lucide-react-native";
 
-import { AppDivider, AppPressable, AppText } from "@/components/design-system";
+import { AppPressable, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 
 interface Props {
@@ -24,27 +24,30 @@ export const FaqItem = memo(function FaqItem({
   const theme = useTheme();
   return (
     <View>
-      {index > 0 ? <AppDivider /> : null}
       <AppPressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
         scale={false}
         onPress={() => onToggle(index)}
-        style={[styles.question, { gap: theme.spacing[3], padding: theme.spacing[4] }]}
+        style={[
+          styles.question,
+          { gap: theme.spacing[3], paddingHorizontal: 14, paddingVertical: theme.spacing[3] },
+        ]}
       >
         <AppText variant="label" style={styles.flex}>
           {question}
         </AppText>
         <ChevronDown
-          size={18}
+          size={16}
           color={theme.colors.text.tertiary}
           style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
         />
       </AppPressable>
       {expanded ? (
         <AppText
+          variant="meta"
           tone="secondary"
-          style={{ paddingHorizontal: theme.spacing[4], paddingBottom: theme.spacing[4] }}
+          style={{ paddingHorizontal: 14, paddingBottom: theme.spacing[3], lineHeight: 18 }}
         >
           {answer}
         </AppText>

@@ -11,6 +11,13 @@ import { errorMessage } from "@/services/api";
 import type { Lead, LeadStatus } from "@/types/leads";
 import { LEAD_STATUS_OPTIONS } from "./leadStatus";
 
+const SOURCE_LABEL: Record<string, string> = {
+  search: "search results",
+  profile: "your profile",
+  category_browse: "a category page",
+  ai_match: "smart match",
+};
+
 interface Props {
   lead: Lead | null;
   onClose: () => void;
@@ -21,14 +28,37 @@ interface Props {
 /** Track a lead: mark where the job stands and keep a private note. */
 export function LeadActionsSheet({ lead, onClose, onReport }: Props) {
   return (
-    <AppSheet visible={!!lead} onClose={onClose} title={lead ? `Follow up: ${lead.customerName}` : "Follow up"}>
+    <AppSheet
+      visible={!!lead}
+      onClose={onClose}
+      title={lead?.customerName ?? "Follow up"}
+      subtitle={
+        lead
+          ? [
+              lead.service ?? "General enquiry",
+              `via ${lead.channel === "call" ? "Call" : "WhatsApp"}`,
+              SOURCE_LABEL[lead.source] ? `from ${SOURCE_LABEL[lead.source]}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")
+          : undefined
+      }
+    >
       {/* Keyed by lead so the form starts from that lead's saved status and note. */}
       {lead ? <LeadForm key={lead.id} lead={lead} onClose={onClose} onReport={onReport} /> : null}
     </AppSheet>
   );
 }
 
-function LeadForm({ lead, onClose, onReport }: { lead: Lead; onClose: () => void; onReport?: (lead: Lead) => void }) {
+function LeadForm({
+  lead,
+  onClose,
+  onReport,
+}: {
+  lead: Lead;
+  onClose: () => void;
+  onReport?: (lead: Lead) => void;
+}) {
   const theme = useTheme();
   const toast = useToast();
   const update = useUpdateLead();
@@ -49,10 +79,21 @@ function LeadForm({ lead, onClose, onReport }: { lead: Lead; onClose: () => void
   };
 
   return (
-    <View style={{ gap: theme.spacing[4], padding: theme.spacing[4], paddingTop: 0 }}>
-      <View style={{ gap: theme.spacing[2] }}>
-        <AppText variant="label">Status</AppText>
-        <AppSegmented options={LEAD_STATUS_OPTIONS} value={status} onChange={setStatus} accessibilityLabel="Lead status" />
+    <View style={{ gap: theme.spacing[4], paddingHorizontal: theme.spacing[4] }}>
+      <View style={{ gap: theme.spacing[1.5] }}>
+        <AppText
+          variant="caption"
+          tone="secondary"
+          style={{ fontFamily: theme.typography.label.fontFamily }}
+        >
+          Where does this job stand?
+        </AppText>
+        <AppSegmented
+          options={LEAD_STATUS_OPTIONS}
+          value={status}
+          onChange={setStatus}
+          accessibilityLabel="Lead status"
+        />
       </View>
       <AppInput
         label="Private note"
@@ -71,8 +112,9 @@ function LeadForm({ lead, onClose, onReport }: { lead: Lead; onClose: () => void
       {onReport ? (
         <AppButton
           variant="ghost"
+          size="sm"
           fullWidth
-          leadingIcon={<Flag size={16} color={theme.colors.text.secondary} />}
+          leadingIcon={<Flag size={14} color={theme.colors.text.secondary} />}
           onPress={() => {
             onClose();
             onReport(lead);

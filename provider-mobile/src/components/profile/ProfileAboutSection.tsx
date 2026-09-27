@@ -34,7 +34,7 @@ export function ProfileAboutSection({ values, errors, onChange }: Props) {
         autoCapitalize="words"
       />
       <View style={{ gap: theme.spacing[1.5] }}>
-        <AppText variant="label" tone="secondary">
+        <AppText variant="caption" tone="secondary" weight="semibold">
           Business type
         </AppText>
         <AppSegmented

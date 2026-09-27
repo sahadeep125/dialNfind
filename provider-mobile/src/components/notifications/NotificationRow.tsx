@@ -44,9 +44,8 @@ export const NotificationRow = memo(function NotificationRow({ notification, onP
         styles.row,
         {
           gap: theme.spacing[3],
-          paddingHorizontal: theme.spacing[4],
+          paddingHorizontal: theme.layout.screenPadding,
           paddingVertical: theme.spacing[3],
-          backgroundColor: unread ? theme.colors.brand.soft : "transparent",
         },
       ]}
     >
@@ -54,42 +53,43 @@ export const NotificationRow = memo(function NotificationRow({ notification, onP
         style={[
           styles.icon,
           {
-            backgroundColor: unread
-              ? theme.colors.background.elevated
-              : theme.colors.background.tertiary,
-            borderRadius: theme.radius.md,
+            backgroundColor: unread ? theme.colors.brand.soft : theme.colors.background.subtle,
+            borderRadius: theme.radius.sm + 2,
           },
         ]}
       >
-        <Icon size={18} color={theme.colors.brand.primary} />
+        <Icon size={16} color={unread ? theme.colors.brand.primary : theme.colors.text.secondary} />
       </View>
-      <View style={[styles.main, { gap: theme.spacing[0.5] }]}>
+      <View style={[styles.main, { gap: 2 }]}>
         <View style={[styles.titleRow, { gap: theme.spacing[2] }]}>
-          <AppText variant="label" style={styles.title}>
+          <AppText variant={unread ? "label" : "body"} numberOfLines={2} style={styles.title}>
             {notification.title}
           </AppText>
-          {unread ? (
-            <View style={[styles.dot, { backgroundColor: theme.colors.brand.primary }]} />
-          ) : null}
+          <AppText variant="meta" numeric>
+            {formatRelative(notification.createdAt)}
+          </AppText>
         </View>
         {notification.body ? (
-          <AppText variant="body" tone="secondary" numberOfLines={3}>
+          <AppText variant="meta" tone="secondary" numberOfLines={2}>
             {notification.body}
           </AppText>
         ) : null}
-        <AppText variant="caption" tone="tertiary">
-          {formatRelative(notification.createdAt)}
-        </AppText>
       </View>
+      <View
+        style={[
+          styles.dot,
+          { backgroundColor: unread ? theme.colors.brand.primary : "transparent" },
+        ]}
+      />
     </AppPressable>
   );
 });
 
 const styles = StyleSheet.create({
   row: { alignItems: "flex-start", flexDirection: "row" },
-  icon: { alignItems: "center", height: 40, justifyContent: "center", width: 40 },
+  icon: { alignItems: "center", height: 32, justifyContent: "center", width: 32 },
   main: { flex: 1, minWidth: 0 },
-  titleRow: { alignItems: "center", flexDirection: "row" },
+  titleRow: { alignItems: "flex-start", flexDirection: "row" },
   title: { flex: 1 },
-  dot: { borderRadius: 4, height: 8, width: 8 },
+  dot: { borderRadius: 4, height: 8, marginTop: 6, width: 8 },
 });

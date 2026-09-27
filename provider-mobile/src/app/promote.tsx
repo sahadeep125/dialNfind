@@ -57,11 +57,14 @@ export default function PromoteScreen() {
 
   return (
     <Screen edges={["top", "bottom"]}>
-      <ScreenHeader title="Promote" />
+      <ScreenHeader
+        title="Promote"
+        subtitle={data ? `Sponsored spots in ${data.pricing.city}` : undefined}
+      />
       {sponsored.isError && !data ? (
         <ErrorState error={sponsored.error} onRetry={() => void sponsored.refetch()} />
       ) : !data ? (
-        <View style={{ padding: theme.spacing[4], gap: theme.spacing[4] }}>
+        <View style={{ padding: theme.layout.screenPadding, gap: theme.spacing[3] }}>
           <AppSkeleton height={20} width="70%" />
           <AppSkeleton height={48} />
           <AppSkeleton shape="block" height={180} />
@@ -73,8 +76,9 @@ export default function PromoteScreen() {
           keyExtractor={(c) => String(c.id)}
           renderItem={renderItem}
           contentContainerStyle={{
-            padding: theme.spacing[4],
-            gap: theme.spacing[4],
+            padding: theme.layout.screenPadding,
+            paddingTop: theme.spacing[1],
+            gap: theme.spacing[2.5],
             paddingBottom: theme.spacing[10],
           }}
           refreshControl={
@@ -85,23 +89,18 @@ export default function PromoteScreen() {
             />
           }
           ListHeaderComponent={
-            <View style={[styles.header, { gap: theme.spacing[4] }]}>
-              <View style={{ gap: theme.spacing[1] }}>
-                <AppText variant="title" accessibilityRole="header">
-                  Promote your business
-                </AppText>
-                <AppText tone="secondary">
-                  Appear with a Sponsored label when customers in {data.pricing.city} search your
-                  category. You pay only when a customer calls or messages you.
-                </AppText>
-              </View>
+            <View style={[styles.header, { gap: theme.spacing[3] }]}>
+              <AppText tone="secondary">
+                Show up first, with a Sponsored label, when customers in {data.pricing.city} search
+                your category. You pay only when someone calls or messages you.
+              </AppText>
               {data.locked ? (
                 <LockedCard feature="promote" />
               ) : canStart ? (
-                <View style={{ gap: theme.spacing[2] }}>
+                <View style={{ gap: theme.spacing[1] }}>
                   <AppButton
                     fullWidth
-                    leadingIcon={<Plus size={18} color={plusColor} />}
+                    leadingIcon={<Plus size={16} color={plusColor} />}
                     onPress={() => setCreating(true)}
                   >
                     Request a campaign
@@ -110,9 +109,14 @@ export default function PromoteScreen() {
                   {data.checkoutEnabled && Platform.OS === "android" ? (
                     <AppButton
                       variant="ghost"
+                      size="sm"
                       fullWidth
                       leadingIcon={<ExternalLink size={16} color={theme.colors.text.primary} />}
-                      onPress={() => void openUrl(`${PROVIDER_WEB_URL}/promote`).catch((e: unknown) => toast(errorMessage(e), "error"))}
+                      onPress={() =>
+                        void openUrl(`${PROVIDER_WEB_URL}/promote`).catch((e: unknown) =>
+                          toast(errorMessage(e), "error"),
+                        )
+                      }
                     >
                       Pay online and start now
                     </AppButton>
@@ -123,6 +127,15 @@ export default function PromoteScreen() {
                   You can promote any category you offer.
                 </AppCallout>
               )}
+              {data.listings.length ? (
+                <AppText
+                  variant="section"
+                  accessibilityRole="header"
+                  style={{ marginTop: theme.spacing[2] }}
+                >
+                  Your campaigns
+                </AppText>
+              ) : null}
             </View>
           }
           ListEmptyComponent={

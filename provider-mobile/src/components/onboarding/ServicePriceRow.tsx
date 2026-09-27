@@ -73,11 +73,7 @@ export const ServicePriceRow = memo(function ServicePriceRow({
             error={error}
             keyboardType="number-pad"
             placeholder="Price"
-            leadingIcon={
-              <AppText variant="caption" tone="tertiary">
-                Rs
-              </AppText>
-            }
+            leadingIcon={<AppText variant="meta">Rs</AppText>}
           />
         </View>
         <View style={styles.field}>

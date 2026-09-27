@@ -11,6 +11,10 @@ interface Props {
   status: ProviderStatus;
   verification: VerificationStatus;
   email?: string;
+  /** Current plan name, shown as a pill. */
+  planName?: string;
+  /** 0–100; shown as a thin bar when the profile is not complete. */
+  completeness?: number;
   onPress: () => void;
 }
 
@@ -21,51 +25,73 @@ const STATUS: Record<ProviderStatus, { label: string; tone: BadgeTone }> = {
   suspended: { label: "Suspended", tone: "danger" },
 };
 
-const VERIFICATION: Record<VerificationStatus, { label: string; tone: BadgeTone }> = {
-  verified: { label: "Verified", tone: "brand" },
-  partial: { label: "Partly verified", tone: "neutral" },
-  none: { label: "Not verified", tone: "neutral" },
-};
-
-/** Logo, business name and listing status at the top of the More tab. */
-export function BusinessHeader({ name, logoUrl, status, verification, email, onPress }: Props) {
+/** Logo, business name, listing status and plan at the top of the More tab. Taps through to the profile. */
+export function BusinessHeader({
+  name,
+  logoUrl,
+  status,
+  verification,
+  email,
+  planName,
+  completeness,
+  onPress,
+}: Props) {
   const theme = useTheme();
   const s = STATUS[status] ?? STATUS.pending;
-  const v = VERIFICATION[verification] ?? VERIFICATION.none;
+  const showBar = completeness !== undefined && completeness < 100;
   return (
-    <AppCard onPress={onPress} accessibilityLabel={`${name}, edit business profile`}>
+    <AppCard onPress={onPress} accessibilityLabel={`${name}, edit business profile`} padding={14}>
       <View style={[styles.row, { gap: theme.spacing[3] }]}>
-        <AppAvatar name={name} uri={logoUrl} size={56} shape="rounded" />
-        <View style={[styles.body, { gap: theme.spacing[1] }]}>
-          <AppText variant="heading" numberOfLines={2}>
-            {name}
-          </AppText>
+        <AppAvatar name={name} uri={logoUrl} size={48} shape="rounded" />
+        <View style={[styles.body, { gap: 3 }]}>
+          <View style={[styles.row, { gap: 4 }]}>
+            <AppText variant="section" numberOfLines={1} style={styles.shrink}>
+              {name}
+            </AppText>
+            {verification === "verified" ? (
+              <ShieldCheck
+                size={15}
+                color={theme.colors.brand.primary}
+                accessibilityLabel="Verified"
+              />
+            ) : null}
+          </View>
           {email ? (
-            <AppText variant="caption" tone="secondary" numberOfLines={1}>
+            <AppText variant="meta" numberOfLines={1}>
               {email}
             </AppText>
           ) : null}
           <View style={[styles.badges, { gap: theme.spacing[1.5] }]}>
-            <AppBadge label={s.label} tone={s.tone} />
-            <AppBadge
-              label={v.label}
-              tone={v.tone}
-              icon={
-                verification === "verified" ? (
-                  <ShieldCheck size={11} color={theme.colors.brand.softText} />
-                ) : undefined
-              }
-            />
+            <AppBadge label={s.label} tone={s.tone} dot />
+            {planName ? <AppBadge label={planName} tone="brand" /> : null}
           </View>
         </View>
-        <ChevronRight size={18} color={theme.colors.text.tertiary} />
+        <ChevronRight size={16} color={theme.colors.text.tertiary} />
       </View>
+      {showBar ? (
+        <View style={[styles.row, { gap: theme.spacing[2], marginTop: theme.spacing[3] }]}>
+          <View style={[styles.track, { backgroundColor: theme.colors.background.subtle }]}>
+            <View
+              style={[
+                styles.fill,
+                { width: `${completeness}%`, backgroundColor: theme.colors.brand.primary },
+              ]}
+            />
+          </View>
+          <AppText variant="meta" numeric>
+            {completeness}% complete
+          </AppText>
+        </View>
+      ) : null}
     </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
   row: { alignItems: "center", flexDirection: "row" },
-  body: { flex: 1 },
-  badges: { flexDirection: "row", flexWrap: "wrap", marginTop: 2 },
+  body: { flex: 1, minWidth: 0 },
+  shrink: { flexShrink: 1 },
+  badges: { flexDirection: "row", flexWrap: "wrap" },
+  track: { borderRadius: 2, flex: 1, height: 4, overflow: "hidden" },
+  fill: { borderRadius: 2, height: 4 },
 });

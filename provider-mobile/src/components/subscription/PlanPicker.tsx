@@ -42,7 +42,10 @@ export function PlanPicker({ billing, paidOnly, onPurchased }: Props) {
 
   // The store product being replaced when switching plans on Google Play.
   const current = billing.plans.find((p) => p.code === state.plan.code);
-  const replacing = sub?.source === "play_store" && current ? current.prices.find((p) => p.billingCycle === sub.billingCycle)?.androidProductId : null;
+  const replacing =
+    sub?.source === "play_store" && current
+      ? current.prices.find((p) => p.billingCycle === sub.billingCycle)?.androidProductId
+      : null;
 
   const buy = (plan: Plan): void => {
     const pkg = packageFor(offerings.data, plan, cycle);
@@ -64,10 +67,22 @@ export function PlanPicker({ billing, paidOnly, onPurchased }: Props) {
 
   return (
     <View style={{ gap: theme.spacing[4] }}>
-      <AppSegmented options={CYCLES} value={cycle} onChange={setCycle} accessibilityLabel="Billing cycle" />
+      <AppSegmented
+        options={CYCLES}
+        value={cycle}
+        onChange={setCycle}
+        accessibilityLabel="Billing cycle"
+      />
 
       {managedElsewhere ? (
-        <AppCallout tone="info" title={billing.managedIn === "web" ? "Your plan is billed on the website" : "Your plan was set up by our team"}>
+        <AppCallout
+          tone="info"
+          title={
+            billing.managedIn === "web"
+              ? "Your plan is billed on the website"
+              : "Your plan was set up by our team"
+          }
+        >
           {billing.managedIn === "web"
             ? "To change it, sign in to DialNFind for Business on the web. Buying here as well would charge you twice."
             : "Contact support to change it."}
@@ -86,8 +101,12 @@ export function PlanPicker({ billing, paidOnly, onPurchased }: Props) {
         {plans.map((plan) => {
           const pkg = packageFor(offerings.data, plan, cycle);
           const price = plan.prices.find((p) => p.billingCycle === cycle);
-          const isCurrent = state.plan.code === plan.code && (plan.code === "free" || sub?.billingCycle === cycle);
-          const priceLabel = plan.code === "free" ? "Free" : (pkg?.product.priceString ?? formatPrice(price?.amount ?? null) ?? "");
+          const isCurrent =
+            state.plan.code === plan.code && (plan.code === "free" || sub?.billingCycle === cycle);
+          const priceLabel =
+            plan.code === "free"
+              ? "Free"
+              : (pkg?.product.priceString ?? formatPrice(price?.amount ?? null) ?? "");
           const canBuy = plan.code !== "free" && !isCurrent && !managedElsewhere && !!pkg;
           return (
             <PlanCard
@@ -106,7 +125,10 @@ export function PlanPicker({ billing, paidOnly, onPurchased }: Props) {
                       ? `Switch to ${plan.name}`
                       : `Get ${plan.name}`
               }
-              busy={purchase.isPending && purchase.variables?.pkg.product.identifier === pkg?.product.identifier}
+              busy={
+                purchase.isPending &&
+                purchase.variables?.pkg.product.identifier === pkg?.product.identifier
+              }
               disabled={!canBuy || purchase.isPending || offerings.isLoading}
               onChoose={() => buy(plan)}
             />
@@ -114,7 +136,7 @@ export function PlanPicker({ billing, paidOnly, onPurchased }: Props) {
         })}
       </View>
 
-      <AppText variant="caption" tone="tertiary">
+      <AppText variant="meta">
         {`Subscriptions renew automatically at the price shown, charged to your ${storeName} account, until you cancel at least 24 hours before the end of the period. Manage or cancel any time in your ${storeName} account settings.`}
       </AppText>
     </View>

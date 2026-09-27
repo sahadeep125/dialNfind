@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "re
 import { Redirect, router } from "expo-router";
 import { ArrowLeft, ArrowRight } from "lucide-react-native";
 
-import { AppButton, AppCallout, AppCard } from "@/components/design-system";
+import { AppButton, AppCallout } from "@/components/design-system";
 import { Screen, ScreenHeader } from "@/components/layout";
 import { BusinessStep } from "@/components/onboarding/BusinessStep";
 import { ContactStep } from "@/components/onboarding/ContactStep";
@@ -113,7 +113,9 @@ export default function OnboardingScreen() {
         subtitle="You can change everything later"
         showBack={false}
       />
-      <View style={{ paddingHorizontal: theme.spacing[4], paddingBottom: theme.spacing[3] }}>
+      <View
+        style={{ paddingHorizontal: theme.layout.screenPadding, paddingBottom: theme.spacing[3] }}
+      >
         <StepIndicator steps={ONBOARDING_STEPS} current={step} onJump={goTo} />
       </View>
       <KeyboardAvoidingView
@@ -123,9 +125,13 @@ export default function OnboardingScreen() {
         <ScrollView
           ref={scrollRef}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: theme.spacing[4], paddingTop: theme.spacing[2] }}
+          contentContainerStyle={{
+            padding: theme.layout.screenPadding,
+            paddingTop: theme.spacing[2],
+            paddingBottom: theme.spacing[8],
+          }}
         >
-          <AppCard padding={theme.spacing[4]}>
+          <View>
             {step === 0 ? (
               <BusinessStep
                 value={business}
@@ -164,7 +170,7 @@ export default function OnboardingScreen() {
                 onChange={(patch) => update({ ...draft, contact: { ...contact, ...patch } })}
               />
             ) : null}
-          </AppCard>
+          </View>
           {formError ? (
             <View style={{ marginTop: theme.spacing[4] }}>
               <AppCallout tone="danger" title="Could not publish your listing">
@@ -177,10 +183,11 @@ export default function OnboardingScreen() {
           style={[
             styles.footer,
             {
-              gap: theme.spacing[3],
-              padding: theme.spacing[4],
+              gap: theme.spacing[2],
+              paddingHorizontal: theme.layout.screenPadding,
+              paddingVertical: theme.spacing[3],
               borderTopColor: theme.colors.border.primary,
-              backgroundColor: theme.colors.background.primary,
+              backgroundColor: theme.colors.background.elevated,
             },
           ]}
         >
@@ -188,18 +195,17 @@ export default function OnboardingScreen() {
             variant="ghost"
             onPress={back}
             disabled={createListing.isPending}
-            leadingIcon={<ArrowLeft size={18} color={theme.colors.text.primary} />}
+            leadingIcon={<ArrowLeft size={16} color={theme.colors.text.primary} />}
           >
             Back
           </AppButton>
           <AppButton
-            size="lg"
             style={styles.flex}
             loading={createListing.isPending}
             onPress={next}
             trailingIcon={
               isLast ? undefined : (
-                <ArrowRight size={18} color={theme.components.button.primary.text} />
+                <ArrowRight size={16} color={theme.components.button.primary.text} />
               )
             }
           >
@@ -213,5 +219,5 @@ export default function OnboardingScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  footer: { alignItems: "center", borderTopWidth: 1, flexDirection: "row" },
+  footer: { alignItems: "center", borderTopWidth: StyleSheet.hairlineWidth, flexDirection: "row" },
 });

@@ -15,13 +15,14 @@ export const fontFamily = {
 export type FontFamilyKey = keyof typeof fontFamily;
 
 export const fontSize = {
+  "2xs": 11,
   xs: 12,
   sm: 13,
-  md: 15,
-  lg: 17,
-  xl: 20,
-  "2xl": 24,
-  "3xl": 30,
+  md: 14,
+  lg: 15,
+  xl: 17,
+  "2xl": 22,
+  "3xl": 28,
 } as const;
 
 export interface TypeStyle {
@@ -31,36 +32,59 @@ export interface TypeStyle {
   letterSpacing?: number;
 }
 
-/** Named text styles. Sizes are scaled for the device at runtime by the theme. */
+/**
+ * Named text styles, from loudest to quietest. Sizes are scaled for the device at runtime by the theme.
+ * - display: splash and sign-in only
+ * - title: one per screen, the screen name
+ * - heading: sheet titles and hero lines
+ * - section: the name of a group of rows
+ * - label: row titles, buttons, field labels
+ * - body: sentences
+ * - meta: times, counts, secondary facts under a label
+ * - caption: pills and tiny UI text
+ * - overline: uppercase group markers
+ * - metric: numbers people scan for (KPIs, prices, ratings)
+ */
 export const typography = {
   display: {
     fontFamily: fontFamily.displayExtraBold,
     fontSize: fontSize["3xl"],
-    lineHeight: 36,
+    lineHeight: 34,
     letterSpacing: -0.6,
   },
   title: {
     fontFamily: fontFamily.displayBold,
     fontSize: fontSize["2xl"],
-    lineHeight: 30,
+    lineHeight: 28,
     letterSpacing: -0.4,
   },
   heading: {
     fontFamily: fontFamily.displayBold,
     fontSize: fontSize.xl,
-    lineHeight: 26,
+    lineHeight: 22,
     letterSpacing: -0.2,
   },
-  subheading: { fontFamily: fontFamily.bodySemiBold, fontSize: fontSize.lg, lineHeight: 24 },
-  bodyLarge: { fontFamily: fontFamily.bodyRegular, fontSize: fontSize.lg, lineHeight: 25 },
-  body: { fontFamily: fontFamily.bodyRegular, fontSize: fontSize.md, lineHeight: 22 },
+  section: {
+    fontFamily: fontFamily.displaySemiBold,
+    fontSize: fontSize.lg,
+    lineHeight: 20,
+    letterSpacing: -0.1,
+  },
   label: { fontFamily: fontFamily.bodySemiBold, fontSize: fontSize.md, lineHeight: 20 },
-  caption: { fontFamily: fontFamily.bodyRegular, fontSize: fontSize.sm, lineHeight: 18 },
+  body: { fontFamily: fontFamily.bodyRegular, fontSize: fontSize.md, lineHeight: 20 },
+  meta: { fontFamily: fontFamily.bodyRegular, fontSize: fontSize.xs, lineHeight: 16 },
+  caption: { fontFamily: fontFamily.bodyMedium, fontSize: fontSize.xs, lineHeight: 16 },
   overline: {
     fontFamily: fontFamily.bodySemiBold,
-    fontSize: fontSize.xs,
-    lineHeight: 16,
+    fontSize: fontSize["2xs"],
+    lineHeight: 14,
     letterSpacing: 0.6,
+  },
+  metric: {
+    fontFamily: fontFamily.displayExtraBold,
+    fontSize: fontSize["2xl"],
+    lineHeight: 28,
+    letterSpacing: -0.5,
   },
 } satisfies Record<string, TypeStyle>;
 

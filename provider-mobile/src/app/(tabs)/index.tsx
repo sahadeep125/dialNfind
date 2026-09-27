@@ -1,49 +1,76 @@
 import { useCallback, useState } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
 import { router, type Href } from "expo-router";
-import { Eye, MessageCircle, Phone, Star } from "lucide-react-native";
+import { Eye, MessageSquareText, Percent, Star, Trophy } from "lucide-react-native";
 
-import { AppCallout } from "@/components/design-system";
+import { AppNotice, AppStat, AppStatGrid } from "@/components/design-system";
 import { ActivityChart } from "@/components/dashboard/ActivityChart";
-import { AvailabilityCard } from "@/components/dashboard/AvailabilityCard";
 import { CompletenessCard } from "@/components/dashboard/CompletenessCard";
-import { LockedCard } from "@/components/subscription/LockedCard";
-import { PlanBanner } from "@/components/subscription/PlanBanner";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
-import { RankingCard } from "@/components/dashboard/RankingCard";
 import { RecentLeadsCard } from "@/components/dashboard/RecentLeadsCard";
 import { RecentReviewsCard } from "@/components/dashboard/RecentReviewsCard";
-import { StatCard } from "@/components/dashboard/StatCard";
-import { StatGrid } from "@/components/dashboard/StatGrid";
-import { AppSegmented } from "@/components/forms";
-import { ErrorState, Screen } from "@/components/layout";
+import { PlanBanner, usePlanNeedsNotice } from "@/components/subscription/PlanBanner";
+import { ErrorState, Screen, ScreenScroll } from "@/components/layout";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useLayout } from "@/hooks/useLayout";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useProfile } from "@/hooks/useProfile";
 import { useSession } from "@/hooks/useSession";
-import { useTheme } from "@/hooks/useTheme";
-import type { DashboardDays } from "@/types/dashboard";
-
-const RANGES: { value: DashboardDays; label: string }[] = [
-  { value: 7, label: "7 days" },
-  { value: 30, label: "30 days" },
-  { value: 90, label: "90 days" },
-];
+import type { Dashboard, DashboardDays } from "@/types/dashboard";
+import type { ProviderStatus } from "@/types";
 
 const count = (n: number): string => n.toLocaleString("en-IN");
 
+/** At most one notice: the most urgent thing the provider should act on right now. */
+function Attention({ status, data }: { status: ProviderStatus; data?: Dashboard }) {
+  const planNotice = usePlanNeedsNotice();
+  if (status === "pending")
+    return (
+      <AppNotice
+        tone="warning"
+        title="Your listing is in review"
+        text="It appears in search once our team has checked it."
+      />
+    );
+  if (status === "rejected" || status === "suspended")
+    return (
+      <AppNotice
+        tone="danger"
+        title={
+          status === "rejected" ? "Your listing was not approved" : "Your listing is suspended"
+        }
+        text="Talk to our team to fix it."
+        actionLabel="Get help"
+        onPress={() => router.push("/support")}
+      />
+    );
+  if (planNotice) return <PlanBanner />;
+  const unreplied = data?.totals.unrepliedReviews ?? 0;
+  if (unreplied > 0)
+    return (
+      <AppNotice
+        tone="info"
+        icon={MessageSquareText}
+        title={`${unreplied} ${unreplied === 1 ? "review needs" : "reviews need"} a reply`}
+        text="Replying builds trust with new customers."
+        actionLabel="Reply"
+        onPress={() => router.push("/reviews")}
+      />
+    );
+  return null;
+}
+
 export default function DashboardScreen() {
-  const theme = useTheme();
   const { isTablet } = useLayout();
   const [days, setDays] = useState<DashboardDays>(30);
   const dashboard = useDashboard(days);
   const notifications = useNotifications();
   const session = useSession();
+  const profile = useProfile();
   const [refreshing, setRefreshing] = useState(false);
   const { data, error, isError, refetch } = dashboard;
 
-  const columns = isTablet ? 4 : 2;
   const sessionProvider = session.data?.state.provider;
   const businessName = data?.provider.businessName ?? sessionProvider?.businessName ?? "";
   const status = data?.provider.status ?? sessionProvider?.status ?? "active";
@@ -55,83 +82,76 @@ export default function DashboardScreen() {
   }, [refetch, notifications]);
 
   const open = useCallback((path: string) => router.push(path as Href), []);
+  const unlock = useCallback(
+    () => router.push({ pathname: "/paywall", params: { feature: "analytics" } }),
+    [],
+  );
 
   return (
     <Screen>
-      <ScrollView
-        contentContainerStyle={{
-          padding: theme.spacing[4],
-          gap: theme.spacing[4],
-          paddingBottom: theme.spacing[10],
-        }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void onRefresh()}
-            tintColor={theme.colors.brand.primary}
-            colors={[theme.colors.brand.primary]}
-          />
-        }
-      >
+      <ScreenScroll refreshing={refreshing} onRefresh={() => void onRefresh()}>
         <DashboardHeader
           businessName={businessName}
+          logoUrl={profile.data?.logoUrl ?? null}
           status={status}
           unread={notifications.data?.unread ?? 0}
           onOpenNotifications={() => router.push("/notifications")}
         />
 
-        <PlanBanner />
-
-        <AppSegmented
-          options={RANGES}
-          value={days}
-          onChange={setDays}
-          accessibilityLabel="Date range"
-        />
-
-        {status === "pending" ? (
-          <AppCallout tone="warning" title="Waiting for approval">
-            Your listing will appear in search once our team has checked it.
-          </AppCallout>
-        ) : null}
+        <Attention status={status} data={data} />
 
         {data ? (
-          <View style={{ gap: theme.spacing[4] }}>
-            {status === "active" ? <AvailabilityCard isAvailable={data.provider.isAvailable} /> : null}
-            <StatGrid columns={columns}>
-              <StatCard
-                label="Total leads"
-                value={count(data.totals.leads)}
-                change={data.totals.leadsChangePct}
-                icon={Phone}
-                tone="brand"
-                hint={`${count(data.totals.calls)} calls, ${count(data.totals.whatsapp)} WhatsApp`}
-              />
-              <StatCard
-                label="Profile views"
-                value={data.totals.views !== null ? count(data.totals.views) : "Pro"}
-                change={data.totals.viewsChangePct}
-                icon={Eye}
-                tone="accent"
-                hint={data.totals.impressions !== null ? `${count(data.totals.impressions)} search impressions` : "Upgrade to see who views you"}
-              />
-              <StatCard
-                label="View to lead rate"
-                value={data.analyticsLocked ? "Pro" : data.totals.conversionPct !== null ? `${data.totals.conversionPct}%` : "-"}
-                icon={MessageCircle}
-                tone="success"
-                hint="Visitors who tapped Call or WhatsApp"
-              />
-              <StatCard
-                label="Rating"
-                value={data.provider.totalReviews ? data.provider.avgRating.toFixed(1) : "-"}
-                icon={Star}
-                tone="warning"
-                hint={`${count(data.provider.totalReviews)} reviews`}
-              />
-            </StatGrid>
+          <>
+            <DashboardHero
+              days={days}
+              onDaysChange={setDays}
+              leads={data.totals.leads}
+              calls={data.totals.calls}
+              whatsapp={data.totals.whatsapp}
+              change={data.analyticsLocked ? null : data.totals.leadsChangePct}
+              isAvailable={status === "active" ? data.provider.isAvailable : null}
+            />
 
-            {data.analyticsLocked ? <LockedCard feature="analytics" /> : <ActivityChart series={data.series} days={days} />}
+            <AppStatGrid columns={isTablet ? 4 : 2}>
+              <AppStat
+                label="Profile views"
+                icon={Eye}
+                value={data.totals.views !== null ? count(data.totals.views) : "-"}
+                change={data.totals.viewsChangePct}
+                hint={
+                  data.totals.impressions !== null
+                    ? `${count(data.totals.impressions)} in search`
+                    : undefined
+                }
+                locked={data.totals.views === null}
+                onPress={data.totals.views === null ? unlock : undefined}
+              />
+              <AppStat
+                label="View to lead"
+                icon={Percent}
+                value={data.totals.conversionPct !== null ? `${data.totals.conversionPct}%` : "-"}
+                hint="Tapped Call or WhatsApp"
+                locked={data.analyticsLocked}
+                onPress={data.analyticsLocked ? unlock : undefined}
+              />
+              <AppStat
+                label="Rating"
+                icon={Star}
+                value={data.provider.totalReviews ? data.provider.avgRating.toFixed(1) : "-"}
+                hint={`${count(data.provider.totalReviews)} reviews`}
+                onPress={() => router.push("/reviews")}
+              />
+              <AppStat
+                label={`Rank in ${data.provider.city}`}
+                icon={Trophy}
+                value={data.ranking ? `#${data.ranking.position}` : "-"}
+                hint={
+                  data.ranking
+                    ? `of ${count(data.ranking.outOf)} in category`
+                    : "Complete your profile"
+                }
+              />
+            </AppStatGrid>
 
             <CompletenessCard
               pct={data.provider.profileCompletenessPct}
@@ -139,9 +159,7 @@ export default function DashboardScreen() {
               onOpen={open}
             />
 
-            {data.ranking ? (
-              <RankingCard position={data.ranking.position} outOf={data.ranking.outOf} city={data.provider.city} />
-            ) : null}
+            {data.analyticsLocked ? null : <ActivityChart series={data.series} days={days} />}
 
             <RecentLeadsCard leads={data.recentLeads} onViewAll={() => router.push("/leads")} />
 
@@ -150,13 +168,13 @@ export default function DashboardScreen() {
               unreplied={data.totals.unrepliedReviews}
               onViewAll={() => router.push("/reviews")}
             />
-          </View>
+          </>
         ) : isError ? (
           <ErrorState error={error} onRetry={() => void refetch()} />
         ) : (
-          <DashboardSkeleton columns={columns} />
+          <DashboardSkeleton />
         )}
-      </ScrollView>
+      </ScreenScroll>
     </Screen>
   );
 }

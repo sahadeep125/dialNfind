@@ -29,7 +29,7 @@ export function ImageUploadField({ label, helper, purpose, value, onChange }: Pr
 
   return (
     <View style={styles.wrapper}>
-      <AppText variant="label" tone="secondary">
+      <AppText variant="caption" tone="secondary" weight="semibold">
         {label}
       </AppText>
       <View style={[styles.row, { gap: theme.spacing[3] }]}>
@@ -88,20 +88,16 @@ export function ImageUploadField({ label, helper, purpose, value, onChange }: Pr
         </View>
       </View>
       {busy ? <AppProgress value={progress ?? 0} height={4} /> : null}
-      {helper ? (
-        <AppText variant="caption" tone="tertiary">
-          {helper}
-        </AppText>
-      ) : null}
+      {helper ? <AppText variant="meta">{helper}</AppText> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { gap: 8 },
+  wrapper: { gap: 6 },
   row: { alignItems: "center", flexDirection: "row" },
   preview: { alignItems: "center", borderWidth: 1, justifyContent: "center", overflow: "hidden" },
-  square: { height: 88, width: 88 },
-  wide: { aspectRatio: 16 / 9, width: 156 },
+  square: { height: 72, width: 72 },
+  wide: { aspectRatio: 16 / 9, width: 128 },
   actions: { alignItems: "flex-start", flex: 1 },
 });

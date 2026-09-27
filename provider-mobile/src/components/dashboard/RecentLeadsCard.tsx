@@ -1,9 +1,9 @@
 import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
-import { Lock } from "lucide-react-native";
+import { Lock, PhoneIncoming } from "lucide-react-native";
 
-import { AppCard, AppDivider, AppPressable, AppText } from "@/components/design-system";
-import { SectionHeader } from "@/components/layout";
+import { AppPressable, AppSection, AppText } from "@/components/design-system";
+import { EmptyState } from "@/components/layout";
 import { ChannelIcon } from "@/components/leads/ChannelIcon";
 import { useTheme } from "@/hooks/useTheme";
 import type { DashboardRecentLead } from "@/types/dashboard";
@@ -14,61 +14,79 @@ interface Props {
   onViewAll: () => void;
 }
 
+/** The latest people who reached out. Tapping one opens Leads, where you call back or follow up. */
 export function RecentLeadsCard({ leads, onViewAll }: Props) {
   const theme = useTheme();
+  const shown = leads.slice(0, 4);
   return (
-    <AppCard>
-      <View style={{ gap: theme.spacing[2] }}>
-        <SectionHeader title="Recent leads" actionLabel="View all" onAction={onViewAll} />
-        {leads.length === 0 ? (
-          <AppText tone="secondary" style={{ paddingVertical: theme.spacing[4] }} align="center">
-            No leads yet. Complete your profile to rank higher.
-          </AppText>
-        ) : (
-          leads.map((l, i) => (
-            <View key={l.id}>
-              {i > 0 ? <AppDivider /> : null}
-              <View
-                style={[styles.row, { gap: theme.spacing[3], paddingVertical: theme.spacing[3] }]}
-              >
-                <ChannelIcon channel={l.channel} />
-                <View style={styles.main}>
-                  {l.locked ? (
-                    <AppPressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Upgrade to see this contact"
-                      onPress={() => router.push({ pathname: "/paywall", params: { feature: "leads" } })}
-                      style={[styles.locked, { gap: theme.spacing[1] }]}
-                    >
-                      <Lock size={13} color={theme.colors.brand.primary} />
-                      <AppText variant="label" numberOfLines={1} style={{ color: theme.colors.brand.primary }}>
-                        {l.customerName}
-                      </AppText>
-                    </AppPressable>
-                  ) : (
-                    <AppText variant="label" numberOfLines={1}>
-                      {l.customerName}
-                    </AppText>
-                  )}
-                  <AppText variant="caption" tone="secondary" numberOfLines={1}>
-                    {l.channel === "call" ? "Tapped Call" : "Opened WhatsApp"}
-                    {l.service ? ` · ${l.service}` : ""}
+    <AppSection
+      title="Recent leads"
+      action={{ label: "See all", onPress: onViewAll }}
+      dividerInset={14 + 32 + 12}
+    >
+      {shown.length === 0 ? (
+        <EmptyState
+          compact
+          icon={PhoneIncoming}
+          title="No leads yet"
+          text="They show up here the moment a customer taps Call or WhatsApp."
+        />
+      ) : (
+        shown.map((l) => (
+          <AppPressable
+            key={l.id}
+            accessibilityRole="button"
+            accessibilityLabel={
+              l.locked
+                ? `Locked lead. Upgrade to see this contact`
+                : `${l.customerName}, ${l.service ?? "general enquiry"}, ${formatRelative(l.createdAt)}`
+            }
+            onPress={() =>
+              l.locked
+                ? router.push({ pathname: "/paywall", params: { feature: "leads" } })
+                : onViewAll()
+            }
+            scale={false}
+          >
+            <View
+              style={[
+                styles.row,
+                {
+                  gap: theme.spacing[3],
+                  paddingHorizontal: 14,
+                  paddingVertical: theme.spacing[2.5],
+                },
+              ]}
+            >
+              <ChannelIcon channel={l.channel} size={32} />
+              <View style={styles.main}>
+                <View style={[styles.row, { gap: 4 }]}>
+                  {l.locked ? <Lock size={12} color={theme.colors.brand.primary} /> : null}
+                  <AppText
+                    variant="label"
+                    numberOfLines={1}
+                    style={[styles.shrink, l.locked ? { color: theme.colors.brand.primary } : null]}
+                  >
+                    {l.customerName}
                   </AppText>
                 </View>
-                <AppText variant="caption" tone="tertiary">
-                  {formatRelative(l.createdAt)}
+                <AppText variant="meta" tone="secondary" numberOfLines={1}>
+                  {l.locked ? "Upgrade to see this contact" : (l.service ?? "General enquiry")}
                 </AppText>
               </View>
+              <AppText variant="meta" numeric>
+                {formatRelative(l.createdAt)}
+              </AppText>
             </View>
-          ))
-        )}
-      </View>
-    </AppCard>
+          </AppPressable>
+        ))
+      )}
+    </AppSection>
   );
 }
 
 const styles = StyleSheet.create({
   row: { alignItems: "center", flexDirection: "row" },
-  main: { flex: 1, minWidth: 0 },
-  locked: { alignItems: "center", flexDirection: "row" },
+  main: { flex: 1, gap: 1, minWidth: 0 },
+  shrink: { flexShrink: 1 },
 });

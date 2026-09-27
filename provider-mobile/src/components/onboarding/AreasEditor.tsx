@@ -91,7 +91,7 @@ export function AreasEditor({ value, onChange }: Props) {
           ))}
         </View>
       ) : (
-        <AppText variant="caption" tone="tertiary">
+        <AppText variant="meta">
           No areas yet. Customers searching these localities will see you.
         </AppText>
       )}

@@ -2,7 +2,13 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Crown, X } from "lucide-react-native";
 
-import { AppButton, AppIconButton, AppPressable, AppSkeleton, AppText } from "@/components/design-system";
+import {
+  AppButton,
+  AppIconButton,
+  AppPressable,
+  AppSkeleton,
+  AppText,
+} from "@/components/design-system";
 import { ErrorState, Screen } from "@/components/layout";
 import { PlanPicker } from "@/components/subscription/PlanPicker";
 import { FEATURE_COPY } from "@/constants/plans";
@@ -29,27 +35,46 @@ export default function PaywallScreen() {
   return (
     <Screen edges={["top", "bottom"]}>
       <View style={[styles.top, { padding: theme.spacing[2] }]}>
-        <AppIconButton accessibilityLabel="Close" variant="ghost" onPress={close} icon={<X size={22} color={theme.colors.text.primary} />} />
+        <AppIconButton
+          accessibilityLabel="Close"
+          variant="neutral"
+          size="sm"
+          onPress={close}
+          icon={<X size={16} color={theme.colors.text.secondary} />}
+        />
       </View>
-      <ScrollView contentContainerStyle={{ padding: theme.spacing[4], paddingTop: 0, gap: theme.spacing[5], paddingBottom: theme.spacing[10] }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: theme.layout.screenPadding,
+          paddingTop: 0,
+          gap: theme.layout.sectionGap,
+          paddingBottom: theme.spacing[10],
+        }}
+      >
         <View style={[styles.hero, { gap: theme.spacing[2] }]}>
-          <View style={[styles.icon, { backgroundColor: theme.colors.brand.soft, borderRadius: theme.radius.xl }]}>
-            <Crown size={28} color={theme.colors.brand.primary} />
+          <View
+            style={[
+              styles.icon,
+              { backgroundColor: theme.colors.brand.soft, borderRadius: theme.radius.lg },
+            ]}
+          >
+            <Crown size={24} color={theme.colors.brand.primary} />
           </View>
-          <AppText variant="title" align="center">
+          <AppText variant="display" align="center">
             {copy?.title ?? "Grow faster with Pro"}
           </AppText>
-          <AppText tone="secondary" align="center">
-            {copy?.text ?? "Every lead in full, profile analytics, a WhatsApp button and a partner badge that lifts you in search."}
+          <AppText tone="secondary" align="center" style={{ maxWidth: 340 }}>
+            {copy?.text ??
+              "Every lead in full, profile analytics, a WhatsApp button and a partner badge that lifts you in search."}
           </AppText>
         </View>
 
         {billing.isError && !billing.data ? (
           <ErrorState error={billing.error} onRetry={() => void billing.refetch()} />
         ) : !billing.data ? (
-          <View style={{ gap: theme.spacing[4] }}>
-            <AppSkeleton shape="block" height={300} />
-            <AppSkeleton shape="block" height={300} />
+          <View style={{ gap: theme.spacing[3] }}>
+            <AppSkeleton shape="block" height={260} />
+            <AppSkeleton shape="block" height={260} />
           </View>
         ) : (
           <PlanPicker billing={billing.data} paidOnly onPurchased={close} />
@@ -58,11 +83,14 @@ export default function PaywallScreen() {
         {purchasesEnabled ? (
           <AppButton
             variant="ghost"
+            size="sm"
+            style={{ alignSelf: "center" }}
             loading={restore.isPending}
             onPress={() =>
               restore.mutate(undefined, {
                 onSuccess: (state) => {
-                  if (state.plan.code === "free") return toast("No store subscription found for this account.", "info");
+                  if (state.plan.code === "free")
+                    return toast("No store subscription found for this account.", "info");
                   toast(`Restored: you are on ${state.plan.name}.`, "success");
                   close();
                 },
@@ -76,12 +104,12 @@ export default function PaywallScreen() {
 
         <View style={[styles.links, { gap: theme.spacing[4] }]}>
           <AppPressable accessibilityRole="link" onPress={() => router.push("/legal/terms")}>
-            <AppText variant="caption" tone="secondary">
+            <AppText variant="meta" tone="secondary">
               Terms of use
             </AppText>
           </AppPressable>
           <AppPressable accessibilityRole="link" onPress={() => router.push("/legal/privacy")}>
-            <AppText variant="caption" tone="secondary">
+            <AppText variant="meta" tone="secondary">
               Privacy policy
             </AppText>
           </AppPressable>
@@ -94,6 +122,6 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   top: { alignItems: "flex-end" },
   hero: { alignItems: "center" },
-  icon: { alignItems: "center", height: 60, justifyContent: "center", width: 60 },
+  icon: { alignItems: "center", height: 52, justifyContent: "center", marginBottom: 4, width: 52 },
   links: { flexDirection: "row", justifyContent: "center" },
 });

@@ -42,7 +42,7 @@ function login(email: string): { token: string; user: SessionUser } {
 async function launch(url = "/") {
   renderRouter("./src/app", { initialUrl: url });
   // Fonts load first, then the branded splash plays before the app shows.
-  await find("Run your business, win more customers");
+  await find("Leads, reviews and growth in one place");
   act(() => jest.advanceTimersByTime(1600));
 }
 
@@ -66,13 +66,13 @@ describeLive("DialNFind Business on Android", () => {
 
   test("signed-out launch shows log in, and logging in opens the dashboard", async () => {
     await launch();
-    await find("Log in to your business");
+    await find("Welcome back");
     fireEvent.changeText(screen.getByPlaceholderText("you@business.com"), "provider@dialnfind.com");
     fireEvent.changeText(screen.getByPlaceholderText("Your password"), "password123");
     fireEvent.press(screen.getAllByText("Log in").at(-1)!);
     await waitFor(() => expect(useAuthStore.getState().token).toBeTruthy());
     await find(business);
-    await find("Profile strength");
+    await find("Recent leads");
   });
 
   test("tabs show leads, reviews and more", async () => {
@@ -84,7 +84,7 @@ describeLive("DialNFind Business on Android", () => {
     fireEvent.press(screen.getAllByText("Reviews").at(-1)!);
     await find("Needs a reply");
     fireEvent.press(screen.getAllByText("More").at(-1)!);
-    await find("Edit profile");
+    await find("Business details");
     await find("Plan and billing");
     await find("Sign out");
   });
@@ -98,7 +98,7 @@ describeLive("DialNFind Business on Android", () => {
     ["/verification", "Verification"],
     ["/promote", "Promote"],
     ["/subscription", "Plan and billing"],
-    ["/support", "Support"],
+    ["/support", "Support requests"],
     ["/notifications", "Notifications"],
     ["/help", "Help and FAQ"],
     ["/legal/terms", "Terms"],
@@ -116,11 +116,11 @@ describeLive("DialNFind Business on Android", () => {
   test("an account without a business goes to setup, then onboarding and claim", async () => {
     signInAs("newprovider@dialnfind.com");
     await launch();
-    await find(/Let us get you listed/);
+    await find(/^Welcome/);
     fireEvent.press(screen.getByText("Add a new business"));
     await find("Tell us about your business");
     act(() => router.back());
-    await find(/Let us get you listed/);
+    await find(/^Welcome/);
     fireEvent.press(screen.getByText("Claim my existing listing"));
     await waitFor(() =>
       expect(screen.getByPlaceholderText("e.g. Sharma TV Care")).toBeOnTheScreen(),

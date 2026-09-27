@@ -51,8 +51,9 @@ export default function LegalScreen() {
       <ScreenHeader title={doc === "terms" ? "Terms" : "Privacy"} />
       <ScrollView
         contentContainerStyle={{
-          padding: theme.spacing[4],
-          gap: theme.spacing[5],
+          padding: theme.layout.screenPadding,
+          paddingTop: theme.spacing[1],
+          gap: theme.layout.sectionGap,
           paddingBottom: theme.spacing[10],
         }}
       >
@@ -60,9 +61,7 @@ export default function LegalScreen() {
           <AppText variant="title" accessibilityRole="header">
             {content.title}
           </AppText>
-          <AppText variant="caption" tone="tertiary">
-            Last updated {content.updated}
-          </AppText>
+          <AppText variant="meta">Last updated {content.updated}</AppText>
         </View>
         {onlineUrl ? (
           <AppCallout
@@ -84,11 +83,13 @@ export default function LegalScreen() {
         ) : null}
         <AppText tone="secondary">{content.intro}</AppText>
         {content.sections.map((section) => (
-          <View key={section.heading} style={{ gap: theme.spacing[2] }}>
-            <AppText variant="subheading" accessibilityRole="header">
+          <View key={section.heading} style={{ gap: theme.spacing[1.5] }}>
+            <AppText variant="section" accessibilityRole="header">
               {section.heading}
             </AppText>
-            <AppText tone="secondary">{section.body}</AppText>
+            <AppText tone="secondary" style={{ lineHeight: 21 }}>
+              {section.body}
+            </AppText>
           </View>
         ))}
       </ScrollView>

@@ -1,9 +1,9 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
-import { ClipboardList, Flag, Lock, MessageCircle, Phone, StickyNote } from "lucide-react-native";
+import { Flag, Lock, MessageCircle, Phone, StickyNote } from "lucide-react-native";
 
-import { AppBadge, AppButton, AppCard, AppPressable, AppText } from "@/components/design-system";
+import { AppBadge, AppIconButton, AppPressable, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { Lead } from "@/types/leads";
 import { formatRelative } from "@/utils/format";
@@ -11,168 +11,140 @@ import { ChannelIcon } from "./ChannelIcon";
 import { LeadOutcome } from "./LeadOutcome";
 import { LEAD_STATUS, isReportable } from "./leadStatus";
 
-const SOURCE_LABEL: Record<string, string> = {
-  search: "Search results",
-  profile: "Your profile",
-  category_browse: "Category page",
-  ai_match: "Smart match",
-};
-
-const DISPUTE_LABEL = { open: "Reported, under review", accepted: "Report accepted", rejected: "Report not accepted" } as const;
+const DISPUTE_LABEL = {
+  open: "Reported",
+  accepted: "Report accepted",
+  rejected: "Report declined",
+} as const;
 
 interface Props {
   lead: Lead;
   onCall: (phone: string) => void;
   onWhatsApp: (phone: string) => void;
   onReport: (lead: Lead) => void;
-  /** Opens the follow-up sheet (status and note). */
+  /** Opens the follow-up sheet (status, note, report). */
   onManage: (lead: Lead) => void;
 }
 
-export const LeadRow = memo(function LeadRow({ lead, onCall, onWhatsApp, onReport, onManage }: Props) {
-  const canReport = isReportable(lead);
+/** One lead: who, what they need, where it stands, and one tap to call back. Tap the row to follow up. */
+export const LeadRow = memo(function LeadRow({
+  lead,
+  onCall,
+  onWhatsApp,
+  onReport,
+  onManage,
+}: Props) {
   const theme = useTheme();
   const phone = lead.customerPhone;
+  const status = LEAD_STATUS[lead.providerStatus];
+  const what = [lead.service ?? "General enquiry", lead.description].filter(Boolean).join(" · ");
   const details = lead.details.map((d) => `${d.label}: ${d.value}`).join(" · ");
+
   return (
-    <AppCard padding={theme.spacing[4]}>
-      <View style={[styles.top, { gap: theme.spacing[3] }]}>
-        <ChannelIcon channel={lead.channel} />
+    <AppPressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        lead.locked
+          ? "Locked lead. Upgrade to see this contact"
+          : `${lead.customerName}, ${lead.service ?? "general enquiry"}, ${status.label}, ${formatRelative(lead.createdAt)}. Opens follow up.`
+      }
+      onPress={() =>
+        lead.locked
+          ? router.push({ pathname: "/paywall", params: { feature: "leads" } })
+          : onManage(lead)
+      }
+      scale={false}
+    >
+      <View
+        style={[
+          styles.row,
+          { gap: theme.spacing[3], paddingHorizontal: 14, paddingVertical: theme.spacing[3] },
+        ]}
+      >
+        <ChannelIcon channel={lead.channel} size={36} />
         <View style={styles.main}>
-          <View style={[styles.nameRow, { gap: theme.spacing[2] }]}>
-            {lead.locked ? <Lock size={14} color={theme.colors.brand.primary} /> : null}
-            <AppText variant="label" numberOfLines={1} style={[styles.shrink, lead.locked ? { color: theme.colors.brand.primary } : null]}>
+          <View style={[styles.line, { gap: theme.spacing[1.5] }]}>
+            {lead.locked ? <Lock size={12} color={theme.colors.brand.primary} /> : null}
+            <AppText
+              variant="label"
+              numberOfLines={1}
+              style={[styles.shrink, lead.locked ? { color: theme.colors.brand.primary } : null]}
+            >
               {lead.customerName}
             </AppText>
-            {lead.isGuest ? (
-              <AppText variant="caption" tone="tertiary">
-                not signed in
-              </AppText>
-            ) : null}
+            {lead.isGuest && !lead.locked ? <AppText variant="meta">· guest</AppText> : null}
+            <View style={styles.spacer} />
+            <AppText variant="meta" numeric>
+              {formatRelative(lead.createdAt)}
+            </AppText>
           </View>
-          <AppText variant="caption" tone="secondary">
-            {lead.channel === "call" ? "Call" : "WhatsApp"} · {formatRelative(lead.createdAt)}
+          <AppText variant="meta" tone="secondary" numberOfLines={2}>
+            {lead.locked ? "Upgrade to see who contacted you and what they need" : what}
           </AppText>
-        </View>
-        {lead.locked ? null : <AppBadge label={LEAD_STATUS[lead.providerStatus].label} tone={LEAD_STATUS[lead.providerStatus].tone} />}
-      </View>
-
-      <View style={[{ gap: theme.spacing[1], marginTop: theme.spacing[3] }]}>
-        <AppText variant="body" tone={lead.service ? "primary" : "secondary"}>
-          {lead.service ?? "General enquiry"}
-        </AppText>
-        {lead.description ? (
-          <AppText variant="caption" tone="secondary" numberOfLines={2}>
-            {lead.description}
-          </AppText>
-        ) : null}
-        {details ? (
-          <AppText variant="caption" tone="secondary">
-            {details}
-          </AppText>
-        ) : null}
-      </View>
-
-      {lead.providerNote ? (
-        <View style={[styles.note, { gap: theme.spacing[2], marginTop: theme.spacing[3], padding: theme.spacing[3], borderRadius: theme.radius.md, backgroundColor: theme.colors.background.secondary }]}>
-          <StickyNote size={14} color={theme.colors.text.tertiary} />
-          <AppText variant="caption" tone="secondary" numberOfLines={3} style={styles.shrink}>
-            {lead.providerNote}
-          </AppText>
-        </View>
-      ) : null}
-
-      <View style={[styles.footer, { gap: theme.spacing[2], marginTop: theme.spacing[3] }]}>
-        <AppText variant="caption" tone="tertiary" style={styles.shrink} numberOfLines={1}>
-          From {SOURCE_LABEL[lead.source] ?? lead.source}
-        </AppText>
-        <LeadOutcome lead={lead} />
-      </View>
-
-      {lead.locked ? (
-        <AppButton
-          size="sm"
-          variant="soft"
-          leadingIcon={<Lock size={14} color={theme.colors.brand.softText} />}
-          onPress={() => router.push({ pathname: "/paywall", params: { feature: "leads" } })}
-          style={{ marginTop: theme.spacing[3] }}
-        >
-          Upgrade to see this contact
-        </AppButton>
-      ) : null}
-
-      {lead.disputeStatus !== "none" ? (
-        <View style={{ marginTop: theme.spacing[2] }}>
-          <AppBadge label={DISPUTE_LABEL[lead.disputeStatus]} tone="neutral" />
-        </View>
-      ) : canReport && lead.locked ? (
-        <AppPressable
-          accessibilityRole="button"
-          accessibilityLabel={`Report the contact from ${lead.customerName}`}
-          hitSlop={8}
-          onPress={() => onReport(lead)}
-          style={[styles.report, { gap: theme.spacing[1], marginTop: theme.spacing[2] }]}
-        >
-          <Flag size={14} color={theme.colors.text.tertiary} />
-          <AppText variant="caption" tone="tertiary">
-            Report spam or wrong number
-          </AppText>
-        </AppPressable>
-      ) : null}
-
-      {lead.locked ? null : (
-        <View style={[styles.actions, { gap: theme.spacing[2], marginTop: theme.spacing[3] }]}>
-          {phone ? (
-            <>
-              <AppButton
-                variant="soft"
-                size="sm"
-                leadingIcon={<Phone size={16} color={theme.colors.brand.softText} />}
-                onPress={() => onCall(phone)}
-                style={styles.action}
-              >
-                Call back
-              </AppButton>
-              <AppButton
-                variant="secondary"
-                size="sm"
-                leadingIcon={<MessageCircle size={16} color={theme.colors.semantic.success} />}
-                onPress={() => onWhatsApp(phone)}
-                style={styles.action}
-              >
-                WhatsApp
-              </AppButton>
-            </>
+          {details && !lead.locked ? (
+            <AppText variant="meta" numberOfLines={1}>
+              {details}
+            </AppText>
           ) : null}
-          <AppButton
-            variant="ghost"
-            size="sm"
-            accessibilityLabel={`Follow up on ${lead.customerName}: status, note${canReport ? " or report" : ""}`}
-            leadingIcon={<ClipboardList size={16} color={theme.colors.text.primary} />}
-            onPress={() => onManage(lead)}
-            style={styles.action}
-          >
-            Follow up
-          </AppButton>
+          {lead.providerNote && !lead.locked ? (
+            <View style={[styles.line, { gap: 4 }]}>
+              <StickyNote size={11} color={theme.colors.text.tertiary} />
+              <AppText variant="meta" numberOfLines={1} style={[styles.shrink, styles.note]}>
+                {lead.providerNote}
+              </AppText>
+            </View>
+          ) : null}
+          {!lead.locked ? (
+            <View style={[styles.line, styles.wrap, { gap: theme.spacing[1.5], marginTop: 4 }]}>
+              <AppBadge label={status.label} tone={status.tone} dot />
+              {lead.disputeStatus !== "none" ? (
+                <AppBadge
+                  label={DISPUTE_LABEL[lead.disputeStatus]}
+                  tone="neutral"
+                  appearance="outline"
+                />
+              ) : null}
+              <LeadOutcome lead={lead} />
+            </View>
+          ) : null}
         </View>
-      )}
-    </AppCard>
+        {phone && !lead.locked ? (
+          <View style={[styles.actions, { gap: theme.spacing[2] }]}>
+            <AppIconButton
+              accessibilityLabel={`Call ${lead.customerName}`}
+              variant="soft"
+              icon={<Phone size={16} color={theme.colors.brand.primary} />}
+              onPress={() => onCall(phone)}
+            />
+            <AppIconButton
+              accessibilityLabel={`WhatsApp ${lead.customerName}`}
+              variant="neutral"
+              icon={<MessageCircle size={16} color={theme.colors.semantic.success} />}
+              onPress={() => onWhatsApp(phone)}
+            />
+          </View>
+        ) : lead.locked && isReportable(lead) ? (
+          <View style={styles.actions}>
+            <AppIconButton
+              accessibilityLabel={`Report the contact from ${lead.customerName} as spam or a wrong number`}
+              size="sm"
+              icon={<Flag size={14} color={theme.colors.text.tertiary} />}
+              onPress={() => onReport(lead)}
+            />
+          </View>
+        ) : null}
+      </View>
+    </AppPressable>
   );
 });
 
 const styles = StyleSheet.create({
-  top: { alignItems: "center", flexDirection: "row" },
-  main: { flex: 1, minWidth: 0 },
-  nameRow: { alignItems: "center", flexDirection: "row" },
+  row: { alignItems: "flex-start", flexDirection: "row" },
+  main: { flex: 1, gap: 2, minWidth: 0 },
+  line: { alignItems: "center", flexDirection: "row" },
+  wrap: { flexWrap: "wrap" },
   shrink: { flexShrink: 1 },
-  footer: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  actions: { flexDirection: "row", flexWrap: "wrap" },
-  action: { flexGrow: 1 },
-  report: { alignItems: "center", alignSelf: "flex-start", flexDirection: "row" },
-  note: { alignItems: "flex-start", flexDirection: "row" },
+  spacer: { flex: 1 },
+  note: { fontStyle: "italic" },
+  actions: { alignSelf: "center", flexDirection: "column" },
 });

@@ -51,12 +51,22 @@ export default function StartScreen() {
           style={[styles.signOut, { gap: theme.spacing[1.5] }]}
         >
           <LogOut size={16} color={theme.colors.text.secondary} />
-          <AppText variant="label" tone="secondary">
+          <AppText
+            variant="meta"
+            tone="secondary"
+            style={{ fontFamily: theme.typography.label.fontFamily }}
+          >
             Sign out
           </AppText>
         </AppPressable>
       </View>
-      <ScrollView contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[5] }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: theme.layout.screenPadding,
+          paddingTop: theme.spacing[4],
+          gap: theme.layout.sectionGap,
+        }}
+      >
         {session.isError ? (
           <ErrorState error={session.error} onRetry={() => void session.refetch()} />
         ) : null}
@@ -66,14 +76,11 @@ export default function StartScreen() {
             <AppSkeleton height={32} width="70%" />
           ) : (
             <AppText variant="title" accessibilityRole="header">
-              {firstName
-                ? `Welcome, ${firstName}. Let us get you listed.`
-                : "Let us get you listed."}
+              {firstName ? `Welcome, ${firstName}` : "Welcome"}
             </AppText>
           )}
           <AppText tone="secondary">
-            Many local businesses are already on DialNFind. Check if yours is, or create a new
-            listing.
+            Your business may already be on DialNFind. Claim it to keep its reviews, or start fresh.
           </AppText>
         </View>
 
@@ -81,9 +88,9 @@ export default function StartScreen() {
           <View
             style={[
               {
-                gap: theme.spacing[1.5],
-                padding: theme.spacing[4],
-                borderRadius: theme.radius.lg,
+                gap: theme.spacing[1],
+                padding: theme.spacing[3],
+                borderRadius: theme.radius.md,
                 backgroundColor: theme.colors.semantic.warningSoft,
               },
             ]}
@@ -95,7 +102,7 @@ export default function StartScreen() {
               </AppText>
             </View>
             {pending.map((c) => (
-              <AppText key={c.id} variant="caption" tone="secondary">
+              <AppText key={c.id} variant="meta" tone="secondary">
                 {`${c.provider.businessName}, ${c.provider.city}. ${
                   c.method === "document"
                     ? "Our team is reviewing your documents."
@@ -106,22 +113,22 @@ export default function StartScreen() {
           </View>
         ) : null}
 
-        <View style={[isTablet ? styles.grid : null, { gap: theme.spacing[4] }]}>
+        <View style={[isTablet ? styles.grid : null, { gap: theme.spacing[3] }]}>
           <StartChoiceCard
-            icon={<Search size={24} color={theme.colors.brand.primary} />}
+            icon={<Search size={20} color={theme.colors.brand.primary} />}
             iconBackground={theme.colors.brand.soft}
             title="Claim my existing listing"
-            text="Your business is already on DialNFind with reviews. Verify ownership with a code sent to the listed number."
+            text="Keep your reviews and ranking. Verify with a code sent to the listed number."
             cta="Find my business"
             onPress={() => router.push("/claim")}
             style={isTablet ? styles.card : null}
           />
           <StartChoiceCard
-            icon={<Sparkles size={24} color={theme.colors.semantic.success} />}
+            icon={<Sparkles size={20} color={theme.colors.semantic.success} />}
             iconBackground={theme.colors.semantic.successSoft}
             title="Add a new business"
             badge="Free"
-            text="Set up your business profile, services, service areas and hours in five short steps."
+            text="Profile, services, areas and hours in five short steps."
             cta="Start setup"
             onPress={() => router.push("/onboarding")}
             style={isTablet ? styles.card : null}
@@ -130,8 +137,8 @@ export default function StartScreen() {
       </ScrollView>
 
       <AppSheet visible={confirmSignOut} onClose={() => setConfirmSignOut(false)} title="Sign out?">
-        <View style={{ gap: theme.spacing[3], padding: theme.spacing[4] }}>
-          <AppText tone="secondary">
+        <View style={{ gap: theme.spacing[2], paddingHorizontal: theme.spacing[4] }}>
+          <AppText tone="secondary" style={{ marginBottom: theme.spacing[2] }}>
             You can sign back in any time to finish setting up your business.
           </AppText>
           <AppButton variant="destructive" fullWidth onPress={doSignOut}>
@@ -151,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    minHeight: 56,
+    minHeight: 52,
   },
   signOut: { alignItems: "center", flexDirection: "row", minHeight: 44 },
   row: { alignItems: "center", flexDirection: "row", gap: 8 },

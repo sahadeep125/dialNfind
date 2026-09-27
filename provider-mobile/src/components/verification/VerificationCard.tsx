@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { CheckCircle2, Clock, XCircle } from "lucide-react-native";
 
-import { AppButton, AppCard, AppText } from "@/components/design-system";
+import { AppBadge, AppButton, AppCard, AppText } from "@/components/design-system";
 import { DocumentUploadField } from "@/components/forms";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
@@ -44,64 +43,50 @@ export function VerificationCard({ info, latest }: Props) {
     );
   };
 
+  const badge = !latest ? null : latest.status === "approved" ? (
+    <AppBadge label="Approved" tone="success" dot />
+  ) : latest.status === "pending" ? (
+    <AppBadge label="In review" tone="warning" dot />
+  ) : (
+    <AppBadge label="Not accepted" tone="danger" dot />
+  );
+  const note = !latest
+    ? null
+    : latest.status === "approved"
+      ? latest.verifiedAt
+        ? `Approved on ${formatDate(latest.verifiedAt)}`
+        : null
+      : latest.status === "pending"
+        ? `Sent ${formatDate(latest.createdAt)}. We review within two working days.`
+        : latest.notes;
+
   return (
-    <AppCard>
+    <AppCard padding={14}>
       <View style={{ gap: theme.spacing[3] }}>
         <View style={[styles.head, { gap: theme.spacing[3] }]}>
           <View
             style={[
               styles.icon,
-              { backgroundColor: theme.colors.brand.soft, borderRadius: theme.radius.md },
+              {
+                backgroundColor: theme.colors.background.subtle,
+                borderRadius: theme.radius.sm + 2,
+              },
             ]}
           >
-            <Icon size={20} color={theme.colors.brand.primary} />
+            <Icon size={16} color={theme.colors.text.secondary} />
           </View>
-          <View style={[styles.flex, { gap: theme.spacing[0.5] }]}>
-            <AppText variant="label">{info.title}</AppText>
-            <AppText variant="caption" tone="secondary">
-              {info.text}
+          <View style={[styles.flex, { gap: 2 }]}>
+            <View style={[styles.line, { gap: theme.spacing[2] }]}>
+              <AppText variant="label" style={styles.flex}>
+                {info.title}
+              </AppText>
+              {badge}
+            </View>
+            <AppText variant="meta" tone="secondary">
+              {note ?? info.text}
             </AppText>
           </View>
         </View>
-
-        {latest ? (
-          <View
-            style={{
-              gap: theme.spacing[1],
-              padding: theme.spacing[3],
-              borderRadius: theme.radius.md,
-              backgroundColor: theme.colors.background.tertiary,
-            }}
-          >
-            {latest.status === "approved" ? (
-              <View style={[styles.line, { gap: theme.spacing[1.5] }]}>
-                <CheckCircle2 size={16} color={theme.colors.semantic.success} />
-                <AppText variant="label" tone="success">
-                  Approved{latest.verifiedAt ? ` ${formatDate(latest.verifiedAt)}` : ""}
-                </AppText>
-              </View>
-            ) : latest.status === "pending" ? (
-              <View style={[styles.line, { gap: theme.spacing[1.5] }]}>
-                <Clock size={16} color={theme.colors.semantic.warning} />
-                <AppText variant="label">Under review since {formatDate(latest.createdAt)}</AppText>
-              </View>
-            ) : (
-              <>
-                <View style={[styles.line, { gap: theme.spacing[1.5] }]}>
-                  <XCircle size={16} color={theme.colors.semantic.danger} />
-                  <AppText variant="label" tone="danger">
-                    Not accepted
-                  </AppText>
-                </View>
-                {latest.notes ? (
-                  <AppText variant="caption" tone="secondary">
-                    {latest.notes}
-                  </AppText>
-                ) : null}
-              </>
-            )}
-          </View>
-        ) : null}
 
         {canSubmit ? (
           <View style={{ gap: theme.spacing[3] }}>
@@ -115,11 +100,17 @@ export function VerificationCard({ info, latest }: Props) {
               }}
             />
             {error ? (
-              <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
+              <AppText variant="meta" tone="danger" accessibilityLiveRegion="polite">
                 {error}
               </AppText>
             ) : null}
-            <AppButton variant="secondary" fullWidth loading={submit.isPending} onPress={send}>
+            <AppButton
+              variant="secondary"
+              size="sm"
+              loading={submit.isPending}
+              onPress={send}
+              style={{ alignSelf: "flex-start" }}
+            >
               {latest ? "Submit again" : "Submit for review"}
             </AppButton>
           </View>
@@ -131,7 +122,7 @@ export function VerificationCard({ info, latest }: Props) {
 
 const styles = StyleSheet.create({
   head: { alignItems: "flex-start", flexDirection: "row" },
-  icon: { alignItems: "center", height: 40, justifyContent: "center", width: 40 },
+  icon: { alignItems: "center", height: 32, justifyContent: "center", width: 32 },
   flex: { flex: 1 },
   line: { alignItems: "center", flexDirection: "row", flexWrap: "wrap" },
 });

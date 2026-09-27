@@ -26,28 +26,32 @@ export const TicketRow = memo(function TicketRow({ ticket, onOpen }: Props) {
         styles.row,
         {
           gap: theme.spacing[3],
-          padding: theme.spacing[4],
+          paddingHorizontal: 14,
+          paddingVertical: theme.spacing[3],
           backgroundColor: theme.components.card.background,
           borderColor: theme.components.card.border,
           borderRadius: theme.components.card.radius,
         },
       ]}
     >
-      <View style={[styles.body, { gap: theme.spacing[1] }]}>
-        <AppText variant="label" numberOfLines={2}>
+      <View style={[styles.body, { gap: 3 }]}>
+        <AppText variant="label" numberOfLines={1}>
           {ticket.subject}
         </AppText>
-        <AppText variant="caption" tone="secondary" numberOfLines={1}>
-          {ticket.reference} · updated {formatRelative(ticket.lastActivityAt).toLowerCase()}
-        </AppText>
-        <TicketStatusBadge status={ticket.status} />
+        <View style={[styles.line, { gap: theme.spacing[2] }]}>
+          <TicketStatusBadge status={ticket.status} />
+          <AppText variant="meta" numberOfLines={1} style={styles.body}>
+            {ticket.reference} · {formatRelative(ticket.lastActivityAt).toLowerCase()}
+          </AppText>
+        </View>
       </View>
-      <ChevronRight size={18} color={theme.colors.text.tertiary} />
+      <ChevronRight size={16} color={theme.colors.text.tertiary} />
     </AppPressable>
   );
 });
 
 const styles = StyleSheet.create({
   row: { alignItems: "center", borderWidth: 1, flexDirection: "row", overflow: "hidden" },
-  body: { flex: 1 },
+  body: { flex: 1, minWidth: 0 },
+  line: { alignItems: "center", flexDirection: "row" },
 });

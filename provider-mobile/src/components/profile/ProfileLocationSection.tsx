@@ -55,7 +55,7 @@ export function ProfileLocationSection({ values, errors, serviceRadiusKm, onChan
   };
 
   return (
-    <FormSection title="Location" description="Your pin decides who sees you in nearby searches.">
+    <FormSection title="Location" description="Your pin decides who sees you nearby">
       <LocationSearchField label="Find your area" onPick={pick} />
       <View style={[styles.row, { gap: theme.spacing[2] }]}>
         <AppButton
@@ -67,7 +67,7 @@ export function ProfileLocationSection({ values, errors, serviceRadiusKm, onChan
         >
           Use my current location
         </AppButton>
-        <AppText variant="caption" tone="tertiary">
+        <AppText variant="meta">
           Pin: {values.latitude.toFixed(4)}, {values.longitude.toFixed(4)}
         </AppText>
       </View>

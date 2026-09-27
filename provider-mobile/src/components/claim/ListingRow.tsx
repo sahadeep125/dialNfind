@@ -21,8 +21,9 @@ export const ListingRow = memo(function ListingRow({ listing, action }: Props) {
         styles.row,
         {
           gap: theme.spacing[3],
-          padding: theme.spacing[3],
-          borderRadius: theme.radius.md,
+          paddingHorizontal: theme.spacing[3],
+          paddingVertical: theme.spacing[2.5],
+          borderRadius: theme.radius.lg,
           borderColor: theme.colors.border.primary,
           backgroundColor: theme.colors.background.elevated,
         },
@@ -31,10 +32,10 @@ export const ListingRow = memo(function ListingRow({ listing, action }: Props) {
       <View
         style={[
           styles.icon,
-          { backgroundColor: theme.colors.brand.soft, borderRadius: theme.radius.md },
+          { backgroundColor: theme.colors.background.subtle, borderRadius: theme.radius.sm + 2 },
         ]}
       >
-        <BadgeCheck size={20} color={theme.colors.brand.primary} />
+        <BadgeCheck size={16} color={theme.colors.text.secondary} />
       </View>
       <View style={styles.body}>
         <AppText variant="label" numberOfLines={2}>
@@ -43,19 +44,19 @@ export const ListingRow = memo(function ListingRow({ listing, action }: Props) {
         <View style={[styles.meta, { columnGap: theme.spacing[3] }]}>
           <View style={styles.metaItem}>
             <MapPin size={12} color={theme.colors.text.secondary} />
-            <AppText variant="caption" tone="secondary" numberOfLines={1}>
+            <AppText variant="meta" tone="secondary" numberOfLines={1}>
               {place}
             </AppText>
           </View>
           {listing.category ? (
-            <AppText variant="caption" tone="secondary" numberOfLines={1}>
+            <AppText variant="meta" tone="secondary" numberOfLines={1}>
               {listing.category}
             </AppText>
           ) : null}
           {listing.totalReviews > 0 ? (
             <View style={styles.metaItem}>
               <Star size={12} color={theme.colors.star} fill={theme.colors.star} />
-              <AppText variant="caption" tone="secondary">
+              <AppText variant="meta" tone="secondary">
                 {`${Number(listing.avgRating).toFixed(1)} (${listing.totalReviews})`}
               </AppText>
             </View>
@@ -69,8 +70,8 @@ export const ListingRow = memo(function ListingRow({ listing, action }: Props) {
 
 const styles = StyleSheet.create({
   row: { alignItems: "center", borderWidth: 1, flexDirection: "row" },
-  icon: { alignItems: "center", height: 44, justifyContent: "center", width: 44 },
-  body: { flex: 1, gap: 4, minWidth: 0 },
+  icon: { alignItems: "center", height: 36, justifyContent: "center", width: 36 },
+  body: { flex: 1, gap: 2, minWidth: 0 },
   meta: { flexDirection: "row", flexWrap: "wrap", rowGap: 2 },
   metaItem: { alignItems: "center", flexDirection: "row", flexShrink: 1, gap: 4 },
 });

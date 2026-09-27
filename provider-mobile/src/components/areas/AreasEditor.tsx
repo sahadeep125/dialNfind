@@ -73,11 +73,17 @@ export function AreasEditor({ profile }: Props) {
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[4] }}
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{
+          padding: theme.layout.screenPadding,
+          paddingTop: theme.spacing[1],
+          gap: theme.layout.sectionGap,
+          paddingBottom: theme.spacing[8],
+        }}
       >
         <FormSection
           title="How far you travel"
-          description="You appear in nearby searches within this distance of your business location."
+          description="You show in searches within this distance of your pin"
         >
           <AppSelect
             label="Travel radius"
@@ -89,7 +95,7 @@ export function AreasEditor({ profile }: Props) {
 
         <FormSection
           title="Localities you serve"
-          description="Customers searching these areas by name will find you too."
+          description="Customers searching these areas by name find you too"
         >
           <LocationSearchField placeholder="Search a locality to add" onPick={pick} />
           <View style={[styles.row, { gap: theme.spacing[2] }]}>
@@ -118,7 +124,7 @@ export function AreasEditor({ profile }: Props) {
           </View>
           {areas.length ? (
             <>
-              <AppText variant="caption" tone="tertiary">
+              <AppText variant="meta">
                 {areas.length} of {MAX_AREAS}. Tap an area to remove it.
               </AppText>
               <View style={[styles.chips, { gap: theme.spacing[2] }]}>
@@ -129,6 +135,7 @@ export function AreasEditor({ profile }: Props) {
             </>
           ) : (
             <EmptyState
+              compact
               icon={MapPinned}
               title="No areas yet"
               text="Add the localities you travel to. Customers searching them will see you."

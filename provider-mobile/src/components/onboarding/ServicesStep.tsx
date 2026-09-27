@@ -66,17 +66,17 @@ export function ServicesStep({ value, errors, onChange }: Props) {
   };
 
   return (
-    <View style={{ gap: theme.spacing[5] }}>
+    <View style={{ gap: theme.layout.sectionGap }}>
       <StepTitle
         title="What services do you offer?"
         subtitle="Customers find you through these. Add a starting price so they know what to expect."
       />
 
       <View style={{ gap: theme.spacing[2] }}>
-        <AppText variant="label" tone="secondary">
+        <AppText variant="caption" tone="secondary" weight="semibold">
           Category
         </AppText>
-        <AppText variant="caption" tone="tertiary">
+        <AppText variant="meta">
           Categories are managed by DialNFind so customers can find you. Pick the ones that match
           your work.
         </AppText>
@@ -107,7 +107,7 @@ export function ServicesStep({ value, errors, onChange }: Props) {
 
       {category ? (
         <View style={{ gap: theme.spacing[2] }}>
-          <AppText variant="label" tone="secondary">
+          <AppText variant="caption" tone="secondary" weight="semibold">
             {`Services you offer in ${category.name}`}
           </AppText>
           <View style={[styles.chips, { gap: theme.spacing[2] }]}>
@@ -132,14 +132,14 @@ export function ServicesStep({ value, errors, onChange }: Props) {
       ) : null}
 
       {errors.services ? (
-        <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
+        <AppText variant="meta" tone="danger" accessibilityLiveRegion="polite">
           {errors.services}
         </AppText>
       ) : null}
 
       {value.length > 0 ? (
         <View style={{ gap: theme.spacing[1] }}>
-          <AppText variant="label" tone="secondary">
+          <AppText variant="caption" tone="secondary" weight="semibold">
             Starting prices
           </AppText>
           <View>
@@ -156,7 +156,7 @@ export function ServicesStep({ value, errors, onChange }: Props) {
               </Fragment>
             ))}
           </View>
-          <AppText variant="caption" tone="tertiary">
+          <AppText variant="meta">
             The star marks your main service. It decides which category you appear under first.
           </AppText>
         </View>

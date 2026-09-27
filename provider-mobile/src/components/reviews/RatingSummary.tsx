@@ -18,16 +18,16 @@ export function RatingSummary({ summary }: Props) {
   return (
     <AppCard>
       <View style={[styles.row, { gap: theme.spacing[5] }]}>
-        <View style={[styles.score, { gap: theme.spacing[1] }]}>
-          <AppText variant="display">
+        <View style={[styles.score, { gap: 2 }]}>
+          <AppText variant="display" numeric>
             {summary.totalReviews ? summary.avgRating.toFixed(1) : "-"}
           </AppText>
-          <StarRating rating={summary.avgRating} />
-          <AppText variant="caption" tone="secondary">
+          <StarRating rating={summary.avgRating} size={12} />
+          <AppText variant="meta" tone="secondary">
             {plural(summary.totalReviews, "review")}
           </AppText>
         </View>
-        <View style={[styles.bars, { gap: theme.spacing[1.5] }]}>
+        <View style={[styles.bars, { gap: theme.spacing[1] }]}>
           {summary.breakdown.map((b) => (
             <View
               key={b.rating}
@@ -35,13 +35,13 @@ export function RatingSummary({ summary }: Props) {
               accessible
               accessibilityLabel={`${b.rating} star: ${b.count}`}
             >
-              <AppText variant="caption" tone="secondary" style={styles.star}>
+              <AppText variant="meta" tone="secondary" numeric style={styles.star}>
                 {b.rating}
               </AppText>
               <View style={styles.bar}>
-                <AppProgress value={(b.count / max) * 100} height={6} />
+                <AppProgress value={(b.count / max) * 100} height={5} tone="warning" />
               </View>
-              <AppText variant="caption" tone="secondary" align="right" style={styles.count}>
+              <AppText variant="meta" tone="secondary" align="right" style={styles.count}>
                 {b.count}
               </AppText>
             </View>

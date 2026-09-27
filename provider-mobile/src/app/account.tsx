@@ -3,16 +3,29 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "re
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Mail, Phone, User } from "lucide-react-native";
 
-import { AppButton, AppCallout, AppCard, AppInput, AppSkeleton, AppText } from "@/components/design-system";
+import {
+  AppButton,
+  AppCallout,
+  AppCard,
+  AppInput,
+  AppSection,
+  AppSkeleton,
+} from "@/components/design-system";
 import { PasswordInput } from "@/components/forms";
-import { Screen, ScreenHeader, SectionHeader } from "@/components/layout";
+import { Screen, ScreenHeader } from "@/components/layout";
 import { useSession } from "@/hooks/useSession";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { api, errorMessage } from "@/services/api";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { SessionUser } from "@/types";
-import { isValid, normalizePhone, validateName, validateOptionalPhone, validatePassword } from "@/utils/validation";
+import {
+  isValid,
+  normalizePhone,
+  validateName,
+  validateOptionalPhone,
+  validatePassword,
+} from "@/utils/validation";
 
 /** The person's own sign-in details: name, phone and password. Business details live under Edit profile. */
 export default function AccountScreen() {
@@ -23,8 +36,19 @@ export default function AccountScreen() {
   return (
     <Screen edges={["top", "bottom"]}>
       <ScreenHeader title="Account settings" />
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[6], paddingBottom: theme.spacing[10] }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.flex}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{
+            padding: theme.layout.screenPadding,
+            paddingTop: theme.spacing[1],
+            gap: theme.layout.sectionGap,
+            paddingBottom: theme.spacing[10],
+          }}
+        >
           {user ? (
             <>
               <DetailsSection key={`${user.name}|${user.phone ?? ""}`} user={user} />
@@ -64,7 +88,9 @@ function DetailsSection({ user }: { user: SessionUser }) {
     },
   });
 
-  const dirty = name.trim() !== user.name || (phone.trim() ? normalizePhone(phone) : null) !== (user.phone ?? null);
+  const dirty =
+    name.trim() !== user.name ||
+    (phone.trim() ? normalizePhone(phone) : null) !== (user.phone ?? null);
   const submit = (): void => {
     const next = { name: validateName(name), phone: validateOptionalPhone(phone) };
     setErrors(next);
@@ -72,11 +98,10 @@ function DetailsSection({ user }: { user: SessionUser }) {
   };
 
   return (
-    <View style={{ gap: theme.spacing[3] }}>
-      <SectionHeader title="Your details" />
+    <AppSection title="Your details" subtitle="Private to you and the DialNFind team" kind="plain">
       <AppCard>
-        <View style={{ gap: theme.spacing[4] }}>
-          {save.isError ? <AppCallout tone="danger">{errorMessage(save.error)}</AppCallout> : null}
+        <View style={{ gap: 14 }}>
+          {save.isError ? <AppCallout tone="danger" title={errorMessage(save.error)} /> : null}
           <AppInput
             label="Your name"
             required
@@ -85,7 +110,7 @@ function DetailsSection({ user }: { user: SessionUser }) {
             error={errors.name}
             autoComplete="name"
             textContentType="name"
-            leadingIcon={<User size={18} color={theme.colors.text.tertiary} />}
+            leadingIcon={<User size={16} color={theme.colors.text.tertiary} />}
           />
           <AppInput
             label="Mobile number"
@@ -96,26 +121,31 @@ function DetailsSection({ user }: { user: SessionUser }) {
             keyboardType="phone-pad"
             autoComplete="tel"
             textContentType="telephoneNumber"
-            leadingIcon={<Phone size={18} color={theme.colors.text.tertiary} />}
+            leadingIcon={<Phone size={16} color={theme.colors.text.tertiary} />}
           />
           <AppInput
             label="Email"
             helper="To change your sign-in email, contact support."
             value={user.email}
             editable={false}
-            leadingIcon={<Mail size={18} color={theme.colors.text.tertiary} />}
+            leadingIcon={<Mail size={16} color={theme.colors.text.tertiary} />}
           />
-          <AppButton fullWidth disabled={!dirty} loading={save.isPending} onPress={submit}>
+          <AppButton
+            size="sm"
+            disabled={!dirty}
+            loading={save.isPending}
+            onPress={submit}
+            style={styles.end}
+          >
             Save details
           </AppButton>
         </View>
       </AppCard>
-    </View>
+    </AppSection>
   );
 }
 
 function PasswordSection({ user }: { user: SessionUser }) {
-  const theme = useTheme();
   const toast = useToast();
   const qc = useQueryClient();
   const hasPassword = user.hasPassword;
@@ -126,13 +156,21 @@ function PasswordSection({ user }: { user: SessionUser }) {
 
   const change = useMutation({
     mutationFn: () =>
-      api("/auth/change-password", { method: "POST", body: { currentPassword: hasPassword ? current : undefined, newPassword: next } }),
+      api("/auth/change-password", {
+        method: "POST",
+        body: { currentPassword: hasPassword ? current : undefined, newPassword: next },
+      }),
     onSuccess: () => {
       setCurrent("");
       setNext("");
       setConfirm("");
       void qc.invalidateQueries({ queryKey: ["session"] });
-      toast(hasPassword ? "Password changed. Other devices were signed out." : "Password set. You can sign in with your email too.", "success");
+      toast(
+        hasPassword
+          ? "Password changed. Other devices were signed out."
+          : "Password set. You can sign in with your email too.",
+        "success",
+      );
     },
   });
 
@@ -149,16 +187,18 @@ function PasswordSection({ user }: { user: SessionUser }) {
   const via = user.linkedAccounts.map((a) => (a === "google" ? "Google" : "Apple")).join(" and ");
 
   return (
-    <View style={{ gap: theme.spacing[3] }}>
-      <SectionHeader title={hasPassword ? "Change password" : "Set a password"} />
+    <AppSection
+      title={hasPassword ? "Change password" : "Set a password"}
+      subtitle={
+        hasPassword
+          ? "Signs you out on your other devices"
+          : `You sign in with ${via || "a linked account"}. Add a password to use email too.`
+      }
+      kind="plain"
+    >
       <AppCard>
-        <View style={{ gap: theme.spacing[4] }}>
-          <AppText tone="secondary">
-            {hasPassword
-              ? "Changing it signs you out on your other devices."
-              : `You sign in with ${via || "a linked account"}. Set a password to also sign in with your email.`}
-          </AppText>
-          {change.isError ? <AppCallout tone="danger">{errorMessage(change.error)}</AppCallout> : null}
+        <View style={{ gap: 14 }}>
+          {change.isError ? <AppCallout tone="danger" title={errorMessage(change.error)} /> : null}
           {hasPassword ? (
             <PasswordInput
               label="Current password"
@@ -188,15 +228,22 @@ function PasswordSection({ user }: { user: SessionUser }) {
             returnKeyType="done"
             onSubmitEditing={submit}
           />
-          <AppButton fullWidth variant="secondary" loading={change.isPending} onPress={submit}>
+          <AppButton
+            size="sm"
+            variant="secondary"
+            loading={change.isPending}
+            onPress={submit}
+            style={styles.end}
+          >
             {hasPassword ? "Change password" : "Set password"}
           </AppButton>
         </View>
       </AppCard>
-    </View>
+    </AppSection>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  end: { alignSelf: "flex-end" },
 });

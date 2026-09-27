@@ -25,23 +25,24 @@ export const MessageBubble = memo(function MessageBubble({ message: m }: Props) 
           backgroundColor: m.fromStaff ? theme.colors.brand.soft : theme.components.card.background,
           borderColor: m.fromStaff ? theme.colors.brand.soft : theme.components.card.border,
           borderRadius: theme.radius.lg,
-          padding: theme.spacing[4],
-          gap: theme.spacing[2],
+          borderBottomLeftRadius: m.fromStaff ? theme.radius.xs : theme.radius.lg,
+          borderBottomRightRadius: m.fromStaff ? theme.radius.lg : theme.radius.xs,
+          paddingHorizontal: theme.spacing[3],
+          paddingVertical: theme.spacing[2.5],
+          gap: theme.spacing[1],
         },
       ]}
     >
       <View style={[styles.head, { gap: theme.spacing[2] }]}>
         {m.fromStaff ? (
           <View style={[styles.avatar, { backgroundColor: theme.colors.brand.primary }]}>
-            <Headset size={13} color={theme.components.button.primary.text} />
+            <Headset size={11} color={theme.components.button.primary.text} />
           </View>
         ) : null}
-        <AppText variant="label" numberOfLines={1} style={styles.flex}>
+        <AppText variant="caption" weight="semibold" numberOfLines={1} style={styles.flex}>
           {m.fromStaff ? m.authorName : "You"}
         </AppText>
-        <AppText variant="caption" tone="tertiary">
-          {formatRelative(m.createdAt)}
-        </AppText>
+        <AppText variant="meta">{formatRelative(m.createdAt)}</AppText>
       </View>
       <AppText selectable>{m.body}</AppText>
       {m.attachments.length > 0 ? <AttachmentList urls={m.attachments} /> : null}
@@ -50,14 +51,14 @@ export const MessageBubble = memo(function MessageBubble({ message: m }: Props) 
 });
 
 const styles = StyleSheet.create({
-  bubble: { borderWidth: 1, maxWidth: "92%", minWidth: "60%" },
+  bubble: { borderWidth: 1, maxWidth: "88%", minWidth: "50%" },
   head: { alignItems: "center", flexDirection: "row" },
   avatar: {
     alignItems: "center",
-    borderRadius: 12,
-    height: 24,
+    borderRadius: 9,
+    height: 18,
     justifyContent: "center",
-    width: 24,
+    width: 18,
   },
   flex: { flexShrink: 1, flexGrow: 1 },
 });

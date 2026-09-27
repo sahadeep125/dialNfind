@@ -6,17 +6,17 @@ import { useTheme } from "@/hooks/useTheme";
 export function ReviewCardSkeleton() {
   const theme = useTheme();
   return (
-    <AppCard>
-      <View style={[styles.row, { gap: theme.spacing[3] }]}>
-        <AppSkeleton shape="circle" width={40} height={40} />
-        <View style={[styles.fill, { gap: theme.spacing[2] }]}>
-          <AppSkeleton width="50%" />
-          <AppSkeleton width="30%" height={12} />
+    <AppCard padding={14}>
+      <View style={[styles.row, { gap: theme.spacing[2.5] }]}>
+        <AppSkeleton shape="circle" width={34} height={34} />
+        <View style={[styles.fill, { gap: theme.spacing[1.5] }]}>
+          <AppSkeleton width="45%" />
+          <AppSkeleton width="30%" height={11} />
         </View>
       </View>
-      <View style={{ gap: theme.spacing[2], marginTop: theme.spacing[4] }}>
-        <AppSkeleton />
-        <AppSkeleton width="80%" />
+      <View style={{ gap: theme.spacing[1.5], marginTop: theme.spacing[3] }}>
+        <AppSkeleton height={12} />
+        <AppSkeleton width="75%" height={12} />
       </View>
     </AppCard>
   );

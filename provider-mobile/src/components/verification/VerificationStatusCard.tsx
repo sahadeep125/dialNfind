@@ -13,23 +13,22 @@ export function VerificationStatusCard({ status }: Props) {
   const theme = useTheme();
   const { semantic, background, text } = theme.colors;
   const look = {
-    none: { label: "Not verified", bg: background.tertiary, fg: text.secondary },
-    partial: { label: "Partially verified", bg: semantic.warningSoft, fg: semantic.warningText },
+    none: { label: "Not verified yet", bg: background.subtle, fg: text.secondary },
+    partial: { label: "Partly verified", bg: semantic.warningSoft, fg: semantic.warningText },
     verified: { label: "Verified business", bg: semantic.successSoft, fg: semantic.success },
   }[status];
   return (
-    <AppCard>
-      <View style={[styles.row, { gap: theme.spacing[4] }]}>
+    <AppCard padding={14}>
+      <View style={[styles.row, { gap: theme.spacing[3] }]}>
         <View style={[styles.icon, { backgroundColor: look.bg, borderRadius: theme.radius.lg }]}>
-          <BadgeCheck size={26} color={look.fg} />
+          <BadgeCheck size={22} color={look.fg} />
         </View>
-        <View style={[styles.body, { gap: theme.spacing[1] }]}>
-          <AppText variant="subheading" accessibilityRole="header">
+        <View style={[styles.body, { gap: 2 }]}>
+          <AppText variant="section" accessibilityRole="header">
             {look.label}
           </AppText>
-          <AppText variant="caption" tone="secondary">
-            Verified businesses get a badge, rank higher and earn more trust. Our team reviews each
-            document within two working days.
+          <AppText variant="meta" tone="secondary">
+            Verified businesses get a badge, rank higher and earn more trust.
           </AppText>
         </View>
       </View>
@@ -39,6 +38,6 @@ export function VerificationStatusCard({ status }: Props) {
 
 const styles = StyleSheet.create({
   row: { alignItems: "center", flexDirection: "row" },
-  icon: { alignItems: "center", height: 52, justifyContent: "center", width: 52 },
+  icon: { alignItems: "center", height: 44, justifyContent: "center", width: 44 },
   body: { flex: 1 },
 });

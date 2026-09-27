@@ -45,7 +45,8 @@ export function PushAlertsRow() {
       if (on) {
         const next = await registerForPush({ ask: true });
         setStatus(next);
-        if (next === "denied") toast("Allow notifications for DialNFind Business in system settings", "info");
+        if (next === "denied")
+          toast("Allow notifications for DialNFind Business in system settings", "info");
       } else {
         await disablePush();
         setStatus("off");
@@ -62,7 +63,7 @@ export function PushAlertsRow() {
     <AppListItem
       title="Lead alerts"
       subtitle={SUBTITLE[current]}
-      leading={<BellRing size={18} color={theme.colors.brand.primary} />}
+      leading={<BellRing size={16} color={theme.colors.text.secondary} />}
       showChevron={false}
       onPress={current === "denied" ? () => void Linking.openSettings() : undefined}
       trailing={
@@ -71,8 +72,8 @@ export function PushAlertsRow() {
           value={current === "on"}
           disabled={busy || status === null || current === "unsupported"}
           onValueChange={(v) => void toggle(v)}
-          trackColor={{ false: theme.colors.border.secondary, true: theme.colors.brand.primary }}
-          thumbColor={theme.colors.text.primary}
+          trackColor={{ false: theme.colors.border.secondary, true: theme.colors.semantic.success }}
+          thumbColor="#FFFFFF"
           ios_backgroundColor={theme.colors.border.secondary}
         />
       }

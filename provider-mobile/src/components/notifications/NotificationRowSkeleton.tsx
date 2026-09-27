@@ -11,12 +11,12 @@ export function NotificationRowSkeleton() {
         styles.row,
         {
           gap: theme.spacing[3],
-          paddingHorizontal: theme.spacing[4],
+          paddingHorizontal: theme.layout.screenPadding,
           paddingVertical: theme.spacing[3],
         },
       ]}
     >
-      <AppSkeleton shape="block" width={40} height={40} />
+      <AppSkeleton shape="block" width={32} height={32} />
       <View style={[styles.fill, { gap: theme.spacing[2] }]}>
         <AppSkeleton width="60%" />
         <AppSkeleton width="90%" height={12} />

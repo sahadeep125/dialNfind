@@ -26,7 +26,7 @@ const TYPES: { value: BusinessType; title: string; text: string }[] = [
 export function BusinessStep({ value, errors, onChange }: Props) {
   const theme = useTheme();
   return (
-    <View style={{ gap: theme.spacing[5] }}>
+    <View style={{ gap: theme.layout.sectionGap }}>
       <StepTitle title="Tell us about your business" subtitle="This is what customers see first." />
       <AppInput
         label="Business name"
@@ -40,7 +40,7 @@ export function BusinessStep({ value, errors, onChange }: Props) {
       />
 
       <View style={{ gap: theme.spacing[2] }}>
-        <AppText variant="label" tone="secondary">
+        <AppText variant="caption" tone="secondary" weight="semibold">
           You are
         </AppText>
         <View style={[styles.types, { gap: theme.spacing[2] }]} accessibilityRole="radiogroup">
@@ -75,7 +75,7 @@ export function BusinessStep({ value, errors, onChange }: Props) {
                   color={selected ? theme.colors.brand.primary : theme.colors.text.secondary}
                 />
                 <AppText variant="label">{t.title}</AppText>
-                <AppText variant="caption" tone="secondary">
+                <AppText variant="meta" tone="secondary">
                   {t.text}
                 </AppText>
               </AppPressable>

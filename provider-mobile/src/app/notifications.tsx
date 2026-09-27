@@ -12,6 +12,10 @@ import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
 import type { AppNotification } from "@/types/notifications";
 
+function Separator() {
+  return <AppDivider inset={16 + 32 + 12} />;
+}
+
 export default function NotificationsScreen() {
   const theme = useTheme();
   const toast = useToast();
@@ -44,7 +48,7 @@ export default function NotificationsScreen() {
           unread ? (
             <AppButton
               variant="ghost"
-              size="sm"
+              size="xs"
               disabled={markRead.isPending}
               onPress={() =>
                 mutate(undefined, { onError: (e: Error) => toast(errorMessage(e), "error") })
@@ -59,7 +63,7 @@ export default function NotificationsScreen() {
         data={isLoading || isError ? [] : (data?.notifications ?? [])}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
-        ItemSeparatorComponent={AppDivider}
+        ItemSeparatorComponent={Separator}
         contentContainerStyle={styles.content}
         ListEmptyComponent={
           isLoading ? (

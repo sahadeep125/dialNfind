@@ -9,6 +9,9 @@ interface Props<T extends string | number> {
   value: T;
   onChange: (value: T) => void;
   accessibilityLabel?: string;
+  size?: "sm" | "md";
+  /** "onHero" draws a translucent track for use inside the hero card. */
+  appearance?: "default" | "onHero";
 }
 
 /** Two to four mutually exclusive choices shown side by side, such as a date range. */
@@ -17,15 +20,21 @@ export function AppSegmented<T extends string | number>({
   value,
   onChange,
   accessibilityLabel,
+  size = "md",
+  appearance = "default",
 }: Props<T>) {
   const theme = useTheme();
+  const onHero = appearance === "onHero";
   return (
     <View
       accessibilityRole="tablist"
       accessibilityLabel={accessibilityLabel}
       style={[
         styles.track,
-        { backgroundColor: theme.colors.background.tertiary, borderRadius: theme.radius.md },
+        {
+          backgroundColor: onHero ? "rgba(255,255,255,0.14)" : theme.colors.background.subtle,
+          borderRadius: theme.radius.md,
+        },
       ]}
     >
       {options.map((o) => {
@@ -39,14 +48,27 @@ export function AppSegmented<T extends string | number>({
             scale={false}
             style={[
               styles.item,
-              { borderRadius: theme.radius.sm },
+              { borderRadius: theme.radius.sm + 1, minHeight: size === "sm" ? 26 : 32 },
               selected && [
-                { backgroundColor: theme.colors.background.elevated },
-                theme.shadow.card,
+                { backgroundColor: onHero ? "#FFFFFF" : theme.colors.background.elevated },
+                theme.shadow.thumb,
               ],
             ]}
           >
-            <AppText variant="label" tone={selected ? "primary" : "secondary"} numberOfLines={1}>
+            <AppText
+              variant="caption"
+              numberOfLines={1}
+              style={{
+                fontFamily: theme.typography.label.fontFamily,
+                color: onHero
+                  ? selected
+                    ? theme.colors.brand.primary
+                    : "rgba(255,255,255,0.8)"
+                  : selected
+                    ? theme.colors.text.primary
+                    : theme.colors.text.secondary,
+              }}
+            >
               {o.label}
             </AppText>
           </AppPressable>
@@ -57,12 +79,6 @@ export function AppSegmented<T extends string | number>({
 }
 
 const styles = StyleSheet.create({
-  track: { flexDirection: "row", gap: 4, padding: 4 },
-  item: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 36,
-    paddingHorizontal: 8,
-  },
+  track: { flexDirection: "row", gap: 2, padding: 3 },
+  item: { alignItems: "center", flex: 1, justifyContent: "center", paddingHorizontal: 8 },
 });

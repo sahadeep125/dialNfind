@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import { useTheme } from "@/hooks/useTheme";
+import { AppField } from "./AppField";
 import { AppText } from "./AppText";
 
 interface Props extends TextInputProps {
@@ -17,7 +18,11 @@ interface Props extends TextInputProps {
   error?: string | null;
   required?: boolean;
   leadingIcon?: ReactNode;
+  /** Fixed text before the value, e.g. "+91" or "₹". */
+  prefix?: string;
   trailingAction?: { icon: ReactNode; onPress: () => void; accessibilityLabel: string };
+  /** sm is the 36pt search-bar size with a subtle fill. */
+  size?: "sm" | "md";
 }
 
 export const AppInput = forwardRef<TextInput, Props>(function AppInput(
@@ -27,12 +32,14 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
     error,
     required,
     leadingIcon,
+    prefix,
     trailingAction,
     multiline,
     style,
     onFocus,
     onBlur,
     editable = true,
+    size = "md",
     ...props
   },
   ref,
@@ -40,37 +47,43 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
   const theme = useTheme();
   const tokens = theme.components.input;
   const [focused, setFocused] = useState(false);
-  const borderColor = error ? tokens.errorBorder : focused ? tokens.focusBorder : tokens.border;
+  const small = size === "sm";
+  const borderColor = error
+    ? tokens.errorBorder
+    : focused
+      ? tokens.focusBorder
+      : small
+        ? theme.colors.background.subtle
+        : tokens.border;
 
   return (
-    <View style={styles.wrapper}>
-      {label ? (
-        <AppText variant="label" tone="secondary">
-          {label}
-          {required ? (
-            <AppText variant="label" tone="danger">
-              {" "}
-              *
-            </AppText>
-          ) : null}
-        </AppText>
-      ) : null}
+    <AppField label={label} helper={helper} error={error} required={required}>
       <View
         style={[
           styles.field,
           {
             alignItems: multiline ? "flex-start" : "center",
-            backgroundColor: editable ? tokens.background : theme.colors.background.tertiary,
+            backgroundColor: !editable
+              ? theme.colors.background.tertiary
+              : small && !focused
+                ? theme.colors.background.subtle
+                : tokens.background,
             borderColor,
-            borderRadius: tokens.radius,
+            borderRadius: small ? theme.radius.md : tokens.radius,
             borderWidth: focused || error ? theme.borderWidth.focus : theme.borderWidth.default,
-            minHeight: multiline ? 112 : tokens.height,
+            minHeight: multiline ? 96 : small ? tokens.heightSm : tokens.height,
             paddingHorizontal: tokens.paddingHorizontal,
-            paddingVertical: multiline ? theme.spacing[3] : 0,
+            paddingVertical: multiline ? theme.spacing[2.5] : 0,
+            gap: theme.spacing[2],
           },
         ]}
       >
         {leadingIcon ? <View>{leadingIcon}</View> : null}
+        {prefix ? (
+          <AppText tone="secondary" weight="medium">
+            {prefix}
+          </AppText>
+        ) : null}
         <TextInput
           ref={ref}
           editable={editable}
@@ -78,6 +91,7 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
           placeholderTextColor={tokens.placeholder}
           accessibilityLabel={label}
           aria-invalid={!!error}
+          maxFontSizeMultiplier={1.5}
           onFocus={(event) => {
             setFocused(true);
             onFocus?.(event);
@@ -105,25 +119,15 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
           </Pressable>
         ) : null}
       </View>
-      {error ? (
-        <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
-          {error}
-        </AppText>
-      ) : helper ? (
-        <AppText variant="caption" tone="tertiary">
-          {helper}
-        </AppText>
-      ) : null}
-    </View>
+    </AppField>
   );
 });
 
 const styles = StyleSheet.create({
-  wrapper: { gap: 6 },
-  field: { borderCurve: "continuous", flexDirection: "row", gap: 10 },
+  field: { borderCurve: "continuous", flexDirection: "row" },
   input: {
     flex: 1,
-    minHeight: 24,
+    minHeight: 22,
     paddingVertical: 0,
     // Hides the browser focus ring on web; native only accepts solid, dotted or dashed here.
     ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null),

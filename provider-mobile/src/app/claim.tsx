@@ -69,9 +69,7 @@ export default function ClaimScreen() {
         listing={item}
         action={
           item.isClaimed ? (
-            <AppText variant="caption" tone="tertiary">
-              Claimed
-            </AppText>
+            <AppText variant="meta">Claimed</AppText>
           ) : (
             <AppButton size="sm" onPress={() => setStep({ kind: "confirm", listing: item })}>
               Select
@@ -107,20 +105,15 @@ export default function ClaimScreen() {
   );
 
   const intro = (
-    <View style={{ gap: theme.spacing[1] }}>
-      <AppText variant="title" accessibilityRole="header">
-        Claim your business
-      </AppText>
-      <AppText tone="secondary">
-        Find your listing, then prove it is yours. Your reviews and history stay with it.
-      </AppText>
-    </View>
+    <AppText tone="secondary">
+      Find your listing, then prove it is yours. Your reviews and history stay with it.
+    </AppText>
   );
 
   if (step.kind === "search") {
     return (
       <Screen edges={["top", "bottom"]}>
-        <ScreenHeader title="Claim a listing" />
+        <ScreenHeader title="Claim your business" />
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.flex}
@@ -130,9 +123,13 @@ export default function ClaimScreen() {
             keyExtractor={(item) => String(item.id)}
             renderItem={renderItem}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[2] }}
+            contentContainerStyle={{
+              padding: theme.layout.screenPadding,
+              paddingTop: theme.spacing[1],
+              gap: theme.spacing[2],
+            }}
             ListHeaderComponent={
-              <View style={{ gap: theme.spacing[5], marginBottom: theme.spacing[3] }}>
+              <View style={{ gap: theme.spacing[4], marginBottom: theme.spacing[2] }}>
                 {intro}
                 {linkedId !== null && linked.isLoading ? (
                   <AppSkeleton height={72} shape="block" />
@@ -163,14 +160,18 @@ export default function ClaimScreen() {
 
   return (
     <Screen edges={["top", "bottom"]}>
-      <ScreenHeader title="Claim a listing" />
+      <ScreenHeader title="Claim your business" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.flex}
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[5] }}
+          contentContainerStyle={{
+            padding: theme.layout.screenPadding,
+            paddingTop: theme.spacing[1],
+            gap: theme.layout.sectionGap,
+          }}
         >
           {intro}
           {step.kind === "confirm" ? (

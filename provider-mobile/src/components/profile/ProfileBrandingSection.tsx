@@ -9,10 +9,7 @@ interface Props {
 
 export function ProfileBrandingSection({ values, onChange }: Props) {
   return (
-    <FormSection
-      title="Branding"
-      description="A clear logo and cover photo make your listing stand out in search results."
-    >
+    <FormSection title="Branding" description="A clear logo and cover make you stand out in search">
       <ImageUploadField
         label="Logo"
         helper="Square image, at least 200 x 200 px"

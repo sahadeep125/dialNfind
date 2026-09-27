@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
-import { Pencil, Star, Trash2 } from "lucide-react-native";
+import { Star, Trash2 } from "lucide-react-native";
 
-import { AppBadge, AppCard, AppIconButton, AppText } from "@/components/design-system";
+import { AppBadge, AppIconButton, AppPressable, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { ProviderService } from "@/types";
 import { formatPrice } from "@/utils/format";
@@ -15,6 +15,7 @@ interface Props {
   onDelete: (service: ProviderService) => void;
 }
 
+/** One service: name, starting price and category. Tap to edit the price. */
 export const ServiceRow = memo(function ServiceRow({
   service,
   canDelete,
@@ -24,29 +25,37 @@ export const ServiceRow = memo(function ServiceRow({
   const theme = useTheme();
   const name = serviceName(service);
   const price = formatPrice(service.startingPrice, service.priceUnit);
+  const category = service.subcategory && service.category ? service.category.name : null;
   return (
-    <AppCard onPress={() => onEdit(service)} accessibilityLabel={`Edit ${name}`} padding={0}>
-      <View style={[styles.row, { gap: theme.spacing[3], padding: theme.spacing[4] }]}>
-        <View style={[styles.body, { gap: theme.spacing[1] }]}>
-          <AppText variant="label" numberOfLines={2}>
-            {name}
-          </AppText>
-          {service.subcategory && service.category ? (
-            <AppText variant="caption" tone="tertiary" numberOfLines={1}>
-              {service.category.name}
-            </AppText>
-          ) : null}
-          <View style={[styles.meta, { gap: theme.spacing[2] }]}>
-            <AppText variant="caption" tone={price ? "primary" : "tertiary"}>
-              {price ?? "No starting price"}
+    <AppPressable
+      accessibilityRole="button"
+      accessibilityLabel={`Edit ${name}`}
+      onPress={() => onEdit(service)}
+      scale={false}
+    >
+      <View
+        style={[
+          styles.row,
+          {
+            gap: theme.spacing[3],
+            paddingLeft: 14,
+            paddingRight: theme.spacing[2],
+            paddingVertical: theme.spacing[2.5],
+          },
+        ]}
+      >
+        <View style={[styles.body, { gap: 2 }]}>
+          <View style={[styles.line, { gap: theme.spacing[1.5] }]}>
+            <AppText variant="label" numberOfLines={1} style={styles.shrink}>
+              {name}
             </AppText>
             {service.isPrimary ? (
               <AppBadge
-                label="Main service"
+                label="Main"
                 tone="warning"
                 icon={
                   <Star
-                    size={11}
+                    size={10}
                     color={theme.colors.semantic.warningText}
                     fill={theme.colors.semantic.warningText}
                   />
@@ -54,22 +63,30 @@ export const ServiceRow = memo(function ServiceRow({
               />
             ) : null}
           </View>
+          <AppText variant="meta" numberOfLines={1}>
+            {[category, price ? null : "Add a starting price"].filter(Boolean).join(" · ") || " "}
+          </AppText>
         </View>
-        <Pencil size={16} color={theme.colors.text.tertiary} />
+        {price ? (
+          <AppText variant="label" numeric>
+            {price}
+          </AppText>
+        ) : null}
         <AppIconButton
           accessibilityLabel={`Remove ${name}`}
           size="sm"
           disabled={!canDelete}
-          icon={<Trash2 size={18} color={theme.colors.semantic.danger} />}
+          icon={<Trash2 size={15} color={theme.colors.text.tertiary} />}
           onPress={() => onDelete(service)}
         />
       </View>
-    </AppCard>
+    </AppPressable>
   );
 });
 
 const styles = StyleSheet.create({
   row: { alignItems: "center", flexDirection: "row" },
-  body: { flex: 1 },
-  meta: { alignItems: "center", flexDirection: "row", flexWrap: "wrap" },
+  body: { flex: 1, minWidth: 0 },
+  line: { alignItems: "center", flexDirection: "row" },
+  shrink: { flexShrink: 1 },
 });

@@ -2,22 +2,15 @@ import { View } from "react-native";
 
 import { AppSkeleton } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
-import { StatGrid } from "./StatGrid";
 
-interface Props {
-  columns: number;
-}
-
-export function DashboardSkeleton({ columns }: Props) {
+/** Mirrors the dashboard: hero, KPI grid, chart and a list. */
+export function DashboardSkeleton() {
   const theme = useTheme();
   return (
-    <View style={{ gap: theme.spacing[4] }}>
-      <StatGrid columns={columns}>
-        {[0, 1, 2, 3].map((i) => (
-          <AppSkeleton key={i} shape="block" height={112} />
-        ))}
-      </StatGrid>
-      <AppSkeleton shape="block" height={280} />
+    <View style={{ gap: theme.layout.sectionGap }}>
+      <AppSkeleton shape="block" height={184} />
+      <AppSkeleton shape="block" height={156} />
+      <AppSkeleton shape="block" height={220} />
       <AppSkeleton shape="block" height={180} />
     </View>
   );

@@ -19,23 +19,24 @@ export function CampaignStat({ icon: Icon, label, value, hint }: Props) {
       style={[
         styles.box,
         {
-          backgroundColor: theme.colors.background.tertiary,
-          borderRadius: theme.radius.md,
-          padding: theme.spacing[3],
+          backgroundColor: theme.colors.background.subtle,
+          borderRadius: theme.radius.sm + 2,
+          paddingHorizontal: theme.spacing[2.5],
+          paddingVertical: theme.spacing[2],
         },
       ]}
     >
       <View style={styles.label}>
         <Icon size={13} color={theme.colors.text.secondary} />
-        <AppText variant="caption" tone="secondary" numberOfLines={1} style={styles.flex}>
+        <AppText variant="meta" tone="secondary" numberOfLines={1} style={styles.flex}>
           {label}
         </AppText>
       </View>
-      <AppText variant="subheading" numberOfLines={1} adjustsFontSizeToFit>
+      <AppText variant="label" numeric numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </AppText>
       {hint ? (
-        <AppText variant="caption" tone="tertiary" numberOfLines={1}>
+        <AppText variant="meta" numberOfLines={1}>
           {hint}
         </AppText>
       ) : null}

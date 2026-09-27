@@ -17,10 +17,7 @@ export function ProfileContactSection({ values, errors, onChange }: Props) {
   const theme = useTheme();
   const iconColor = theme.colors.text.tertiary;
   return (
-    <FormSection
-      title="Contact"
-      description="Customers reach you directly. DialNFind never charges per lead."
-    >
+    <FormSection title="Contact" description="Customers reach you directly, with no per-lead fees">
       <AppInput
         label="Business phone"
         required
@@ -77,7 +74,7 @@ export function ProfileContactSection({ values, errors, onChange }: Props) {
           onValueChange={(acceptsWhatsapp) => onChange({ acceptsWhatsapp })}
         />
         {errors.acceptsCalls ? (
-          <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
+          <AppText variant="meta" tone="danger" accessibilityLiveRegion="polite">
             {errors.acceptsCalls}
           </AppText>
         ) : null}

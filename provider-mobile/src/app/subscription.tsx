@@ -1,9 +1,16 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Building2, FileText, Receipt } from "lucide-react-native";
 
-import { AppButton, AppCard, AppDivider, AppListItem, AppPressable, AppSkeleton, AppText } from "@/components/design-system";
-import { ErrorState, Screen, ScreenHeader, SectionHeader } from "@/components/layout";
+import {
+  AppButton,
+  AppListItem,
+  AppPressable,
+  AppSection,
+  AppSkeleton,
+  AppText,
+} from "@/components/design-system";
+import { ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { BillingDetailsSheet } from "@/components/subscription/BillingDetailsSheet";
 import { CurrentPlanCard } from "@/components/subscription/CurrentPlanCard";
 import { PlanBanner } from "@/components/subscription/PlanBanner";
@@ -37,7 +44,12 @@ export default function SubscriptionScreen() {
   const onRestore = (): void =>
     restore.mutate(undefined, {
       onSuccess: (state) =>
-        toast(state.plan.code === "free" ? "No store subscription found for this account." : `Restored: you are on ${state.plan.name}.`, state.plan.code === "free" ? "info" : "success"),
+        toast(
+          state.plan.code === "free"
+            ? "No store subscription found for this account."
+            : `Restored: you are on ${state.plan.name}.`,
+          state.plan.code === "free" ? "info" : "success",
+        ),
       onError: (error: Error) => toast(errorMessage(error), "error"),
     });
 
@@ -47,100 +59,128 @@ export default function SubscriptionScreen() {
       {billing.isError && !data ? (
         <ErrorState error={billing.error} onRetry={() => void billing.refetch()} />
       ) : !data ? (
-        <View style={{ padding: theme.spacing[4], gap: theme.spacing[4] }}>
+        <View style={{ padding: theme.layout.screenPadding, gap: theme.layout.sectionGap }}>
           <AppSkeleton shape="block" height={150} />
           <AppSkeleton shape="block" height={300} />
           <AppSkeleton shape="block" height={300} />
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[5], paddingBottom: theme.spacing[10] }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={theme.colors.brand.primary} />}
+          contentContainerStyle={{
+            padding: theme.layout.screenPadding,
+            paddingTop: theme.spacing[1],
+            gap: theme.layout.sectionGap,
+            paddingBottom: theme.spacing[10],
+          }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => void onRefresh()}
+              tintColor={theme.colors.brand.primary}
+            />
+          }
         >
           <PlanBanner />
           <CurrentPlanCard billing={data} />
 
-          <View style={{ gap: theme.spacing[3] }}>
-            <SectionHeader title="Plans" />
+          <AppSection title="Plans" kind="plain">
             <PlanPicker billing={data} />
             {purchasesEnabled ? (
-              <AppButton variant="ghost" loading={restore.isPending} onPress={onRestore}>
+              <AppButton
+                variant="ghost"
+                size="sm"
+                loading={restore.isPending}
+                onPress={onRestore}
+                style={{ alignSelf: "center" }}
+              >
                 Restore purchases
               </AppButton>
             ) : null}
-          </View>
+          </AppSection>
 
           {data.invoices.length > 0 ? (
-            <View style={{ gap: theme.spacing[3] }}>
-              <SectionHeader title="Invoices" />
-              <AppCard padding={0}>
-                {data.invoices.map((inv, i) => (
-                  <Fragment key={inv.id}>
-                    {i > 0 ? <AppDivider /> : null}
-                    <AppPressable
-                      accessibilityRole="link"
-                      accessibilityLabel={`Open invoice ${inv.number}`}
-                      onPress={() => void openUrl(inv.pdfUrl)}
-                      style={[styles.row, { gap: theme.spacing[3], padding: theme.spacing[4] }]}
-                    >
-                      <FileText size={18} color={theme.colors.brand.primary} />
-                      <View style={styles.flex}>
-                        <AppText variant="label" numberOfLines={1}>
-                          {inv.number}
-                          {inv.status === "void" ? "  (void)" : ""}
-                        </AppText>
-                        <AppText variant="caption" tone="secondary">
-                          {`${formatDate(inv.issuedAt)} · incl. ${formatPrice(inv.tax)} GST`}
-                        </AppText>
-                      </View>
-                      <AppText variant="label">{formatPrice(inv.total)}</AppText>
-                    </AppPressable>
-                  </Fragment>
-                ))}
-              </AppCard>
-              <AppText variant="caption" tone="tertiary">
-                GST invoices are for plans paid on the website or to our team. For App Store and Google Play purchases, the store sends the receipt.
-              </AppText>
-            </View>
+            <AppSection
+              title="Invoices"
+              footer="GST invoices are for plans paid on the website or to our team. App Store and Google Play send their own receipts."
+            >
+              {data.invoices.map((inv) => (
+                <AppPressable
+                  key={inv.id}
+                  accessibilityRole="link"
+                  accessibilityLabel={`Open invoice ${inv.number}`}
+                  onPress={() => void openUrl(inv.pdfUrl)}
+                  style={[
+                    styles.row,
+                    {
+                      gap: theme.spacing[3],
+                      paddingHorizontal: 14,
+                      paddingVertical: theme.spacing[2.5],
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.tile,
+                      {
+                        backgroundColor: theme.colors.background.subtle,
+                        borderRadius: theme.radius.sm + 2,
+                      },
+                    ]}
+                  >
+                    <FileText size={16} color={theme.colors.text.secondary} />
+                  </View>
+                  <View style={styles.flex}>
+                    <AppText variant="label" numberOfLines={1}>
+                      {inv.number}
+                      {inv.status === "void" ? "  (void)" : ""}
+                    </AppText>
+                    <AppText variant="meta">{`${formatDate(inv.issuedAt)} · incl. ${formatPrice(inv.tax)} GST`}</AppText>
+                  </View>
+                  <AppText variant="label" numeric>
+                    {formatPrice(inv.total)}
+                  </AppText>
+                </AppPressable>
+              ))}
+            </AppSection>
           ) : null}
 
-          <View style={{ gap: theme.spacing[3] }}>
-            <SectionHeader title="Billing details" />
-            <AppCard padding={0}>
-              <AppListItem
-                title={data.billingProfile.billingName || "Add billing details"}
-                subtitle={
-                  data.billingProfile.billingStateCode
-                    ? [data.billingProfile.gstin ? `GSTIN ${data.billingProfile.gstin}` : "No GSTIN", data.billingProfile.billingAddress].filter(Boolean).join(" · ")
-                    : "Name, address and GSTIN for your invoices"
-                }
-                leading={<Building2 size={18} color={theme.colors.brand.primary} />}
-                onPress={() => setEditingBilling(true)}
-              />
-            </AppCard>
-          </View>
+          <AppSection title="Billing details">
+            <AppListItem
+              title={data.billingProfile.billingName || "Add billing details"}
+              subtitle={
+                data.billingProfile.billingStateCode
+                  ? [
+                      data.billingProfile.gstin ? `GSTIN ${data.billingProfile.gstin}` : "No GSTIN",
+                      data.billingProfile.billingAddress,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
+                  : "Name, address and GSTIN for your invoices"
+              }
+              leading={<Building2 size={16} color={theme.colors.text.secondary} />}
+              onPress={() => setEditingBilling(true)}
+            />
+          </AppSection>
 
-          <View style={{ gap: theme.spacing[3] }}>
-            <SectionHeader title="Payment history" />
-            <AppCard padding={0}>
-              {data.transactions.length === 0 ? (
-                <View style={[styles.row, { gap: theme.spacing[2], padding: theme.spacing[4] }]}>
-                  <Receipt size={16} color={theme.colors.text.secondary} />
-                  <AppText tone="secondary">No payments yet.</AppText>
-                </View>
-              ) : (
-                data.transactions.map((t, i) => (
-                  <Fragment key={t.id}>
-                    {i > 0 ? <AppDivider /> : null}
-                    <TransactionRow transaction={t} />
-                  </Fragment>
-                ))
-              )}
-            </AppCard>
-          </View>
+          <AppSection title="Payment history" dividerInset={14}>
+            {data.transactions.length === 0 ? (
+              <View style={[styles.row, { gap: theme.spacing[2], padding: 14 }]}>
+                <Receipt size={16} color={theme.colors.text.tertiary} />
+                <AppText variant="meta">No payments yet.</AppText>
+              </View>
+            ) : (
+              data.transactions.map((t) => <TransactionRow key={t.id} transaction={t} />)
+            )}
+          </AppSection>
         </ScrollView>
       )}
-      {data ? <BillingDetailsSheet visible={editingBilling} profile={data.billingProfile} onClose={() => setEditingBilling(false)} /> : null}
+      {data ? (
+        <BillingDetailsSheet
+          visible={editingBilling}
+          profile={data.billingProfile}
+          onClose={() => setEditingBilling(false)}
+        />
+      ) : null}
     </Screen>
   );
 }
@@ -148,4 +188,5 @@ export default function SubscriptionScreen() {
 const styles = StyleSheet.create({
   row: { alignItems: "center", flexDirection: "row" },
   flex: { flex: 1, gap: 2 },
+  tile: { alignItems: "center", height: 32, justifyContent: "center", width: 32 },
 });

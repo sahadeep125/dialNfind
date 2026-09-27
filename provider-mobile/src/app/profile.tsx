@@ -18,12 +18,12 @@ export default function ProfileScreen() {
     <Screen edges={["top", "bottom"]}>
       <ScreenHeader
         title="Business details"
-        subtitle="What customers see on your profile"
+        subtitle="What customers see on your page"
         right={
           slug ? (
             <AppIconButton
               accessibilityLabel="View public profile"
-              icon={<ExternalLink size={20} color={theme.colors.text.primary} />}
+              icon={<ExternalLink size={18} color={theme.colors.text.primary} />}
               onPress={() => void openUrl(`${WEB_URL}/providers/${slug}`)}
             />
           ) : undefined

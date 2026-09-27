@@ -7,6 +7,7 @@ import { API_URL } from "@/constants/config";
 import { UPLOAD_RULES } from "@/constants/uploads";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { PickedFile, UploadPurpose } from "@/types";
+import { logError } from "@/utils/log";
 
 const ASPECT: Partial<Record<UploadPurpose, [number, number]>> = {
   logo: [1, 1],
@@ -93,7 +94,7 @@ function readUploadResponse(status: number, body: string): string {
   try {
     parsed = JSON.parse(body) as { url?: string; error?: { message?: string } };
   } catch (error: unknown) {
-    console.error("[upload] Response was not JSON", status, error);
+    logError("[upload] Response was not JSON", status, error);
   }
   if (status >= 200 && status < 300 && parsed?.url) return parsed.url;
   throw new Error(parsed?.error?.message ?? "Upload failed. Please try again.");

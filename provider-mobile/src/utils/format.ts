@@ -56,6 +56,26 @@ export function formatDate(iso: string): string {
   }).format(new Date(iso));
 }
 
+/** "9:30 AM" style clock time for a Date. */
+export function formatClock(date: Date): string {
+  return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit", hour12: true })
+    .format(date)
+    .toUpperCase();
+}
+
+/** "09:30" (24h, as the API stores it) to a Date today at that time. */
+export function clockToDate(hhmm: string): Date {
+  const [h, m] = hhmm.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h ?? 0, m ?? 0, 0, 0);
+  return d;
+}
+
+/** A Date to "09:30" (24h), the format the API stores. */
+export function dateToClock(date: Date): string {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
 export function initials(name: string): string {
   return name
     .split(/\s+/)

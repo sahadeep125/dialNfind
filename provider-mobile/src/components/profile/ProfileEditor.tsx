@@ -64,12 +64,18 @@ export function ProfileEditor({ profile }: Props) {
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[4] }}
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={{
+          padding: theme.layout.screenPadding,
+          paddingTop: theme.spacing[1],
+          gap: theme.layout.sectionGap,
+          paddingBottom: theme.spacing[8],
+        }}
       >
         <ProfileStrengthCard pct={profile.profileCompletenessPct} checklist={profile.checklist} />
+        <ProfileBrandingSection values={values} onChange={change} />
         <ProfileAboutSection values={values} errors={errors} onChange={change} />
         <ProfileContactSection values={values} errors={errors} onChange={change} />
-        <ProfileBrandingSection values={values} onChange={change} />
         <ProfileLocationSection
           values={values}
           errors={errors}

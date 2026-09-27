@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
-import { FlatList, RefreshControl, View } from "react-native";
+import { View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Wrench } from "lucide-react-native";
 
-import { AppButton, AppCallout } from "@/components/design-system";
-import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
+import { AppButton, AppIconButton, AppSection } from "@/components/design-system";
+import { EmptyState, ErrorState, Screen, ScreenHeader, ScreenScroll } from "@/components/layout";
 import { ConfirmSheet } from "@/components/profile/ConfirmSheet";
 import { ProfileSkeleton } from "@/components/profile/ProfileSkeleton";
 import { ServiceDetailsCard } from "@/components/services/ServiceDetailsCard";
@@ -121,66 +121,62 @@ export default function ServicesScreen() {
     setRefreshing(false);
   };
 
-  const renderItem = useCallback(
-    ({ item }: { item: ProviderService }) => (
-      <ServiceRow
-        service={item}
-        canDelete={services.length > 1}
-        onEdit={onEdit}
-        onDelete={onDelete}
-      />
-    ),
-    [services.length, onEdit, onDelete],
-  );
-
   return (
     <Screen edges={["top", "bottom"]}>
       <ScreenHeader
         title="Services and prices"
-        subtitle={profile.data ? `${services.length} listed` : undefined}
+        subtitle={profile.data ? `${services.length} of ${MAX_SERVICES} listed` : undefined}
+        right={
+          profile.data ? (
+            <AppIconButton
+              accessibilityLabel="Add a service"
+              variant="soft"
+              size="sm"
+              disabled={categories.isLoading}
+              icon={<Plus size={16} color={theme.colors.brand.primary} />}
+              onPress={openAdd}
+            />
+          ) : undefined
+        }
       />
       {profile.data ? (
-        <FlatList
-          data={services}
-          keyExtractor={(s) => serviceKey(s)}
-          renderItem={renderItem}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[3] }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => void onRefresh()}
-              tintColor={theme.colors.brand.primary}
-            />
-          }
-          ListHeaderComponent={
-            <AppCallout>
-              Customers search by service. A starting price makes you far more likely to get the
-              call. Tap a service to change its price.
-            </AppCallout>
-          }
-          ListEmptyComponent={
+        <ScreenScroll refreshing={refreshing} onRefresh={() => void onRefresh()} keyboard>
+          {services.length === 0 ? (
             <EmptyState
               icon={Wrench}
               title="No services yet"
               text="Add the services you offer so customers can find you."
+              action={
+                <AppButton
+                  size="sm"
+                  leadingIcon={<Plus size={14} color="#FFFFFF" />}
+                  onPress={openAdd}
+                >
+                  Add a service
+                </AppButton>
+              }
             />
-          }
-          ListFooterComponent={
-            <View style={{ gap: theme.spacing[4], marginTop: theme.spacing[1] }}>
-              <AppButton
-                variant="soft"
-                fullWidth
-                leadingIcon={<Plus size={18} color={theme.colors.brand.softText} />}
-                onPress={openAdd}
-                disabled={categories.isLoading}
-              >
-                Add a service
-              </AppButton>
-              <ServiceDetailsCard />
-            </View>
-          }
-        />
+          ) : (
+            <AppSection
+              title="Your services"
+              footer="Customers search by service. A starting price makes you far more likely to get the call."
+              dividerInset={14}
+            >
+              {services.map((item) => (
+                <ServiceRow
+                  key={serviceKey(item)}
+                  service={item}
+                  canDelete={services.length > 1}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                />
+              ))}
+            </AppSection>
+          )}
+          <View>
+            <ServiceDetailsCard />
+          </View>
+        </ScreenScroll>
       ) : profile.isError ? (
         <ErrorState error={profile.error} onRetry={() => void profile.refetch()} />
       ) : (

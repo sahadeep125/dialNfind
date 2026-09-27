@@ -1,7 +1,7 @@
 import "../../global.css";
 
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { LogBox, StyleSheet, View } from "react-native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -29,10 +29,15 @@ import { colorVariables } from "@/constants/colors";
 import { useTheme } from "@/hooks/useTheme";
 import { ApiError } from "@/services/api";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logError } from "@/utils/log";
+
+// LogBox draws its own bar over the tab bar in development. Messages for people use useToast();
+// warnings and errors for developers stay in the Metro terminal.
+LogBox.ignoreAllLogs();
 
 // Keep the native splash up until fonts are ready, then hand over to the branded splash.
 SplashScreen.preventAutoHideAsync().catch((error: unknown) =>
-  console.error("[splash] Could not hold splash screen", error),
+  logError("[splash] Could not hold splash screen", error),
 );
 
 const queryClient = new QueryClient({
@@ -68,10 +73,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (fontError) console.error("[fonts] Falling back to system fonts", fontError);
+    if (fontError) logError("[fonts] Falling back to system fonts", fontError);
     if (ready)
       SplashScreen.hideAsync().catch((error: unknown) =>
-        console.error("[splash] Could not hide splash screen", error),
+        logError("[splash] Could not hide splash screen", error),
       );
   }, [ready, fontError]);
 

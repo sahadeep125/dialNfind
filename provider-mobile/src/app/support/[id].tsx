@@ -49,11 +49,17 @@ export default function SupportTicketScreen() {
 
   return (
     <Screen edges={["top", "bottom"]}>
-      <ScreenHeader title={ticket?.reference ?? "Support request"} />
+      <ScreenHeader
+        title={ticket?.subject ?? "Support request"}
+        subtitle={
+          ticket ? `${ticket.reference} · opened ${formatDate(ticket.createdAt)}` : undefined
+        }
+        bordered
+      />
       {detail.isError && !detail.data ? (
         <ErrorState error={detail.error} onRetry={() => void detail.refetch()} />
       ) : !detail.data || !ticket ? (
-        <View style={{ padding: theme.spacing[4], gap: theme.spacing[3] }}>
+        <View style={{ padding: theme.layout.screenPadding, gap: theme.spacing[3] }}>
           <AppSkeleton height={24} width="80%" />
           <AppSkeleton height={14} width="50%" />
           <AppSkeleton shape="block" height={100} />
@@ -72,25 +78,24 @@ export default function SupportTicketScreen() {
             refreshing={refreshing}
             onRefresh={() => void onRefresh()}
             contentContainerStyle={{
-              padding: theme.spacing[4],
-              gap: theme.spacing[3],
+              padding: theme.layout.screenPadding,
+              gap: theme.spacing[2.5],
               paddingBottom: theme.spacing[10],
             }}
             ListHeaderComponent={
               <View style={[styles.header, { gap: theme.spacing[2] }]}>
-                <AppText variant="title" accessibilityRole="header">
-                  {ticket.subject}
-                </AppText>
-                <AppText variant="caption" tone="secondary">
-                  {ticket.reference} · opened {formatDate(ticket.createdAt)}
-                </AppText>
-                <View style={[styles.actions, { gap: theme.spacing[3] }]}>
+                <View
+                  style={[
+                    styles.actions,
+                    { gap: theme.spacing[3], justifyContent: "space-between" },
+                  ]}
+                >
                   <TicketStatusBadge status={ticket.status} />
                   {ticket.status !== "closed" ? (
                     <AppButton
-                      size="sm"
+                      size="xs"
                       variant="secondary"
-                      leadingIcon={<CheckCircle2 size={14} color={theme.colors.semantic.success} />}
+                      leadingIcon={<CheckCircle2 size={13} color={theme.colors.semantic.success} />}
                       onPress={() => setConfirmClose(true)}
                     >
                       Mark as solved
@@ -127,7 +132,7 @@ export default function SupportTicketScreen() {
         onClose={() => setConfirmClose(false)}
         title="Mark as solved?"
       >
-        <View style={{ gap: theme.spacing[4], padding: theme.spacing[4], paddingTop: 0 }}>
+        <View style={{ gap: theme.spacing[4], paddingHorizontal: theme.spacing[4] }}>
           <AppText tone="secondary">
             This closes the request. You will not be able to reply to it, but you can always open a
             new one.

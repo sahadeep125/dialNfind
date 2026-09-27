@@ -1,9 +1,8 @@
 import { StyleSheet, View } from "react-native";
-import { CheckCircle2, ChevronRight, Circle } from "lucide-react-native";
+import Svg, { Circle } from "react-native-svg";
+import { ChevronRight } from "lucide-react-native";
 
-import { AppCard, AppPressable, AppText } from "@/components/design-system";
-import { AppProgress } from "@/components/forms";
-import { SectionHeader } from "@/components/layout";
+import { AppCard, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { ChecklistItem } from "@/types";
 
@@ -29,55 +28,74 @@ interface Props {
   onOpen: (path: string) => void;
 }
 
-/** Profile strength with the next few things to do, each linking to where it is fixed. */
+function Ring({ pct, size = 40 }: { pct: number; size?: number }) {
+  const theme = useTheme();
+  const stroke = 4;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const color = pct >= 80 ? theme.colors.semantic.success : theme.colors.brand.primary;
+  return (
+    <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={theme.colors.background.subtle}
+          strokeWidth={stroke}
+          fill="none"
+        />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={color}
+          strokeWidth={stroke}
+          fill="none"
+          strokeDasharray={`${(c * Math.min(100, pct)) / 100} ${c}`}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </Svg>
+      <AppText
+        variant="caption"
+        numeric
+        style={{ fontSize: 11, fontFamily: theme.typography.label.fontFamily }}
+      >
+        {pct}
+      </AppText>
+    </View>
+  );
+}
+
+/** Profile strength in one row: a ring, the next thing to do, and a tap straight to where it is fixed. */
 export function CompletenessCard({ pct, checklist, onOpen }: Props) {
   const theme = useTheme();
   const todo = checklist.filter((c) => !c.done);
-  const shown = todo.length ? todo.slice(0, 4) : checklist.slice(0, 3);
+  const next = todo[0];
+  if (!next) return null;
   return (
-    <AppCard>
-      <View style={{ gap: theme.spacing[3] }}>
-        <SectionHeader
-          title="Profile strength"
-          subtitle={
-            todo.length
-              ? `${todo.length} ${todo.length === 1 ? "step" : "steps"} left to a complete profile`
-              : "Your profile is complete"
-          }
-        />
-        <View style={[styles.progress, { gap: theme.spacing[3] }]}>
-          <View style={styles.fill}>
-            <AppProgress value={pct} tone={pct >= 80 ? "success" : "brand"} height={10} />
-          </View>
-          <AppText variant="label">{pct}%</AppText>
+    <AppCard
+      padding={theme.spacing[3]}
+      onPress={() => onOpen(CHECKLIST_LINKS[next.key] ?? "/profile")}
+      accessibilityLabel={`Profile ${pct} percent complete. Next: ${next.label}`}
+    >
+      <View style={[styles.row, { gap: theme.spacing[3] }]}>
+        <Ring pct={pct} />
+        <View style={styles.body}>
+          <AppText variant="label">Profile {pct}% complete</AppText>
+          <AppText variant="meta" tone="secondary" numberOfLines={1}>
+            Next: {next.label}
+            {todo.length > 1 ? ` · ${todo.length - 1} more` : ""}
+          </AppText>
         </View>
-        <View>
-          {shown.map((c) => (
-            <AppPressable
-              key={c.key}
-              accessibilityRole="link"
-              accessibilityLabel={`${c.label}${c.done ? ", done" : ""}`}
-              onPress={() => onOpen(CHECKLIST_LINKS[c.key] ?? "/profile")}
-              scale={false}
-              style={[styles.item, { gap: theme.spacing[3] }]}
-            >
-              {c.done ? (
-                <CheckCircle2 size={18} color={theme.colors.semantic.success} />
-              ) : (
-                <Circle size={18} color={theme.colors.text.tertiary} />
-              )}
-              <AppText style={styles.fill}>{c.label}</AppText>
-              <ChevronRight size={18} color={theme.colors.text.tertiary} />
-            </AppPressable>
-          ))}
-        </View>
+        <ChevronRight size={16} color={theme.colors.text.tertiary} />
       </View>
     </AppCard>
   );
 }
 
 const styles = StyleSheet.create({
-  progress: { alignItems: "center", flexDirection: "row" },
-  fill: { flex: 1 },
-  item: { alignItems: "center", flexDirection: "row", minHeight: 44 },
+  row: { alignItems: "center", flexDirection: "row" },
+  body: { flex: 1, gap: 1, minWidth: 0 },
 });

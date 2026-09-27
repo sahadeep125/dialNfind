@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { LifeBuoy, Mail, Phone } from "lucide-react-native";
 
-import { AppButton, AppCard, AppSkeleton, AppText } from "@/components/design-system";
-import { Screen, ScreenHeader } from "@/components/layout";
+import { AppListItem, AppSection, AppSkeleton } from "@/components/design-system";
+import { Screen, ScreenHeader, ScreenScroll } from "@/components/layout";
 import { FaqItem } from "@/components/more/FaqItem";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useTheme } from "@/hooks/useTheme";
@@ -60,7 +60,7 @@ export default function HelpScreen() {
   const theme = useTheme();
   const toast = useToast();
   const { data: config, isLoading: configLoading } = useAppConfig();
-  const [open, setOpen] = useState<number | null>(0);
+  const [open, setOpen] = useState<number | null>(null);
   // Contacts are set by the DialNFind team in the admin console; a channel without one is not offered.
   const email = config?.support_email || null;
   const phone = config?.support_phone || null;
@@ -81,14 +81,8 @@ export default function HelpScreen() {
   return (
     <Screen edges={["top", "bottom"]}>
       <ScreenHeader title="Help and FAQ" />
-      <ScrollView
-        contentContainerStyle={{
-          padding: theme.spacing[4],
-          gap: theme.spacing[5],
-          paddingBottom: theme.spacing[10],
-        }}
-      >
-        <AppCard padding={0}>
+      <ScreenScroll>
+        <AppSection title="Common questions" dividerInset={0}>
           {FAQ.map((item, i) => (
             <FaqItem
               key={item.q}
@@ -99,67 +93,51 @@ export default function HelpScreen() {
               onToggle={onToggle}
             />
           ))}
-        </AppCard>
+        </AppSection>
 
-        <AppCard variant="tinted">
-          <View style={{ gap: theme.spacing[3] }}>
-            <AppText variant="subheading">Still need help?</AppText>
-            <AppText tone="secondary">
-              {config?.support_hours
-                ? `Our team is available ${config.support_hours}. Requests you send from the app keep the whole conversation in one place.`
-                : "Our team usually replies within one working day. Requests you send from the app keep the whole conversation in one place."}
-            </AppText>
-            <AppButton
-              fullWidth
-              leadingIcon={<LifeBuoy size={16} color={theme.components.button.primary.text} />}
-              onPress={() => router.push({ pathname: "/support", params: { new: "1" } })}
-            >
-              Contact support
-            </AppButton>
-            {configLoading ? (
-              <AppSkeleton shape="block" height={44} />
-            ) : email || phone ? (
-              <>
-                <View style={[styles.row, { gap: theme.spacing[2] }]}>
-                  {email ? (
-                    <AppButton
-                      variant="secondary"
-                      style={styles.button}
-                      leadingIcon={<Mail size={16} color={theme.colors.text.primary} />}
-                      onPress={() =>
-                        void run(
-                          () => openEmail(email, "Help with DialNFind Business"),
-                          "Could not open email.",
-                        )
-                      }
-                    >
-                      Email us
-                    </AppButton>
-                  ) : null}
-                  {phone ? (
-                    <AppButton
-                      variant="secondary"
-                      style={styles.button}
-                      leadingIcon={<Phone size={16} color={theme.colors.text.primary} />}
-                      onPress={() => void run(() => openPhone(phone), "Calling is not available.")}
-                    >
-                      Call us
-                    </AppButton>
-                  ) : null}
-                </View>
-                <AppText variant="caption" tone="secondary" align="center">
-                  {[email, phone ? formatPhone(phone) : null].filter(Boolean).join(" · ")}
-                </AppText>
-              </>
-            ) : null}
-          </View>
-        </AppCard>
-      </ScrollView>
+        <AppSection
+          title="Still need help?"
+          subtitle={
+            config?.support_hours
+              ? `Available ${config.support_hours}`
+              : "We usually reply within one working day"
+          }
+        >
+          <AppListItem
+            title="Send a support request"
+            subtitle="Keeps the whole conversation in one place"
+            accent
+            leading={<LifeBuoy size={16} color={theme.colors.brand.primary} />}
+            onPress={() => router.push({ pathname: "/support", params: { new: "1" } })}
+          />
+          {configLoading ? (
+            <View style={{ padding: 14 }}>
+              <AppSkeleton height={14} width="60%" />
+            </View>
+          ) : null}
+          {email ? (
+            <AppListItem
+              title="Email us"
+              subtitle={email}
+              leading={<Mail size={16} color={theme.colors.text.secondary} />}
+              onPress={() =>
+                void run(
+                  () => openEmail(email, "Help with DialNFind Business"),
+                  "Could not open email.",
+                )
+              }
+            />
+          ) : null}
+          {phone ? (
+            <AppListItem
+              title="Call us"
+              subtitle={formatPhone(phone)}
+              leading={<Phone size={16} color={theme.colors.text.secondary} />}
+              onPress={() => void run(() => openPhone(phone), "Calling is not available.")}
+            />
+          ) : null}
+        </AppSection>
+      </ScreenScroll>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", flexWrap: "wrap" },
-  button: { flexBasis: 130, flexGrow: 1 },
-});

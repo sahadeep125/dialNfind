@@ -44,7 +44,7 @@ export function ClaimConfirm({ listing, busy, onStart, onChooseAnother }: Props)
               <FileText size={18} color={theme.colors.brand.primary} />
               <AppText variant="label">Prove that you own this business</AppText>
             </View>
-            <AppText variant="caption" tone="secondary">
+            <AppText variant="meta" tone="secondary">
               Upload a trade licence, GST certificate or shop registration. Our team reviews it
               within two working days.
             </AppText>
@@ -57,16 +57,11 @@ export function ClaimConfirm({ listing, busy, onStart, onChooseAnother }: Props)
               }}
             />
             {docError ? (
-              <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
+              <AppText variant="meta" tone="danger" accessibilityLiveRegion="polite">
                 {docError}
               </AppText>
             ) : null}
-            <AppButton
-              style={styles.start}
-              loading={busy}
-              disabled={busy}
-              onPress={submitDocument}
-            >
+            <AppButton style={styles.start} loading={busy} disabled={busy} onPress={submitDocument}>
               Submit document
             </AppButton>
           </AppCard>

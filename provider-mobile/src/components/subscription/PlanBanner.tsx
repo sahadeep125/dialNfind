@@ -1,12 +1,12 @@
 import { router } from "expo-router";
 
-import { AppButton, AppCallout } from "@/components/design-system";
+import { AppNotice } from "@/components/design-system";
 import { usePlan } from "@/hooks/useSubscription";
 import { formatDate } from "@/utils/format";
 
 /**
- * The plan banner on the dashboard: an upgrade prompt on Free, and a warning when a renewal
- * failed or a plan is about to end. Paid plans in good standing show nothing.
+ * One-line plan notice: an upgrade prompt on Free, and a warning when a renewal failed or a plan
+ * is about to end. Paid plans in good standing show nothing. Returns null when there is nothing to say.
  */
 export function PlanBanner() {
   const plan = usePlan();
@@ -17,52 +17,55 @@ export function PlanBanner() {
   if (sub?.status === "past_due") {
     const store = sub.source === "app_store" || sub.source === "play_store";
     return (
-      <AppCallout
+      <AppNotice
         tone="danger"
-        title="Your last payment did not go through"
-        action={
-          <AppButton size="sm" variant="secondary" onPress={open}>
-            Fix payment
-          </AppButton>
-        }
-      >
-        {`${plan.plan.name} keeps working ${sub.graceUntil ? `until ${formatDate(sub.graceUntil)}` : "for a few days"} while we retry. ${store ? "Update your payment method in the store." : "Check the card or UPI mandate on your plan."}`}
-      </AppCallout>
+        title="Payment did not go through"
+        text={`${plan.plan.name} keeps working ${sub.graceUntil ? `until ${formatDate(sub.graceUntil)}` : "for a few days"}. ${store ? "Update your payment method in the store." : "Check your card or UPI mandate."}`}
+        actionLabel="Fix"
+        onPress={open}
+      />
     );
   }
   if (sub?.cancelAtPeriodEnd && sub.endDate) {
     return (
-      <AppCallout
+      <AppNotice
         tone="warning"
         title={`${plan.plan.name} ends on ${formatDate(sub.endDate)}`}
-        action={
-          <AppButton size="sm" variant="secondary" onPress={open}>
-            {`Keep ${plan.plan.name}`}
-          </AppButton>
-        }
-      >
-        After that you move to Free: 10 leads a month, no analytics and no WhatsApp button.
-      </AppCallout>
+        text="Then you move to Free: 10 leads a month and no analytics."
+        actionLabel="Keep"
+        onPress={open}
+      />
     );
   }
   if (plan.plan.code !== "free") return null;
 
   const over = leads.limit !== null && leads.used >= leads.limit;
-  const usage = leads.limit !== null ? `${Math.min(leads.used, leads.limit)} of ${leads.limit} leads used this month. ` : "";
+  const usage =
+    leads.limit !== null
+      ? `${Math.min(leads.used, leads.limit)} of ${leads.limit} free leads used this month`
+      : "Free plan";
   return (
-    <AppCallout
-      tone={over ? "warning" : "info"}
-      title={over ? `You have used all ${leads.limit} free leads this month` : "You are on the Free plan"}
-      action={
-        <AppButton size="sm" onPress={() => router.push("/paywall")}>
-          Upgrade to Pro
-        </AppButton>
+    <AppNotice
+      tone={over ? "warning" : "upgrade"}
+      title={over ? "New lead details are hidden" : usage}
+      text={
+        over
+          ? `You used all ${leads.limit} free leads this month.`
+          : "Pro unlocks unlimited leads and analytics."
       }
-    >
-      {usage +
-        (over
-          ? "New leads still arrive, but their details stay hidden until you upgrade."
-          : "Pro unlocks unlimited leads, analytics, a WhatsApp button and a Pro Partner badge.")}
-    </AppCallout>
+      actionLabel="Upgrade"
+      onPress={() => router.push("/paywall")}
+    />
+  );
+}
+
+/** True when PlanBanner would render something, so screens can pick one notice to show. */
+export function usePlanNeedsNotice(): boolean {
+  const plan = usePlan();
+  const sub = plan.subscription;
+  return (
+    sub?.status === "past_due" ||
+    (!!sub?.cancelAtPeriodEnd && !!sub.endDate) ||
+    plan.plan.code === "free"
   );
 }

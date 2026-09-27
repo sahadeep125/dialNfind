@@ -20,45 +20,66 @@ interface Props {
   onChoose: () => void;
 }
 
-export const PlanCard = memo(function PlanCard({ plan, priceLabel, period, isCurrent, featured, actionLabel, busy, disabled, onChoose }: Props) {
+export const PlanCard = memo(function PlanCard({
+  plan,
+  priceLabel,
+  period,
+  isCurrent,
+  featured,
+  actionLabel,
+  busy,
+  disabled,
+  onChoose,
+}: Props) {
   const theme = useTheme();
   return (
     <View
       style={[
         styles.card,
-        theme.shadow.card,
         {
           backgroundColor: isCurrent ? theme.colors.brand.soft : theme.components.card.background,
           borderColor: featured ? theme.colors.brand.primary : theme.components.card.border,
           borderWidth: featured ? theme.borderWidth.focus : theme.borderWidth.default,
           borderRadius: theme.components.card.radius,
-          padding: theme.spacing[5],
-          gap: theme.spacing[4],
+          padding: theme.spacing[4],
+          gap: theme.spacing[3],
         },
       ]}
     >
       <View style={[styles.head, { gap: theme.spacing[2] }]}>
-        {plan.code !== "free" ? <Crown size={18} color={theme.colors.brand.primary} /> : null}
-        <AppText variant="subheading" style={styles.flex}>
+        {plan.code !== "free" ? <Crown size={16} color={theme.colors.brand.primary} /> : null}
+        <AppText variant="section" style={styles.flex}>
           {plan.name}
         </AppText>
         {featured ? <AppBadge label="Most popular" tone="brand" /> : null}
         {isCurrent ? <AppBadge label="Your plan" tone="success" /> : null}
       </View>
       <View style={[styles.price, { gap: theme.spacing[1] }]}>
-        <AppText variant="display">{priceLabel}</AppText>
-        {period ? <AppText tone="secondary">/ {period === "yearly" ? "year" : "month"}</AppText> : null}
+        <AppText variant="metric">{priceLabel}</AppText>
+        {period ? (
+          <AppText variant="meta" tone="secondary">
+            / {period === "yearly" ? "year" : "month"}
+          </AppText>
+        ) : null}
       </View>
-      <View style={{ gap: theme.spacing[2] }}>
+      <View style={{ gap: theme.spacing[1.5] }}>
         {(plan.featuresJson ?? []).map((feature) => (
           <View key={feature} style={[styles.feature, { gap: theme.spacing[2] }]}>
-            <Check size={16} color={theme.colors.semantic.success} style={styles.check} />
-            <AppText style={styles.flex}>{feature}</AppText>
+            <Check size={14} color={theme.colors.semantic.success} style={styles.check} />
+            <AppText variant="meta" tone="secondary" style={styles.flex}>
+              {feature}
+            </AppText>
           </View>
         ))}
       </View>
       {actionLabel ? (
-        <AppButton fullWidth variant={featured ? "primary" : "secondary"} disabled={disabled} loading={busy} onPress={onChoose}>
+        <AppButton
+          fullWidth
+          variant={featured ? "primary" : "secondary"}
+          disabled={disabled}
+          loading={busy}
+          onPress={onChoose}
+        >
           {actionLabel}
         </AppButton>
       ) : null}
@@ -71,6 +92,6 @@ const styles = StyleSheet.create({
   head: { alignItems: "center", flexDirection: "row", flexWrap: "wrap" },
   price: { alignItems: "baseline", flexDirection: "row", flexWrap: "wrap" },
   feature: { alignItems: "flex-start", flexDirection: "row" },
-  check: { marginTop: 3 },
+  check: { marginTop: 1 },
   flex: { flex: 1 },
 });
