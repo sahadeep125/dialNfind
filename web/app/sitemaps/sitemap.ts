@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/config";
+import { GUIDES } from "@/lib/guides";
+import { serviceHref } from "@/lib/service-href";
 import { sitemapCategories, sitemapIds, sitemapProviders } from "@/lib/sitemap-data";
 
 // Served at /sitemaps/sitemap/<id>.xml and listed by the index at /sitemap.xml.
@@ -8,6 +10,7 @@ export const revalidate = 3600;
 const STATIC_PAGES: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }[] = [
   { path: "/", priority: 1, changeFrequency: "daily" },
   { path: "/services", priority: 0.9, changeFrequency: "weekly" },
+  { path: "/guides", priority: 0.7, changeFrequency: "weekly" },
   { path: "/about", priority: 0.5, changeFrequency: "monthly" },
   { path: "/claim", priority: 0.6, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.4, changeFrequency: "yearly" },
@@ -27,9 +30,10 @@ export default async function sitemap({ id }: { id: Promise<string> }): Promise<
     return [
       ...STATIC_PAGES.map((p) => ({ url: `${SITE_URL}${p.path === "/" ? "" : p.path}`, changeFrequency: p.changeFrequency, priority: p.priority })),
       ...categories.flatMap((c) => [
-        { url: `${SITE_URL}/services/${c.slug}`, changeFrequency: "daily" as const, priority: 0.8 },
-        ...c.subcategories.map((s) => ({ url: `${SITE_URL}/services/${c.slug}?sub=${encodeURIComponent(s.slug)}`, changeFrequency: "daily" as const, priority: 0.7 })),
+        { url: `${SITE_URL}${serviceHref(c.slug)}`, changeFrequency: "daily" as const, priority: 0.8 },
+        ...c.subcategories.map((s) => ({ url: `${SITE_URL}${serviceHref(c.slug, s.slug)}`, changeFrequency: "daily" as const, priority: 0.7 })),
       ]),
+      ...GUIDES.map((g) => ({ url: `${SITE_URL}/guides/${g.slug}`, lastModified: new Date(g.dateModified), changeFrequency: "monthly" as const, priority: 0.6 })),
     ];
   }
   const { results } = await sitemapProviders(n);

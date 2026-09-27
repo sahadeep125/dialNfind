@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { MapPin } from "lucide-react";
 import { api } from "@/lib/api";
 import { resolveLocation } from "@/lib/location";
 import type { Category, SearchResponse } from "@/lib/types";
-import { SearchBar } from "@/components/search/search-bar";
+import { SearchHero } from "@/components/search/search-hero";
 import { ResultsSection, one, type SearchParamsRecord } from "@/components/search/results-section";
-import { CategoryIcon } from "@/components/site/category-icon";
 
 export const metadata: Metadata = {
   title: "Search local services",
@@ -43,51 +40,39 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     api<{ categories: Category[] }>("/categories"),
   ]);
 
-  const what = data.resolved.subcategory?.name ?? data.resolved.category?.name ?? (q ? `"${q}"` : "service");
+  const what = data.resolved.subcategory?.name ?? data.resolved.category?.name ?? (q ? q : null);
   const heading = (
-    <div>
-      <h1 className="text-2xl font-bold text-brand-deep md:text-3xl">
-        {data.total.toLocaleString("en-IN")} {what === "service" ? "service providers" : `${what} providers`}
-      </h1>
-      <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-        <MapPin className="size-4 text-primary" /> within {data.radiusKm} km of {location.label}
-      </p>
-    </div>
+    <h2 className="text-[15px] text-foreground/80">
+      <span className="font-semibold text-foreground">
+        {data.total.toLocaleString("en-IN")} {what ? `${what} ${data.total === 1 ? "Professional" : "Professionals"}` : data.total === 1 ? "Service Provider" : "Service Providers"}
+      </span>{" "}
+      near {location.label}
+    </h2>
   );
+  const popular = categories.slice(0, 8).map((c) => ({
+    label: c.name,
+    href: `/search?${new URLSearchParams({ category: c.slug, lat: String(location.latitude), lng: String(location.longitude), loc: location.label })}`,
+  }));
 
   return (
     <div>
-      <section className="border-b bg-[linear-gradient(180deg,oklch(0.965_0.02_266),transparent)]">
-        <div className="container-page py-8">
-          <SearchBar initialQuery={q} initialLocation={location} size="md" />
-          {!q && !one(sp.category) && !one(sp.sub) && (
-            <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
-              {categories.map((c) => (
-                <Link
-                  key={c.slug}
-                  href={`/search?${new URLSearchParams({ category: c.slug, lat: String(location.latitude), lng: String(location.longitude), loc: location.label })}`}
-                  className="flex shrink-0 items-center gap-2 rounded-full border bg-card py-1 pl-1 pr-3.5 text-sm font-medium transition-colors hover:border-primary/40 hover:text-primary"
-                >
-                  <CategoryIcon slug={c.slug} className="size-7 rounded-full" iconClassName="size-3.5" />
-                  {c.name}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-      <div className="container-page py-8">
-        <ResultsSection
-          data={data}
-          searchParams={sp}
-          basePath="/search"
-          heading={heading}
-          origin={{ lat: location.latitude, lng: location.longitude }}
-          radiusKm={data.radiusKm}
-          categories={categories}
-          source="search"
-        />
-      </div>
+      <SearchHero
+        title={<>Find trusted professionals<br className="hidden sm:block" /> for your home services</>}
+        subtitle="Compare, read reviews and connect with verified experts near you."
+        initialQuery={q}
+        initialLocation={location}
+        popular={popular}
+      />
+      <ResultsSection
+        data={data}
+        searchParams={sp}
+        basePath="/search"
+        heading={heading}
+        origin={{ lat: location.latitude, lng: location.longitude }}
+        radiusKm={data.radiusKm}
+        categories={categories}
+        source="search"
+      />
     </div>
   );
 }

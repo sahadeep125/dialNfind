@@ -24,7 +24,9 @@ export const MessageBubble = memo(function MessageBubble({ message: m }: Props) 
           alignSelf: m.fromStaff ? "flex-start" : "flex-end",
           backgroundColor: m.fromStaff ? theme.colors.brand.soft : theme.components.card.background,
           borderColor: m.fromStaff ? theme.colors.brand.soft : theme.components.card.border,
-          borderRadius: theme.radius.lg,
+          borderRadius: theme.radius.xl,
+          borderBottomLeftRadius: m.fromStaff ? theme.radius.xs : theme.radius.xl,
+          borderBottomRightRadius: m.fromStaff ? theme.radius.xl : theme.radius.xs,
           padding: theme.spacing[4],
           gap: theme.spacing[2],
         },
@@ -50,7 +52,7 @@ export const MessageBubble = memo(function MessageBubble({ message: m }: Props) 
 });
 
 const styles = StyleSheet.create({
-  bubble: { borderWidth: 1, maxWidth: "92%", minWidth: "60%" },
+  bubble: { borderCurve: "continuous", borderWidth: 1, maxWidth: "88%", minWidth: "60%" },
   head: { alignItems: "center", flexDirection: "row" },
   avatar: {
     alignItems: "center",

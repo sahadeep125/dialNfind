@@ -51,11 +51,11 @@ export function RatingBreakdown({ rating, total, breakdown }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { alignItems: "center", flexDirection: "row", gap: 20 },
-  score: { alignItems: "center", gap: 4 },
+  score: { alignItems: "center", gap: 4, minWidth: 84 },
   bars: { flex: 1, gap: 4 },
   barRow: { alignItems: "center", flexDirection: "row", gap: 8 },
   star: { width: 10 },
-  track: { borderRadius: 4, flex: 1, height: 8, overflow: "hidden" },
-  fill: { borderRadius: 4, height: 8 },
+  track: { borderRadius: 4, flex: 1, height: 7, overflow: "hidden" },
+  fill: { borderRadius: 4, height: 7 },
   count: { textAlign: "right", width: 24 },
 });

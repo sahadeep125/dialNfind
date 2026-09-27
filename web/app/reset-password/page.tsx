@@ -14,7 +14,7 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
       {token ? (
         <ResetPasswordForm token={token} />
       ) : (
-        <div className="rounded-2xl border bg-card p-6 text-center">
+        <div className="card-surface p-6 text-center">
           <p className="text-sm text-muted-foreground">This link is incomplete. Open the link from the email again, or ask for a new one.</p>
           <Button asChild className="mt-5">
             <Link href="/forgot-password">Ask for a new link</Link>

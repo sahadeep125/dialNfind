@@ -18,6 +18,7 @@ import { scheduleOnRN } from "react-native-worklets";
 import { X } from "lucide-react-native";
 
 import { AppIconButton, AppText } from "@/components/design-system";
+import { useTheme } from "@/hooks/useTheme";
 
 export interface ViewerPhoto {
   uri: string;
@@ -129,6 +130,7 @@ function ZoomablePhoto({
 
 /** Full-screen photos: swipe between them, pinch or double tap to zoom, swipe down or tap X to close. */
 export function PhotoViewer({ photos, index, onClose }: Props) {
+  const theme = useTheme();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [current, setCurrent] = useState(index ?? 0);
@@ -145,13 +147,20 @@ export function PhotoViewer({ photos, index, onClose }: Props) {
   }
 
   const onScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => setCurrent(Math.round(e.nativeEvent.contentOffset.x / width)),
+    (e: NativeSyntheticEvent<NativeScrollEvent>) =>
+      setCurrent(Math.round(e.nativeEvent.contentOffset.x / width)),
     [width],
   );
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<ViewerPhoto>) => (
-      <ZoomablePhoto photo={item} width={width} height={height} onZoomChange={setZoomed} onClose={onClose} />
+      <ZoomablePhoto
+        photo={item}
+        width={width}
+        height={height}
+        onZoomChange={setZoomed}
+        onClose={onClose}
+      />
     ),
     [width, height, onClose],
   );
@@ -159,7 +168,14 @@ export function PhotoViewer({ photos, index, onClose }: Props) {
   const photo = photos[current];
 
   return (
-    <Modal visible={index !== null} animationType="fade" transparent={false} onRequestClose={onClose} statusBarTranslucent supportedOrientations={["portrait", "landscape"]}>
+    <Modal
+      visible={index !== null}
+      animationType="fade"
+      transparent={false}
+      onRequestClose={onClose}
+      statusBarTranslucent
+      supportedOrientations={["portrait", "landscape"]}
+    >
       <StatusBar barStyle="light-content" />
       <GestureHandlerRootView style={styles.root}>
         {index !== null ? (
@@ -180,10 +196,18 @@ export function PhotoViewer({ photos, index, onClose }: Props) {
           <AppText variant="label" style={styles.light} accessibilityLiveRegion="polite">
             {photos.length > 1 ? `${current + 1} of ${photos.length}` : ""}
           </AppText>
-          <AppIconButton accessibilityLabel="Close photos" variant="surface" icon={<X size={22} color="#111827" />} onPress={onClose} />
+          <AppIconButton
+            accessibilityLabel="Close photos"
+            variant="overlay"
+            icon={<X size={22} color={theme.colors.contrast.onOverlay} />}
+            onPress={onClose}
+          />
         </View>
         {photo?.caption ? (
-          <View style={[styles.caption, { paddingBottom: insets.bottom + 16 }]} pointerEvents="none">
+          <View
+            style={[styles.caption, { paddingBottom: insets.bottom + 16 }]}
+            pointerEvents="none"
+          >
             <AppText style={styles.light}>{photo.caption}</AppText>
           </View>
         ) : null}
@@ -204,6 +228,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 0,
   },
-  caption: { backgroundColor: "rgba(0,0,0,0.55)", bottom: 0, left: 0, paddingHorizontal: 16, paddingTop: 12, position: "absolute", right: 0 },
+  caption: {
+    backgroundColor: "rgba(0,0,0,0.55)",
+    bottom: 0,
+    left: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    position: "absolute",
+    right: 0,
+  },
   light: { color: "#FFFFFF" },
 });

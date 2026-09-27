@@ -2,7 +2,14 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 import { Crosshair, Home, MapPin, Search } from "lucide-react-native";
 
-import { AppButton, AppInput, AppListItem, AppSheet, AppText } from "@/components/design-system";
+import {
+  AppButton,
+  AppInput,
+  AppListItem,
+  AppSheet,
+  AppText,
+  SHEET_INSET,
+} from "@/components/design-system";
 import { useAddresses } from "@/hooks/useAddresses";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLocations } from "@/hooks/useLocations";
@@ -32,7 +39,10 @@ export function LocationSheet({ visible, onClose }: Props) {
   const addresses = useAddresses();
   // Saved addresses with a map position, shown above the directory results until the person types.
   const saved = useMemo(
-    () => (term ? [] : (addresses.data ?? []).map(addressToLocation).filter((l): l is LocationOption => !!l)),
+    () =>
+      term
+        ? []
+        : (addresses.data ?? []).map(addressToLocation).filter((l): l is LocationOption => !!l),
     [addresses.data, term],
   );
 
@@ -54,24 +64,34 @@ export function LocationSheet({ visible, onClose }: Props) {
   };
 
   return (
-    <AppSheet visible={visible} onClose={onClose} title="Choose your area">
+    <AppSheet
+      visible={visible}
+      onClose={onClose}
+      title="Choose your area"
+      subtitle="We show providers closest to this place first"
+      inset={false}
+    >
       <View style={styles.body}>
-        <AppInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search city or locality"
-          autoCorrect={false}
-          returnKeyType="search"
-          leadingIcon={<Search size={18} color={theme.colors.text.tertiary} />}
-        />
-        <AppButton
-          variant="soft"
-          loading={locating}
-          onPress={() => void locateMe()}
-          leadingIcon={<Crosshair size={18} color={theme.colors.brand.softText} />}
-        >
-          Use my current location
-        </AppButton>
+        <View style={[styles.controls, { paddingHorizontal: SHEET_INSET }]}>
+          <AppInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search city or locality"
+            autoCorrect={false}
+            returnKeyType="search"
+            leadingIcon={<Search size={18} color={theme.colors.text.tertiary} />}
+          />
+          <AppButton
+            variant="soft" 
+            loading={locating}
+            onPress={() => void locateMe()} 
+            icon={Crosshair}
+          > 
+            
+            Use my current location 
+             
+          </AppButton>
+        </View>
         {isLoading ? (
           <ActivityIndicator color={theme.colors.brand.primary} style={styles.loader} />
         ) : (
@@ -115,11 +135,12 @@ export function LocationSheet({ visible, onClose }: Props) {
                   item.kind === "saved" ? (
                     <Home size={18} color={theme.colors.brand.primary} />
                   ) : (
-                    <MapPin size={18} color={theme.colors.text.secondary} />
+                    <MapPin size={18} color={theme.colors.brand.primary} />
                   )
                 }
                 onPress={() => choose(item)}
                 showChevron={false}
+                inset={SHEET_INSET}
               />
             )}
           />
@@ -131,6 +152,7 @@ export function LocationSheet({ visible, onClose }: Props) {
 
 const styles = StyleSheet.create({
   body: { gap: 12 },
+  controls: { gap: 12 },
   list: { maxHeight: 360 },
   loader: { paddingVertical: 24 },
   empty: { alignItems: "center", gap: 4, paddingVertical: 24 },

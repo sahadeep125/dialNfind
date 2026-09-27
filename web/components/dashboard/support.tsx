@@ -202,7 +202,7 @@ export function TicketReply({ id }: { id: number }) {
   }
 
   return (
-    <form className="rounded-2xl border bg-card p-4" noValidate onSubmit={submit}>
+    <form className="card-surface p-4" noValidate onSubmit={submit}>
       <Label htmlFor="reply">Reply</Label>
       <Textarea id="reply" rows={4} className="mt-2" value={body} maxLength={5000} onChange={(e) => (setBody(e.target.value), setError(null))} aria-invalid={!!error || undefined} aria-describedby={error ? "reply-error" : undefined} />
       {error && (

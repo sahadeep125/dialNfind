@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { View } from "react-native";
 
+import { Flag } from "lucide-react-native";
+
 import { AppButton, AppInput, AppSheet, AppText } from "@/components/design-system";
 import { useReport, type ReportTarget } from "@/hooks/useReport";
 import { useTheme } from "@/hooks/useTheme";
@@ -60,7 +62,7 @@ export function ReportSheet({ target, onClose }: Props) {
 
   return (
     <AppSheet visible={!!target} onClose={close} title={copy.title}>
-      <View style={{ gap: theme.spacing[4], padding: theme.spacing[4], paddingTop: 0 }}>
+      <View style={{ gap: theme.spacing[4] }}>
         <AppText tone="secondary">{copy.text}</AppText>
         <AppInput
           label={copy.label}
@@ -75,7 +77,7 @@ export function ReportSheet({ target, onClose }: Props) {
           maxLength={500}
           textAlignVertical="top"
         />
-        <AppButton fullWidth loading={report.isPending} onPress={submit}>
+        <AppButton size="lg" fullWidth icon={Flag} loading={report.isPending} onPress={submit}>
           Send report
         </AppButton>
       </View>

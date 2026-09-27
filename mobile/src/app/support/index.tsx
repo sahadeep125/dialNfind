@@ -3,16 +3,18 @@ import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from "r
 import { router, useLocalSearchParams } from "expo-router";
 import { LifeBuoy, Plus } from "lucide-react-native";
 
-import { AppButton, AppIconButton, AppSkeleton, AppText } from "@/components/design-system";
+import { AppButton, AppSkeleton, AppText } from "@/components/design-system";
 import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { NewTicketSheet } from "@/components/support/NewTicketSheet";
 import { TicketRow } from "@/components/support/TicketRow";
 import { useTickets } from "@/hooks/useSupport";
+import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 import type { Ticket } from "@/types/support";
 
 export default function SupportScreen() {
   const theme = useTheme();
+  const { gutter } = useLayout();
   const params = useLocalSearchParams<{ new?: string }>();
   const tickets = useTickets();
   const [creating, setCreating] = useState(params.new === "1");
@@ -37,25 +39,22 @@ export default function SupportScreen() {
     router.push(`/support/${ticket.id}`);
   };
 
-  const plusColor = theme.components.button.primary.text;
-
   return (
     <Screen edges={["top", "bottom"]}>
       <ScreenHeader
         title="Support"
         right={
-          <AppIconButton
-            accessibilityLabel="New request"
-            variant="soft"
-            icon={<Plus size={20} color={theme.colors.brand.softText} />}
-            onPress={() => setCreating(true)}
-          />
+          <AppButton size="sm" variant="soft" icon={Plus} onPress={() => setCreating(true)}>
+            New
+          </AppButton>
         }
       />
       {tickets.isError && !tickets.data ? (
         <ErrorState error={tickets.error} onRetry={() => void tickets.refetch()} />
       ) : !tickets.data ? (
-        <View style={{ padding: theme.spacing[4], gap: theme.spacing[3] }}>
+        <View
+          style={{ paddingHorizontal: gutter, paddingTop: theme.spacing[2], gap: theme.spacing[3] }}
+        >
           {[0, 1, 2, 3].map((i) => (
             <AppSkeleton key={i} shape="block" height={88} />
           ))}
@@ -66,7 +65,8 @@ export default function SupportScreen() {
           keyExtractor={(t) => String(t.id)}
           renderItem={renderItem}
           contentContainerStyle={{
-            padding: theme.spacing[4],
+            paddingHorizontal: gutter,
+            paddingTop: theme.spacing[2],
             gap: theme.spacing[3],
             paddingBottom: theme.spacing[10],
             flexGrow: 1,
@@ -84,7 +84,7 @@ export default function SupportScreen() {
           }
           ListHeaderComponent={
             items.length > 0 ? (
-              <AppText tone="secondary" style={styles.intro}>
+              <AppText variant="caption" tone="secondary" style={styles.intro}>
                 Ask the DialNFind team about your account, a provider or anything else. We usually
                 reply within one working day.
               </AppText>
@@ -96,10 +96,7 @@ export default function SupportScreen() {
               title="No requests yet"
               text="When you contact support, your conversations with the team appear here."
               action={
-                <AppButton
-                  leadingIcon={<Plus size={18} color={plusColor} />}
-                  onPress={() => setCreating(true)}
-                >
+                <AppButton icon={Plus} onPress={() => setCreating(true)}>
                   Contact support
                 </AppButton>
               }

@@ -33,7 +33,7 @@ export function ForgotPasswordForm() {
 
   if (sentTo) {
     return (
-      <div className="rounded-2xl border bg-card p-6 text-center">
+      <div className="card-surface p-6 text-center">
         <MailCheck className="mx-auto size-10 text-primary" />
         <h2 className="mt-3 text-lg font-semibold">Check your email</h2>
         <p className="mt-1 text-sm text-muted-foreground">If {sentTo} has a DialNFind account, we sent it a link to choose a new password. The link works for one hour.</p>
@@ -87,7 +87,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   if (done) {
     return (
-      <div className="rounded-2xl border bg-card p-6 text-center">
+      <div className="card-surface p-6 text-center">
         <CheckCircle2 className="mx-auto size-10 text-success" />
         <h2 className="mt-3 text-lg font-semibold">Password changed</h2>
         <p className="mt-1 text-sm text-muted-foreground">You have been signed out everywhere. Log in with your new password.</p>

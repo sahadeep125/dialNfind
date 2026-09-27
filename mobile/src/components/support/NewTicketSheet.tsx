@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
+import { Send } from "lucide-react-native";
+
 import { AppButton, AppCallout, AppInput, AppSheet, AppText } from "@/components/design-system";
 import { AppSelect } from "@/components/forms";
 import { useCreateTicket } from "@/hooks/useSupport";
@@ -92,7 +94,6 @@ export function NewTicketSheet({ visible, onClose, onCreated }: Props) {
         style={styles.scroll}
         contentContainerStyle={{
           gap: theme.spacing[4],
-          paddingHorizontal: theme.spacing[4],
           paddingBottom: theme.spacing[2],
         }}
       >
@@ -144,6 +145,7 @@ export function NewTicketSheet({ visible, onClose, onCreated }: Props) {
           </AppButton>
           <AppButton
             style={styles.flex}
+            icon={Send}
             loading={create.isPending}
             disabled={uploading}
             onPress={submit}

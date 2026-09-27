@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { Check, ChevronDown } from "lucide-react-native";
 
-import { AppPressable, AppSheet, AppText } from "@/components/design-system";
+import { AppPressable, AppSheet, AppText, SHEET_INSET } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { SelectOption } from "@/types";
 
@@ -36,10 +36,10 @@ export function AppSelect<T extends string | number>({
   return (
     <View style={styles.wrapper}>
       {label ? (
-        <AppText variant="label" tone="secondary">
+        <AppText variant="labelSmall" tone="secondary">
           {label}
           {required ? (
-            <AppText variant="label" tone="danger">
+            <AppText variant="labelSmall" tone="danger">
               {" "}
               *
             </AppText>
@@ -59,7 +59,8 @@ export function AppSelect<T extends string | number>({
             minHeight: tokens.height,
             borderRadius: tokens.radius,
             paddingHorizontal: tokens.paddingHorizontal,
-            backgroundColor: disabled ? theme.colors.background.tertiary : tokens.background,
+            backgroundColor: tokens.background,
+            opacity: disabled ? 0.6 : 1,
             borderColor: error ? tokens.errorBorder : tokens.border,
             borderWidth: error ? theme.borderWidth.focus : theme.borderWidth.default,
           },
@@ -75,7 +76,12 @@ export function AppSelect<T extends string | number>({
           {error}
         </AppText>
       ) : null}
-      <AppSheet visible={open} onClose={() => setOpen(false)} title={label ?? placeholder}>
+      <AppSheet
+        visible={open}
+        onClose={() => setOpen(false)}
+        title={label ?? placeholder}
+        inset={false}
+      >
         <FlatList
           data={options}
           keyExtractor={(o) => String(o.value)}
@@ -91,7 +97,10 @@ export function AppSelect<T extends string | number>({
                   onChange(item.value);
                   setOpen(false);
                 }}
-                style={[styles.option, { paddingHorizontal: theme.spacing[4] }]}
+                style={[
+                  styles.option,
+                  { paddingHorizontal: SHEET_INSET }, 
+                ]}
               >
                 <View style={styles.flex}>
                   <AppText variant="label" tone={isSelected ? "brand" : "primary"}>
@@ -115,7 +124,7 @@ export function AppSelect<T extends string | number>({
 
 const styles = StyleSheet.create({
   wrapper: { gap: 6 },
-  field: { alignItems: "center", flexDirection: "row", gap: 10 },
+  field: { alignItems: "center", borderCurve: "continuous", flexDirection: "row", gap: 10 },
   flex: { flex: 1 },
   list: { maxHeight: 420 },
   option: {

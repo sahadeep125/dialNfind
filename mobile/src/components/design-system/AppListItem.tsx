@@ -10,43 +10,53 @@ interface Props {
   title: string;
   subtitle?: string;
   leading?: ReactNode;
+  /** Draw the leading content bare, without the tinted tile (for avatars and photos). */
+  leadingBare?: boolean;
   trailing?: ReactNode;
   value?: string;
   onPress?: () => void;
   destructive?: boolean;
   showChevron?: boolean;
+  /** Horizontal padding. 16 inside cards; pass SHEET_INSET for rows in an edge-to-edge sheet. */
+  inset?: number;
 }
 
-/** Settings-style row with a 52pt minimum height. */
+/** Settings-style row with a 56pt minimum height. Group rows with AppListGroup. */
 export function AppListItem({
   title,
   subtitle,
   leading,
+  leadingBare = false,
   trailing,
   value,
   onPress,
   destructive = false,
   showChevron = !!onPress,
+  inset = 16,
 }: Props) {
   const theme = useTheme();
   const content = (
-    <View style={[styles.row, { paddingHorizontal: theme.spacing[4] }]}>
+    <View style={[styles.row, { paddingHorizontal: inset }]}>
       {leading ? (
-        <View
-          style={[
-            styles.leading,
-            {
-              backgroundColor: destructive
-                ? theme.colors.semantic.dangerSoft
-                : theme.colors.brand.soft,
-            },
-          ]}
-        >
-          {leading}
-        </View>
+        leadingBare ? (
+          leading
+        ) : (
+          <View
+            style={[
+              styles.leading,
+              {
+                backgroundColor: destructive
+                  ? theme.colors.semantic.dangerSoft
+                  : theme.colors.brand.soft,
+              },
+            ]}
+          >
+            {leading}
+          </View>
+        )
       ) : null}
       <View style={styles.body}>
-        <AppText variant="label" tone={destructive ? "danger" : "primary"} numberOfLines={1}>
+        <AppText variant="label" tone={destructive ? "danger" : "primary"} numberOfLines={2}>
           {title}
         </AppText>
         {subtitle ? (
@@ -78,13 +88,14 @@ export function AppListItem({
 }
 
 const styles = StyleSheet.create({
-  row: { alignItems: "center", flexDirection: "row", gap: 12, minHeight: 56, paddingVertical: 10 },
+  row: { alignItems: "center", flexDirection: "row", gap: 14, minHeight: 58, paddingVertical: 10 },
   leading: {
     alignItems: "center",
-    borderRadius: 10,
-    height: 34,
+    borderCurve: "continuous",
+    borderRadius: 11,
+    height: 36,
     justifyContent: "center",
-    width: 34,
+    width: 36,
   },
   body: { flex: 1, gap: 2 },
 });

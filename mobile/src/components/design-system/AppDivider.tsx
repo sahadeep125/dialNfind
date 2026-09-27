@@ -1,4 +1,4 @@
-import { View, type StyleProp, type ViewStyle } from "react-native";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { useTheme } from "@/hooks/useTheme";
 
@@ -7,7 +7,11 @@ export function AppDivider({ inset = 0, style }: { inset?: number; style?: Style
   return (
     <View
       style={[
-        { height: 1, marginLeft: inset, backgroundColor: theme.colors.border.primary },
+        {
+          height: StyleSheet.hairlineWidth * 2,
+          marginLeft: inset,
+          backgroundColor: theme.colors.border.primary,
+        },
         style,
       ]}
     />

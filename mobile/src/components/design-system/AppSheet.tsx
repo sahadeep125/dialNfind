@@ -8,15 +8,22 @@ import { useTheme } from "@/hooks/useTheme";
 import { AppIconButton } from "./AppIconButton";
 import { AppText } from "./AppText";
 
+/** Horizontal padding inside sheets. Rows in inset={false} sheets should line up with it. */
+export const SHEET_INSET = 20;
+
 interface Props {
   visible: boolean;
   onClose: () => void;
   title?: string;
+  /** Short line under the title. */
+  subtitle?: string;
   children: ReactNode;
+  /** Pad the content to the sheet's edges. Turn off for edge-to-edge lists that pad their own rows. */
+  inset?: boolean;
 }
 
 /** Bottom sheet: slides up from the bottom, closes on backdrop tap, the close button or the back gesture. */
-export function AppSheet({ visible, onClose, title, children }: Props) {
+export function AppSheet({ visible, onClose, title, subtitle, children, inset = true }: Props) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   return (
@@ -42,25 +49,34 @@ export function AppSheet({ visible, onClose, title, children }: Props) {
             {
               backgroundColor: theme.colors.background.secondary,
               paddingBottom: Math.max(insets.bottom, theme.spacing[4]),
-              borderTopLeftRadius: theme.radius["2xl"],
-              borderTopRightRadius: theme.radius["2xl"],
+              borderTopLeftRadius: theme.components.sheet.radius,
+              borderTopRightRadius: theme.components.sheet.radius,
             },
+            theme.shadow.lg,
           ]}
         >
           <View style={[styles.handle, { backgroundColor: theme.colors.border.secondary }]} />
           <View style={styles.header}>
-            <AppText variant="heading" style={styles.title} numberOfLines={1}>
-              {title ?? ""}
-            </AppText>
+            <View style={styles.title}>
+              <AppText variant="heading" numberOfLines={1} accessibilityRole="header">
+                {title ?? ""}
+              </AppText>
+              {subtitle ? (
+                <AppText variant="caption" tone="secondary" numberOfLines={2}>
+                  {subtitle}
+                </AppText>
+              ) : null}
+            </View>
             <AppIconButton
               accessibilityLabel="Close"
               size="sm"
-              variant="soft"
-              icon={<X size={18} color={theme.colors.brand.softText} />}
+              variant="ghost"
+              style={{ backgroundColor: theme.colors.background.tertiary }}
+              icon={<X size={18} color={theme.colors.text.secondary} strokeWidth={2.4} />}
               onPress={onClose}
             />
           </View>
-          {children}
+          <View style={[styles.body, inset ? styles.inset : null]}>{children}</View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -72,17 +88,20 @@ const styles = StyleSheet.create({
   sheet: {
     alignSelf: "center",
     maxHeight: "88%",
+    borderCurve: "continuous",
     maxWidth: MAX_CONTENT_WIDTH,
-    paddingTop: 8,
+    paddingTop: 10,
     width: "100%",
   },
-  handle: { alignSelf: "center", borderRadius: 3, height: 5, marginBottom: 8, width: 40 },
+  handle: { alignSelf: "center", borderRadius: 3, height: 5, marginBottom: 10, width: 44 },
   header: {
     alignItems: "center",
     flexDirection: "row",
     gap: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingBottom: 12,
+    paddingHorizontal: SHEET_INSET,
   },
-  title: { flex: 1 },
+  title: { flex: 1, gap: 2 },
+  body: { flexShrink: 1 },
+  inset: { paddingHorizontal: SHEET_INSET },
 });

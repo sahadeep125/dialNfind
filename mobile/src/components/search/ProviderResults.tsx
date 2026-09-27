@@ -28,7 +28,7 @@ interface Props {
 /** Infinite list of providers for a search or category, in one to three columns depending on screen width. */
 export function ProviderResults({ filters, header, source = "search" }: Props) {
   const theme = useTheme();
-  const { columns } = useLayout();
+  const { columns, gutter } = useLayout();
   const query = useSearchProviders(filters);
   const {
     data,
@@ -56,10 +56,10 @@ export function ProviderResults({ filters, header, source = "search" }: Props) {
   );
 
   const listHeader = (
-    <View style={{ gap: theme.spacing[3], paddingBottom: theme.spacing[3] }}>
+    <View style={{ gap: theme.spacing[4], paddingBottom: theme.spacing[1] }}>
       {header}
       {!isLoading && !isError ? (
-        <AppText variant="caption" tone="secondary">
+        <AppText variant="labelSmall" tone="secondary">
           {resultsSummary(total, radiusKm, place)}
         </AppText>
       ) : null}
@@ -73,14 +73,17 @@ export function ProviderResults({ filters, header, source = "search" }: Props) {
       numColumns={columns}
       keyExtractor={(item) => String(item.id)}
       renderItem={renderItem}
-      columnWrapperStyle={columns > 1 ? { gap: theme.spacing[3] } : undefined}
-      contentContainerStyle={[styles.content, { padding: theme.spacing[4], gap: theme.spacing[3] }]}
+      columnWrapperStyle={columns > 1 ? { gap: theme.spacing[4] } : undefined}
+      contentContainerStyle={[
+        styles.content,
+        { paddingHorizontal: gutter, paddingTop: theme.spacing[3], gap: theme.spacing[4] },
+      ]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
       ListHeaderComponent={listHeader}
       ListEmptyComponent={
         isLoading ? (
-          <View style={{ gap: theme.spacing[3] }}>
+          <View style={{ gap: theme.spacing[4] }}>
             <ProviderCardSkeleton />
             <ProviderCardSkeleton />
             <ProviderCardSkeleton />

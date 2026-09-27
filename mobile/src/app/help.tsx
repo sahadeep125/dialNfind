@@ -1,17 +1,34 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
-import { ChevronDown, LifeBuoy, Mail, Phone } from "lucide-react-native";
+import {
+  ChevronDown,
+  LifeBuoy,
+  Mail,
+  Phone,
+  Search,
+  SearchX,
+  type LucideIcon,
+} from "lucide-react-native";
 
-import { AppButton, AppCard, AppDivider, AppPressable, AppText } from "@/components/design-system";
-import { Screen, ScreenHeader } from "@/components/layout";
+import {
+  AppCard,
+  AppDivider,
+  AppIconTile,
+  AppInput,
+  AppPressable,
+  AppText,
+  type IconTileTone,
+} from "@/components/design-system";
+import { EmptyState, Screen, ScreenHeader, SectionHeader } from "@/components/layout";
 import { SUPPORT_EMAIL, SUPPORT_PHONE } from "@/constants/config";
 import { useAppConfig } from "@/hooks/useAppConfig";
+import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
-import { useAuthStore } from "@/stores/useAuthStore";
 import { openEmail, openPhone } from "@/services/links";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 const FAQ: { q: string; a: string }[] = [
   {
@@ -43,19 +60,78 @@ const FAQ: { q: string; a: string }[] = [
     a: "Yes. Open My reviews, then tap Edit or Delete on the review.",
   },
   {
+    q: "How do I choose a good provider?",
+    a: "Compare ratings and recent reviews, prefer verified listings, ask for a quote before work starts, and call two or three providers for bigger jobs.",
+  },
+  {
+    q: "How much will the service cost?",
+    a: "Each provider sets their own prices. Describe the job on the call and ask for a quote before work starts.",
+  },
+  {
+    q: "Do I pay through DialNFind?",
+    a: "No. You pay the provider directly by cash, UPI or any method you agree on. DialNFind takes no commission and adds no booking fees.",
+  },
+  {
+    q: "A listing has a wrong number or the business has closed. What can I do?",
+    a: "Open the listing and tap Report this listing. Our team checks every report.",
+  },
+  {
     q: "How do I delete my account?",
     a: "Go to Settings and tap Delete account. If you sign in with a password, you will be asked for it to confirm.",
   },
 ];
 
+function ContactTile({
+  icon,
+  tone,
+  title,
+  text,
+  onPress,
+}: {
+  icon: LucideIcon;
+  tone: IconTileTone;
+  title: string;
+  text: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <AppCard
+      onPress={onPress}
+      accessibilityLabel={`${title}. ${text}`}
+      padding={theme.spacing[4]}
+      style={styles.tile}
+    >
+      <AppIconTile icon={icon} tone={tone} size={40} />
+      <View style={{ gap: 2, marginTop: theme.spacing[3] }}>
+        <AppText variant="label" numberOfLines={1}>
+          {title}
+        </AppText>
+        <AppText variant="micro" tone="secondary" numberOfLines={2}>
+          {text}
+        </AppText>
+      </View>
+    </AppCard>
+  );
+}
+
 export default function HelpScreen() {
   const signedIn = useAuthStore((s) => !!s.token);
   const theme = useTheme();
+  const { gutter } = useLayout();
   const toast = useToast();
   const { data: config } = useAppConfig();
   const [open, setOpen] = useState<number | null>(0);
+  const [query, setQuery] = useState("");
   const email = config?.support_email || SUPPORT_EMAIL;
   const phone = config?.support_phone || SUPPORT_PHONE;
+
+  const faq = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q
+      ? FAQ.filter((f) => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q))
+      : FAQ;
+  }, [query]);
 
   const run = async (action: () => Promise<void>): Promise<void> => {
     try {
@@ -69,83 +145,118 @@ export default function HelpScreen() {
     <Screen edges={["top", "bottom"]}>
       <ScreenHeader title="Help centre" />
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
-          padding: theme.spacing[4],
-          gap: theme.spacing[5],
+          paddingHorizontal: gutter,
+          paddingTop: theme.spacing[2],
+          gap: theme.spacing[6],
           paddingBottom: theme.spacing[10],
         }}
       >
-        <AppCard padding={0}>
-          {FAQ.map((item, i) => {
-            const expanded = open === i;
-            return (
-              <View key={item.q}>
-                {i > 0 ? <AppDivider /> : null}
-                <AppPressable
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded }}
-                  scale={false}
-                  onPress={() => setOpen(expanded ? null : i)}
-                  style={[styles.question, { padding: theme.spacing[4] }]}
-                >
-                  <AppText variant="label" style={styles.flex}>
-                    {item.q}
-                  </AppText>
-                  <ChevronDown
-                    size={18}
-                    color={theme.colors.text.tertiary}
-                    style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
-                  />
-                </AppPressable>
-                {expanded ? (
-                  <AppText
-                    tone="secondary"
-                    style={{ paddingHorizontal: theme.spacing[4], paddingBottom: theme.spacing[4] }}
-                  >
-                    {item.a}
-                  </AppText>
-                ) : null}
-              </View>
-            );
-          })}
-        </AppCard>
+        <View style={{ gap: theme.spacing[4] }}>
+          <AppText variant="title" accessibilityRole="header">
+            How can we help?
+          </AppText>
+          <AppInput
+            appearance="outlined"
+            value={query}
+            onChangeText={(v) => (setQuery(v), setOpen(null))}
+            placeholder="Search questions"
+            accessibilityLabel="Search questions"
+            autoCorrect={false}
+            returnKeyType="search"
+            leadingIcon={<Search size={18} color={theme.colors.brand.primary} strokeWidth={2.4} />}
+          />
+        </View>
 
-        <AppCard variant="tinted">
-          <View style={{ gap: theme.spacing[3] }}>
-            <AppText variant="subheading">Still need help?</AppText>
-            <AppText tone="secondary">
-              {config?.support_hours
+        <View style={{ gap: theme.spacing[3] }}>
+          <SectionHeader title="Common questions" />
+          {faq.length ? (
+            <AppCard padding={0}>
+              {faq.map((item, i) => {
+                const expanded = open === i;
+                return (
+                  <View key={item.q}>
+                    {i > 0 ? <AppDivider inset={theme.spacing[4]} /> : null}
+                    <AppPressable
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded }}
+                      scale={false}
+                      onPress={() => setOpen(expanded ? null : i)}
+                      style={[styles.question, { padding: theme.spacing[4] }]}
+                    >
+                      <AppText
+                        variant="label"
+                        tone={expanded ? "brand" : "primary"}
+                        style={styles.flex}
+                      >
+                        {item.q}
+                      </AppText>
+                      <ChevronDown
+                        size={18}
+                        color={expanded ? theme.colors.brand.primary : theme.colors.text.tertiary}
+                        style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
+                      />
+                    </AppPressable>
+                    {expanded ? (
+                      <AppText
+                        tone="secondary"
+                        style={[
+                          styles.answer,
+                          { paddingHorizontal: theme.spacing[4], paddingBottom: theme.spacing[4] },
+                        ]}
+                      >
+                        {item.a}
+                      </AppText>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </AppCard>
+          ) : (
+            <EmptyState
+              icon={SearchX}
+              title="No matching questions"
+              text="Try another word, or contact us below."
+            />
+          )}
+        </View>
+
+        <View style={{ gap: theme.spacing[3] }}>
+          <SectionHeader
+            title="Still need help?"
+            subtitle={
+              config?.support_hours
                 ? `Our team is available ${config.support_hours}.`
-                : "Our team usually replies within one working day."}
-            </AppText>
+                : "Our team usually replies within one working day."
+            }
+          />
+          <View style={[styles.tiles, { gap: theme.spacing[3] }]}>
             {signedIn ? (
-              <AppButton
-                leadingIcon={<LifeBuoy size={16} color="#FFFFFF" />}
+              <ContactTile
+                icon={LifeBuoy}
+                tone="brand"
+                title="Support request"
+                text="Write to us and follow the replies"
                 onPress={() => router.push("/support")}
-              >
-                Open a support request
-              </AppButton>
+              />
             ) : null}
-            <View style={styles.row}>
-              <AppButton
-                variant={signedIn ? "secondary" : "primary"}
-                style={styles.flex}
-                leadingIcon={<Mail size={16} color={signedIn ? theme.colors.text.primary : "#FFFFFF"} />}
-                onPress={() => void run(() => openEmail(email, "Help with DialNFind"))}
-              >
-                Email us
-              </AppButton>
-              <AppButton
-                variant="secondary"
-                style={styles.flex}
-                leadingIcon={<Phone size={16} color={theme.colors.text.primary} />}
-                onPress={() => void run(() => openPhone(phone))}
-              >
-                Call us
-              </AppButton>
-            </View>
+            <ContactTile
+              icon={Mail}
+              tone="accent"
+              title="Email us"
+              text={email}
+              onPress={() => void run(() => openEmail(email, "Help with DialNFind"))}
+            />
+            <ContactTile
+              icon={Phone}
+              tone="success"
+              title="Call us"
+              text="Talk to the team"
+              onPress={() => void run(() => openPhone(phone))}
+            />
           </View>
-        </AppCard>
+        </View>
       </ScrollView>
     </Screen>
   );
@@ -153,6 +264,8 @@ export default function HelpScreen() {
 
 const styles = StyleSheet.create({
   question: { alignItems: "center", flexDirection: "row", gap: 12 },
-  row: { flexDirection: "row", gap: 10 },
+  answer: { lineHeight: 23 },
+  tiles: { flexDirection: "row", flexWrap: "wrap" },
+  tile: { flexBasis: 140, flexGrow: 1 },
   flex: { flex: 1 },
 });

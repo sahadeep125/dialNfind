@@ -24,9 +24,12 @@ export function AppCallout({ tone = "info", title, children, action }: Props) {
   return (
     <View
       accessibilityRole="alert"
-      style={[styles.base, { backgroundColor: map.bg, borderRadius: theme.radius.md }]}
+      style={[
+        styles.base,
+        { backgroundColor: map.bg, borderRadius: theme.radius.md, borderColor: map.fg },
+      ]}
     >
-      <map.Icon size={18} color={map.fg} />
+      <map.Icon size={18} color={map.fg} strokeWidth={2.2} style={styles.icon} />
       <View style={styles.body}>
         {title ? (
           <AppText variant="label" style={{ color: map.fg }}>
@@ -43,6 +46,13 @@ export function AppCallout({ tone = "info", title, children, action }: Props) {
 }
 
 const styles = StyleSheet.create({
-  base: { flexDirection: "row", gap: 10, padding: 12 },
+  base: {
+    borderCurve: "continuous",
+    borderLeftWidth: 3,
+    flexDirection: "row",
+    gap: 10,
+    padding: 14,
+  },
+  icon: { marginTop: 1 },
   body: { flex: 1, gap: 4 },
 });

@@ -22,12 +22,13 @@ export function HoursList({ hours, is24x7 }: Props) {
             h.isToday && {
               backgroundColor: theme.colors.brand.soft,
               borderRadius: theme.radius.sm,
+              borderCurve: "continuous",
             },
           ]}
         >
           <AppText variant={h.isToday ? "label" : "body"} tone={h.isToday ? "brand" : "secondary"}>
             {h.day}
-            {h.isToday ? " (today)" : ""}
+            {h.isToday ? " · Today" : ""}
           </AppText>
           <AppText
             variant={h.isToday ? "label" : "body"}
@@ -46,7 +47,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
 });

@@ -53,9 +53,11 @@ export function ReplyComposer({ ticketId, onSent }: Props) {
           gap: theme.spacing[3],
           padding: theme.spacing[4],
           backgroundColor: theme.components.card.background,
-          borderColor: theme.components.card.border,
+          borderColor:
+            theme.mode === "dark" ? theme.components.card.border : theme.components.card.background,
           borderRadius: theme.components.card.radius,
         },
+        theme.shadow.sm,
       ]}
     >
       <AppInput
@@ -76,7 +78,7 @@ export function ReplyComposer({ ticketId, onSent }: Props) {
         loading={reply.isPending}
         disabled={uploading}
         onPress={send}
-        leadingIcon={<Send size={16} color={theme.components.button.primary.text} />}
+        icon={Send}
       >
         Send
       </AppButton>

@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
-import { ArrowLeft } from "lucide-react-native";
+import { ChevronLeft } from "lucide-react-native";
 
 import { AppIconButton, AppText } from "@/components/design-system";
+import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 
 interface Props {
@@ -13,38 +14,45 @@ interface Props {
   right?: ReactNode;
 }
 
-/** Compact header with an optional back button, used by stack screens. */
+/** Compact header for stack screens: back button, a centered title, and an optional action on the right. */
 export function ScreenHeader({ title, subtitle, showBack = true, right }: Props) {
   const theme = useTheme();
+  const { gutter } = useLayout();
+  const side = <View style={styles.side} />;
   return (
-    <View style={[styles.row, { paddingHorizontal: theme.spacing[2] }]}>
-      {showBack ? (
-        <AppIconButton
-          accessibilityLabel="Go back"
-          icon={<ArrowLeft size={22} color={theme.colors.text.primary} />}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
-        />
-      ) : (
-        <View style={{ width: theme.spacing[2] }} />
-      )}
+    <View style={[styles.row, { paddingHorizontal: gutter - 4 }]}>
+      <View style={styles.side}>
+        {showBack ? (
+          <AppIconButton
+            accessibilityLabel="Go back"
+            variant="surface"
+            size="sm"
+            icon={<ChevronLeft size={22} color={theme.colors.text.primary} strokeWidth={2.2} />}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+          />
+        ) : null}
+      </View>
       <View style={styles.titles}>
         {title ? (
-          <AppText variant="subheading" numberOfLines={1} accessibilityRole="header">
+          <AppText variant="subheading" align="center" numberOfLines={1} accessibilityRole="header">
             {title}
           </AppText>
         ) : null}
         {subtitle ? (
-          <AppText variant="caption" tone="secondary" numberOfLines={1}>
+          <AppText variant="caption" tone="secondary" align="center" numberOfLines={1}>
             {subtitle}
           </AppText>
         ) : null}
       </View>
-      {right ?? <View style={{ width: 44 }} />}
+      {right ? <View style={[styles.side, styles.right]}>{right}</View> : side}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { alignItems: "center", flexDirection: "row", gap: 4, minHeight: 56 },
+  row: { alignItems: "center", flexDirection: "row", gap: 8, minHeight: 56 },
   titles: { flex: 1 },
+  // Both sides share a minimum width so the title stays centered whatever sits beside it.
+  side: { alignItems: "flex-start", justifyContent: "center", minWidth: 88 },
+  right: { alignItems: "flex-end" },
 });

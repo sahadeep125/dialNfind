@@ -1,10 +1,59 @@
 import { memo } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
+import type { LucideIcon } from "lucide-react-native";
 
 import { AppPressable, AppText } from "@/components/design-system";
+import { CATEGORY_STYLES, FALLBACK_CATEGORY_STYLE } from "@/constants/categories";
 import { useTheme } from "@/hooks/useTheme";
 import type { Category } from "@/types";
-import { CategoryIcon } from "./CategoryIcon";
+
+interface TileProps {
+  label: string;
+  accessibilityLabel: string;
+  icon: LucideIcon;
+  /** Glyph color; the tile itself is always the neutral card surface. */
+  color: string;
+  width: number;
+  onPress: () => void;
+}
+
+/** A square card with a colored glyph and a two-line label under it, so every row lines up. */
+export function Tile({ label, accessibilityLabel, icon: Icon, color, width, onPress }: TileProps) {
+  const theme = useTheme();
+  const box = Math.round(width * 0.86);
+  return (
+    <AppPressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={[styles.tile, { width }]}
+    >
+      <View
+        style={[
+          styles.box,
+          {
+            width: box,
+            height: box,
+            borderRadius: theme.radius.lg,
+            backgroundColor: theme.colors.background.elevated,
+            borderColor: theme.colors.border.primary,
+          },
+          theme.shadow.sm,
+        ]}
+      >
+        <Icon size={Math.round(box * 0.4)} color={color} strokeWidth={1.8} />
+      </View>
+      <AppText
+        variant="labelSmall"
+        align="center"
+        numberOfLines={2}
+        style={{ minHeight: theme.typography.labelSmall.lineHeight * 2 }}
+      >
+        {label}
+      </AppText>
+    </AppPressable>
+  );
+}
 
 interface Props {
   category: Category;
@@ -12,43 +61,28 @@ interface Props {
   onPress: (category: Category) => void;
 }
 
+/** A category in the Home grid. */
 export const CategoryTile = memo(function CategoryTile({ category, width, onPress }: Props) {
   const theme = useTheme();
+  const style = CATEGORY_STYLES[category.slug] ?? FALLBACK_CATEGORY_STYLE;
   return (
-    <AppPressable
-      accessibilityRole="button"
+    <Tile
+      label={category.name}
       accessibilityLabel={`${category.name}, ${category.providerCount} providers`}
+      icon={style.icon}
+      color={style[theme.mode].fg}
+      width={width}
       onPress={() => onPress(category)}
-      style={[
-        styles.tile,
-        {
-          width,
-          borderRadius: theme.radius.lg,
-          backgroundColor: theme.colors.background.elevated,
-          borderColor: theme.colors.border.primary,
-        },
-      ]}
-    >
-      <CategoryIcon slug={category.slug} size={46} />
-      <AppText
-        variant="caption"
-        align="center"
-        numberOfLines={2}
-        style={{ fontFamily: theme.typography.label.fontFamily }}
-      >
-        {category.name}
-      </AppText>
-    </AppPressable>
+    />
   );
 });
 
 const styles = StyleSheet.create({
-  tile: {
+  tile: { alignItems: "center", gap: 8 },
+  box: {
     alignItems: "center",
-    borderWidth: 1,
-    gap: 8,
-    minHeight: 112,
-    paddingHorizontal: 6,
-    paddingVertical: 14,
+    borderCurve: "continuous",
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: "center",
   },
 });

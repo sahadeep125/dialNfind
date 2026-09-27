@@ -10,18 +10,18 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 
-import { AppPressable, AppText } from "@/components/design-system";
+import { AppIconTile, AppPressable, AppText, type IconTileTone } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { AppNotification } from "@/types/notifications";
 import { formatRelative } from "@/utils/format";
 
-const ICONS: Record<string, LucideIcon> = {
-  lead: PhoneIncoming,
-  review: MessageSquareText,
-  review_reply: MessageSquareText,
-  subscription: CreditCard,
-  listing: Store,
-  support: LifeBuoy,
+const ICONS: Record<string, { icon: LucideIcon; tone: IconTileTone }> = {
+  lead: { icon: PhoneIncoming, tone: "success" },
+  review: { icon: MessageSquareText, tone: "warning" },
+  review_reply: { icon: MessageSquareText, tone: "brand" },
+  subscription: { icon: CreditCard, tone: "accent" },
+  listing: { icon: Store, tone: "brand" },
+  support: { icon: LifeBuoy, tone: "accent" },
 };
 
 interface Props {
@@ -31,7 +31,7 @@ interface Props {
 
 export const NotificationRow = memo(function NotificationRow({ notification, onPress }: Props) {
   const theme = useTheme();
-  const Icon = ICONS[notification.type] ?? Bell;
+  const { icon, tone } = ICONS[notification.type] ?? { icon: Bell, tone: "neutral" as const };
   const unread = !notification.isRead;
   return (
     <AppPressable
@@ -45,27 +45,14 @@ export const NotificationRow = memo(function NotificationRow({ notification, onP
         {
           gap: theme.spacing[3],
           paddingHorizontal: theme.spacing[4],
-          paddingVertical: theme.spacing[3],
-          backgroundColor: unread ? theme.colors.brand.soft : "transparent",
+          paddingVertical: theme.spacing[4],
         },
       ]}
     >
-      <View
-        style={[
-          styles.icon,
-          {
-            backgroundColor: unread
-              ? theme.colors.background.elevated
-              : theme.colors.background.tertiary,
-            borderRadius: theme.radius.md,
-          },
-        ]}
-      >
-        <Icon size={18} color={theme.colors.brand.primary} />
-      </View>
+      <AppIconTile icon={icon} tone={tone} size={42} />
       <View style={[styles.main, { gap: theme.spacing[0.5] }]}>
         <View style={[styles.titleRow, { gap: theme.spacing[2] }]}>
-          <AppText variant="label" style={styles.title}>
+          <AppText variant="label" tone={unread ? "primary" : "secondary"} style={styles.title}>
             {notification.title}
           </AppText>
           {unread ? (
@@ -73,11 +60,11 @@ export const NotificationRow = memo(function NotificationRow({ notification, onP
           ) : null}
         </View>
         {notification.body ? (
-          <AppText variant="body" tone="secondary" numberOfLines={3}>
+          <AppText variant="caption" tone="secondary" numberOfLines={3}>
             {notification.body}
           </AppText>
         ) : null}
-        <AppText variant="caption" tone="tertiary">
+        <AppText variant="micro" tone="tertiary" style={{ marginTop: theme.spacing[1] }}>
           {formatRelative(notification.createdAt)}
         </AppText>
       </View>
@@ -87,9 +74,8 @@ export const NotificationRow = memo(function NotificationRow({ notification, onP
 
 const styles = StyleSheet.create({
   row: { alignItems: "flex-start", flexDirection: "row" },
-  icon: { alignItems: "center", height: 40, justifyContent: "center", width: 40 },
   main: { flex: 1, minWidth: 0 },
   titleRow: { alignItems: "center", flexDirection: "row" },
   title: { flex: 1 },
-  dot: { borderRadius: 4, height: 8, width: 8 },
+  dot: { borderRadius: 5, height: 9, width: 9 },
 });

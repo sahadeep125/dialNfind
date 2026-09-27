@@ -22,7 +22,6 @@ export function AttachmentPicker({ files, onChange, onBusyChange }: Props) {
   const { progress, choose } = useUpload("document");
   const busy = progress !== null;
   const full = files.length >= MAX_ATTACHMENTS;
-  const iconColor = theme.colors.text.primary;
 
   useEffect(() => {
     onBusyChange?.(busy);
@@ -46,7 +45,7 @@ export function AttachmentPicker({ files, onChange, onBusyChange }: Props) {
           variant="secondary"
           loading={busy}
           disabled={full}
-          leadingIcon={<Paperclip size={14} color={iconColor} />}
+          icon={Paperclip}
           onPress={() => void pick("library")}
         >
           Attach a file
@@ -55,7 +54,7 @@ export function AttachmentPicker({ files, onChange, onBusyChange }: Props) {
           size="sm"
           variant="ghost"
           disabled={busy || full}
-          leadingIcon={<Camera size={14} color={iconColor} />}
+          icon={Camera}
           onPress={() => void pick("camera")}
         >
           Take photo

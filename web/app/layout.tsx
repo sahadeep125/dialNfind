@@ -13,23 +13,32 @@ import { organizationJsonLd, websiteJsonLd } from "@/lib/structured-data";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap", weight: ["500", "600", "700", "800"] });
 
+const TITLE = "Electricians, Plumbers & Repair Services Near Me | DialNFind";
 const DESCRIPTION =
-  "Find reliable electricians, plumbers, TV and AC repair, cleaners, tutors and more near you. Compare ratings, check who is open now, and call local pros directly. No booking fees.";
+  "Find verified electricians, plumbers, AC and TV repair, cleaners, pest control and tutors near you in Siliguri. Compare ratings and call local pros directly. No booking fees.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: "DialNFind | Find trusted local service providers near you", template: "%s | DialNFind" },
+  title: { default: TITLE, template: "%s | DialNFind" },
   description: DESCRIPTION,
   applicationName: SITE_NAME,
-  keywords: ["local services", "electrician near me", "plumber near me", "AC repair", "TV repair", "home services", "Siliguri"],
+  keywords: [
+    "services near me",
+    "electrician near me",
+    "plumber near me",
+    "AC repair near me",
+    "TV repair near me",
+    "home services in Siliguri",
+    "local service providers",
+  ],
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
     locale: "en_IN",
-    title: "DialNFind | Find trusted local service providers near you",
+    title: TITLE,
     description: DESCRIPTION,
   },
-  twitter: { card: "summary_large_image", title: "DialNFind | Find trusted local service providers near you", description: DESCRIPTION },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
   formatDetection: { telephone: false },
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),

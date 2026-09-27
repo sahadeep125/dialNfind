@@ -27,6 +27,12 @@ export function pageMetadata({
   };
 }
 
+/**
+ * The city named in search-focused copy ("electrician near me in Siliguri"). Pages still search around
+ * the visitor's own location; this only sets the wording crawlers and first-time visitors see.
+ */
+export const SEO_CITY = "Siliguri";
+
 /** Pages behind sign-in, or one-off flows (password reset), stay out of search results. */
 export const NO_INDEX: Metadata["robots"] = { index: false, follow: false };
 

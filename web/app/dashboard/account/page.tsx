@@ -41,7 +41,7 @@ function passwordDescription(hasPassword: boolean, linked: ("google" | "apple")[
 
 function Panel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border bg-card p-6 shadow-[var(--shadow-soft)]">
+    <section className="card-surface p-6">
       <h2 className="font-semibold">{title}</h2>
       <p className="mb-5 mt-1 text-sm text-muted-foreground">{description}</p>
       {children}

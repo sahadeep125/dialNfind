@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
+import type { LucideIcon } from "lucide-react-native";
 
 import { useTheme } from "@/hooks/useTheme";
 import { AppPressable } from "./AppPressable";
@@ -9,39 +9,48 @@ interface Props {
   label: string;
   selected?: boolean;
   onPress?: () => void;
-  leadingIcon?: ReactNode;
+  /** Icon before the label, colored to match the selected state. */
+  icon?: LucideIcon;
   size?: "sm" | "md";
+  /** Icon after the label, e.g. a chevron on chips that open a picker. */
+  trailingIcon?: LucideIcon;
 }
 
-/** Selectable pill used for filters, sort options and quick searches. */
-export function AppChip({ label, selected = false, onPress, leadingIcon, size = "md" }: Props) {
+/** Selectable pill used for filters, sort options, quick searches and read-only tags. */
+export function AppChip({
+  label,
+  selected = false,
+  onPress,
+  icon: Icon,
+  trailingIcon: Trailing,
+  size = "md",
+}: Props) {
   const theme = useTheme();
+  const tokens = theme.components.chip;
+  const fg = selected ? tokens.selectedText : theme.colors.text.primary;
+  const iconColor = selected ? tokens.selectedText : theme.colors.text.secondary;
   return (
     <AppPressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
+      accessibilityRole={onPress ? "button" : "text"}
+      accessibilityState={onPress ? { selected } : undefined}
+      disabled={!onPress}
       onPress={onPress}
       haptic
       style={[
         styles.base,
         {
-          backgroundColor: selected ? theme.colors.brand.primary : theme.colors.background.elevated,
-          borderColor: selected ? theme.colors.brand.primary : theme.colors.border.primary,
-          height: size === "sm" ? 32 : 38,
+          backgroundColor: selected ? tokens.selectedBackground : tokens.background,
+          borderColor: selected ? tokens.selectedBorder : tokens.border,
+          height: tokens.height[size],
           paddingHorizontal: size === "sm" ? theme.spacing[3] : theme.spacing[4],
         },
       ]}
     >
-      {leadingIcon ? <View>{leadingIcon}</View> : null}
-      <AppText
-        variant="caption"
-        style={{
-          color: selected ? "#FFFFFF" : theme.colors.text.primary,
-          fontFamily: theme.typography.label.fontFamily,
-        }}
-      >
+      {Icon ? <Icon size={size === "sm" ? 14 : 16} color={iconColor} strokeWidth={2.2} /> : null}
+      <AppText variant="labelSmall" numberOfLines={1} style={{ color: fg }}>
         {label}
       </AppText>
+      {Trailing ? <Trailing size={14} color={iconColor} strokeWidth={2.2} /> : null}
     </AppPressable>
   );
 }

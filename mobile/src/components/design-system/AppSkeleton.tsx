@@ -25,11 +25,11 @@ export function AppSkeleton({ width = "100%", height = 14, shape = "line", style
 
   useEffect(() => {
     if (reduceMotion) return;
-    opacity.value = withRepeat(withTiming(0.45, { duration: 750 }), -1, true);
+    opacity.value = withRepeat(withTiming(0.5, { duration: 800 }), -1, true);
   }, [opacity, reduceMotion]);
 
   const animated = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  const radius = shape === "circle" ? 9999 : shape === "block" ? theme.radius.md : 6;
+  const radius = shape === "circle" ? 9999 : shape === "block" ? theme.radius.lg : theme.radius.xs;
   return (
     <Animated.View
       style={[

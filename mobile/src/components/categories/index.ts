@@ -1,2 +1,2 @@
 export { CategoryIcon } from "./CategoryIcon";
-export { CategoryTile } from "./CategoryTile";
+export { CategoryTile, Tile } from "./CategoryTile";

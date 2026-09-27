@@ -72,7 +72,7 @@ export function PushAlertsRow() {
           disabled={busy || status === null || current === "unsupported"}
           onValueChange={(v) => void toggle(v)}
           trackColor={{ false: theme.colors.border.secondary, true: theme.colors.brand.primary }}
-          thumbColor="#FFFFFF"
+          thumbColor={theme.colors.text.primary}
           ios_backgroundColor={theme.colors.border.secondary}
         />
       }

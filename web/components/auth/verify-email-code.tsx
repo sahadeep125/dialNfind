@@ -60,7 +60,7 @@ export function VerifyEmailCode({ email, next, justSent }: { email: string; next
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border bg-card p-5 text-center">
+      <div className="card-surface p-5 text-center">
         <MailCheck className="mx-auto size-9 text-primary" />
         <p className="mt-2 text-sm text-muted-foreground">
           We sent a 6-digit code to <span className="font-semibold text-foreground">{email}</span>. Enter it below, or tap the link in the same email.

@@ -16,7 +16,8 @@ export function organizationJsonLd(contact: { email: string | null; phone: strin
     "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
     url: SITE_URL,
-    logo: absoluteUrl("/icon.svg"),
+    // Google wants a raster logo (at least 112px), so the 180px PNG app icon rather than icon.svg.
+    logo: absoluteUrl("/apple-icon"),
     ...(contactPoint ? { contactPoint } : {}),
   };
 }
@@ -135,5 +136,25 @@ export function providerJsonLd(p: ProviderDetail, reviews: Review[]): Thing {
           })),
         }
       : {}),
+  };
+}
+
+export function articleJsonLd(article: { title: string; description: string; path: string; datePublished: string; dateModified: string; keywords: string[] }): Thing {
+  const url = absoluteUrl(article.path);
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${url}#article`,
+    headline: article.title,
+    description: article.description,
+    url,
+    mainEntityOfPage: url,
+    datePublished: article.datePublished,
+    dateModified: article.dateModified,
+    inLanguage: "en-IN",
+    keywords: article.keywords.join(", "),
+    image: absoluteUrl(`${article.path}/opengraph-image`),
+    author: { "@type": "Organization", name: `${SITE_NAME} team`, url: SITE_URL },
+    publisher: { "@id": `${SITE_URL}/#organization` },
   };
 }

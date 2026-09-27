@@ -32,7 +32,7 @@ export function StarPicker({ value, onChange }: Props) {
             style={styles.star}
           >
             <Star
-              size={36}
+              size={40}
               color={i <= value ? theme.colors.star : theme.colors.border.secondary}
               fill={i <= value ? theme.colors.star : "transparent"}
               strokeWidth={1.6}
@@ -40,7 +40,7 @@ export function StarPicker({ value, onChange }: Props) {
           </AppPressable>
         ))}
       </View>
-      <AppText variant="label" tone={value ? "primary" : "tertiary"}>
+      <AppText variant="subheading" tone={value ? "primary" : "tertiary"}>
         {value ? LABELS[value] : "Tap a star to rate"}
       </AppText>
     </View>
@@ -49,6 +49,6 @@ export function StarPicker({ value, onChange }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { alignItems: "center", gap: 6 },
-  row: { flexDirection: "row", gap: 4 },
-  star: { alignItems: "center", height: 48, justifyContent: "center", width: 48 },
+  row: { flexDirection: "row", gap: 2 },
+  star: { alignItems: "center", height: 52, justifyContent: "center", width: 52 },
 });

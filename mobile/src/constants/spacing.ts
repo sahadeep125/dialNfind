@@ -23,13 +23,19 @@ export const spacing = {
 
 export type SpacingKey = keyof typeof spacing;
 
+/**
+ * Corner radii. Controls (buttons, inputs, chips' containers) use `md`, cards use `xl`,
+ * sheets and hero panels use `3xl`. Pair with borderCurve: "continuous".
+ */
 export const radius = {
   none: 0,
-  sm: 8,
-  md: 12,
-  lg: 16,
+  xs: 6,
+  sm: 10,
+  md: 14,
+  lg: 18,
   xl: 20,
   "2xl": 24,
+  "3xl": 28,
   full: 9999,
 } as const;
 
@@ -39,8 +45,35 @@ export const borderWidth = {
   focus: 1.5,
 } as const;
 
-/** Content never grows wider than this on tablets, so lines stay readable. */
+/** Screen widths where the layout changes. Compact is a phone, medium a small tablet or a phone in landscape. */
+export const breakpoints = {
+  medium: 600,
+  expanded: 900,
+  wide: 1200,
+} as const;
+
+/** Horizontal page padding per size class. */
+export const gutters = {
+  compact: 16,
+  medium: 24,
+  expanded: 32,
+} as const;
+
+/** Reading width: forms, detail pages and settings never grow wider than this on tablets. */
 export const MAX_CONTENT_WIDTH = 720;
+
+/** Grid width: card lists and home can use more of a big tablet, but not all of it. */
+export const MAX_GRID_WIDTH = 1200;
+
+/** Auth and onboarding forms stay narrow so the eye does not travel. */
+export const MAX_FORM_WIDTH = 460;
 
 /** Minimum touch target recommended by Apple and Google. */
 export const MIN_TOUCH_TARGET = 44;
+
+/** Animation durations in ms, so motion across the app feels related. */
+export const motion = {
+  fast: 150,
+  base: 250,
+  slow: 400,
+} as const;

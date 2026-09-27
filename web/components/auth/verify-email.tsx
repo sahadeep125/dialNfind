@@ -20,7 +20,7 @@ export function VerifyEmail({ token }: { token: string }) {
   }, [token]);
 
   return (
-    <div className="rounded-2xl border bg-card p-6 text-center" aria-live="polite">
+    <div className="card-surface p-6 text-center" aria-live="polite">
       {state.kind === "working" && (
         <>
           <Loader2 className="mx-auto size-10 animate-spin text-primary" />

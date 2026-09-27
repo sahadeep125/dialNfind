@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Search } from "lucide-react-native";
 
-import { AppChip, AppIconButton, AppText } from "@/components/design-system";
+import { AppCard, AppChip, AppIconButton, AppText } from "@/components/design-system";
 import { CategoryIcon } from "@/components/categories";
 import { Screen, ScreenHeader } from "@/components/layout";
 import { FilterBar, ProviderResults } from "@/components/search";
@@ -11,10 +11,11 @@ import { useCategories } from "@/hooks/useCategories";
 import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 import type { SearchFilters } from "@/types";
+import { plural } from "@/utils/format";
 
 export default function CategoryScreen() {
   const theme = useTheme();
-  const { columns } = useLayout();
+  const { columns, gutter } = useLayout();
   const { slug, sub } = useLocalSearchParams<{ slug: string; sub?: string }>();
   const { data: categories } = useCategories();
   const category = useMemo(() => categories?.find((c) => c.slug === slug), [categories, slug]);
@@ -27,25 +28,26 @@ export default function CategoryScreen() {
   });
 
   const header = (
-    <View style={{ gap: theme.spacing[3] }}>
+    <View style={{ gap: theme.spacing[4] }}>
       {category ? (
-        <View style={styles.intro}>
-          <CategoryIcon slug={category.slug} size={52} />
-          <View style={styles.flex}>
-            <AppText variant="heading">{category.name}</AppText>
-            {category.description ? (
+        <AppCard variant="tinted" padding={theme.spacing[4]}>
+          <View style={styles.intro}>
+            <CategoryIcon slug={category.slug} size={56} />
+            <View style={styles.flex}>
+              <AppText variant="heading">{category.name}</AppText>
               <AppText variant="caption" tone="secondary" numberOfLines={2}>
-                {category.description}
+                {category.description || `${plural(category.providerCount, "provider")} near you`}
               </AppText>
-            ) : null}
+            </View>
           </View>
-        </View>
+        </AppCard>
       ) : null}
       {category?.subcategories.length ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
+          style={{ marginHorizontal: -gutter }}
+          contentContainerStyle={[styles.chips, { paddingHorizontal: gutter }]}
         >
           <AppChip
             label="All"
@@ -67,18 +69,20 @@ export default function CategoryScreen() {
           ))}
         </ScrollView>
       ) : null}
-      <FilterBar filters={filters} onChange={setFilters} />
+      <FilterBar filters={filters} onChange={setFilters} inset={gutter} />
     </View>
   );
 
   return (
-    <Screen constrained={columns === 1}>
+    <Screen width={columns > 1 ? "grid" : "content"}>
       <ScreenHeader
         title={category?.name ?? "Category"}
         right={
           <AppIconButton
             accessibilityLabel="Search"
-            icon={<Search size={20} color={theme.colors.text.primary} />}
+            variant="surface"
+            size="sm"
+            icon={<Search size={18} color={theme.colors.text.primary} strokeWidth={2.2} />}
             onPress={() => router.push("/search")}
           />
         }
@@ -89,7 +93,7 @@ export default function CategoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  intro: { alignItems: "center", flexDirection: "row", gap: 12 },
+  intro: { alignItems: "center", flexDirection: "row", gap: 14 },
   flex: { flex: 1, gap: 2 },
   chips: { gap: 8 },
 });

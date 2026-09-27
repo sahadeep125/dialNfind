@@ -7,12 +7,14 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
+import type { LucideIcon } from "lucide-react-native";
 
 import { useTheme } from "@/hooks/useTheme";
 import { AppPressable } from "./AppPressable";
 import { AppText } from "./AppText";
 
-export type ButtonVariant = "primary" | "secondary" | "soft" | "success" | "destructive" | "ghost";
+export type ButtonVariant =
+  "primary" | "secondary" | "soft" | "success" | "destructive" | "ghost" | "inverse";
 export type ButtonSize = "sm" | "md" | "lg";
 
 interface Props extends Omit<PressableProps, "style" | "children"> {
@@ -20,11 +22,16 @@ interface Props extends Omit<PressableProps, "style" | "children"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
+  /** Icon before the label, colored to match the variant. */
+  icon?: LucideIcon;
+  /** Custom leading content (e.g. a brand logo) when a Lucide icon does not fit. */
   leadingIcon?: ReactNode;
-  trailingIcon?: ReactNode;
+  trailingIcon?: LucideIcon;
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
 }
+
+const ICON_SIZE: Record<ButtonSize, number> = { sm: 15, md: 18, lg: 19 };
 
 export function AppButton({
   children,
@@ -32,8 +39,9 @@ export function AppButton({
   size = "md",
   loading = false,
   disabled,
+  icon: Icon,
   leadingIcon,
-  trailingIcon,
+  trailingIcon: Trailing,
   fullWidth = false,
   style,
   ...props
@@ -41,6 +49,9 @@ export function AppButton({
   const theme = useTheme();
   const tokens = theme.components.button[variant];
   const inactive = disabled || loading;
+  const raised = (variant === "primary" || variant === "success") && !disabled;
+
+  console.log("tokens", theme.components.button);
 
   return (
     <AppPressable
@@ -49,37 +60,43 @@ export function AppButton({
       disabled={inactive}
       haptic
       {...props}
-      style={({ pressed }) => [
+      style={[
         styles.base,
         {
-          backgroundColor: pressed ? tokens.pressed : tokens.background,
+          backgroundColor: tokens.background,
           borderColor: tokens.border,
           borderRadius: theme.components.button.radius,
           height: theme.components.button.height[size],
           paddingHorizontal: size === "sm" ? theme.spacing[3] : theme.spacing[5],
+          gap: size === "sm" ? theme.spacing[1.5] : theme.spacing[2],
           alignSelf: fullWidth ? "stretch" : "auto",
-          opacity: disabled ? 0.5 : 1,
+          opacity: disabled ? 0.45 : 1,
         },
+        raised && theme.mode === "light"
+          ? variant === "success"
+            ? styles.raisedSuccess
+            : styles.raised
+          : null,
         style,
       ]}
     >
       {loading ? (
         <ActivityIndicator color={tokens.text} size="small" />
       ) : (
-        <>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          {Icon ? <Icon size={ICON_SIZE[size]} color={tokens.text} strokeWidth={2.2} /> : null}
           {leadingIcon ? <View>{leadingIcon}</View> : null}
           <AppText
-            variant="label"
+            variant={size === "sm" ? "labelSmall" : "label"}
             numberOfLines={1}
-            style={{
-              color: tokens.text,
-              fontSize: size === "sm" ? theme.typography.caption.fontSize : undefined,
-            }}
+            style={[{ color: tokens.text }, size === "lg" ? styles.lgLabel : null]}
           >
             {children}
           </AppText>
-          {trailingIcon ? <View>{trailingIcon}</View> : null}
-        </>
+          {Trailing ? (
+            <Trailing size={ICON_SIZE[size]} color={tokens.text} strokeWidth={2.2} />
+          ) : null}
+        </View>
       )}
     </AppPressable>
   );
@@ -91,8 +108,10 @@ const styles = StyleSheet.create({
     borderCurve: "continuous",
     borderWidth: 1,
     flexDirection: "row",
-    gap: 8,
     justifyContent: "center",
     overflow: "hidden",
   },
+  raised: { boxShadow: "0 4px 12px rgba(53, 94, 221, 0.22)" },
+  raisedSuccess: { boxShadow: "0 4px 12px rgba(0, 152, 108, 0.22)" },
+  lgLabel: { fontSize: 16 },
 });

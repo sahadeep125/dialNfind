@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { clientApi, ClientApiError } from "@/lib/client";
 
-export function ShareButton({ title }: { title: string }) {
+export function ShareButton({ title, withLabel = false }: { title: string; withLabel?: boolean }) {
   async function share() {
     const url = window.location.href;
     if (navigator.share) {
@@ -22,6 +22,13 @@ export function ShareButton({ title }: { title: string }) {
     }
     await navigator.clipboard.writeText(url);
     toast.success("Link copied");
+  }
+  if (withLabel) {
+    return (
+      <Button variant="ghost" size="sm" className="h-9 gap-1.5 px-2.5 text-sm font-medium text-foreground/80" onClick={share}>
+        <Share2 /> Share
+      </Button>
+    );
   }
   return (
     <Button variant="outline" size="icon" className="rounded-full" onClick={share} aria-label="Share">

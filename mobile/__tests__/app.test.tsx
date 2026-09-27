@@ -3,6 +3,7 @@ import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { renderRouter } from "expo-router/testing-library";
 
+import { STORAGE_KEYS, storage } from "@/services/storage";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { apiGet, isApiUp, liveFetch } from "./helpers/liveApi";
 
@@ -10,6 +11,8 @@ import { apiGet, isApiUp, liveFetch } from "./helpers/liveApi";
 // expo-router's testing library installs Reanimated's bare mock, which lacks useReducedMotion.
 (require("react-native-reanimated") as Record<string, unknown>).useReducedMotion = () => false;
 globalThis.fetch = liveFetch as typeof fetch;
+// The walkthrough starts on Home, not the first-launch introduction.
+storage.set(STORAGE_KEYS.onboarded, "1");
 
 jest.setTimeout(60000);
 

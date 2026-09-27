@@ -43,12 +43,13 @@ export function ToastPortal() {
               onPress={() => dismiss(t.id)}
               style={[
                 styles.toast,
-                { backgroundColor: theme.colors.background.inverse, borderRadius: theme.radius.md },
+                { backgroundColor: theme.colors.background.inverse, borderRadius: theme.radius.lg },
+                theme.shadow.lg,
               ]}
             >
               <Icon size={18} color={color} />
               <AppText
-                variant="caption"
+                variant="labelSmall"
                 style={[styles.text, { color: theme.colors.text.inverse }]}
               >
                 {t.message}
@@ -68,8 +69,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     maxWidth: 480,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderCurve: "continuous",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   text: { flexShrink: 1 },
 });

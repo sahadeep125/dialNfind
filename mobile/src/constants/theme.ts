@@ -1,8 +1,9 @@
 // Composition root for design tokens: colors, spacing, type and per-component tokens for light and dark.
+import type { ViewStyle } from "react-native";
 import { moderateScale } from "react-native-size-matters";
 
 import { darkColors, lightColors, type ColorScheme } from "./colors";
-import { borderWidth, radius, spacing } from "./spacing";
+import { borderWidth, motion, radius, spacing } from "./spacing";
 import { typography, type TypeStyle, type TypographyVariant } from "./typography";
 
 const scaleType = (style: TypeStyle): TypeStyle => ({
@@ -11,42 +12,41 @@ const scaleType = (style: TypeStyle): TypeStyle => ({
   lineHeight: Math.round(moderateScale(style.lineHeight, 0.3)),
 });
 
+const size = (value: number): number => Math.round(moderateScale(value, 0.3));
+
+/** Three elevation levels. Dark mode leans on surface color instead of shadow, so shadows fade out there. */
+function buildShadows(mode: "light" | "dark"): Record<"sm" | "md" | "lg", ViewStyle> {
+  if (mode === "dark") {
+    return {
+      sm: {},
+      md: { boxShadow: "0 6px 20px rgba(0, 0, 0, 0.35)" },
+      lg: { boxShadow: "0 16px 40px rgba(0, 0, 0, 0.5)" },
+    };
+  }
+  return {
+    sm: { boxShadow: "0 1px 2px rgba(15, 24, 40, 0.04), 0 2px 8px rgba(15, 24, 40, 0.04)" },
+    md: { boxShadow: "0 2px 4px rgba(15, 24, 40, 0.04), 0 8px 24px rgba(15, 24, 40, 0.08)" },
+    lg: { boxShadow: "0 8px 16px rgba(12, 22, 56, 0.08), 0 20px 48px rgba(12, 22, 56, 0.16)" },
+  };
+}
+
 function buildTheme(colors: ColorScheme, mode: "light" | "dark") {
+  const shadows = buildShadows(mode);
   return {
     mode,
     colors,
     spacing,
     radius,
     borderWidth,
+    motion,
     typography: Object.fromEntries(
       Object.entries(typography).map(([k, v]) => [k, scaleType(v)]),
     ) as Record<TypographyVariant, TypeStyle>,
-    shadow: {
-      card:
-        mode === "light"
-          ? {
-              shadowColor: "#0F1828",
-              shadowOpacity: 0.06,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 2,
-            }
-          : {
-              shadowColor: "#000000",
-              shadowOpacity: 0,
-              shadowRadius: 0,
-              shadowOffset: { width: 0, height: 0 },
-              elevation: 0,
-            },
-    },
+    shadow: { ...shadows, card: shadows.sm },
     components: {
       button: {
         radius: radius.md,
-        height: {
-          sm: Math.round(moderateScale(36, 0.3)),
-          md: Math.round(moderateScale(46, 0.3)),
-          lg: Math.round(moderateScale(52, 0.3)),
-        },
+        height: { sm: size(38), md: size(48), lg: size(54) },
         primary: {
           background: colors.brand.primary,
           pressed: colors.brand.pressed,
@@ -60,20 +60,20 @@ function buildTheme(colors: ColorScheme, mode: "light" | "dark") {
           border: colors.border.secondary,
         },
         soft: {
-          background: colors.brand.soft,
-          pressed: colors.border.primary,
+          background:  mode === "light" ? colors.brand.soft : colors.brand.soft,
+          pressed: mode === "light" ? "#DCE5FD" : "#253357",
           text: colors.brand.softText,
           border: colors.brand.soft,
         },
         success: {
           background: colors.semantic.success,
-          pressed: colors.semantic.success,
+          pressed: mode === "light" ? "#008660" : "#23AE81",
           text: "#FFFFFF",
           border: colors.semantic.success,
         },
         destructive: {
           background: colors.semantic.dangerSoft,
-          pressed: colors.border.primary,
+          pressed: mode === "light" ? "#FAD5D8" : "#46191F",
           text: colors.semantic.danger,
           border: colors.semantic.dangerSoft,
         },
@@ -83,24 +83,41 @@ function buildTheme(colors: ColorScheme, mode: "light" | "dark") {
           text: colors.text.primary,
           border: "transparent",
         },
+        /** White button on ink surfaces (hero, onboarding). */
+        inverse: {
+          background: "#FFFFFF",
+          pressed: "#E9EEFB",
+          text: colors.brand.ink,
+          border: "#FFFFFF",
+        },
       },
       input: {
-        height: Math.round(moderateScale(48, 0.3)),
+        height: size(52),
         radius: radius.md,
         paddingHorizontal: spacing[4],
-        background: colors.background.elevated,
-        border: colors.border.secondary,
+        background: colors.background.tertiary,
+        focusBackground: colors.background.elevated,
+        border: colors.background.tertiary,
         focusBorder: colors.brand.primary,
         errorBorder: colors.semantic.danger,
         placeholder: colors.text.tertiary,
       },
       card: {
-        radius: radius.lg,
+        radius: radius.xl,
         padding: spacing[4],
         background: colors.background.elevated,
         border: colors.border.primary,
       },
-      tabBar: { height: Math.round(moderateScale(58, 0.3)) },
+      chip: {
+        height: { sm: size(34), md: size(40) },
+        background: colors.background.elevated,
+        border: colors.border.secondary,
+        selectedBackground: colors.brand.soft,
+        selectedBorder: colors.brand.primary,
+        selectedText: colors.brand.softText,
+      },
+      tabBar: { height: size(60) },
+      sheet: { radius: radius["3xl"] },
     },
   };
 }

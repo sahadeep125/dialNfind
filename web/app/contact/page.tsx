@@ -31,12 +31,12 @@ export default async function ContactPage() {
         <p className="mt-3 text-muted-foreground">Questions about a provider, your listing, or the platform? Send us a message and a real person will get back to you.</p>
       </div>
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_22rem]">
-        <div className="rounded-3xl border bg-card p-6 shadow-[var(--shadow-soft)] md:p-8">
+        <div className="card-surface p-6 md:p-8">
           <ContactForm />
         </div>
         <aside className="space-y-4">
           {cards.map((c) => (
-            <div key={c.title} className="flex gap-4 rounded-2xl border bg-card p-5">
+            <div key={c.title} className="flex gap-4 card-surface p-5">
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
                 <c.icon className="size-5" />
               </span>

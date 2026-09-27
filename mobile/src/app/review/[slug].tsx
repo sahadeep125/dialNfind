@@ -25,8 +25,8 @@ export default function WriteReviewScreen() {
     <Screen edges={["top", "bottom"]}>
       <ScreenHeader title={p?.myReview ? "Edit your review" : "Write a review"} />
       {isLoading ? (
-        <View style={{ padding: theme.spacing[4], gap: theme.spacing[3] }}>
-          <AppSkeleton height={48} shape="block" />
+        <View style={{ padding: theme.spacing[4], gap: theme.spacing[4] }}>
+          <AppSkeleton height={180} shape="block" />
           <AppSkeleton height={140} shape="block" />
         </View>
       ) : isError || !p ? (

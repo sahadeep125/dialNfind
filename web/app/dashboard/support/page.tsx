@@ -39,7 +39,7 @@ export default async function SupportPage() {
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">Having trouble with your account or a listing? Send us a request and we will help.</p>
         </div>
       ) : (
-        <ul className="mt-6 divide-y overflow-hidden rounded-2xl border bg-card">
+        <ul className="mt-6 divide-y overflow-hidden card-surface">
           {tickets.map((t) => (
             <li key={t.id}>
               <Link href={`/dashboard/support/${t.id}`} className="flex items-center gap-4 p-4 hover:bg-muted/50">

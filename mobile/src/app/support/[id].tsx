@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { CheckCircle2 } from "lucide-react-native";
+import { CheckCircle2, Plus } from "lucide-react-native";
 
 import { AppButton, AppCard, AppSheet, AppSkeleton, AppText } from "@/components/design-system";
 import { ErrorState, Screen, ScreenHeader } from "@/components/layout";
@@ -9,6 +9,7 @@ import { MessageBubble } from "@/components/support/MessageBubble";
 import { ReplyComposer } from "@/components/support/ReplyComposer";
 import { TicketStatusBadge } from "@/components/support/TicketStatusBadge";
 import { useCloseTicket, useTicket } from "@/hooks/useSupport";
+import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
@@ -17,6 +18,7 @@ import { formatDate } from "@/utils/format";
 
 export default function SupportTicketScreen() {
   const theme = useTheme();
+  const { gutter } = useLayout();
   const toast = useToast();
   const params = useLocalSearchParams<{ id: string }>();
   const id = Number(params.id);
@@ -53,7 +55,9 @@ export default function SupportTicketScreen() {
       {detail.isError && !detail.data ? (
         <ErrorState error={detail.error} onRetry={() => void detail.refetch()} />
       ) : !detail.data || !ticket ? (
-        <View style={{ padding: theme.spacing[4], gap: theme.spacing[3] }}>
+        <View
+          style={{ paddingHorizontal: gutter, paddingTop: theme.spacing[2], gap: theme.spacing[3] }}
+        >
           <AppSkeleton height={24} width="80%" />
           <AppSkeleton height={14} width="50%" />
           <AppSkeleton shape="block" height={100} />
@@ -72,13 +76,14 @@ export default function SupportTicketScreen() {
             refreshing={refreshing}
             onRefresh={() => void onRefresh()}
             contentContainerStyle={{
-              padding: theme.spacing[4],
+              paddingHorizontal: gutter,
+              paddingTop: theme.spacing[2],
               gap: theme.spacing[3],
               paddingBottom: theme.spacing[10],
             }}
             ListHeaderComponent={
               <View style={[styles.header, { gap: theme.spacing[2] }]}>
-                <AppText variant="title" accessibilityRole="header">
+                <AppText variant="heading" accessibilityRole="header">
                   {ticket.subject}
                 </AppText>
                 <AppText variant="caption" tone="secondary">
@@ -90,7 +95,7 @@ export default function SupportTicketScreen() {
                     <AppButton
                       size="sm"
                       variant="secondary"
-                      leadingIcon={<CheckCircle2 size={14} color={theme.colors.semantic.success} />}
+                      icon={CheckCircle2}
                       onPress={() => setConfirmClose(true)}
                     >
                       Mark as solved
@@ -108,6 +113,7 @@ export default function SupportTicketScreen() {
                     </AppText>
                     <AppButton
                       variant="soft"
+                      icon={Plus}
                       onPress={() => router.replace({ pathname: "/support", params: { new: "1" } })}
                     >
                       New request
@@ -127,7 +133,7 @@ export default function SupportTicketScreen() {
         onClose={() => setConfirmClose(false)}
         title="Mark as solved?"
       >
-        <View style={{ gap: theme.spacing[4], padding: theme.spacing[4], paddingTop: 0 }}>
+        <View style={{ gap: theme.spacing[5] }}>
           <AppText tone="secondary">
             This closes the request. You will not be able to reply to it, but you can always open a
             new one.
@@ -140,7 +146,12 @@ export default function SupportTicketScreen() {
             >
               Keep open
             </AppButton>
-            <AppButton style={styles.fill} loading={close.isPending} onPress={closeTicket}>
+            <AppButton
+              style={styles.fill}
+              icon={CheckCircle2}
+              loading={close.isPending}
+              onPress={closeTicket}
+            >
               Close request
             </AppButton>
           </View>

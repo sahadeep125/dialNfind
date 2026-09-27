@@ -11,6 +11,8 @@ const securityHeaders = [
   { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://appleid.apple.com; object-src 'none'" },
 ];
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
 const nextConfig: NextConfig = {
   images: {
     // Only our own upload origins (NEXT_PUBLIC_IMAGE_ORIGINS). Other image URLs render unoptimized; see lib/image-hosts.ts.
@@ -23,6 +25,9 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       };
     }),
+    // Next 16 refuses to optimize images from private IPs. Allow that only when our own upload origin is
+    // this machine (local development); production origins are public, so the protection stays on there.
+    dangerouslyAllowLocalIP: IMAGE_ORIGINS.some((origin) => LOCAL_HOSTS.has(new URL(origin).hostname)),
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { Category } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { useUrlParams } from "./use-url-params";
+import { useSubcategory, useUrlParams } from "./use-url-params";
 
 const RATINGS = [
   { value: "", label: "Any" },
@@ -19,10 +19,11 @@ const RATINGS = [
   { value: "4.5", label: "4.5+" },
 ];
 
-type FilterProps = { categories?: Category[]; lockedCategory?: Category; defaultRadius: number };
+type FilterProps = { categories?: Category[]; lockedCategory?: Category; lockedSub?: string; defaultRadius: number };
 
-function FilterFields({ categories, lockedCategory, defaultRadius }: FilterProps) {
+function FilterFields({ categories, lockedCategory, lockedSub, defaultRadius }: FilterProps) {
   const { params, update } = useUrlParams();
+  const { selected: subSlug, select: selectSub } = useSubcategory(lockedCategory, lockedSub);
   // The slider moves freely while dragged and follows the URL when that changes (back button, reset).
   const urlRadius = Number(params.get("radius") ?? defaultRadius);
   const [radius, setRadius] = useState(urlRadius);
@@ -61,11 +62,11 @@ function FilterFields({ categories, lockedCategory, defaultRadius }: FilterProps
         <div className="space-y-2.5">
           <Label>Service</Label>
           <div className="flex flex-wrap gap-1.5">
-            <Chip active={!params.get("sub")} onClick={() => update({ sub: null })}>
+            <Chip active={!subSlug} onClick={() => selectSub(null)}>
               All
             </Chip>
             {activeCategory.subcategories.map((s) => (
-              <Chip key={s.slug} active={params.get("sub") === s.slug} onClick={() => update({ sub: s.slug, q: null })}>
+              <Chip key={s.slug} active={subSlug === s.slug} onClick={() => selectSub(s.slug)}>
                 {s.name}
               </Chip>
             ))}
@@ -113,7 +114,7 @@ function FilterFields({ categories, lockedCategory, defaultRadius }: FilterProps
       <Button
         variant="ghost"
         className="w-full"
-        onClick={() => update({ radius: null, minRating: null, openNow: null, verified: null, sub: null, ...(lockedCategory ? {} : { category: null }) })}
+        onClick={() => update({ radius: null, minRating: null, openNow: null, verified: null, ...(lockedCategory ? {} : { sub: null, category: null }) })}
       >
         Reset filters
       </Button>
@@ -148,29 +149,16 @@ function ToggleRow({ id, label, description, checked, onChange }: { id: string; 
   );
 }
 
-export function FiltersSidebar(props: FilterProps) {
-  return (
-    <aside className="hidden lg:block">
-      <div className="sticky top-24 rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)]">
-        <h2 className="mb-5 flex items-center gap-2 text-base font-bold">
-          <SlidersHorizontal className="size-4" /> Filters
-        </h2>
-        <FilterFields {...props} />
-      </div>
-    </aside>
-  );
-}
-
 export function FiltersSheet(props: FilterProps & { activeCount: number }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" className="lg:hidden">
-          <SlidersHorizontal /> Filters
+        <Button className="h-10 shrink-0 rounded-lg border border-primary/20 bg-primary/10 px-3.5 text-sm font-medium text-primary shadow-none hover:bg-primary/15">
+          <SlidersHorizontal /> All Filters
           {props.activeCount > 0 && <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] text-primary-foreground">{props.activeCount}</span>}
         </Button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="px-5 pb-8">
+      <SheetContent side="right" className="w-full px-5 pb-8 sm:max-w-md">
         <SheetHeader className="px-0">
           <SheetTitle>Filters</SheetTitle>
         </SheetHeader>

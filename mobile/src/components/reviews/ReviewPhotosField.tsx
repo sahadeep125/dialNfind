@@ -30,13 +30,17 @@ export function ReviewPhotosField({ photos, onChange }: Props) {
 
   return (
     <View style={{ gap: theme.spacing[2] }}>
-      <AppText variant="label" tone="secondary">
+      <AppText variant="labelSmall" tone="secondary">
         Photos (optional)
       </AppText>
       <View style={styles.grid}>
         {photos.map((uri, i) => (
           <View key={uri} style={[styles.tile, tile]}>
-            <Image source={{ uri }} style={[StyleSheet.absoluteFill, { borderRadius: theme.radius.md }]} contentFit="cover" />
+            <Image
+              source={{ uri }}
+              style={[StyleSheet.absoluteFill, { borderRadius: theme.radius.md }]}
+              contentFit="cover"
+            />
             <AppPressable
               accessibilityRole="button"
               accessibilityLabel={`Remove photo ${i + 1}`}
@@ -54,14 +58,24 @@ export function ReviewPhotosField({ photos, onChange }: Props) {
             accessibilityLabel="Add a photo"
             disabled={uploading}
             onPress={() => void add()}
-            style={[styles.tile, styles.add, tile, { borderColor: theme.colors.border.primary }]}
+            style={[
+              styles.tile,
+              styles.add,
+              tile,
+              { borderColor: theme.colors.brand.primary, backgroundColor: theme.colors.brand.soft },
+            ]}
           >
             {uploading ? (
               <View style={styles.progress}>
                 <AppProgress value={progress ?? 0} height={6} />
               </View>
             ) : (
-              <ImagePlus size={22} color={theme.colors.brand.primary} />
+              <>
+                <ImagePlus size={22} color={theme.colors.brand.primary} />
+                <AppText variant="micro" tone="brand">
+                  Add
+                </AppText>
+              </>
             )}
           </AppPressable>
         ) : null}
@@ -75,8 +89,14 @@ export function ReviewPhotosField({ photos, onChange }: Props) {
 
 const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  tile: { height: 76, overflow: "hidden", width: 76 },
-  add: { alignItems: "center", borderStyle: "dashed", borderWidth: 1, justifyContent: "center" },
+  tile: { borderCurve: "continuous", height: 84, overflow: "hidden", width: 84 },
+  add: {
+    alignItems: "center",
+    borderStyle: "dashed",
+    borderWidth: 1.5,
+    gap: 4,
+    justifyContent: "center",
+  },
   remove: {
     alignItems: "center",
     borderRadius: 11,

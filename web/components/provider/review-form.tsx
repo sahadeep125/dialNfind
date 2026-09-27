@@ -71,8 +71,8 @@ export function ReviewForm({
 
   if (!signedIn) {
     return (
-      <Button variant="outline" onClick={() => router.push(`/login?next=${encodeURIComponent(pathname)}`)}>
-        <PenLine /> Write a review
+      <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/5 hover:text-primary" onClick={() => router.push(`/login?next=${encodeURIComponent(pathname)}`)}>
+        <PenLine /> Write a Review
       </Button>
     );
   }
@@ -97,8 +97,8 @@ export function ReviewForm({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <PenLine /> {existing ? "Edit your review" : "Write a review"}
+        <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/5 hover:text-primary">
+          <PenLine /> {existing ? "Edit your review" : "Write a Review"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">

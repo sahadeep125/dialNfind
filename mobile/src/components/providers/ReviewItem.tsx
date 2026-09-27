@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { ShieldCheck } from "lucide-react-native";
 
-import { AppAvatar, AppPressable, AppText } from "@/components/design-system";
+import { AppAvatar, AppBadge, AppPressable, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { Review } from "@/types";
 import { formatRelative } from "@/utils/format";
@@ -22,7 +22,7 @@ export const ReviewItem = memo(function ReviewItem({ review, onReport, onOpenPho
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
-        <AppAvatar name={review.author.name} uri={review.author.photoUrl} size={36} />
+        <AppAvatar name={review.author.name} uri={review.author.photoUrl} size={40} />
         <View style={styles.flex}>
           <AppText variant="label" numberOfLines={1}>
             {review.author.name}
@@ -35,15 +35,14 @@ export const ReviewItem = memo(function ReviewItem({ review, onReport, onOpenPho
           </View>
         </View>
         {review.isVerifiedContact ? (
-          <View style={styles.verified}>
-            <ShieldCheck size={13} color={theme.colors.semantic.success} />
-            <AppText variant="overline" tone="success">
-              Contacted
-            </AppText>
-          </View>
+          <AppBadge icon={ShieldCheck} label="Contacted" tone="success" />
         ) : null}
       </View>
-      {review.reviewText ? <AppText variant="body">{review.reviewText}</AppText> : null}
+      {review.reviewText ? (
+        <AppText variant="body" style={styles.text}>
+          {review.reviewText}
+        </AppText>
+      ) : null}
       {review.photos.length ? (
         <View style={styles.photos}>
           {review.photos.map((uri, i) => (
@@ -54,7 +53,11 @@ export const ReviewItem = memo(function ReviewItem({ review, onReport, onOpenPho
               disabled={!onOpenPhoto}
               onPress={() => onOpenPhoto?.(review, i)}
             >
-              <Image source={{ uri }} style={[styles.photo, { borderRadius: theme.radius.sm }]} contentFit="cover" />
+              <Image
+                source={{ uri }}
+                style={[styles.photo, { borderRadius: theme.radius.sm }]}
+                contentFit="cover"
+              />
             </AppPressable>
           ))}
         </View>
@@ -63,10 +66,14 @@ export const ReviewItem = memo(function ReviewItem({ review, onReport, onOpenPho
         <View
           style={[
             styles.reply,
-            { backgroundColor: theme.colors.background.tertiary, borderRadius: theme.radius.md },
+            {
+              backgroundColor: theme.colors.background.tertiary,
+              borderRadius: theme.radius.md,
+              borderLeftColor: theme.colors.brand.primary,
+            },
           ]}
         >
-          <AppText variant="overline" tone="secondary">
+          <AppText variant="labelSmall" tone="brand">
             Reply from the business
           </AppText>
           <AppText variant="caption">{review.providerReply}</AppText>
@@ -90,12 +97,12 @@ export const ReviewItem = memo(function ReviewItem({ review, onReport, onOpenPho
 
 const styles = StyleSheet.create({
   wrap: { gap: 10 },
+  text: { lineHeight: 23 },
   head: { alignItems: "center", flexDirection: "row", gap: 10 },
   flex: { flex: 1, gap: 2 },
   meta: { alignItems: "center", flexDirection: "row", gap: 8 },
-  verified: { alignItems: "center", flexDirection: "row", gap: 3 },
   photos: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  photo: { height: 72, width: 72 },
-  reply: { gap: 4, padding: 12 },
+  photo: { height: 76, width: 76 },
+  reply: { borderLeftWidth: 3, gap: 4, padding: 12 },
   report: { alignSelf: "flex-start", paddingVertical: 4 },
 });

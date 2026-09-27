@@ -31,7 +31,7 @@ export default async function MyReviewsPage() {
       <div className="mt-6 space-y-4">
         {reviews.length === 0 && <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">You have not written any reviews yet.</p>}
         {reviews.map((r) => (
-          <article key={r.id} className="rounded-2xl border bg-card p-5">
+          <article key={r.id} className="card-surface p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <Link href={`/providers/${r.provider.slug}`} className="font-semibold hover:text-primary">

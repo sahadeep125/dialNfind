@@ -33,13 +33,13 @@ export function PortfolioStrip({ items, onOpen }: Props) {
             source={{ uri: item.imageUrl }}
             style={[
               styles.image,
-              { borderRadius: theme.radius.md, backgroundColor: theme.colors.background.tertiary },
+              { borderRadius: theme.radius.lg, backgroundColor: theme.colors.background.tertiary },
             ]}
             contentFit="cover"
             accessibilityLabel={item.title}
             transition={150}
           />
-          <AppText variant="caption" numberOfLines={1}>
+          <AppText variant="labelSmall" tone="secondary" numberOfLines={1}>
             {item.title}
           </AppText>
         </AppPressable>
@@ -50,6 +50,6 @@ export function PortfolioStrip({ items, onOpen }: Props) {
 
 const styles = StyleSheet.create({
   row: { gap: 12 },
-  item: { gap: 6, width: 180 },
-  image: { height: 130, width: 180 },
+  item: { gap: 8, width: 200 },
+  image: { height: 140, width: 200 },
 });

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { ScrollView, StyleSheet, View, type TextInput } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, Search, X } from "lucide-react-native";
+import { ChevronLeft, Search, X } from "lucide-react-native";
 
 import { AppIconButton, AppInput } from "@/components/design-system";
 import { Screen } from "@/components/layout";
@@ -15,13 +15,20 @@ const SORTS: SortOption[] = ["relevance", "distance", "rating", "reviews"];
 
 export default function SearchScreen() {
   const theme = useTheme();
-  const { columns } = useLayout();
-  const params = useLocalSearchParams<{ q?: string; sort?: string; category?: string; sub?: string }>();
+  const { columns, gutter } = useLayout();
+  const params = useLocalSearchParams<{
+    q?: string;
+    sort?: string;
+    category?: string;
+    sub?: string;
+  }>();
   const addSearch = useSearchHistoryStore((s) => s.addSearch);
   const inputRef = useRef<TextInput>(null);
   const initialSort = SORTS.find((s) => s === params.sort) ?? "relevance";
   const [text, setText] = useState(params.q ?? "");
-  const [editing, setEditing] = useState(!params.q && !params.sort && !params.category && !params.sub);
+  const [editing, setEditing] = useState(
+    !params.q && !params.sort && !params.category && !params.sub,
+  );
   const [filters, setFilters] = useState<SearchFilters>({
     q: params.q,
     category: params.category,
@@ -56,12 +63,13 @@ export default function SearchScreen() {
   };
 
   return (
-    <Screen constrained={columns === 1}>
+    <Screen width={columns > 1 ? "grid" : "content"}>
       <View
         style={[
           styles.bar,
           {
-            paddingHorizontal: theme.spacing[3],
+            paddingLeft: gutter - 4,
+            paddingRight: gutter,
             paddingTop: theme.spacing[2],
             gap: theme.spacing[2],
           },
@@ -69,12 +77,15 @@ export default function SearchScreen() {
       >
         <AppIconButton
           accessibilityLabel="Go back"
-          icon={<ArrowLeft size={22} color={theme.colors.text.primary} />}
+          variant="surface"
+          size="sm"
+          icon={<ChevronLeft size={22} color={theme.colors.text.primary} strokeWidth={2.2} />}
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
         />
         <View style={styles.flex}>
           <AppInput
             ref={inputRef}
+            appearance="outlined"
             value={text}
             onChangeText={setText}
             onFocus={() => setEditing(true)}
@@ -84,7 +95,7 @@ export default function SearchScreen() {
             returnKeyType="search"
             onSubmitEditing={() => runSearch(text)}
             accessibilityLabel="Search"
-            leadingIcon={<Search size={18} color={theme.colors.text.tertiary} />}
+            leadingIcon={<Search size={18} color={theme.colors.brand.primary} strokeWidth={2.4} />}
             trailingAction={
               text
                 ? {
@@ -101,14 +112,14 @@ export default function SearchScreen() {
       {editing ? (
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: theme.spacing[4] }}
+          contentContainerStyle={{ paddingHorizontal: gutter, paddingVertical: theme.spacing[5] }}
         >
           <SuggestionList query={text} onPickTerm={runSearch} onPickSuggestion={pickSuggestion} />
         </ScrollView>
       ) : (
         <ProviderResults
           filters={filters}
-          header={<FilterBar filters={filters} onChange={setFilters} />}
+          header={<FilterBar filters={filters} onChange={setFilters} inset={gutter} />}
         />
       )}
     </Screen>

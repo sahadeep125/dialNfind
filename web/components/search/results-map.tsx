@@ -7,15 +7,16 @@ import { MapContainer, Marker, Popup, TileLayer, useMap, Circle } from "react-le
 import Link from "next/link";
 import type { ProviderCard } from "@/lib/types";
 import { formatDistance } from "@/lib/format";
+import { useHoveredResult } from "./results-hover";
 import { MAP_ATTRIBUTION, MAP_TILE_URL } from "@/lib/config";
 
 function pinIcon(rating: number, active: boolean) {
-  const bg = active ? "oklch(0.45 0.19 270)" : "oklch(0.53 0.2 266)";
+  const bg = active ? "oklch(0.27 0.09 268)" : "oklch(0.53 0.2 266)";
   return L.divIcon({
     className: "",
     iconSize: [44, 30],
     iconAnchor: [22, 30],
-    html: `<div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 4px 6px rgb(30 30 80 / .25))">
+    html: `<div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 4px 6px rgb(30 30 80 / .25));transform:scale(${active ? 1.18 : 1});transform-origin:bottom center;transition:transform .15s">
       <div style="background:${bg};color:white;font:700 12px/1 Inter,system-ui;padding:5px 8px;border-radius:999px;border:2px solid white;white-space:nowrap">${rating ? rating.toFixed(1) + " &#9733;" : "New"}</div>
       <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${bg};margin-top:-1px"></div>
     </div>`,
@@ -54,6 +55,7 @@ export default function ResultsMap({
     if (origin) pts.push([origin.lat, origin.lng]);
     return pts;
   }, [providers, origin]);
+  const hovered = useHoveredResult();
   const center: [number, number] = origin ? [origin.lat, origin.lng] : points[0] ?? [26.734, 88.433];
 
   return (
@@ -67,20 +69,30 @@ export default function ResultsMap({
         </>
       )}
       {providers.map((p) => (
-        <Marker key={p.id} position={[p.latitude, p.longitude]} icon={pinIcon(p.avgRating, false)}>
-          <Popup>
-            <div style={{ minWidth: 180 }}>
-              <Link href={`/providers/${p.slug}`} style={{ fontWeight: 700, fontSize: 14, color: "oklch(0.27 0.09 268)" }}>
-                {p.businessName}
-              </Link>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-                {p.primaryCategory?.name}
-                {p.distanceKm !== null ? ` · ${formatDistance(p.distanceKm)}` : ""}
-              </div>
-              <div style={{ fontSize: 12, marginTop: 4 }}>
-                {p.totalReviews ? `${p.avgRating.toFixed(1)} stars · ${p.totalReviews} reviews` : "New listing"} · {p.isOpenNow ? "Open now" : "Closed"}
-              </div>
-            </div>
+        <Marker key={p.id} position={[p.latitude, p.longitude]} icon={pinIcon(p.avgRating, hovered === p.id)} zIndexOffset={hovered === p.id ? 1000 : 0}>
+          <Popup closeButton={false}>
+            <Link href={`/providers/${p.slug}`} style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 210, color: "inherit", textDecoration: "none" }}>
+              {p.coverUrl || p.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- tiny popup thumbnail from any image host
+                <img src={(p.coverUrl ?? p.logoUrl)!} alt="" style={{ width: 52, height: 52, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+              ) : null}
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: "oklch(0.21 0.035 262)" }}>{p.businessName}</span>
+                <span style={{ display: "block", fontSize: 12, marginTop: 2, color: "#64748b" }}>
+                  {p.totalReviews ? (
+                    <>
+                      <span style={{ color: "oklch(0.7 0.15 72)" }}>&#9733;</span> <b style={{ color: "oklch(0.6 0.14 70)" }}>{p.avgRating.toFixed(1)}</b> ({p.totalReviews})
+                    </>
+                  ) : (
+                    "New listing"
+                  )}
+                </span>
+                <span style={{ display: "block", fontSize: 12, marginTop: 2, color: "#64748b" }}>
+                  {p.distanceKm !== null ? `${formatDistance(p.distanceKm)?.replace(" away", "")} • ` : ""}
+                  <span style={{ color: p.isOpenNow ? "oklch(0.5 0.12 165)" : "oklch(0.52 0.15 25)" }}>{p.isOpenNow ? "Open now" : "Closed"}</span>
+                </span>
+              </span>
+            </Link>
           </Popup>
         </Marker>
       ))}

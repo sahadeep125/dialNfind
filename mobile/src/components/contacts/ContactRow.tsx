@@ -1,9 +1,9 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
-import { MessageCircle, Phone, ThumbsDown, ThumbsUp } from "lucide-react-native";
+import { MessageCircle, PenLine, Phone, ThumbsDown, ThumbsUp } from "lucide-react-native";
 
-import { AppAvatar, AppButton, AppCard, AppText } from "@/components/design-system";
+import { AppAvatar, AppBadge, AppButton, AppCard, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { ContactHistoryItem } from "@/types";
 import { formatRelative } from "@/utils/format";
@@ -17,14 +17,13 @@ interface Props {
 export const ContactRow = memo(function ContactRow({ item, onAnswer }: Props) {
   const theme = useTheme();
   const p = item.provider;
-  const Channel = item.channel === "call" ? Phone : MessageCircle;
+  const call = item.channel === "call";
   const answered = item.customerReportedResponse;
-  const iconColor = theme.colors.text.primary;
 
   return (
     <AppCard padding={theme.spacing[4]}>
       <View style={[styles.head, { gap: theme.spacing[3] }]}>
-        <AppAvatar name={p.businessName} uri={p.logoUrl} size={44} shape="rounded" />
+        <AppAvatar name={p.businessName} uri={p.logoUrl} size={46} shape="rounded" />
         <View style={styles.flex}>
           <AppText
             variant="subheading"
@@ -34,25 +33,39 @@ export const ContactRow = memo(function ContactRow({ item, onAnswer }: Props) {
           >
             {p.businessName}
           </AppText>
-          <View style={[styles.meta, { gap: theme.spacing[1] }]}>
-            <Channel size={13} color={theme.colors.text.secondary} />
-            <AppText variant="caption" tone="secondary">
-              {item.channel === "call" ? "Called" : "WhatsApp"} {formatRelative(item.createdAt)}
-            </AppText>
-          </View>
+          <AppText variant="caption" tone="secondary">
+            {formatRelative(item.createdAt)}
+          </AppText>
         </View>
+        <AppBadge
+          icon={call ? Phone : MessageCircle}
+          label={call ? "Called" : "WhatsApp"}
+          tone={call ? "brand" : "success"}
+        />
       </View>
-      <View style={[styles.actions, { gap: theme.spacing[2], marginTop: theme.spacing[3] }]}>
+
+      <View
+        style={[
+          styles.panel,
+          {
+            backgroundColor: theme.colors.background.tertiary,
+            borderRadius: theme.radius.md,
+            marginTop: theme.spacing[4],
+            padding: theme.spacing[3],
+            gap: theme.spacing[2],
+          },
+        ]}
+      >
         {answered === null ? (
           <>
-            <AppText variant="caption" tone="secondary" style={styles.flex}>
+            <AppText variant="labelSmall" style={styles.flex}>
               Did they respond?
             </AppText>
             <AppButton
               size="sm"
               variant="secondary"
+              icon={ThumbsUp}
               accessibilityLabel={`Yes, ${p.businessName} responded`}
-              leadingIcon={<ThumbsUp size={14} color={iconColor} />}
               onPress={() => onAnswer(item, true)}
             >
               Yes
@@ -60,26 +73,38 @@ export const ContactRow = memo(function ContactRow({ item, onAnswer }: Props) {
             <AppButton
               size="sm"
               variant="secondary"
+              icon={ThumbsDown}
               accessibilityLabel={`No, ${p.businessName} did not respond`}
-              leadingIcon={<ThumbsDown size={14} color={iconColor} />}
               onPress={() => onAnswer(item, false)}
             >
               No
             </AppButton>
           </>
         ) : (
-          <AppText variant="caption" tone="secondary" style={styles.flex}>
-            {answered ? "They responded" : "No response"}
-          </AppText>
+          <>
+            {answered ? (
+              <ThumbsUp size={16} color={theme.colors.semantic.success} />
+            ) : (
+              <ThumbsDown size={16} color={theme.colors.text.tertiary} />
+            )}
+            <AppText
+              variant="labelSmall"
+              tone={answered ? "success" : "secondary"}
+              style={styles.flex}
+            >
+              {answered ? "They responded" : "No response"}
+            </AppText>
+          </>
         )}
       </View>
       {!item.hasReview ? (
         <AppButton
           size="sm"
-          variant="ghost"
+          variant="soft"
+          icon={PenLine}
           accessibilityLabel={`Write a review for ${p.businessName}`}
           onPress={() => router.push(`/review/${p.slug}`)}
-          style={{ alignSelf: "flex-start", marginTop: theme.spacing[1] }}
+          style={{ alignSelf: "flex-start", marginTop: theme.spacing[3] }}
         >
           Write a review
         </AppButton>
@@ -91,6 +116,5 @@ export const ContactRow = memo(function ContactRow({ item, onAnswer }: Props) {
 const styles = StyleSheet.create({
   head: { alignItems: "center", flexDirection: "row" },
   flex: { flex: 1 },
-  meta: { alignItems: "center", flexDirection: "row", marginTop: 2 },
-  actions: { alignItems: "center", flexDirection: "row" },
+  panel: { alignItems: "center", flexDirection: "row", minHeight: 52 },
 });

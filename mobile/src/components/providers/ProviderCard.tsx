@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { BadgeCheck, MapPin } from "lucide-react-native";
 
-import { AppAvatar, AppBadge, AppCard, AppText } from "@/components/design-system";
+import { AppAvatar, AppBadge, AppCard, AppDivider, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { ProviderCard as ProviderCardData } from "@/types";
 import { formatDistance, formatPrice } from "@/utils/format";
@@ -22,24 +22,27 @@ export const ProviderCard = memo(function ProviderCard({ provider: p, source = "
   const distance = formatDistance(p.distanceKm);
   const price = formatPrice(p.startingPrice, p.priceUnit);
   const place = [p.locality, p.city].filter(Boolean).join(", ");
+  const verified = p.verificationStatus === "verified";
 
   return (
     <AppCard
       onPress={() => router.push(`/provider/${p.slug}`)}
       accessibilityLabel={`${p.businessName}, open profile`}
       padding={theme.spacing[4]}
+      style={styles.card}
     >
       <View style={styles.top}>
-        <AppAvatar name={p.businessName} uri={p.logoUrl} size={52} shape="rounded" />
+        <AppAvatar name={p.businessName} uri={p.logoUrl} size={56} shape="rounded" />
         <View style={styles.main}>
           <View style={styles.nameRow}>
             <AppText variant="subheading" numberOfLines={2} style={styles.shrink}>
               {p.businessName}
             </AppText>
-            {p.verificationStatus === "verified" ? (
+            {verified ? (
               <BadgeCheck
-                size={17}
-                color={theme.colors.brand.primary}
+                size={18}
+                color={theme.colors.contrast.onInk}
+                fill={theme.colors.brand.primary}
                 accessibilityLabel="Verified"
               />
             ) : null}
@@ -52,7 +55,7 @@ export const ProviderCard = memo(function ProviderCard({ provider: p, source = "
             <RatingSummary rating={p.avgRating} count={p.totalReviews} />
             {distance || place ? (
               <View style={styles.metaItem}>
-                <MapPin size={13} color={theme.colors.text.tertiary} />
+                <MapPin size={13} color={theme.colors.text.tertiary} strokeWidth={2.2} />
                 <AppText variant="caption" tone="secondary" numberOfLines={1} style={styles.shrink}>
                   {distance ?? place}
                 </AppText>
@@ -60,18 +63,31 @@ export const ProviderCard = memo(function ProviderCard({ provider: p, source = "
             ) : null}
           </View>
         </View>
-        <FavoriteButton providerId={p.id} businessName={p.businessName} isFavorite={p.isFavorite} />
+        <View style={styles.favorite}>
+          <FavoriteButton
+            providerId={p.id}
+            businessName={p.businessName}
+            isFavorite={p.isFavorite}
+            size="sm"
+          />
+        </View>
       </View>
 
       <View style={styles.badges}>
-        {p.planTier ? <AppBadge label={p.planTier === "business" ? "Business Partner" : "Pro Partner"} tone="brand" /> : null}
-        {p.isSponsored ? <AppBadge label="Sponsored" tone="warning" /> : null}
         <AppBadge
+          dot
           label={p.isOpenNow ? "Open now" : "Closed now"}
           tone={p.isOpenNow ? "success" : "neutral"}
         />
         {price ? <AppBadge label={`From ${price}`} tone="brand" /> : null}
-        {p.yearsExperience ? <AppBadge label={`${p.yearsExperience}+ yrs`} /> : null}
+        {p.planTier ? (
+          <AppBadge
+            label={p.planTier === "business" ? "Business Partner" : "Pro Partner"}
+            tone="accent"
+          />
+        ) : null}
+        {p.isSponsored ? <AppBadge label="Sponsored" tone="warning" /> : null}
+        {p.yearsExperience ? <AppBadge label={`${p.yearsExperience}+ yrs exp`} /> : null}
       </View>
 
       {p.shortDescription ? (
@@ -79,25 +95,29 @@ export const ProviderCard = memo(function ProviderCard({ provider: p, source = "
           variant="caption"
           tone="secondary"
           numberOfLines={2}
-          style={{ marginTop: theme.spacing[2] }}
+          style={{ marginTop: theme.spacing[3] }}
         >
           {p.shortDescription}
         </AppText>
       ) : null}
 
-      <View style={{ marginTop: theme.spacing[3] }}>
-        <ContactButtons provider={p} source={source} size="sm" />
-      </View>
+      <View style={styles.spacer} />
+      <AppDivider style={{ marginVertical: theme.spacing[3] }} />
+      <ContactButtons provider={p} source={source} size="sm" />
     </AppCard>
   );
 });
 
 const styles = StyleSheet.create({
+  card: { flexGrow: 1 },
   top: { alignItems: "flex-start", flexDirection: "row", gap: 12 },
   main: { flex: 1, gap: 3 },
-  nameRow: { alignItems: "center", flexDirection: "row", gap: 6 },
+  nameRow: { alignItems: "center", flexDirection: "row", gap: 5 },
   shrink: { flexShrink: 1 },
-  meta: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 2 },
+  favorite: { marginRight: -6, marginTop: -6 },
+  meta: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 3 },
   metaItem: { alignItems: "center", flexDirection: "row", flexShrink: 1, gap: 3 },
-  badges: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 12 },
+  badges: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 14 },
+  // In a grid row, pushes the contact buttons to the bottom so cards of different heights line up.
+  spacer: { flexGrow: 1 },
 });

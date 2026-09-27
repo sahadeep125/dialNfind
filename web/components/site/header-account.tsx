@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell } from "lucide-react";
+import { Bell, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "./session-provider";
@@ -25,6 +25,11 @@ export function HeaderAccount() {
   }
   return (
     <>
+      <Button asChild variant="ghost" size="icon" className="hidden rounded-full sm:inline-flex">
+        <Link href="/dashboard/favorites" aria-label="Saved providers">
+          <Heart className="size-5" />
+        </Link>
+      </Button>
       <Button asChild variant="ghost" size="icon" className="relative rounded-full">
         <Link href="/dashboard/notifications" aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}>
           <Bell className="size-5" />

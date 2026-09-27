@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { logError } from "@/utils/log";
 
 /** The part of MMKV the app uses, so a fallback can stand in for it. */
 interface KeyValueStore {
@@ -17,7 +18,7 @@ function createStore(): KeyValueStore {
     const { createMMKV } = require("react-native-mmkv") as typeof import("react-native-mmkv");
     return createMMKV({ id: "dialnfind" });
   } catch (error: unknown) {
-    console.error(
+    logError(
       "[storage] MMKV is not available in this build; nothing will be saved between launches. Use a development build (npx expo run:android).",
       error,
     );
@@ -42,6 +43,8 @@ export const STORAGE_KEYS = {
   recentSearches: "search.recent",
   pushToken: "push.token",
   reviewPrompt: "prompt.review",
+  /** Set once the person has finished or skipped the first-launch introduction. */
+  onboarded: "prefs.onboarded",
 } as const;
 
 const SECURE_TOKEN_KEY = "dialnfind.authToken";
@@ -63,20 +66,20 @@ export const secureToken = {
       }
       return legacy ?? null;
     } catch (error: unknown) {
-      console.error("[storage] Secure store unavailable", error);
+      logError("[storage] Secure store unavailable", error);
       return storage.getString(STORAGE_KEYS.legacyAuthToken) ?? null;
     }
   },
   set(token: string): void {
     storage.remove(STORAGE_KEYS.legacyAuthToken);
     SecureStore.setItemAsync(SECURE_TOKEN_KEY, token).catch((error: unknown) =>
-      console.error("[storage] Could not save the session securely", error),
+      logError("[storage] Could not save the session securely", error),
     );
   },
   clear(): void {
     storage.remove(STORAGE_KEYS.legacyAuthToken);
     SecureStore.deleteItemAsync(SECURE_TOKEN_KEY).catch((error: unknown) =>
-      console.error("[storage] Could not clear the session", error),
+      logError("[storage] Could not clear the session", error),
     );
   },
 };
@@ -87,7 +90,7 @@ export function readJson<T>(key: string): T | null {
   try {
     return JSON.parse(raw) as T;
   } catch (error: unknown) {
-    console.error("[storage] Could not parse stored value", key, error);
+    logError("[storage] Could not parse stored value", key, error);
     storage.remove(key);
     return null;
   }

@@ -6,6 +6,7 @@ export { PortfolioStrip } from "./PortfolioStrip";
 export { ProviderCard } from "./ProviderCard";
 export { ProviderCardSkeleton } from "./ProviderCardSkeleton";
 export { ProviderHero } from "./ProviderHero";
+export { ProviderMiniCard, ProviderMiniCardSkeleton } from "./ProviderMiniCard";
 export { RatingBreakdown } from "./RatingBreakdown";
 export { RatingStars } from "./RatingStars";
 export { RatingSummary } from "./RatingSummary";

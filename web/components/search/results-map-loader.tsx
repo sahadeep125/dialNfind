@@ -5,5 +5,5 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export const ResultsMapLoader = dynamic(() => import("./results-map"), {
   ssr: false,
-  loading: () => <Skeleton className="size-full rounded-2xl" />,
+  loading: () => <Skeleton className="size-full rounded-none" />,
 });

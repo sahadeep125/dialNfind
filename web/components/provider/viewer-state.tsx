@@ -48,9 +48,9 @@ export function ProviderViewerState({ slug, children }: { slug: string; children
   return <ViewerContext.Provider value={state}>{children}</ViewerContext.Provider>;
 }
 
-export function ProfileFavoriteButton({ providerId }: { providerId: number }) {
+export function ProfileFavoriteButton({ providerId, className }: { providerId: number; className?: string }) {
   const { loaded, isFavorite } = useContext(ViewerContext);
-  return <FavoriteButton key={loaded ? String(isFavorite) : "loading"} providerId={providerId} initial={isFavorite} withLabel />;
+  return <FavoriteButton key={loaded ? String(isFavorite) : "loading"} providerId={providerId} initial={isFavorite} withLabel className={className} />;
 }
 
 export function ProfileReviewForm(props: { providerId: number; providerName: string; slug: string; minLength: number }) {

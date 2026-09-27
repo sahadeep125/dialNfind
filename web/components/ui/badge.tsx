@@ -15,6 +15,8 @@ const badgeVariants = cva(
         warning: "border-transparent bg-warning-soft text-[oklch(0.45_0.1_60)]",
         muted: "border-transparent bg-muted text-muted-foreground",
         destructive: "border-transparent bg-destructive/10 text-destructive",
+        soft: "border-transparent bg-primary/10 text-primary",
+        chip: "rounded-lg border-transparent bg-muted px-3 py-1 text-[13px] font-medium text-foreground/75",
       },
     },
     defaultVariants: { variant: "default" },

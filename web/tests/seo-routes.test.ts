@@ -24,12 +24,15 @@ describe("sitemap", () => {
     const { sitemapIds } = await import("@/lib/sitemap-data");
     expect(await sitemapIds()).toEqual([0, 1, 2, 3]);
   });
-  it("lists pages, categories and subcategories in file 0", async () => {
+  it("lists pages, categories, subcategories and guides in file 0", async () => {
     const sitemap = (await import("@/app/sitemaps/sitemap")).default;
     const urls = (await sitemap({ id: Promise.resolve("0") })).map((e) => e.url);
     expect(urls).toContain("https://dialnfind.com");
     expect(urls).toContain("https://dialnfind.com/services/electronics-repair");
-    expect(urls).toContain("https://dialnfind.com/services/electronics-repair?sub=tv-repair");
+    expect(urls).toContain("https://dialnfind.com/services/electronics-repair/tv-repair");
+    expect(urls).toContain("https://dialnfind.com/guides");
+    expect(urls).toContain("https://dialnfind.com/guides/tv-repair-cost-india");
+    expect(urls.some((u) => u.includes("?sub="))).toBe(false);
   });
   it("lists providers in the later files", async () => {
     const sitemap = (await import("@/app/sitemaps/sitemap")).default;

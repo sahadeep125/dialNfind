@@ -1,4 +1,4 @@
-import { WifiOff } from "lucide-react-native";
+import { RotateCw, WifiOff } from "lucide-react-native";
 
 import { AppButton } from "@/components/design-system";
 import { errorMessage } from "@/services/api";
@@ -13,10 +13,11 @@ export function ErrorState({ error, onRetry }: Props) {
   return (
     <EmptyState
       icon={WifiOff}
+      tone="warning"
       title="Could not load this"
       text={errorMessage(error)}
       action={
-        <AppButton variant="secondary" onPress={onRetry}>
+        <AppButton variant="secondary" icon={RotateCw} onPress={onRetry}>
           Try again
         </AppButton>
       }

@@ -1,16 +1,24 @@
 // Brand palette, matched to the DialNFind website. Leaf file: no imports, so tailwind.config.ts can read it.
+//
+// Design language: a cool grey canvas with white surfaces on top, one confident indigo for actions,
+// deep "ink" indigo for brand moments (splash, hero, onboarding), teal as a quiet secondary accent.
 
 export const palette = {
+  indigo25: "#F5F8FF",
   indigo50: "#EEF3FF",
-  indigo100: "#EAF0FE",
+  indigo100: "#E3EAFD",
   indigo200: "#C9D7FC",
+  indigo300: "#9DB5F8",
+  indigo400: "#618BF9",
   indigo500: "#355EDD",
   indigo600: "#264AC9",
   indigo700: "#1F3A8B",
+  indigo800: "#182C6B",
   indigo900: "#142152",
-  indigo400: "#618BF9",
+  indigo950: "#0C1638",
   teal500: "#08B6AF",
   teal100: "#D8F6F4",
+  teal700: "#067B76",
   green600: "#00986C",
   green700: "#005D3F",
   green100: "#DDFAEC",
@@ -20,19 +28,22 @@ export const palette = {
   red600: "#DF202E",
   red100: "#FDE7E8",
   slate0: "#FFFFFF",
-  slate25: "#FBFDFE",
-  slate50: "#F2F5F8",
-  slate100: "#EFF4FC",
+  slate25: "#F8FAFC",
+  slate50: "#F3F5F9",
+  slate75: "#EDF0F5",
+  slate100: "#E7EBF1",
   slate200: "#DFE3EA",
-  slate300: "#D9DEE6",
-  slate400: "#88909C",
-  slate500: "#606A78",
+  slate300: "#CBD2DC",
+  slate400: "#8A93A1",
+  slate500: "#5E6878",
+  slate700: "#343D4C",
   slate900: "#0F1828",
-  night950: "#0B0F18",
-  night900: "#141B26",
-  night800: "#1B2330",
-  night700: "#272E3B",
-  night600: "#343C4A",
+  night950: "#0A0E16",
+  night900: "#121823",
+  night850: "#171E2A",
+  night800: "#1C2431",
+  night700: "#28303D",
+  night600: "#353E4C",
   night300: "#9DA5B1",
   night50: "#F0F2F5",
   nightAccent: "#1D2842",
@@ -40,9 +51,13 @@ export const palette = {
 
 export interface ColorScheme {
   background: {
+    /** The canvas every screen sits on. */
     primary: string;
+    /** Sheets and full-width bars. */
     secondary: string;
+    /** Quiet fills: inputs, skeletons, inactive tracks. */
     tertiary: string;
+    /** Cards and grouped lists that sit on the canvas. */
     elevated: string;
     inverse: string;
   };
@@ -55,6 +70,11 @@ export interface ColorScheme {
     softText: string;
     deep: string;
     accent: string;
+    accentSoft: string;
+    accentText: string;
+    /** Deep brand surface for heroes, the splash and onboarding. Text on it is always white. */
+    ink: string;
+    inkSoft: string;
   };
   semantic: {
     success: string;
@@ -66,15 +86,17 @@ export interface ColorScheme {
     dangerSoft: string;
     info: string;
   };
+  /** Foregrounds that stay fixed in both themes: on the ink brand surface, and on frosted white discs over photos. */
+  contrast: { onInk: string; onOverlay: string };
   overlay: string;
   star: string;
 }
 
 export const lightColors: ColorScheme = {
   background: {
-    primary: palette.slate25,
+    primary: palette.slate50,
     secondary: palette.slate0,
-    tertiary: palette.slate50,
+    tertiary: palette.slate75,
     elevated: palette.slate0,
     inverse: palette.slate900,
   },
@@ -85,14 +107,18 @@ export const lightColors: ColorScheme = {
     inverse: palette.slate0,
     disabled: palette.slate300,
   },
-  border: { primary: palette.slate200, secondary: palette.slate300, tertiary: palette.slate50 },
+  border: { primary: palette.slate100, secondary: palette.slate200, tertiary: palette.slate75 },
   brand: {
     primary: palette.indigo500,
     pressed: palette.indigo600,
-    soft: palette.indigo100,
+    soft: palette.indigo50,
     softText: palette.indigo700,
     deep: palette.indigo900,
     accent: palette.teal500,
+    accentSoft: palette.teal100,
+    accentText: palette.teal700,
+    ink: palette.indigo900,
+    inkSoft: palette.indigo800,
   },
   semantic: {
     success: palette.green600,
@@ -104,7 +130,8 @@ export const lightColors: ColorScheme = {
     dangerSoft: palette.red100,
     info: palette.indigo500,
   },
-  overlay: "rgba(15, 24, 40, 0.45)",
+  contrast: { onInk: palette.slate0, onOverlay: palette.slate700 },
+  overlay: "rgba(12, 22, 56, 0.48)",
   star: palette.amber500,
 };
 
@@ -131,6 +158,10 @@ export const darkColors: ColorScheme = {
     softText: palette.indigo200,
     deep: palette.indigo200,
     accent: palette.teal500,
+    accentSoft: "#0B302F",
+    accentText: "#5CD6CF",
+    ink: "#111A3A",
+    inkSoft: "#1A2550",
   },
   semantic: {
     success: "#2BC592",
@@ -142,7 +173,8 @@ export const darkColors: ColorScheme = {
     dangerSoft: "#351519",
     info: palette.indigo400,
   },
-  overlay: "rgba(0, 0, 0, 0.6)",
+  contrast: { onInk: palette.slate0, onOverlay: palette.slate700 },
+  overlay: "rgba(0, 0, 0, 0.62)",
   star: "#F2B452",
 };
 

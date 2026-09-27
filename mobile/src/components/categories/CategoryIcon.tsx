@@ -20,7 +20,8 @@ export function CategoryIcon({ slug, size = 48 }: Props) {
         {
           width: size,
           height: size,
-          borderRadius: Math.round(size * 0.28),
+          borderRadius: Math.round(size * 0.3),
+          borderCurve: "continuous",
           backgroundColor: tone.bg,
         },
       ]}

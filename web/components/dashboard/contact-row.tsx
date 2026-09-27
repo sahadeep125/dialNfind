@@ -29,7 +29,7 @@ export function ContactRow({ item }: { item: ContactHistoryItem }) {
   const p = item.provider;
   const Icon = item.channel === "call" ? Phone : MessageCircle;
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border bg-card p-4 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-4 card-surface p-4 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-4">
         <ProviderAvatar name={p.businessName} logoUrl={p.logoUrl} categorySlug={p.primaryCategory?.slug} className="size-12" />
         <div className="min-w-0">

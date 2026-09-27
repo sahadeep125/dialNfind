@@ -1,13 +1,14 @@
 import { useCallback } from "react";
 import { FlatList, RefreshControl, StyleSheet, View, type ListRenderItemInfo } from "react-native";
 import { router } from "expo-router";
-import { BellOff } from "lucide-react-native";
+import { BellOff, CheckCheck } from "lucide-react-native";
 
 import { AppButton, AppDivider } from "@/components/design-system";
 import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { routeForNotification } from "@/components/layout/PushRegistrar";
 import { NotificationRow } from "@/components/notifications/NotificationRow";
 import { NotificationRowSkeleton } from "@/components/notifications/NotificationRowSkeleton";
+import { useLayout } from "@/hooks/useLayout";
 import { useMarkNotificationsRead, useNotifications } from "@/hooks/useNotifications";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
@@ -16,11 +17,14 @@ import type { AppNotification } from "@/types/notifications";
 
 export default function NotificationsScreen() {
   const theme = useTheme();
+  const { gutter } = useLayout();
   const toast = useToast();
   const { data, error, isLoading, isError, isRefetching, refetch } = useNotifications();
   const markRead = useMarkNotificationsRead();
   const { mutate } = markRead;
   const unread = data?.unread ?? 0;
+  const items = isLoading || isError ? [] : (data?.notifications ?? []);
+  const last = items.length - 1;
 
   const onPress = useCallback(
     (n: AppNotification) => {
@@ -31,11 +35,29 @@ export default function NotificationsScreen() {
     [mutate, toast],
   );
 
+  // Rows share one rounded surface: the first rounds its top corners, the last its bottom ones.
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<AppNotification>) => (
-      <NotificationRow notification={item} onPress={onPress} />
-    ),
-    [onPress],
+    ({ item, index }: ListRenderItemInfo<AppNotification>) => {
+      const r = theme.components.card.radius;
+      return (
+        <View
+          style={[
+            styles.cell,
+            {
+              backgroundColor: theme.colors.background.elevated,
+              borderTopLeftRadius: index === 0 ? r : 0,
+              borderTopRightRadius: index === 0 ? r : 0,
+              borderBottomLeftRadius: index === last ? r : 0,
+              borderBottomRightRadius: index === last ? r : 0,
+            },
+          ]}
+        >
+          {index > 0 ? <AppDivider inset={74} /> : null}
+          <NotificationRow notification={item} onPress={onPress} />
+        </View>
+      );
+    },
+    [onPress, theme, last],
   );
 
   return (
@@ -48,6 +70,7 @@ export default function NotificationsScreen() {
             <AppButton
               variant="ghost"
               size="sm"
+              icon={CheckCheck}
               disabled={markRead.isPending}
               onPress={() =>
                 mutate(undefined, { onError: (e: Error) => toast(errorMessage(e), "error") })
@@ -59,14 +82,24 @@ export default function NotificationsScreen() {
         }
       />
       <FlatList
-        data={isLoading || isError ? [] : (data?.notifications ?? [])}
+        data={items}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
-        ItemSeparatorComponent={AppDivider}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: gutter, paddingTop: theme.spacing[2] },
+        ]}
         ListEmptyComponent={
           isLoading ? (
-            <View>
+            <View
+              style={[
+                styles.cell,
+                {
+                  backgroundColor: theme.colors.background.elevated,
+                  borderRadius: theme.components.card.radius,
+                },
+              ]}
+            >
               <NotificationRowSkeleton />
               <NotificationRowSkeleton />
               <NotificationRowSkeleton />
@@ -96,4 +129,5 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingBottom: 32 },
+  cell: { borderCurve: "continuous", overflow: "hidden" },
 });

@@ -20,6 +20,8 @@ export function mapWebPath(input: string): string {
   if ((m = path.match(/^\/providers\/([^/]+)$/))) return `/provider/${m[1]}`;
   if (path === "/services") return "/categories";
   if ((m = path.match(/^\/services\/([^/]+)$/))) return withQuery(`/category/${m[1]}`, { sub: params.get("sub") });
+  // Subcategory pages: /services/<category>/<sub> (older links used ?sub=, handled above).
+  if ((m = path.match(/^\/services\/([^/]+)\/([^/]+)$/))) return withQuery(`/category/${m[1]}`, { sub: m[2] });
   if (path === "/search")
     return withQuery("/search", { q: params.get("q"), category: params.get("category"), sub: params.get("sub") });
   if (path === "/dashboard/notifications") return "/notifications";

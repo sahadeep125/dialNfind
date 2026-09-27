@@ -19,3 +19,6 @@ export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 export const APPLE_SERVICES_ID = process.env.NEXT_PUBLIC_APPLE_SERVICES_ID ?? "";
 /** Must be listed as a Return URL on the Services ID; Apple does not accept localhost. */
 export const APPLE_REDIRECT_URI = process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI ?? "";
+/** Store listings for the "Get the app" banner; a badge only shows when its URL is set. */
+export const APP_STORE_URL = process.env.NEXT_PUBLIC_APP_STORE_URL ?? "";
+export const PLAY_STORE_URL = process.env.NEXT_PUBLIC_PLAY_STORE_URL ?? "";

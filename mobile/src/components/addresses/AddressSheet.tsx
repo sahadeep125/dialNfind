@@ -12,6 +12,7 @@ import { getCurrentLocation } from "@/services/location";
 import type { Address } from "@/types";
 import { validatePincode } from "@/utils/addresses";
 import { isValid } from "@/utils/validation";
+import { logError } from "@/utils/log";
 
 interface Props {
   visible: boolean;
@@ -29,10 +30,20 @@ export function AddressSheet({ visible, address, onClose }: Props) {
   const save = useSaveAddress();
   // The screen remounts this sheet (via key) each time it opens, so state starts from the address.
   const [values, setValues] = useState(() =>
-    address ? { label: address.label, addressLine: address.addressLine, city: address.city, state: address.state, pincode: address.pincode } : EMPTY,
+    address
+      ? {
+          label: address.label,
+          addressLine: address.addressLine,
+          city: address.city,
+          state: address.state,
+          pincode: address.pincode,
+        }
+      : EMPTY,
   );
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(() =>
-    address?.latitude != null && address.longitude != null ? { latitude: address.latitude, longitude: address.longitude } : null,
+    address?.latitude != null && address.longitude != null
+      ? { latitude: address.latitude, longitude: address.longitude }
+      : null,
   );
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [locating, setLocating] = useState(false);
@@ -60,17 +71,20 @@ export function AddressSheet({ visible, address, onClose }: Props) {
   /** Finds the map position of the typed address; saving still works without one. */
   const geocode = async (): Promise<{ latitude: number; longitude: number } | null> => {
     try {
-      const [hit] = await Location.geocodeAsync(`${values.addressLine}, ${values.city}, ${values.state} ${values.pincode}, India`);
+      const [hit] = await Location.geocodeAsync(
+        `${values.addressLine}, ${values.city}, ${values.state} ${values.pincode}, India`,
+      );
       return hit ? { latitude: hit.latitude, longitude: hit.longitude } : null;
     } catch (error: unknown) {
-      console.error("[addresses] Geocoding failed", error);
+      logError("[addresses] Geocoding failed", error);
       return null;
     }
   };
 
   const submit = async (): Promise<void> => {
     const found = {
-      addressLine: values.addressLine.trim().length < 3 ? "Enter the house, street and landmark" : null,
+      addressLine:
+        values.addressLine.trim().length < 3 ? "Enter the house, street and landmark" : null,
       city: values.city.trim().length < 2 ? "Enter your city" : null,
       state: values.state.trim().length < 2 ? "Enter your state" : null,
       pincode: validatePincode(values.pincode),
@@ -79,24 +93,45 @@ export function AddressSheet({ visible, address, onClose }: Props) {
     if (!isValid(found)) return;
     const position = coords ?? (await geocode());
     save.mutate(
-      { id: address?.id, input: { ...values, latitude: position?.latitude ?? null, longitude: position?.longitude ?? null } },
+      {
+        id: address?.id,
+        input: {
+          ...values,
+          latitude: position?.latitude ?? null,
+          longitude: position?.longitude ?? null,
+        },
+      },
       {
         onSuccess: () => {
           toast(address ? "Address updated" : "Address saved", "success");
           onClose();
         },
         onError: (error: Error) => {
-          if (error instanceof ApiError && Object.keys(error.fieldErrors).length) setErrors(error.fieldErrors);
+          if (error instanceof ApiError && Object.keys(error.fieldErrors).length)
+            setErrors(error.fieldErrors);
         },
       },
     );
   };
 
   return (
-    <AppSheet visible={visible} onClose={onClose} title={address ? "Edit address" : "Add an address"}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: theme.spacing[4], paddingBottom: theme.spacing[4] }}>
+    <AppSheet
+      visible={visible}
+      onClose={onClose}
+      title={address ? "Edit address" : "Add an address"}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ gap: theme.spacing[4], paddingBottom: theme.spacing[4] }}
+      >
         {save.isError ? <AppCallout tone="danger">{errorMessage(save.error)}</AppCallout> : null}
-        <AppInput label="Label" placeholder="Home, Work, Mum's place" value={values.label} onChangeText={set("label")} maxLength={30} />
+        <AppInput
+          label="Label"
+          placeholder="Home, Work, Mum's place"
+          value={values.label}
+          onChangeText={set("label")}
+          maxLength={30}
+        />
         <AppInput
           label="Address"
           required
@@ -109,23 +144,47 @@ export function AddressSheet({ visible, address, onClose }: Props) {
         />
         <View style={{ flexDirection: "row", gap: theme.spacing[3] }}>
           <View style={{ flex: 1 }}>
-            <AppInput label="City" required value={values.city} onChangeText={set("city")} error={errors.city} textContentType="addressCity" />
+            <AppInput
+              label="City"
+              required
+              value={values.city}
+              onChangeText={set("city")}
+              error={errors.city}
+              textContentType="addressCity"
+            />
           </View>
           <View style={{ flex: 1 }}>
-            <AppInput label="PIN code" required value={values.pincode} onChangeText={set("pincode")} error={errors.pincode} keyboardType="number-pad" maxLength={6} textContentType="postalCode" />
+            <AppInput
+              label="PIN code"
+              required
+              value={values.pincode}
+              onChangeText={set("pincode")}
+              error={errors.pincode}
+              keyboardType="number-pad"
+              maxLength={6}
+              textContentType="postalCode"
+            />
           </View>
         </View>
-        <AppInput label="State" required value={values.state} onChangeText={set("state")} error={errors.state} textContentType="addressState" />
+        <AppInput
+          label="State"
+          required
+          value={values.state}
+          onChangeText={set("state")}
+          error={errors.state}
+          textContentType="addressState"
+        />
         <AppButton
           variant="soft"
+          icon={Crosshair}
           loading={locating}
           onPress={() => void locateHere()}
-          leadingIcon={<Crosshair size={18} color={theme.colors.brand.softText} />}
         >
           {coords ? "Location set. Use my current location again" : "I'm here now: use my location"}
         </AppButton>
         <AppText variant="caption" tone="tertiary">
-          The location lets you search around this address. Without it we look it up from what you typed.
+          The location lets you search around this address. Without it we look it up from what you
+          typed.
         </AppText>
         <AppButton size="lg" fullWidth loading={save.isPending} onPress={() => void submit()}>
           {address ? "Save changes" : "Save address"}

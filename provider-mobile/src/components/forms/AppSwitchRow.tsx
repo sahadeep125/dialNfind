@@ -34,7 +34,7 @@ export function AppSwitchRow({ label, description, value, onValueChange, disable
         onValueChange={onValueChange}
         disabled={disabled}
         trackColor={{ false: theme.colors.border.secondary, true: theme.colors.brand.primary }}
-        thumbColor="#FFFFFF"
+        thumbColor={theme.colors.text.primary}
         ios_backgroundColor={theme.colors.border.secondary}
       />
     </View>

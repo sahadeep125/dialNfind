@@ -14,7 +14,9 @@ export type TextTone =
   | "danger"
   | "success"
   | "warning"
-  | "white";
+  | "white"
+  /** Secondary text on ink or photo surfaces. */
+  | "whiteMuted";
 
 interface Props extends TextProps {
   children: ReactNode;
@@ -44,7 +46,9 @@ export function AppText({
             ? theme.colors.semantic.warningText
             : tone === "white"
               ? "#FFFFFF"
-              : theme.colors.text[tone];
+              : tone === "whiteMuted"
+                ? "rgba(255, 255, 255, 0.74)"
+                : theme.colors.text[tone];
 
   return (
     <Text

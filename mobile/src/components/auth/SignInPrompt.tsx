@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import type { LucideIcon } from "lucide-react-native";
+import { LogIn, type LucideIcon } from "lucide-react-native";
 
 import { AppButton } from "@/components/design-system";
 import { EmptyState } from "@/components/layout";
@@ -19,10 +19,15 @@ export function SignInPrompt({ icon, title, text }: Props) {
       text={text}
       action={
         <>
-          <AppButton onPress={() => router.push("/login")} fullWidth>
+          <AppButton size="lg" icon={LogIn} onPress={() => router.push("/login")} fullWidth>
             Sign in
           </AppButton>
-          <AppButton variant="ghost" onPress={() => router.push("/register")} fullWidth>
+          <AppButton
+            size="lg"
+            variant="secondary"
+            onPress={() => router.push("/register")}
+            fullWidth
+          >
             Create an account
           </AppButton>
         </>

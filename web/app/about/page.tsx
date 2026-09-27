@@ -33,7 +33,7 @@ export default async function AboutPage() {
               { v: stats.categories, l: "Categories" },
               { v: `${stats.reviews.toLocaleString("en-IN")}+`, l: "Reviews" },
             ].map((s) => (
-              <div key={s.l} className="rounded-2xl border bg-card p-4">
+              <div key={s.l} className="card-surface p-4">
                 <div className="font-display text-2xl font-bold text-brand-deep">{s.v}</div>
                 <div className="text-sm text-muted-foreground">{s.l}</div>
               </div>
@@ -121,7 +121,7 @@ export default async function AboutPage() {
                 { icon: ShieldCheck, t: "Consent for phone numbers", d: "Providers agree to show their number publicly. We never sell customer data." },
                 { icon: Eye, t: "Honest labels", d: "Self-reported numbers, like jobs completed, are labelled “as reported” and never used for ranking." },
               ].map((i) => (
-                <div key={i.t} className="rounded-2xl border bg-card p-5">
+                <div key={i.t} className="card-surface p-5">
                   <i.icon className="size-5 text-primary" />
                   <div className="mt-3 font-semibold">{i.t}</div>
                   <div className="mt-1 text-sm text-muted-foreground">{i.d}</div>

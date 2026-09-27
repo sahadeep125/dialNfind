@@ -1,11 +1,11 @@
 import { useCallback, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, View, type ListRenderItemInfo } from "react-native";
 import { router } from "expo-router";
-import { MessageSquareText } from "lucide-react-native";
+import { MessageSquareText, Search, Trash2 } from "lucide-react-native";
 
 import { AppButton, AppSheet, AppText } from "@/components/design-system";
 import { SignInPrompt } from "@/components/auth";
-import { EmptyState, ErrorState, Screen } from "@/components/layout";
+import { EmptyState, ErrorState, Screen, TabHeader } from "@/components/layout";
 import { ProviderCardSkeleton } from "@/components/providers";
 import { MyReviewCard } from "@/components/reviews";
 import { useDeleteReview } from "@/hooks/useDeleteReview";
@@ -18,7 +18,7 @@ import { plural } from "@/utils/format";
 
 export default function MyReviewsScreen() {
   const theme = useTheme();
-  const { columns } = useLayout();
+  const { columns, gutter } = useLayout();
   const signedIn = useAuthStore((s) => !!s.token);
   const { data, isLoading, isError, error, refetch, isRefetching } = useMyReviews();
   const remove = useDeleteReview();
@@ -40,22 +40,15 @@ export default function MyReviewsScreen() {
   };
 
   return (
-    <Screen constrained={cols === 1}>
-      <View
-        style={[
-          styles.header,
-          { paddingHorizontal: theme.spacing[4], paddingTop: theme.spacing[3] },
-        ]}
-      >
-        <AppText variant="title" accessibilityRole="header">
-          My reviews
-        </AppText>
-        <AppText tone="secondary">
-          {signedIn && data
+    <Screen width={cols > 1 ? "grid" : "content"}>
+      <TabHeader
+        title="My reviews"
+        subtitle={
+          signedIn && data
             ? plural(data.length, "review")
-            : "Reviews you write help neighbours choose"}
-        </AppText>
-      </View>
+            : "Reviews you write help neighbours choose"
+        }
+      />
       {!signedIn ? (
         <SignInPrompt
           icon={MessageSquareText}
@@ -69,10 +62,10 @@ export default function MyReviewsScreen() {
           numColumns={cols}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          columnWrapperStyle={cols > 1 ? { gap: theme.spacing[3] } : undefined}
+          columnWrapperStyle={cols > 1 ? { gap: theme.spacing[4] } : undefined}
           contentContainerStyle={[
             styles.content,
-            { padding: theme.spacing[4], gap: theme.spacing[3] },
+            { paddingHorizontal: gutter, paddingVertical: theme.spacing[3], gap: theme.spacing[4] },
           ]}
           ListEmptyComponent={
             isLoading ? (
@@ -84,8 +77,11 @@ export default function MyReviewsScreen() {
                 icon={MessageSquareText}
                 title="No reviews yet"
                 text="After you contact a provider, open their profile and tap Write a review."
+                tone="warning"
                 action={
-                  <AppButton onPress={() => router.push("/search")}>Find providers</AppButton>
+                  <AppButton icon={Search} onPress={() => router.push("/search")}>
+                    Find providers
+                  </AppButton>
                 }
               />
             )
@@ -111,6 +107,7 @@ export default function MyReviewsScreen() {
             </AppButton>
             <AppButton
               variant="destructive"
+              icon={Trash2}
               style={styles.flex}
               loading={remove.isPending}
               onPress={confirmDelete}
@@ -125,7 +122,6 @@ export default function MyReviewsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: 2 },
   content: { flexGrow: 1 },
   cell: { flex: 1 },
   row: { flexDirection: "row", gap: 10 },

@@ -13,11 +13,14 @@ export function LocationPicker({
   onChange,
   className,
   triggerClassName,
+  hideLabel = false,
 }: {
   value: LocationOption;
   onChange: (location: LocationOption) => void;
   className?: string;
   triggerClassName?: string;
+  /** Show only the chosen place, without the small "Location" caption above it. */
+  hideLabel?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -83,8 +86,8 @@ export function LocationPicker({
         >
           <MapPin className="size-5 shrink-0 text-primary" />
           <span className="min-w-0 flex-1">
-            <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Location</span>
-            <span className="block truncate text-sm font-semibold">{value.label}</span>
+            <span className={cn("block text-[11px] font-medium uppercase tracking-wide text-muted-foreground", hideLabel && "sr-only")}>Location</span>
+            <span className={cn("block truncate", hideLabel ? "text-[15px]" : "text-sm font-semibold")}>{value.label}</span>
           </span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
         </button>

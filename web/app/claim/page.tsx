@@ -60,7 +60,7 @@ export default async function ClaimPage() {
           { icon: MessageSquareReply, t: "Reply to reviews", d: "Thank customers and answer concerns publicly." },
           { icon: BarChart3, t: "See your numbers", d: "Profile views, calls and WhatsApp enquiries, every day." },
         ].map((f) => (
-          <div key={f.t} className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)]">
+          <div key={f.t} className="card-surface p-5">
             <span className="flex size-10 items-center justify-center rounded-xl bg-accent text-primary">
               <f.icon className="size-5" />
             </span>
@@ -71,7 +71,7 @@ export default async function ClaimPage() {
       </section>
 
       <section id="claim" className="container-page scroll-mt-20 py-16">
-        <div className="mx-auto max-w-3xl rounded-3xl border bg-card p-6 shadow-[var(--shadow-lift)] md:p-10">
+        <div className="mx-auto max-w-3xl rounded-xl border bg-card p-6 shadow-[var(--shadow-lift)] md:p-10">
           <h2 className="text-2xl font-bold text-brand-deep md:text-3xl">Is your business already listed?</h2>
           <p className="mt-2 text-muted-foreground">
             Search for it below. To claim, we send a verification code to the phone number on the listing. It takes about a minute.
@@ -92,7 +92,7 @@ export default async function ClaimPage() {
           {plans.map((plan) => {
             const featured = plan.name === "Pro";
             return (
-              <div key={plan.id} className={cn("relative flex flex-col rounded-2xl border bg-card p-6", featured && "border-primary shadow-[var(--shadow-lift)] ring-1 ring-primary")}>
+              <div key={plan.id} className={cn("relative flex flex-col rounded-xl border bg-card p-6 shadow-[var(--shadow-card)]", featured && "border-primary shadow-[var(--shadow-lift)] ring-1 ring-primary")}>
                 {featured && (
                   <span className="absolute -top-3 left-6 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
                     <Sparkles className="size-3" /> Most popular

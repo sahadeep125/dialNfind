@@ -41,7 +41,7 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
-          <Link key={s.label} href={s.href} className="rounded-2xl border bg-card p-5 transition-shadow hover:shadow-[var(--shadow-lift)]">
+          <Link key={s.label} href={s.href} className="card-surface p-5 transition-shadow hover:shadow-[var(--shadow-lift)]">
             <s.icon className="size-5 text-primary" />
             <div className="mt-3 font-display text-3xl font-bold text-brand-deep">{s.value}</div>
             <div className="text-sm text-muted-foreground">{s.label}</div>

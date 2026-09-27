@@ -9,6 +9,7 @@ import { supportKeys } from "@/hooks/useSupport";
 import { reportError } from "@/services/monitoring";
 import { pushOptedOut, registerForPush } from "@/services/push";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logError } from "@/utils/log";
 
 type PushData = { type?: string; reviewId?: number; ticketId?: number; providerSlug?: string };
 
@@ -46,7 +47,7 @@ export function PushRegistrar() {
     if (!token || registeredFor.current === token || pushOptedOut()) return;
     registeredFor.current = token;
     registerForPush({ ask: true }).catch((error: unknown) => {
-      console.error("[push] Registration failed", error);
+      logError("[push] Registration failed", error);
       reportError(error, { where: "push registration" });
     });
   }, [token]);

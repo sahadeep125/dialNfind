@@ -21,23 +21,28 @@ import {
   Sun,
   Trash2,
   UserRound,
+  type LucideIcon,
 } from "lucide-react-native";
 
 import {
   AppAvatar,
   AppButton,
-  AppChip,
+  AppCallout,
+  AppCard,
+  AppIconTile,
+  AppListGroup,
   AppListItem,
+  AppSegmentedControl,
   AppSheet,
   AppText,
 } from "@/components/design-system";
 import { PasswordInput } from "@/components/auth";
-import { Screen } from "@/components/layout";
-import { SettingsGroup } from "@/components/settings";
+import { BrandMark, Screen, TabHeader } from "@/components/layout";
 import { SUPPORT_EMAIL, SUPPORT_PHONE } from "@/constants/config";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useDeleteAccount } from "@/hooks/useDeleteAccount";
+import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { ApiError, errorMessage } from "@/services/api";
@@ -48,7 +53,7 @@ import { rateApp } from "@/services/reviewPrompt";
 import type { ThemePreference } from "@/types";
 import { formatPhone } from "@/utils/format";
 
-const THEME_OPTIONS: { value: ThemePreference; label: string; icon: typeof Sun }[] = [
+const THEME_OPTIONS: { value: ThemePreference; label: string; icon: LucideIcon }[] = [
   { value: "system", label: "System", icon: Monitor },
   { value: "light", label: "Light", icon: Sun },
   { value: "dark", label: "Dark", icon: Moon },
@@ -56,6 +61,7 @@ const THEME_OPTIONS: { value: ThemePreference; label: string; icon: typeof Sun }
 
 export default function SettingsScreen() {
   const theme = useTheme();
+  const { gutter } = useLayout();
   const toast = useToast();
   const user = useAuthStore((s) => s.user);
   const preference = useThemeStore((s) => s.preference);
@@ -106,106 +112,120 @@ export default function SettingsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: theme.spacing[4],
+          paddingHorizontal: gutter,
           gap: theme.spacing[6],
           paddingBottom: theme.spacing[10],
         }}
       >
-        <AppText variant="title" accessibilityRole="header">
-          Settings
-        </AppText>
+        <View style={{ marginHorizontal: -gutter }}>
+          <TabHeader title="Settings" />
+        </View>
 
+        {user ? (
+          <AppCard
+            onPress={() => router.push("/profile")}
+            accessibilityLabel="Your profile"
+            padding={theme.spacing[4]}
+          >
+            <View style={[styles.profile, { gap: theme.spacing[4] }]}>
+              <AppAvatar name={user.name} uri={user.profilePhotoUrl} size={60} />
+              <View style={styles.flex}>
+                <AppText variant="subheading" numberOfLines={1}>
+                  {user.name}
+                </AppText>
+                <AppText variant="caption" tone="secondary" numberOfLines={1}>
+                  {user.email}
+                </AppText>
+                {user.phone ? (
+                  <AppText variant="caption" tone="secondary" numberOfLines={1}>
+                    {formatPhone(user.phone)}
+                  </AppText>
+                ) : null}
+              </View>
+            </View>
+            <AppButton
+              size="sm"
+              variant="soft"
+              icon={UserRound}
+              onPress={() => router.push("/profile")}
+              style={{ marginTop: theme.spacing[4] }}
+            >
+              Edit profile
+            </AppButton>
+          </AppCard>
+        ) : (
+          <AppCard variant="tinted" padding={theme.spacing[5]}>
+            <View style={{ gap: theme.spacing[4] }}>
+              <AppIconTile icon={LogIn} tone="surface" size={48} />
+              <View style={{ gap: theme.spacing[1] }}>
+                <AppText variant="heading">Sign in or create an account</AppText>
+                <AppText tone="secondary">
+                  Save favorites, review providers and get replies from them.
+                </AppText>
+              </View>
+              <View style={[styles.row, { gap: theme.spacing[3] }]}>
+                <AppButton style={styles.flex} onPress={() => router.push("/login")}>
+                  Sign in
+                </AppButton>
+                <AppButton
+                  style={styles.flex}
+                  variant="secondary"
+                  onPress={() => router.push("/register")}
+                >
+                  Create account
+                </AppButton>
+              </View>
+            </View>
+          </AppCard>
+        )}
 
-        <SettingsGroup title="Account">
-          {user ? (
-            <AppListItem
-              title={user.name}
-              subtitle={[user.email, user.phone ? formatPhone(user.phone) : null]
-                .filter(Boolean)
-                .join(" · ")}
-              leading={<AppAvatar name={user.name} uri={user.profilePhotoUrl} size={34} />}
-              onPress={() => router.push("/profile")}
-            />
-          ) : (
-            <AppListItem
-              title="Sign in or create an account"
-              subtitle="Save favorites and review providers"
-              leading={<LogIn size={18} color={icon} />}
-              onPress={() => router.push("/login")}
-            />
-          )}
-          {user ? (
-            <AppListItem
-              title="Edit profile"
-              leading={<UserRound size={18} color={icon} />}
-              onPress={() => router.push("/profile")}
-            />
-          ) : null}
-          {user ? (
+        {user ? (
+          <AppListGroup title="Your activity">
             <AppListItem
               title="Saved addresses"
               subtitle="Search around home, work and more"
               leading={<MapPin size={18} color={icon} />}
               onPress={() => router.push("/addresses")}
             />
-          ) : null}
-          {user ? (
             <AppListItem
               title="Recent contacts"
               subtitle="Providers you called or messaged"
               leading={<PhoneCall size={18} color={icon} />}
               onPress={() => router.push("/contacts")}
             />
-          ) : null}
-          {user ? (
             <AppListItem
               title="Notifications"
               subtitle="Replies to your reviews and support updates"
               leading={<Bell size={18} color={icon} />}
               onPress={() => router.push("/notifications")}
             />
-          ) : null}
-          {user ? (
             <AppListItem
               title="Support requests"
               subtitle="Ask the DialNFind team and follow the replies"
               leading={<LifeBuoy size={18} color={icon} />}
               onPress={() => router.push("/support")}
             />
-          ) : null}
-        </SettingsGroup>
+          </AppListGroup>
+        ) : null}
 
         <View style={{ gap: theme.spacing[2] }}>
           <AppText
             variant="overline"
             tone="tertiary"
-            style={{ paddingHorizontal: theme.spacing[1] }}
+            accessibilityRole="header"
+            style={{ paddingHorizontal: theme.spacing[1], textTransform: "uppercase" }}
           >
             Appearance
           </AppText>
-          <View style={styles.chips}>
-            {THEME_OPTIONS.map((o) => {
-              const Icon = o.icon;
-              const selected = preference === o.value;
-              return (
-                <AppChip
-                  key={o.value}
-                  label={o.label}
-                  selected={selected}
-                  onPress={() => setPreference(o.value)}
-                  leadingIcon={
-                    <Icon
-                      size={15}
-                      color={selected ? theme.colors.brand.softText : theme.colors.text.secondary}
-                    />
-                  }
-                />
-              );
-            })}
-          </View>
+          <AppSegmentedControl
+            accessibilityLabel="Appearance"
+            options={THEME_OPTIONS}
+            value={preference}
+            onChange={setPreference}
+          />
         </View>
 
-        <SettingsGroup title="Help and support">
+        <AppListGroup title="Help and support">
           <AppListItem
             title="Help centre"
             subtitle="Answers to common questions"
@@ -242,27 +262,33 @@ export default function SettingsScreen() {
             leading={<Star size={18} color={icon} />}
             onPress={() => void run(rateApp, "Could not open the store.")}
           />
-        </SettingsGroup>
+        </AppListGroup>
 
-        <SettingsGroup title="Legal">
+        <AppListGroup title="Legal">
           <AppListItem
             title="Terms of use"
             leading={<FileText size={18} color={icon} />}
             onPress={() =>
-              void run(() => openUrl(legalUrl("terms", config?.terms_url)), "Could not open the page.")
+              void run(
+                () => openUrl(legalUrl("terms", config?.terms_url)),
+                "Could not open the page.",
+              )
             }
           />
           <AppListItem
             title="Privacy policy"
             leading={<ShieldCheck size={18} color={icon} />}
             onPress={() =>
-              void run(() => openUrl(legalUrl("privacy", config?.privacy_url)), "Could not open the page.")
+              void run(
+                () => openUrl(legalUrl("privacy", config?.privacy_url)),
+                "Could not open the page.",
+              )
             }
           />
-        </SettingsGroup>
+        </AppListGroup>
 
         {user ? (
-          <SettingsGroup>
+          <AppListGroup title="Account">
             <AppListItem
               title="Sign out"
               leading={<LogOut size={18} color={icon} />}
@@ -278,20 +304,23 @@ export default function SettingsScreen() {
                 showChevron={false}
               />
             ) : null}
-          </SettingsGroup>
+          </AppListGroup>
         ) : null}
 
-        <AppText variant="caption" tone="tertiary" align="center">
-          DialNFind {version}
-        </AppText>
+        <View style={[styles.footer, { gap: theme.spacing[2] }]}>
+          <BrandMark size={28} />
+          <AppText variant="caption" tone="tertiary" align="center">
+            DialNFind {version}
+          </AppText>
+        </View>
       </ScrollView>
 
       <AppSheet visible={confirmSignOut} onClose={() => setConfirmSignOut(false)} title="Sign out?">
-        <View style={{ gap: theme.spacing[4] }}>
+        <View style={{ gap: theme.spacing[5] }}>
           <AppText tone="secondary">
             You can keep browsing and calling providers without an account.
           </AppText>
-          <View style={styles.row}>
+          <View style={[styles.row, { gap: theme.spacing[3] }]}>
             <AppButton
               variant="secondary"
               style={styles.flex}
@@ -301,6 +330,7 @@ export default function SettingsScreen() {
             </AppButton>
             <AppButton
               style={styles.flex}
+              icon={LogOut}
               onPress={() => {
                 setConfirmSignOut(false);
                 signOut();
@@ -314,10 +344,10 @@ export default function SettingsScreen() {
       </AppSheet>
 
       <AppSheet visible={deleting} onClose={() => setDeleting(false)} title="Delete your account?">
-        <View style={{ gap: theme.spacing[4] }}>
-          <AppText tone="secondary">
+        <View style={{ gap: theme.spacing[5] }}>
+          <AppCallout tone="danger">
             Your profile, favorites and reviews will be removed. This cannot be undone.
-          </AppText>
+          </AppCallout>
           {needsPassword ? (
             <PasswordInput
               label="Password"
@@ -328,12 +358,13 @@ export default function SettingsScreen() {
               onSubmitEditing={submitDelete}
             />
           ) : null}
-          <View style={styles.row}>
+          <View style={[styles.row, { gap: theme.spacing[3] }]}>
             <AppButton variant="secondary" style={styles.flex} onPress={() => setDeleting(false)}>
               Cancel
             </AppButton>
             <AppButton
               variant="destructive"
+              icon={Trash2}
               style={styles.flex}
               loading={deleteAccount.isPending}
               onPress={submitDelete}
@@ -348,7 +379,8 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  row: { flexDirection: "row", gap: 10 },
+  profile: { alignItems: "center", flexDirection: "row" },
+  row: { flexDirection: "row" },
   flex: { flex: 1 },
+  footer: { alignItems: "center", opacity: 0.8, paddingTop: 8 },
 });

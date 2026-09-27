@@ -40,14 +40,23 @@ export function AvatarPicker({ user }: { user: SessionUser }) {
         disabled={busy}
         onPress={() => void pick()}
       >
-        <AppAvatar name={user.name} uri={user.profilePhotoUrl} size={84} />
+        <AppAvatar
+          name={user.name}
+          uri={user.profilePhotoUrl}
+          size={104}
+          ringColor={theme.colors.background.elevated}
+        />
         <View
           style={[
             styles.camera,
-            { backgroundColor: theme.colors.brand.primary, borderColor: theme.colors.background.primary },
+            {
+              backgroundColor: theme.colors.brand.primary,
+              borderColor: theme.colors.background.primary,
+            },
+            theme.shadow.md,
           ]}
         >
-          <Camera size={14} color="#FFFFFF" />
+          <Camera size={16} color={theme.components.button.primary.text} strokeWidth={2.2} />
         </View>
       </AppPressable>
       {progress !== null ? (
@@ -69,13 +78,13 @@ const styles = StyleSheet.create({
   progress: { width: 120 },
   camera: {
     alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 2,
-    bottom: 0,
-    height: 28,
+    borderRadius: 17,
+    borderWidth: 3,
+    bottom: 2,
+    height: 34,
     justifyContent: "center",
     position: "absolute",
-    right: 0,
-    width: 28,
+    right: 2,
+    width: 34,
   },
 });

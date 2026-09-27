@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Layers, Search, Wrench } from "lucide-react";
+import { ArrowRight, Building2, Layers, Search, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { clientApi, saveLocationCookie } from "@/lib/client";
 import type { LocationOption, Suggestion } from "@/lib/types";
@@ -16,12 +16,15 @@ export function SearchBar({
   initialQuery = "",
   initialLocation,
   size = "lg",
+  variant = "split",
   className,
 }: {
   initialQuery?: string;
   /** Leave out on cached pages; the saved location is read in the browser. */
   initialLocation?: LocationOption;
   size?: "lg" | "md";
+  /** "split": separate white fields (on dark banners). "joined": one white box with a labelled service field. */
+  variant?: "split" | "joined";
   className?: string;
 }) {
   const router = useRouter();
@@ -111,6 +114,7 @@ export function SearchBar({
   }
 
   const tall = size === "lg";
+  const joined = variant === "joined";
   const listOpen = open && suggestions.length > 0;
   const listId = `service-suggestions-${size}`;
   const optionId = (i: number) => `${listId}-${i}`;
@@ -122,38 +126,49 @@ export function SearchBar({
         go(active >= 0 ? suggestions[active] : undefined);
       }}
       className={cn(
-        "relative flex w-full flex-col gap-2 rounded-2xl border bg-card p-2 shadow-[var(--shadow-lift)] md:flex-row md:items-stretch md:gap-0",
+        "relative flex w-full flex-col gap-2 md:flex-row md:items-stretch",
+        joined && "rounded-xl border bg-card p-2 shadow-[var(--shadow-lift)] md:gap-0",
         className,
       )}
       role="search"
     >
-      <div ref={boxRef} className="relative flex min-w-0 flex-1 items-center gap-3 px-3">
-        <Search className="size-5 shrink-0 text-primary" aria-hidden />
-        <div className="min-w-0 flex-1">
-          <label htmlFor="service-search" className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Service
-          </label>
-          <input
-            id="service-search"
-            value={query}
-            autoComplete="off"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-expanded={listOpen}
-            aria-controls={listId}
-            aria-activedescendant={listOpen && active >= 0 ? optionId(active) : undefined}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-            }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={onKeyDown}
-            placeholder="What service do you need?"
-            className={cn("w-full bg-transparent font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground", tall ? "h-7 text-base" : "h-6 text-sm")}
-          />
+      <div
+        ref={boxRef}
+        className={cn(
+          "relative flex min-w-0 flex-1 items-center gap-3 px-4",
+          joined ? "h-14 rounded-lg" : "rounded-lg border bg-card shadow-xs focus-within:ring-[3px] focus-within:ring-ring",
+          !joined && (tall ? "h-14" : "h-12"),
+        )}
+      >
+        <Search className={cn("size-5 shrink-0", joined ? "text-foreground/70" : "text-muted-foreground")} aria-hidden />
+        <div className={cn("flex h-full min-w-0 flex-1 flex-col", joined && "justify-center")}>
+        <label htmlFor={`service-search-${size}`} className={joined ? "text-[15px] font-medium leading-tight text-foreground" : "sr-only"}>
+          {joined ? "What service do you need?" : "Service"}
+        </label>
+        <input
+          id={`service-search-${size}`}
+          value={query}
+          autoComplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={listOpen}
+          aria-controls={listId}
+          aria-activedescendant={listOpen && active >= 0 ? optionId(active) : undefined}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+          placeholder={joined ? "e.g. AC repair, plumber, electrician" : "What service do you need?"}
+          className={cn(
+            "min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground",
+            joined ? "h-6 text-sm" : "h-full flex-1 text-[15px]",
+          )}
+        />
         </div>
         {listOpen && (
-          <div id={listId} role="listbox" aria-label="Suggestions" className="absolute left-0 right-0 top-full z-30 mt-3 overflow-hidden rounded-xl border bg-popover p-1 shadow-[var(--shadow-lift)]">
+          <div id={listId} role="listbox" aria-label="Suggestions" className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border bg-popover p-1 text-foreground shadow-[var(--shadow-lift)]">
             {suggestions.map((s, i) => {
               const Icon = s.type === "provider" ? Building2 : s.type === "category" ? Layers : Wrench;
               return (
@@ -181,13 +196,19 @@ export function SearchBar({
           </div>
         )}
       </div>
-      <div className="hidden w-px self-stretch bg-border md:block" />
-      <div className={cn("flex items-center px-3 md:w-60", tall ? "h-14" : "h-12")}>
-        <LocationPicker value={location} onChange={changeLocation} triggerClassName="w-full" />
+      {joined && <div className="hidden w-px self-stretch bg-border md:my-2 md:block" />}
+      <div
+        className={cn(
+          "flex items-center px-4 text-foreground",
+          joined ? "h-14 border-t md:w-64 md:border-t-0" : "rounded-lg border bg-card shadow-xs md:w-[40%] md:max-w-md",
+          !joined && (tall ? "h-14" : "h-12"),
+        )}
+      >
+        <LocationPicker value={location} onChange={changeLocation} triggerClassName="w-full [&>svg:first-child]:text-muted-foreground" hideLabel />
       </div>
-      <Button type="submit" size={tall ? "lg" : "default"} className={cn("md:ml-1", tall ? "h-14 px-7" : "h-12")}>
-        <Search />
+      <Button type="submit" className={cn("rounded-lg text-base", joined ? "h-14 px-8 md:h-auto" : tall ? "h-14 px-10" : "h-12 px-10")}>
         Search
+        {joined && <ArrowRight className="size-5" />}
       </Button>
     </form>
   );

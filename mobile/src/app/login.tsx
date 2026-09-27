@@ -1,18 +1,16 @@
 import { useRef, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
-  type TextInput,
-} from "react-native";
+import { StyleSheet, type TextInput } from "react-native";
 import { router } from "expo-router";
 import { Mail } from "lucide-react-native";
 
 import { AppButton, AppCallout, AppInput, AppPressable, AppText } from "@/components/design-system";
-import { PasswordInput, SocialSignInButtons } from "@/components/auth";
-import { BrandMark, Screen, ScreenHeader } from "@/components/layout";
+import {
+  AuthScaffold,
+  AuthSwitch,
+  LegalNote,
+  PasswordInput,
+  SocialSignInButtons,
+} from "@/components/auth";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useTheme } from "@/hooks/useTheme";
 import type { SessionUser } from "@/types";
@@ -32,7 +30,13 @@ export default function LoginScreen() {
 
   const close = (): void => (router.canGoBack() ? router.back() : router.replace("/"));
 
-  const onSocialSignedIn = ({ user, isNewUser }: { user: SessionUser; isNewUser: boolean }): void => {
+  const onSocialSignedIn = ({
+    user,
+    isNewUser,
+  }: {
+    user: SessionUser;
+    isNewUser: boolean;
+  }): void => {
     const first = user.name.split(" ")[0];
     toast(isNewUser ? `Welcome to DialNFind, ${first}` : `Welcome back, ${first}`, "success");
     close();
@@ -60,113 +64,74 @@ export default function LoginScreen() {
   };
 
   return (
-    <Screen edges={["top", "bottom"]}>
-      <ScreenHeader title="" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.flex}
+    <AuthScaffold
+      title="Welcome back"
+      subtitle="Sign in to save favorites and review providers."
+      footer={
+        <>
+          <AuthSwitch
+            prompt="New to DialNFind?"
+            action="Create an account"
+            onPress={() => router.replace("/register")}
+          />
+          <LegalNote lead="By continuing" />
+        </>
+      }
+    >
+      {formError ? <AppCallout tone="danger">{formError}</AppCallout> : null}
+
+      <AppInput
+        label="Email"
+        value={email}
+        onChangeText={(v) => (setEmail(v), setErrors((e) => ({ ...e, email: null })))}
+        error={errors.email}
+        placeholder="you@example.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        textContentType="emailAddress"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
+        leadingIcon={<Mail size={18} color={theme.colors.text.tertiary} />}
+      />
+      <PasswordInput
+        ref={passwordRef}
+        label="Password"
+        value={password}
+        onChangeText={(v) => (setPassword(v), setErrors((e) => ({ ...e, password: null })))}
+        error={errors.password}
+        placeholder="Your password"
+        autoComplete="current-password"
+        textContentType="password"
+        returnKeyType="go"
+        onSubmitEditing={submit}
+      />
+      <AppPressable
+        accessibilityRole="link"
+        hitSlop={10}
+        style={styles.forgot}
+        onPress={() => router.push("/forgot-password")}
       >
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[
-            styles.content,
-            { padding: theme.spacing[6], gap: theme.spacing[5] },
-          ]}
-        >
-          <View style={[styles.brand, { gap: theme.spacing[3] }]}>
-            <BrandMark size={56} />
-            <AppText variant="title" align="center" accessibilityRole="header">
-              Welcome back
-            </AppText>
-            <AppText tone="secondary" align="center">
-              Sign in to save favorites and review providers.
-            </AppText>
-          </View>
+        <AppText variant="labelSmall" tone="brand">
+          Forgot password?
+        </AppText>
+      </AppPressable>
 
-          {formError ? <AppCallout tone="danger">{formError}</AppCallout> : null}
+      <AppButton
+        size="md"
+        fullWidth
+        loading={login.isPending}
+        onPress={submit}
+        style={{ marginTop: theme.spacing[1] }}
+      >
+        Sign in
+      </AppButton>
 
-          <SocialSignInButtons mode="signin" onError={setFormError} onSignedIn={onSocialSignedIn} />
-
-          <AppInput
-            label="Email"
-            value={email}
-            onChangeText={(v) => (setEmail(v), setErrors((e) => ({ ...e, email: null })))}
-            error={errors.email}
-            placeholder="you@example.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
-            textContentType="emailAddress"
-            returnKeyType="next"
-            onSubmitEditing={() => passwordRef.current?.focus()}
-            leadingIcon={<Mail size={18} color={theme.colors.text.tertiary} />}
-          />
-          <PasswordInput
-            ref={passwordRef}
-            label="Password"
-            value={password}
-            onChangeText={(v) => (setPassword(v), setErrors((e) => ({ ...e, password: null })))}
-            error={errors.password}
-            placeholder="Your password"
-            autoComplete="current-password"
-            textContentType="password"
-            returnKeyType="go"
-            onSubmitEditing={submit}
-          />
-
-          <AppPressable
-            accessibilityRole="link"
-            hitSlop={10}
-            style={styles.forgot}
-            onPress={() => router.push("/forgot-password")}
-          >
-            <AppText variant="label" tone="brand">
-              Forgot password?
-            </AppText>
-          </AppPressable>
-
-          <AppButton size="lg" fullWidth loading={login.isPending} onPress={submit}>
-            Sign in
-          </AppButton>
-
-          <View style={styles.switchRow}>
-            <AppText tone="secondary">New to DialNFind?</AppText>
-            <AppPressable
-              accessibilityRole="link"
-              hitSlop={10}
-              onPress={() => router.replace("/register")}
-            >
-              <AppText variant="label" tone="brand">
-                Create an account
-              </AppText>
-            </AppPressable>
-          </View>
-
-          <AppText variant="caption" tone="tertiary" align="center">
-            You can browse and call providers without an account.
-          </AppText>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Screen>
+      <SocialSignInButtons mode="signin" onError={setFormError} onSignedIn={onSocialSignedIn} />
+    </AuthScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  content: {
-    flexGrow: 1,
-    justifyContent: "center",
-    maxWidth: 440,
-    width: "100%",
-    alignSelf: "center",
-  },
-  brand: { alignItems: "center" },
-  forgot: { alignSelf: "flex-end", marginTop: -8 },
-  switchRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    justifyContent: "center",
-  },
+  forgot: { alignSelf: "flex-end" },
 });

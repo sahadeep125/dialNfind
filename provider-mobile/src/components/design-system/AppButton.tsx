@@ -49,10 +49,10 @@ export function AppButton({
       disabled={inactive}
       haptic
       {...props}
-      style={({ pressed }) => [
+      style={[
         styles.base,
         {
-          backgroundColor: pressed ? tokens.pressed : tokens.background,
+          backgroundColor: tokens.background,
           borderColor: tokens.border,
           borderRadius: theme.components.button.radius,
           height: theme.components.button.height[size],

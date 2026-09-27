@@ -18,8 +18,11 @@ interface Props extends TextInputProps {
   required?: boolean;
   leadingIcon?: ReactNode;
   trailingAction?: { icon: ReactNode; onPress: () => void; accessibilityLabel: string };
+  /** "filled" sits on the canvas or a card; "outlined" is for use on a filled surface. */
+  appearance?: "filled" | "outlined";
 }
 
+/** Text field: a quiet filled well that lifts to a white surface with a brand edge while focused. */
 export const AppInput = forwardRef<TextInput, Props>(function AppInput(
   {
     label,
@@ -28,6 +31,7 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
     required,
     leadingIcon,
     trailingAction,
+    appearance = "filled",
     multiline,
     style,
     onFocus,
@@ -40,15 +44,27 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
   const theme = useTheme();
   const tokens = theme.components.input;
   const [focused, setFocused] = useState(false);
-  const borderColor = error ? tokens.errorBorder : focused ? tokens.focusBorder : tokens.border;
+  const outlined = appearance === "outlined";
+  const borderColor = error
+    ? tokens.errorBorder
+    : focused
+      ? tokens.focusBorder
+      : outlined
+        ? theme.colors.border.secondary
+        : tokens.border;
+  const backgroundColor = !editable
+    ? theme.colors.background.tertiary
+    : focused || outlined
+      ? tokens.focusBackground
+      : tokens.background;
 
   return (
     <View style={styles.wrapper}>
       {label ? (
-        <AppText variant="label" tone="secondary">
+        <AppText variant="labelSmall" tone="secondary">
           {label}
           {required ? (
-            <AppText variant="label" tone="danger">
+            <AppText variant="labelSmall" tone="danger">
               {" "}
               *
             </AppText>
@@ -60,22 +76,25 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
           styles.field,
           {
             alignItems: multiline ? "flex-start" : "center",
-            backgroundColor: editable ? tokens.background : theme.colors.background.tertiary,
+            backgroundColor,
             borderColor,
             borderRadius: tokens.radius,
             borderWidth: focused || error ? theme.borderWidth.focus : theme.borderWidth.default,
-            minHeight: multiline ? 112 : tokens.height,
+            minHeight: multiline ? 120 : tokens.height,
             paddingHorizontal: tokens.paddingHorizontal,
             paddingVertical: multiline ? theme.spacing[3] : 0,
+            opacity: editable ? 1 : 0.75,
           },
+          focused && theme.mode === "light" ? styles.focusRing : null,
         ]}
       >
-        {leadingIcon ? <View>{leadingIcon}</View> : null}
+        {leadingIcon ? <View style={multiline ? styles.topIcon : null}>{leadingIcon}</View> : null}
         <TextInput
           ref={ref}
           editable={editable}
           multiline={multiline}
           placeholderTextColor={tokens.placeholder}
+          selectionColor={theme.colors.brand.primary}
           accessibilityLabel={label}
           aria-invalid={!!error}
           onFocus={(event) => {
@@ -121,6 +140,8 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
 const styles = StyleSheet.create({
   wrapper: { gap: 6 },
   field: { borderCurve: "continuous", flexDirection: "row", gap: 10 },
+  focusRing: { boxShadow: "0 0 0 4px rgba(53, 94, 221, 0.12)" },
+  topIcon: { paddingTop: 2 },
   input: {
     flex: 1,
     minHeight: 24,

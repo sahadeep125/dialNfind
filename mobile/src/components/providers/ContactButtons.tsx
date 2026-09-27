@@ -22,8 +22,8 @@ export function ContactButtons({ provider, source = "search", size = "md" }: Pro
       {provider.acceptsCalls ? (
         <AppButton
           size={size}
+          icon={Phone}
           style={styles.flex}
-          leadingIcon={<Phone size={16} color="#FFFFFF" />}
           onPress={() => void contact(provider, "call", source)}
           accessibilityLabel={`Call ${provider.businessName}`}
         >
@@ -34,8 +34,8 @@ export function ContactButtons({ provider, source = "search", size = "md" }: Pro
         <AppButton
           size={size}
           variant="success"
+          icon={MessageCircle}
           style={styles.flex}
-          leadingIcon={<MessageCircle size={16} color="#FFFFFF" />}
           onPress={() => void contact(provider, "whatsapp", source)}
           accessibilityLabel={`WhatsApp ${provider.businessName}`}
         >

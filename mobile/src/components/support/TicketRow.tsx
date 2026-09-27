@@ -28,13 +28,15 @@ export const TicketRow = memo(function TicketRow({ ticket, onOpen }: Props) {
           gap: theme.spacing[3],
           padding: theme.spacing[4],
           backgroundColor: theme.components.card.background,
-          borderColor: theme.components.card.border,
+          borderColor:
+            theme.mode === "dark" ? theme.components.card.border : theme.components.card.background,
           borderRadius: theme.components.card.radius,
         },
+        theme.shadow.sm,
       ]}
     >
       <View style={[styles.body, { gap: theme.spacing[1] }]}>
-        <AppText variant="label" numberOfLines={2}>
+        <AppText variant="subheading" numberOfLines={2}>
           {ticket.subject}
         </AppText>
         <AppText variant="caption" tone="secondary" numberOfLines={1}>
@@ -48,6 +50,12 @@ export const TicketRow = memo(function TicketRow({ ticket, onOpen }: Props) {
 });
 
 const styles = StyleSheet.create({
-  row: { alignItems: "center", borderWidth: 1, flexDirection: "row", overflow: "hidden" },
+  row: {
+    alignItems: "center",
+    borderCurve: "continuous",
+    borderWidth: 1,
+    flexDirection: "row",
+    overflow: "hidden",
+  },
   body: { flex: 1 },
 });

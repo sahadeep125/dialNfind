@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ProviderCard } from "@/components/provider/provider-card";
+import { ProviderTile } from "@/components/provider/provider-tile";
 import { SectionHeading } from "@/components/site/section-heading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { clientApi } from "@/lib/client";
@@ -17,7 +17,7 @@ export function NearbyProviders() {
   useEffect(() => {
     if (!location) return;
     let cancelled = false;
-    clientApi<{ results: ProviderCardType[] }>(`/providers/featured?lat=${location.latitude}&lng=${location.longitude}&limit=6`)
+    clientApi<{ results: ProviderCardType[] }>(`/providers/featured?lat=${location.latitude}&lng=${location.longitude}&limit=4`)
       .then((data) => !cancelled && setProviders(data.results))
       .catch(() => !cancelled && setProviders([]));
     return () => {
@@ -26,20 +26,17 @@ export function NearbyProviders() {
   }, [location]);
 
   if (providers && providers.length === 0) return null;
+  const place = location ? location.city || location.name : null;
   return (
-    <section className="bg-[linear-gradient(180deg,transparent,oklch(0.965_0.012_262)_20%,oklch(0.965_0.012_262)_80%,transparent)] py-20">
-      <div className="container-page">
-        <SectionHeading
-          eyebrow={location ? `Near ${location.name}` : "Near you"}
-          title="Recommended providers near you"
-          description="Ranked by ratings, verification, responsiveness and distance. Never by who paid the most."
-          action={{ href: location ? buildSearchHref("", location) : "/search", label: "See all nearby" }}
-        />
-        <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3" aria-busy={!providers}>
-          {providers
-            ? providers.map((p) => <ProviderCard key={p.id} provider={p} source="search" />)
-            : Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-56 rounded-2xl" />)}
-        </div>
+    <section className="container-page py-12 md:py-14">
+      <SectionHeading
+        title={place ? `Popular in ${place}` : "Popular near you"}
+        action={{ href: location ? buildSearchHref("", location) : "/search", label: "See all" }}
+      />
+      <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4" aria-busy={!providers}>
+        {providers
+          ? providers.map((p) => <ProviderTile key={p.id} provider={p} />)
+          : Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[25rem] rounded-xl" />)}
       </div>
     </section>
   );

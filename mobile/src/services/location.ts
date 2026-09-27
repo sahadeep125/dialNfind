@@ -1,6 +1,7 @@
 import * as Location from "expo-location";
 
 import type { LocationOption } from "@/types";
+import { logError } from "@/utils/log";
 
 /** Asks for permission and returns the device position as a location option, or throws with a readable message. */
 export async function getCurrentLocation(): Promise<LocationOption> {
@@ -19,7 +20,7 @@ export async function getCurrentLocation(): Promise<LocationOption> {
     state = place?.region ?? "";
   } catch (error: unknown) {
     // Reverse geocoding is a nicety; the coordinates alone are enough to search.
-    console.error("[location] Reverse geocode failed", error);
+    logError("[location] Reverse geocode failed", error);
   }
   const name = area || city || "Current location";
   return {

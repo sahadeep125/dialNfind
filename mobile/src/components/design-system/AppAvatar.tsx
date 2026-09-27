@@ -1,6 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 
+import { fontFamily } from "@/constants/typography";
 import { useTheme } from "@/hooks/useTheme";
 import { initials } from "@/utils/format";
 import { AppText } from "./AppText";
@@ -10,10 +11,12 @@ interface Props {
   uri?: string | null;
   size?: number;
   shape?: "circle" | "rounded";
+  /** A ring in this color around the avatar, e.g. to lift it off a cover photo. */
+  ringColor?: string;
 }
 
 /** Photo when there is one, otherwise the person's or business's initials on a brand tint. */
-export function AppAvatar({ name, uri, size = 44, shape = "circle" }: Props) {
+export function AppAvatar({ name, uri, size = 44, shape = "circle", ringColor }: Props) {
   const theme = useTheme();
   const radius = shape === "circle" ? size / 2 : Math.round(size * 0.28);
   return (
@@ -25,7 +28,11 @@ export function AppAvatar({ name, uri, size = 44, shape = "circle" }: Props) {
           height: size,
           borderRadius: radius,
           backgroundColor: theme.colors.brand.soft,
+          borderCurve: "continuous",
         },
+        ringColor
+          ? { borderWidth: Math.max(2, Math.round(size * 0.05)), borderColor: ringColor }
+          : null,
       ]}
     >
       {uri ? (
@@ -39,7 +46,12 @@ export function AppAvatar({ name, uri, size = 44, shape = "circle" }: Props) {
       ) : (
         <AppText
           variant="label"
-          style={{ color: theme.colors.brand.softText, fontSize: Math.max(12, size * 0.36) }}
+          style={{
+            color: theme.colors.brand.softText,
+            fontFamily: fontFamily.displayBold,
+            fontSize: Math.max(12, size * 0.36),
+            lineHeight: Math.max(16, size * 0.46),
+          }}
         >
           {initials(name) || "?"}
         </AppText>

@@ -1,8 +1,13 @@
 import { StyleSheet, View } from "react-native";
-import { Clock, LayoutGrid, Search, Store, TrendingUp } from "lucide-react-native";
+import { ArrowUpLeft, Clock, LayoutGrid, Search, Store, TrendingUp } from "lucide-react-native";
 
-import { AppChip, AppListItem, AppPressable, AppText } from "@/components/design-system";
-import { SectionHeader } from "@/components/layout";
+import {
+  AppChip,
+  AppListGroup,
+  AppListItem,
+  AppPressable,
+  AppText,
+} from "@/components/design-system";
 import { usePopularSearches } from "@/hooks/usePopularSearches";
 import { useSuggestions } from "@/hooks/useSuggestions";
 import { useTheme } from "@/hooks/useTheme";
@@ -23,13 +28,14 @@ export function SuggestionList({ query, onPickTerm, onPickSuggestion }: Props) {
   const popular = usePopularSearches();
   const suggestions = useSuggestions(query);
   const icon = { service: Search, category: LayoutGrid, provider: Store } as const;
+  const arrow = <ArrowUpLeft size={16} color={theme.colors.text.tertiary} />;
 
   if (query.trim().length >= 2) {
     return (
-      <View>
+      <AppListGroup inset={66}>
         <AppListItem
           title={`Search for "${query.trim()}"`}
-          leading={<Search size={18} color={theme.colors.brand.primary} />}
+          leading={<Search size={18} color={theme.colors.brand.primary} strokeWidth={2.4} />}
           onPress={() => onPickTerm(query)}
           showChevron={false}
         />
@@ -47,48 +53,56 @@ export function SuggestionList({ query, onPickTerm, onPickSuggestion }: Props) {
                     ? "Business"
                     : "Service")
               }
-              leading={<Icon size={18} color={theme.colors.text.secondary} />}
+              leading={<Icon size={18} color={theme.colors.brand.primary} />}
+              trailing={arrow}
               onPress={() => onPickSuggestion(s)}
               showChevron={false}
             />
           );
         })}
-      </View>
+      </AppListGroup>
     );
   }
 
   return (
-    <View style={{ gap: theme.spacing[5] }}>
+    <View style={{ gap: theme.spacing[6] }}>
       {recent.length ? (
-        <View style={{ gap: theme.spacing[2] }}>
+        <View style={{ gap: theme.spacing[3] }}>
           <View style={styles.headerRow}>
-            <AppText variant="subheading">Recent searches</AppText>
+            <AppText variant="subheading" accessibilityRole="header">
+              Recent searches
+            </AppText>
             <AppPressable accessibilityRole="button" onPress={clearRecent} hitSlop={8}>
-              <AppText variant="label" tone="brand">
+              <AppText variant="labelSmall" tone="brand">
                 Clear
               </AppText>
             </AppPressable>
           </View>
-          {recent.map((term) => (
-            <AppListItem
-              key={term}
-              title={term}
-              leading={<Clock size={18} color={theme.colors.text.tertiary} />}
-              onPress={() => onPickTerm(term)}
-              showChevron={false}
-            />
-          ))}
+          <AppListGroup>
+            {recent.map((term) => (
+              <AppListItem
+                key={term}
+                title={term}
+                leading={<Clock size={18} color={theme.colors.text.secondary} />}
+                trailing={arrow}
+                onPress={() => onPickTerm(term)}
+                showChevron={false}
+              />
+            ))}
+          </AppListGroup>
         </View>
       ) : null}
       {popular.data?.length ? (
         <View style={{ gap: theme.spacing[3] }}>
-          <SectionHeader title="Popular near you" />
+          <AppText variant="subheading" accessibilityRole="header">
+            Popular near you
+          </AppText>
           <View style={styles.chips}>
             {popular.data.slice(0, 10).map((p) => (
               <AppChip
                 key={p.term}
                 label={p.term}
-                leadingIcon={<TrendingUp size={14} color={theme.colors.text.secondary} />}
+                icon={TrendingUp}
                 onPress={() => onPickTerm(p.term)}
               />
             ))}

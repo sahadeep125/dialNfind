@@ -8,6 +8,7 @@ import { MobileNav } from "./mobile-nav";
 export const NAV_LINKS = [
   { href: "/services", label: "Services" },
   { href: "/search", label: "Search" },
+  { href: "/guides", label: "Guides" },
   { href: "/about", label: "About" },
   { href: "/help", label: "Help" },
   { href: "/contact", label: "Contact" },
@@ -15,12 +16,12 @@ export const NAV_LINKS = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-lg">
-      <div className="container-page flex h-16 items-center gap-6">
+    <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur-lg">
+      <div className="container-wide flex h-16 items-center gap-6">
         <Logo />
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-2 md:flex">
           {NAV_LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+            <Link key={l.href} href={l.href} className="rounded-lg px-3 py-2 text-sm font-medium text-foreground/75 transition-colors hover:text-primary">
               {l.label}
             </Link>
           ))}

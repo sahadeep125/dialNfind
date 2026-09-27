@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { KeyRound } from "lucide-react-native";
 
 import { AppButton, AppCallout, AppCard, AppText } from "@/components/design-system";
 import { PasswordInput } from "@/components/auth";
@@ -58,14 +59,16 @@ export function PasswordSection({ user }: { user: SessionUser }) {
   return (
     <View style={{ gap: theme.spacing[3] }}>
       <SectionHeader title={hasPassword ? "Change password" : "Set a password"} />
-      <AppCard>
+      <AppCard padding={theme.spacing[5]}>
         <View style={{ gap: theme.spacing[4] }}>
-          <AppText tone="secondary">
+          <AppText variant="caption" tone="secondary">
             {hasPassword
               ? "Changing it signs you out on your other devices."
               : `You sign in with ${via || "a linked account"}. Set a password to also sign in with your email.`}
           </AppText>
-          {change.isError ? <AppCallout tone="danger">{errorMessage(change.error)}</AppCallout> : null}
+          {change.isError ? (
+            <AppCallout tone="danger">{errorMessage(change.error)}</AppCallout>
+          ) : null}
           {hasPassword ? (
             <PasswordInput
               label="Current password"
@@ -95,7 +98,13 @@ export function PasswordSection({ user }: { user: SessionUser }) {
             returnKeyType="done"
             onSubmitEditing={submit}
           />
-          <AppButton fullWidth variant="secondary" loading={change.isPending} onPress={submit}>
+          <AppButton
+            fullWidth
+            variant="soft"
+            icon={KeyRound}
+            loading={change.isPending}
+            onPress={submit}
+          >
             {hasPassword ? "Change password" : "Set password"}
           </AppButton>
         </View>

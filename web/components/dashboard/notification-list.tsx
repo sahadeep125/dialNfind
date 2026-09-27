@@ -66,7 +66,7 @@ export function NotificationList({ initial }: { initial: NotificationItem[] }) {
           </Button>
         </div>
       )}
-      <ul className="mt-4 divide-y rounded-2xl border bg-card">
+      <ul className="mt-4 divide-y card-surface">
         {items.map((n) => {
           const Icon = ICONS[n.type] ?? Bell;
           const href = notificationHref(n.type, n.dataJson);

@@ -35,6 +35,7 @@ export function ContactButtons({
   categorySlug,
   size = "default",
   layout = "row",
+  variant = "default",
   className,
 }: {
   provider: ContactProvider;
@@ -42,8 +43,11 @@ export function ContactButtons({
   categorySlug?: string;
   size?: "default" | "sm" | "lg";
   layout?: "row" | "stack";
+  /** "profile" is the large green call-to-action on the provider page; "outline" suits small cards. */
+  variant?: "default" | "profile" | "outline";
   className?: string;
 }) {
+  const profile = variant === "profile";
   const [showNumber, setShowNumber] = useState(false);
 
   function call() {
@@ -62,15 +66,33 @@ export function ContactButtons({
     <>
       <div className={cn("flex gap-2", layout === "stack" ? "flex-col" : "flex-row", className)}>
         {provider.acceptsCalls && (
-          <Button size={size} onClick={call} className={cn(layout === "row" && "flex-1")}>
-            <Phone />
-            Call now
+          <Button
+            size={size}
+            variant={profile ? "success" : variant === "outline" ? "outline" : "default"}
+            onClick={call}
+            className={cn(
+              layout === "row" && "flex-1",
+              profile && "text-base",
+              variant === "outline" && "border-primary/50 text-primary shadow-none hover:bg-primary/5 hover:text-primary",
+            )}
+          >
+            <Phone className={cn(profile && "size-5")} fill="currentColor" strokeWidth={0} />
+            {profile ? "Call Now" : "Call"}
           </Button>
         )}
         {provider.acceptsWhatsapp && provider.whatsappNumber && (
-          <Button size={size} variant="outline" onClick={whatsapp} className={cn("border-[oklch(0.85_0.06_150)] text-[oklch(0.45_0.12_150)] hover:bg-[oklch(0.97_0.03_150)] hover:text-[oklch(0.4_0.12_150)]", layout === "row" && "flex-1")}>
-            <MessageCircle />
-            WhatsApp
+          <Button
+            size={size}
+            variant="outline"
+            onClick={whatsapp}
+            className={cn(
+              "border-[oklch(0.72_0.14_150)] text-[oklch(0.42_0.12_150)] shadow-none hover:bg-[oklch(0.97_0.03_150)] hover:text-[oklch(0.38_0.12_150)]",
+              layout === "row" && "flex-1",
+              profile && "text-base",
+            )}
+          >
+            <MessageCircle className={cn("text-[oklch(0.62_0.17_150)]", profile && "size-5")} />
+            {profile ? "Chat on WhatsApp" : "WhatsApp"}
           </Button>
         )}
       </div>

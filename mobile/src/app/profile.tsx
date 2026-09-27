@@ -3,10 +3,11 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "re
 import { Redirect } from "expo-router";
 import { Mail, Phone, UserRound } from "lucide-react-native";
 
-import { AppButton, AppInput, AppText } from "@/components/design-system";
-import { Screen, ScreenHeader } from "@/components/layout";
+import { AppButton, AppCard, AppInput, AppText } from "@/components/design-system";
+import { Screen, ScreenHeader, SectionHeader } from "@/components/layout";
 import { AvatarPicker } from "@/components/profile/AvatarPicker";
 import { PasswordSection } from "@/components/profile/PasswordSection";
+import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { useUpdateProfile } from "@/hooks/useUpdateProfile";
@@ -17,6 +18,7 @@ import { isValid, validateName, validateOptionalPhone } from "@/utils/validation
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const { gutter } = useLayout();
   const toast = useToast();
   const user = useAuthStore((s) => s.user);
   const update = useUpdateProfile();
@@ -54,53 +56,66 @@ export default function ProfileScreen() {
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: theme.spacing[4], gap: theme.spacing[5], paddingBottom: theme.spacing[10] }}
+          contentContainerStyle={{
+            paddingHorizontal: gutter,
+            paddingTop: theme.spacing[2],
+            gap: theme.spacing[6],
+            paddingBottom: theme.spacing[10],
+          }}
         >
-          <View style={[styles.hero, { gap: theme.spacing[2] }]}>
+          <View style={[styles.hero, { gap: theme.spacing[1] }]}>
             <AvatarPicker user={user} />
-            <AppText variant="heading" align="center">
+            <AppText variant="heading" align="center" style={{ marginTop: theme.spacing[2] }}>
               {user.name}
             </AppText>
             <AppText variant="caption" tone="secondary" align="center">
               Member since {formatDate(user.createdAt)}
             </AppText>
           </View>
-          <AppInput
-            label="Full name"
-            required
-            value={name}
-            onChangeText={(v) => (setName(v), setErrors((e) => ({ ...e, name: null })))}
-            error={errors.name}
-            autoComplete="name"
-            leadingIcon={<UserRound size={18} color={theme.colors.text.tertiary} />}
-          />
-          <AppInput
-            label="Email"
-            value={user.email}
-            editable={false}
-            helper="Contact support to change your email."
-            leadingIcon={<Mail size={18} color={theme.colors.text.tertiary} />}
-          />
-          <AppInput
-            label="Mobile number"
-            helper="Optional. Providers never see it unless you call them."
-            value={phone}
-            onChangeText={(v) => (setPhone(v), setErrors((e) => ({ ...e, phone: null })))}
-            error={errors.phone}
-            keyboardType="phone-pad"
-            autoComplete="tel"
-            placeholder="98765 43210"
-            leadingIcon={<Phone size={18} color={theme.colors.text.tertiary} />}
-          />
-          <AppButton
-            size="lg"
-            fullWidth
-            disabled={!dirty}
-            loading={update.isPending}
-            onPress={save}
-          >
-            Save changes
-          </AppButton>
+
+          <View style={{ gap: theme.spacing[3] }}>
+            <SectionHeader title="Personal details" />
+            <AppCard padding={theme.spacing[5]}>
+              <View style={{ gap: theme.spacing[4] }}>
+                <AppInput
+                  label="Full name"
+                  required
+                  value={name}
+                  onChangeText={(v) => (setName(v), setErrors((e) => ({ ...e, name: null })))}
+                  error={errors.name}
+                  autoComplete="name"
+                  leadingIcon={<UserRound size={18} color={theme.colors.text.tertiary} />}
+                />
+                <AppInput
+                  label="Email"
+                  value={user.email}
+                  editable={false}
+                  helper="Contact support to change your email."
+                  leadingIcon={<Mail size={18} color={theme.colors.text.tertiary} />}
+                />
+                <AppInput
+                  label="Mobile number"
+                  helper="Optional. Providers never see it unless you call them."
+                  value={phone}
+                  onChangeText={(v) => (setPhone(v), setErrors((e) => ({ ...e, phone: null })))}
+                  error={errors.phone}
+                  keyboardType="phone-pad"
+                  autoComplete="tel"
+                  placeholder="98765 43210"
+                  leadingIcon={<Phone size={18} color={theme.colors.text.tertiary} />}
+                />
+                <AppButton
+                  size="lg"
+                  fullWidth
+                  disabled={!dirty}
+                  loading={update.isPending}
+                  onPress={save}
+                >
+                  Save changes
+                </AppButton>
+              </View>
+            </AppCard>
+          </View>
           <PasswordSection user={user} />
         </ScrollView>
       </KeyboardAvoidingView>

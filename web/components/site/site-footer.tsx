@@ -15,6 +15,7 @@ const COLUMNS = [
       { href: "/about#trust", label: "Trust and safety" },
       { href: "/contact", label: "Contact" },
       { href: "/help", label: "Help centre" },
+      { href: "/guides", label: "Guides" },
       { href: "/services", label: "All categories" },
     ],
   },
@@ -46,7 +47,7 @@ export async function SiteFooter() {
   const columns = services.length ? [{ title: "Popular services", links: services }, ...COLUMNS] : COLUMNS;
   return (
     <footer className="mt-24 border-t bg-card">
-      <div className="container-page grid gap-10 py-14 md:grid-cols-[1.3fr_repeat(3,1fr)]">
+      <div className="container-wide grid gap-10 py-14 md:grid-cols-[1.3fr_repeat(3,1fr)]">
         <div className="space-y-4">
           <Logo />
           <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -86,7 +87,7 @@ export async function SiteFooter() {
         ))}
       </div>
       <div className="border-t">
-        <div className="container-page flex flex-col gap-2 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="container-wide flex flex-col gap-2 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; {new Date().getFullYear()} DialNFind. All rights reserved.</p>
           <nav aria-label="Legal" className="flex gap-4">
             <Link href="/terms" className="hover:text-foreground">Terms of use</Link>

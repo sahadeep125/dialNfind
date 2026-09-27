@@ -1,12 +1,23 @@
 import { useCallback, useState } from "react";
 import { FlatList, StyleSheet, View, type ListRenderItemInfo } from "react-native";
 import { Redirect } from "expo-router";
-import { MapPin, MapPinOff, Pencil, Plus, Search, Star, Trash2 } from "lucide-react-native";
+import { Home, MapPin, Pencil, Plus, Search, Star, Trash2 } from "lucide-react-native";
 
-import { AppBadge, AppButton, AppCard, AppSheet, AppSkeleton, AppText } from "@/components/design-system";
+import {
+  AppBadge,
+  AppButton,
+  AppCallout,
+  AppCard,
+  AppIconButton,
+  AppIconTile,
+  AppSheet,
+  AppSkeleton,
+  AppText,
+} from "@/components/design-system";
 import { AddressSheet } from "@/components/addresses/AddressSheet";
 import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { useAddresses, useDeleteAddress, useMakeDefaultAddress } from "@/hooks/useAddresses";
+import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
@@ -18,6 +29,7 @@ import { addressToLocation } from "@/utils/addresses";
 /** Saved addresses: search around one in a tap, or pick one from the location sheet. */
 export default function AddressesScreen() {
   const theme = useTheme();
+  const { gutter } = useLayout();
   const toast = useToast();
   const signedIn = useAuthStore((s) => !!s.token);
   const setLocation = useLocationStore((s) => s.setLocation);
@@ -28,7 +40,6 @@ export default function AddressesScreen() {
   const [formOpen, setFormOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const [deleting, setDeleting] = useState<Address | null>(null);
-  const icon = theme.colors.text.primary;
 
   const open = (address: Address | null): void => {
     setEditing(address);
@@ -41,29 +52,36 @@ export default function AddressesScreen() {
       const location = addressToLocation(a);
       return (
         <AppCard padding={theme.spacing[4]}>
-          <View style={[styles.head, { gap: theme.spacing[2] }]}>
-            <MapPin size={18} color={theme.colors.brand.primary} />
-            <AppText variant="subheading" style={styles.flex} numberOfLines={1}>
-              {a.label}
-            </AppText>
-            {a.isDefault ? <AppBadge label="Default" tone="brand" /> : null}
-          </View>
-          <AppText tone="secondary" style={{ marginTop: theme.spacing[1] }}>
-            {a.addressLine}, {a.city}, {a.state} {a.pincode}
-          </AppText>
-          {!location ? (
-            <View style={[styles.head, { gap: theme.spacing[1], marginTop: theme.spacing[2] }]}>
-              <MapPinOff size={14} color={theme.colors.text.tertiary} />
-              <AppText variant="caption" tone="tertiary">
-                No map position yet. Edit it and use your location to search around it.
+          <View style={[styles.head, { gap: theme.spacing[3] }]}>
+            <AppIconTile
+              icon={a.isDefault ? Home : MapPin}
+              tone={a.isDefault ? "brand" : "neutral"}
+              size={42}
+            />
+            <View style={styles.flex}>
+              <View style={[styles.head, { gap: theme.spacing[2] }]}>
+                <AppText variant="subheading" numberOfLines={1} style={styles.shrink}>
+                  {a.label}
+                </AppText>
+                {a.isDefault ? <AppBadge label="Default" tone="brand" /> : null}
+              </View>
+              <AppText variant="caption" tone="secondary">
+                {a.addressLine}, {a.city}, {a.state} {a.pincode}
               </AppText>
             </View>
+          </View>
+          {!location ? (
+            <View style={{ marginTop: theme.spacing[3] }}>
+              <AppCallout tone="warning">
+                No map position yet. Edit it and use your location to search around it.
+              </AppCallout>
+            </View>
           ) : null}
-          <View style={[styles.actions, { gap: theme.spacing[2], marginTop: theme.spacing[3] }]}>
+          <View style={[styles.actions, { gap: theme.spacing[2], marginTop: theme.spacing[4] }]}>
             {location ? (
               <AppButton
                 size="sm"
-                leadingIcon={<Search size={14} color="#FFFFFF" />}
+                icon={Search}
                 onPress={() => {
                   setLocation(location);
                   toast(`Searching around ${a.label}`, "success");
@@ -72,29 +90,43 @@ export default function AddressesScreen() {
                 Search here
               </AppButton>
             ) : null}
-            <AppButton size="sm" variant="secondary" accessibilityLabel={`Edit ${a.label}`} leadingIcon={<Pencil size={14} color={icon} />} onPress={() => open(a)}>
+            <AppButton
+              size="sm"
+              variant="secondary"
+              icon={Pencil}
+              accessibilityLabel={`Edit ${a.label}`}
+              onPress={() => open(a)}
+            >
               Edit
             </AppButton>
             {!a.isDefault ? (
               <AppButton
                 size="sm"
                 variant="ghost"
+                icon={Star}
                 accessibilityLabel={`Make ${a.label} the default`}
-                leadingIcon={<Star size={14} color={icon} />}
-                onPress={() => makeDefault.mutate(a.id, { onError: (e: Error) => toast(errorMessage(e), "error") })}
+                onPress={() =>
+                  makeDefault.mutate(a.id, {
+                    onError: (e: Error) => toast(errorMessage(e), "error"),
+                  })
+                }
               >
                 Default
               </AppButton>
             ) : null}
-            <AppButton size="sm" variant="ghost" accessibilityLabel={`Delete ${a.label}`} leadingIcon={<Trash2 size={14} color={theme.colors.semantic.danger} />} onPress={() => setDeleting(a)}>
-              Delete
-            </AppButton>
+            <View style={styles.flex} />
+            <AppIconButton
+              accessibilityLabel={`Delete ${a.label}`}
+              size="sm"
+              icon={<Trash2 size={17} color={theme.colors.semantic.danger} />}
+              onPress={() => setDeleting(a)}
+            />
           </View>
         </AppCard>
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mutations are stable enough for list rows
-    [theme, icon, setLocation, toast],
+    [theme, setLocation, toast],
   );
 
   if (!signedIn) return <Redirect href="/login" />;
@@ -104,7 +136,7 @@ export default function AddressesScreen() {
       <ScreenHeader
         title="Saved addresses"
         right={
-          <AppButton size="sm" variant="ghost" leadingIcon={<Plus size={16} color={theme.colors.brand.primary} />} onPress={() => open(null)}>
+          <AppButton size="sm" variant="soft" icon={Plus} onPress={() => open(null)}>
             Add
           </AppButton>
         }
@@ -113,7 +145,10 @@ export default function AddressesScreen() {
         data={isLoading || isError ? [] : (data ?? [])}
         keyExtractor={(a) => String(a.id)}
         renderItem={renderItem}
-        contentContainerStyle={[styles.content, { padding: theme.spacing[4], gap: theme.spacing[3] }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: gutter, paddingTop: theme.spacing[2], gap: theme.spacing[3] },
+        ]}
         ListEmptyComponent={
           isLoading ? (
             <View style={{ gap: theme.spacing[3] }}>
@@ -127,17 +162,30 @@ export default function AddressesScreen() {
               icon={MapPin}
               title="No saved addresses"
               text="Save home, work or family addresses to search around them in one tap."
-              action={<AppButton onPress={() => open(null)}>Add an address</AppButton>}
+              action={
+                <AppButton icon={Plus} onPress={() => open(null)}>
+                  Add an address
+                </AppButton>
+              }
             />
           )
         }
       />
-      <AddressSheet key={formKey} visible={formOpen} address={editing} onClose={() => setFormOpen(false)} />
+      <AddressSheet
+        key={formKey}
+        visible={formOpen}
+        address={editing}
+        onClose={() => setFormOpen(false)}
+      />
       <AppSheet visible={!!deleting} onClose={() => setDeleting(null)} title="Delete this address?">
-        <View style={{ gap: theme.spacing[4], paddingBottom: theme.spacing[4] }}>
-          <AppText tone="secondary">{deleting ? `${deleting.label}, ${deleting.addressLine}` : ""}</AppText>
+        <View style={{ gap: theme.spacing[5] }}>
+          <AppText tone="secondary">
+            {deleting ? `${deleting.label}, ${deleting.addressLine}` : ""}
+          </AppText>
           <AppButton
             variant="destructive"
+            icon={Trash2}
+            size="lg"
             fullWidth
             loading={remove.isPending}
             onPress={() =>
@@ -163,5 +211,6 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingBottom: 32 },
   head: { alignItems: "center", flexDirection: "row" },
   flex: { flex: 1 },
-  actions: { flexDirection: "row", flexWrap: "wrap" },
+  shrink: { flexShrink: 1 },
+  actions: { alignItems: "center", flexDirection: "row", flexWrap: "wrap" },
 });

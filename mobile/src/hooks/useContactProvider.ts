@@ -7,6 +7,7 @@ import { recordContact } from "@/services/reviewPrompt";
 import type { ProviderCard } from "@/types";
 import { queryKeys } from "./queryKeys";
 import { useToast } from "./useToast";
+import { logError } from "@/utils/log";
 
 type Channel = "call" | "whatsapp";
 type Source = "search" | "category_browse" | "profile";
@@ -35,7 +36,7 @@ export function useContactProvider(): (
         void qc.invalidateQueries({ queryKey: queryKeys.contacts });
       } catch (error: unknown) {
         // Counting the lead should never stop someone from reaching the provider.
-        console.error("[leads] Could not record lead", error);
+        logError("[leads] Could not record lead", error);
       }
       try {
         if (channel === "call") await openPhone(number);
