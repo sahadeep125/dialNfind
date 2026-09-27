@@ -35,7 +35,7 @@ echo "✅ Database is ready!"
 
 # 5. Run Database Migrations & Release Bootstrap
 echo "⚡ Running database migrations and initial bootstrap..."
-docker compose run --rm server pnpm release
+docker compose run --build --rm server pnpm release
 
 # 6. Build and start all services
 echo "📦 Building and starting all application services..."

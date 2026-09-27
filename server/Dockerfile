@@ -25,6 +25,7 @@ FROM base AS runtime
 ENV NODE_ENV=production
 RUN pnpm install --frozen-lockfile --prod --filter server...
 COPY server/prisma server/prisma
+COPY server/src server/src
 RUN pnpm --filter server exec prisma generate
 COPY --from=build /app/server/dist server/dist
 RUN mkdir -p /app/uploads/public /app/uploads/private && chown -R node:node /app/uploads
