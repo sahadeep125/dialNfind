@@ -59,3 +59,20 @@ jest.mock("@react-native-community/datetimepicker", () => {
   const Picker = (props) => require("react").createElement(View, { testID: "datetimepicker", ...props });
   return { __esModule: true, default: Picker, DateTimePickerAndroid: { open: jest.fn(), dismiss: jest.fn(async () => true) } };
 });
+
+// Sentry's native SDK is not available in Jest; monitoring is off without a DSN anyway.
+jest.mock("@sentry/react-native", () => ({
+  init: jest.fn(),
+  wrap: (component) => component,
+  setUser: jest.fn(),
+  captureException: jest.fn(),
+  reactNavigationIntegration: jest.fn(() => ({ registerNavigationContainer: jest.fn() })),
+}));
+
+// Analytics is off in tests (no EXPO_PUBLIC_POSTHOG_KEY); the stub keeps PostHog's native replay module out of Jest.
+jest.mock("posthog-react-native", () => ({
+  __esModule: true,
+  default: jest.fn(),
+  PostHogProvider: ({ children }) => children,
+  usePostHog: jest.fn(() => null),
+}));

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgeCheck, Flag, Loader2, MessageSquare, Pencil, Reply } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { formatRelative, initials } from "@/lib/format";
 import type { ProviderReview, ReviewsResponse } from "@/lib/types";
@@ -82,6 +83,7 @@ function ReviewCard({ review }: { review: ProviderReview }) {
   const report = useMutation({
     mutationFn: (reason: string) => api(`/provider/reviews/${review.id}/report`, { method: "POST", json: { reason } }),
     onSuccess: () => {
+      track("review_reported", { review_id: review.id });
       toast.success("Thanks. Our team will check this review against the guidelines.");
       setReporting(false);
       void qc.invalidateQueries({ queryKey: ["reviews"] });
@@ -98,7 +100,8 @@ function ReviewCard({ review }: { review: ProviderReview }) {
   const replyId = `reply-${review.id}`;
   const mutation = useMutation({
     mutationFn: (reply: string | null) => api(`/provider/reviews/${review.id}/reply`, { method: "PUT", json: { reply } }),
-    onSuccess: () => {
+    onSuccess: (_r, reply) => {
+      track(reply === null ? "review_reply_removed" : "review_replied", { review_id: review.id, rating: review.rating, is_edit: Boolean(review.providerReply) });
       toast.success("Reply published");
       setEditing(false);
       void qc.invalidateQueries();

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, Eye, Flag, Scale, Search, ShieldCheck, Star, Store, UserCheck } from "lucide-react";
 import { publicApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { BusinessIllustration, TrustIllustration } from "@/components/illustrations/spots";
-import { HeroIllustration } from "@/components/illustrations/hero-illustration";
+import { PhotoFrame } from "@/components/site/photo-frame";
+import { PROVIDER_IMAGE, STEP_IMAGES, TOOLS_IMAGE } from "@/lib/stock-images";
 
 export const revalidate = 600;
 
@@ -21,7 +21,7 @@ export default async function AboutPage() {
     <div>
       <section className="container-page grid items-center gap-10 py-14 lg:grid-cols-2 lg:py-20">
         <div>
-          <span className="text-sm font-semibold uppercase tracking-wider text-primary">About us</span>
+          <span className="eyebrow">About us</span>
           <h1 className="mt-3 text-4xl font-extrabold leading-tight text-brand-deep md:text-5xl">Local help should be one search away</h1>
           <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
             DialNFind is a directory of local service professionals: electricians, plumbers, appliance technicians, cleaners, tutors and more. You tell us what you need and
@@ -40,7 +40,7 @@ export default async function AboutPage() {
             ))}
           </div>
         </div>
-        <HeroIllustration className="mx-auto w-full max-w-lg" />
+        <PhotoFrame image={TOOLS_IMAGE} priority />
       </section>
 
       <section className="border-y bg-card py-16">
@@ -64,7 +64,7 @@ export default async function AboutPage() {
                 { icon: UserCheck, t: "Contact directly", d: "Call or WhatsApp the provider. No booking fees, no middleman." },
               ].map((i) => (
                 <li key={i.t} className="flex gap-4">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent text-primary">
                     <i.icon className="size-5" />
                   </span>
                   <div>
@@ -79,9 +79,9 @@ export default async function AboutPage() {
       </section>
 
       <section id="providers" className="container-page grid scroll-mt-20 items-center gap-10 py-16 lg:grid-cols-2">
-        <BusinessIllustration className="mx-auto w-full max-w-md" />
+        <PhotoFrame image={PROVIDER_IMAGE} />
         <div>
-          <span className="text-sm font-semibold uppercase tracking-wider text-primary">For service providers</span>
+          <span className="eyebrow">For service providers</span>
           <h2 className="mt-2 text-3xl font-bold text-brand-deep">How providers get listed</h2>
           <ol className="mt-6 space-y-5">
             {[
@@ -107,10 +107,10 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      <section id="trust" className="scroll-mt-20 bg-[linear-gradient(180deg,oklch(0.965_0.02_266),transparent)] py-16">
+      <section id="trust" className="scroll-mt-20 border-y bg-card py-16">
         <div className="container-page grid items-center gap-10 lg:grid-cols-[1fr_0.8fr]">
           <div>
-            <span className="text-sm font-semibold uppercase tracking-wider text-primary">Trust and safety</span>
+            <span className="eyebrow">Trust and safety</span>
             <h2 className="mt-2 text-3xl font-bold text-brand-deep">Our approach to trust</h2>
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
               {[
@@ -129,13 +129,13 @@ export default async function AboutPage() {
               ))}
             </div>
           </div>
-          <TrustIllustration className="mx-auto w-full max-w-md" />
+          <PhotoFrame image={STEP_IMAGES.call} className="hidden lg:block" />
         </div>
       </section>
 
       <section className="container-page pt-8 text-center">
         <h2 className="text-3xl font-bold text-brand-deep">Ready to find help nearby?</h2>
-        <Button asChild size="lg" className="mt-6">
+        <Button asChild size="lg" variant="cta" className="mt-6">
           <Link href="/search">
             Start searching <ArrowRight />
           </Link>

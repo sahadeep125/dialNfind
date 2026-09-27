@@ -1,13 +1,12 @@
 import { Router } from "express";
 import { z } from "zod";
-import { httpUrl } from "../../lib/rules.js";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, notFound, upgradeRequired } from "../../lib/errors.js";
 import { num } from "../../lib/serialize.js";
 import { completenessChecklist, recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
 import { applicableAttributes, attributeOptions, decodeAttributeValue, encodeAttributeValue, loadAttributeValues } from "../../services/attributes.js";
-import { storage } from "../../storage/index.js";
+import { releaseFile, uploadedImageUrl } from "../../storage/references.js";
 import { ownProvider } from "./common.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "./shared.js";
 import { privateFileUrl } from "../../lib/private-files.js";
@@ -155,7 +154,7 @@ profileRouter.put("/attributes", async (req, res) => {
 const portfolioSchema = z.object({
   title: z.string().trim().min(2).max(100),
   description: z.string().trim().max(500).nullable().optional(),
-  imageUrl: httpUrl,
+  imageUrl: uploadedImageUrl,
   categoryId: z.number().int().positive().nullable().optional(),
 });
 
@@ -196,7 +195,6 @@ profileRouter.patch("/portfolio/:id", async (req, res) => {
   const id = idParam(req.params.id as string);
   const existing = await prisma.providerPortfolio.findUnique({ where: { id } });
   if (!existing || existing.providerId !== provider.id) throw notFound("Portfolio item not found");
-  if (body.imageUrl && body.imageUrl !== existing.imageUrl) void storage.remove(existing.imageUrl);
   const [, item] = await prisma.$transaction([
     // Only one cover photo per listing.
     prisma.providerPortfolio.updateMany({ where: { providerId: provider.id, isCover: true, id: { not: id } }, data: body.isCover ? { isCover: false } : {} }),
@@ -205,6 +203,7 @@ profileRouter.patch("/portfolio/:id", async (req, res) => {
       data: { ...body, categoryId: body.categoryId === undefined ? undefined : body.categoryId ? BigInt(body.categoryId) : null },
     }),
   ]);
+  if (body.imageUrl && body.imageUrl !== existing.imageUrl) void releaseFile(existing.imageUrl);
   res.json({ item });
 });
 
@@ -214,7 +213,7 @@ profileRouter.delete("/portfolio/:id", async (req, res) => {
   const existing = await prisma.providerPortfolio.findUnique({ where: { id } });
   if (!existing || existing.providerId !== provider.id) throw notFound("Portfolio item not found");
   await prisma.providerPortfolio.delete({ where: { id } });
-  void storage.remove(existing.imageUrl);
+  void releaseFile(existing.imageUrl);
   await recalculateProvider(provider.id);
   res.json({ ok: true });
 });

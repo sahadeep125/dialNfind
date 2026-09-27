@@ -84,10 +84,10 @@ export function LocationPicker({
             triggerClassName,
           )}
         >
-          <MapPin className="size-5 shrink-0 text-primary" />
+          <MapPin className="size-5 shrink-0 text-cta" />
           <span className="min-w-0 flex-1">
-            <span className={cn("block text-[11px] font-medium uppercase tracking-wide text-muted-foreground", hideLabel && "sr-only")}>Location</span>
-            <span className={cn("block truncate", hideLabel ? "text-[15px]" : "text-sm font-semibold")}>{value.label}</span>
+            <span className={cn("block text-xs font-bold uppercase tracking-wide text-foreground/70", hideLabel && "sr-only")}>Location</span>
+            <span className={cn("block truncate", hideLabel ? "text-[15px]" : "mt-0.5 text-base")}>{value.label}</span>
           </span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
         </button>
@@ -127,9 +127,9 @@ export function LocationPicker({
               type="button"
               key={`${o.kind}-${o.label}`}
               onClick={() => select(o)}
-              className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-muted"
+              className="flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-muted"
             >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                 <MapPin className="size-4" />
               </span>
               <span className="min-w-0 flex-1">

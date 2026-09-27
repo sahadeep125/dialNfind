@@ -1,43 +1,17 @@
 import { readdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
-import { prisma } from "../lib/prisma.js";
-import { PRIVATE_FILES_ROUTE, privateDir } from "../lib/private-files.js";
-import { UPLOAD_ROUTE, uploadDir } from "../storage/index.js";
+import { privateDir } from "../lib/private-files.js";
+import { uploadDir } from "../storage/index.js";
+import { allUploadUrls, uploadKey } from "../storage/references.js";
 
 const GRACE_MS = 48 * 60 * 60 * 1000;
 
-/** Every upload URL some record still points at, as "public:<key>" or "private:<key>". */
+/** Every upload some record still points at, as "public:<key>" or "private:<key>". */
 async function referencedKeys(): Promise<Set<string>> {
-  const [users, providers, portfolio, reviewPhotos, categories, subcategories, badges, verifications, claims, messages] = await Promise.all([
-    prisma.user.findMany({ where: { profilePhotoUrl: { not: null } }, select: { profilePhotoUrl: true } }),
-    prisma.provider.findMany({ where: { OR: [{ logoUrl: { not: null } }, { coverUrl: { not: null } }] }, select: { logoUrl: true, coverUrl: true } }),
-    prisma.providerPortfolio.findMany({ select: { imageUrl: true } }),
-    prisma.reviewPhoto.findMany({ select: { photoUrl: true } }),
-    prisma.category.findMany({ where: { iconUrl: { not: null } }, select: { iconUrl: true } }),
-    prisma.subcategory.findMany({ where: { iconUrl: { not: null } }, select: { iconUrl: true } }),
-    prisma.badge.findMany({ where: { iconUrl: { not: null } }, select: { iconUrl: true } }),
-    prisma.verification.findMany({ where: { documentUrl: { not: null } }, select: { documentUrl: true } }),
-    prisma.providerClaim.findMany({ where: { documentUrl: { not: null } }, select: { documentUrl: true } }),
-    prisma.ticketMessage.findMany({ where: { attachments: { isEmpty: false } }, select: { attachments: true } }),
-  ]);
-  const urls = [
-    ...users.map((u) => u.profilePhotoUrl),
-    ...providers.flatMap((p) => [p.logoUrl, p.coverUrl]),
-    ...portfolio.map((p) => p.imageUrl),
-    ...reviewPhotos.map((p) => p.photoUrl),
-    ...[...categories, ...subcategories, ...badges].map((c) => c.iconUrl),
-    ...[...verifications, ...claims].map((d) => d.documentUrl),
-    ...messages.flatMap((m) => m.attachments),
-  ];
   const keys = new Set<string>();
-  for (const url of urls) {
-    if (!url) continue;
-    // Matched on the path, not the full origin, so a changed PUBLIC_URL never makes live files look unused.
-    const clean = url.split("?")[0];
-    for (const [scope, route] of [["public", `${UPLOAD_ROUTE}/`], ["private", `${PRIVATE_FILES_ROUTE}/`]] as const) {
-      const at = clean.indexOf(route);
-      if (at !== -1) keys.add(`${scope}:${clean.slice(at + route.length)}`);
-    }
+  for (const url of await allUploadUrls()) {
+    const key = url && uploadKey(url);
+    if (key) keys.add(key);
   }
   return keys;
 }

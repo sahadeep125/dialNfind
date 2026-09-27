@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { track } from "@/lib/analytics";
 import { APPLE_REDIRECT_URI, APPLE_SERVICES_ID, GOOGLE_CLIENT_ID } from "@/lib/config";
 import { appleSignIn, renderGoogleButton, SocialCancelled, type SocialPayload, type SocialProvider } from "@/lib/social-auth";
 
@@ -33,7 +34,9 @@ export function SocialButtons({ mode, onError, onSignedIn }: Props) {
         });
         const body = await res.json().catch(() => null);
         if (!res.ok) throw new Error(body?.error?.message ?? "Could not sign you in. Please try again.");
-        onSignedIn({ isNewUser: Boolean(body?.isNewUser) });
+        const isNewUser = Boolean(body?.isNewUser);
+        track(isNewUser ? "signed_up" : "logged_in", { method: provider, role: "customer" });
+        onSignedIn({ isNewUser });
       } catch (err) {
         onError(err instanceof Error ? err.message : "Could not sign you in. Please try again.");
         setBusy(null);

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { router } from "expo-router";
 
 import { api, errorMessage } from "@/services/api";
+import { track } from "@/services/analytics";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useToast } from "./useToast";
 
@@ -21,7 +22,8 @@ export function useToggleFavorite(): UseMutationResult<void, Error, ToggleInput>
     mutationFn: async ({ providerId, isFavorite }: ToggleInput): Promise<void> => {
       await api(`/me/favorites/${providerId}`, { method: isFavorite ? "DELETE" : "PUT" });
     },
-    onSuccess: (_data: void, { isFavorite }: ToggleInput) => {
+    onSuccess: (_data: void, { providerId, isFavorite }: ToggleInput) => {
+      track("favorite_toggled", { provider_id: providerId, favorited: !isFavorite });
       toast(isFavorite ? "Removed from favorites" : "Saved to favorites", "success");
       void qc.invalidateQueries({
         predicate: (q) =>

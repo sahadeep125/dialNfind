@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { track } from "@/lib/analytics";
 import { initials } from "@/lib/format";
 import { useSession } from "./session-provider";
 
@@ -19,6 +20,7 @@ export function UserMenu({ user }: { user: { name: string; email: string; role: 
   const router = useRouter();
   const { refresh } = useSession();
   async function logout() {
+    track("logged_out");
     await fetch("/api/auth/logout", { method: "POST" });
     await refresh();
     router.push("/");

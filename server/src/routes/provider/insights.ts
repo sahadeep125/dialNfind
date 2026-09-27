@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
-import { badRequest, conflict, notConfigured, notFound } from "../../lib/errors.js";
+import { badRequest, billingDetailsRequired, conflict, notConfigured, notFound } from "../../lib/errors.js";
 import { pageMeta, paginationSchema } from "../../lib/pagination.js";
 import { num } from "../../lib/serialize.js";
 import { completenessChecklist } from "../../services/ranking.js";
@@ -487,7 +487,7 @@ insightsRouter.post("/sponsored/checkout", limits.billing, async (req, res) => {
   const body = parse(sponsorSchema, req.body);
   if (!razorpayConfigured()) throw notConfigured("Online payments are not set up yet. Send a request and our team will help.");
   const category = await assertCanPromote(provider, body);
-  if (!(provider.billingStateCode ?? stateCodeFor(provider.state))) throw badRequest("Add your billing details first");
+  if (!(provider.billingStateCode ?? stateCodeFor(provider.state))) throw billingDetailsRequired();
   const rate = await getNumberSetting("invoice_gst_rate", 18);
   const amount = Math.round(body.budget * (1 + rate / 100) * 100) / 100;
   const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id }, select: { name: true, email: true, phone: true } });

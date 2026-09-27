@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Loader2 } from "lucide-react";
+import { track } from "@/lib/analytics";
 import { APPLE_REDIRECT_URI, APPLE_SERVICES_ID, GOOGLE_CLIENT_ID } from "@/lib/config";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -33,6 +34,7 @@ export function SocialButtons({ mode, onError, onSignedIn }: Props) {
           json: { ...payload, role: "provider" },
         });
         await signIn(res.token);
+        track(res.isNewUser ? "signed_up" : "logged_in", { method: provider, role: "provider" });
         onSignedIn({ isNewUser: res.isNewUser });
       } catch (err) {
         onError(errorMessage(err));

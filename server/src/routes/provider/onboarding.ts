@@ -11,6 +11,7 @@ import { limits } from "../../lib/rate-limit.js";
 import { privateFileUrl } from "../../lib/private-files.js";
 import { createListing, newListingSchema } from "../../services/listings.js";
 import { getPlanState } from "../../services/entitlements.js";
+import { captureServer } from "../../services/analytics.js";
 
 export const onboardingRouter = Router();
 
@@ -72,6 +73,7 @@ onboardingRouter.post("/onboarding", async (req, res) => {
   // Controlled by the auto_approve_listings setting in the admin app.
   const autoApprove = ((await getSetting("auto_approve_listings")) ?? String(!isProduction)) === "true";
   const provider = await createListing(body, { ownerId: user.id, status: autoApprove ? "active" : "pending" });
+  captureServer(user.id, "provider_onboarded", { provider_id: Number(provider.id), status: provider.status, was_customer: token !== null });
   res.status(201).json({ provider: { id: provider.id, slug: provider.slug, status: provider.status }, token });
 });
 

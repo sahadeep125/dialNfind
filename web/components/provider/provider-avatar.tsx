@@ -11,7 +11,7 @@ export function ProviderAvatar({
   categorySlug,
   className,
   size = "md",
-    style,
+  style,
 }: {
   name: string;
   logoUrl?: string | null;
@@ -20,7 +20,7 @@ export function ProviderAvatar({
   size?: "md" | "lg" | "xl";
   style?: React.CSSProperties;
 }) {
-  const dims = size === "xl" ? "size-24 rounded-3xl text-3xl" : size === "lg" ? "size-16 rounded-2xl text-xl" : "size-14 rounded-2xl text-lg";
+  const dims = size === "xl" ? "size-24 rounded-xl text-3xl" : size === "lg" ? "size-16 rounded-lg text-xl" : "size-14 rounded-lg text-lg";
   if (logoUrl) {
     return (
       <span className={cn("relative block shrink-0 overflow-hidden bg-muted", dims, className)}>
@@ -32,7 +32,7 @@ export function ProviderAvatar({
   return (
     <span className={cn("relative flex shrink-0 items-center justify-center font-display font-bold", dims, tone.bg, tone.fg, className)} aria-hidden>
       {initials(name)}
-      <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-lg border-2 border-card border bg-card shadow-sm" style={{...style}}>
+      <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-md border-2 border-card bg-card shadow-sm" style={style}>
         <CategoryGlyph slug={categorySlug} className="size-3.5" strokeWidth={2} />
       </span>
     </span>

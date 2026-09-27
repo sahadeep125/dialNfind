@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AlertTriangle, Check, Crown, Download, ExternalLink, FileText, Loader2, Receipt, Smartphone } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -52,6 +53,8 @@ export function SubscriptionPage() {
         "/provider/billing/razorpay/checkout",
         { method: "POST", json: { planCode: plan.code, billingCycle: cycle } },
       );
+      const props = { plan: plan.code, billing_cycle: cycle, payment_source: "razorpay" };
+      track("checkout_started", props);
       const result = await openCheckout({
         key: session.keyId,
         subscription_id: session.subscriptionId,
@@ -61,8 +64,12 @@ export function SubscriptionPage() {
         notes: session.notes,
         theme: { color: "#3d4bd6" },
       });
-      if (!result) return null;
+      if (!result) {
+        track("checkout_dismissed", props);
+        return null;
+      }
       await api("/provider/billing/razorpay/verify", { method: "POST", json: result });
+      track("subscription_purchased", props);
       return plan;
     },
     onSuccess: async (plan) => {
@@ -70,12 +77,16 @@ export function SubscriptionPage() {
       await afterChange();
       toast.success(`Welcome to ${plan.name}. Your invoice is below and on its way to ${user?.email}.`);
     },
-    onError: (e) => toast.error(errorMessage(e)),
+    onError: (e, plan) => {
+      track("checkout_failed", { plan: plan.code, billing_cycle: cycle, payment_source: "razorpay", error: errorMessage(e) });
+      toast.error(errorMessage(e));
+    },
   });
 
   const change = useMutation({
     mutationFn: (plan: PlanForSale) => api("/provider/billing/change-plan", { method: "POST", json: { planCode: plan.code, billingCycle: cycle } }),
     onSuccess: async (_d, plan) => {
+      track("plan_changed", { plan: plan.code, billing_cycle: cycle });
       setConfirm(null);
       await afterChange();
       toast.success(`You are now on ${plan.name}`);
@@ -86,6 +97,7 @@ export function SubscriptionPage() {
   const cancel = useMutation({
     mutationFn: () => api("/provider/billing/cancel", { method: "POST" }),
     onSuccess: async () => {
+      track("subscription_cancelled");
       setConfirm(null);
       await afterChange();
       toast.success("Your plan will not renew. It keeps working until the end of the paid period.");
@@ -96,6 +108,7 @@ export function SubscriptionPage() {
   const resume = useMutation({
     mutationFn: () => api("/provider/billing/resume", { method: "POST" }),
     onSuccess: async () => {
+      track("subscription_resumed");
       await afterChange();
       toast.success("Your plan will renew as usual");
     },

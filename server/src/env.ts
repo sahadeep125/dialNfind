@@ -1,4 +1,6 @@
 import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 function required(name: string, fallback?: string): string {
   const value = process.env[name] ?? fallback;
@@ -8,6 +10,12 @@ function required(name: string, fallback?: string): string {
   return value;
 }
 
+/** The repository root (this file is server/src/env.ts, or server/dist/env.js once built). */
+const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
+
+/** Relative folders are taken from the repository root, so they are the same whichever directory the API starts in. */
+const fromRepoRoot = (dir: string) => path.resolve(REPO_ROOT, dir);
+
 function list(value: string | undefined): string[] {
   return (value ?? "").split(",").map((v) => v.trim()).filter(Boolean);
 }
@@ -16,12 +24,19 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
   port: Number(process.env.PORT ?? 4000),
   databaseUrl: required("DATABASE_URL"),
-  jwtSecret: required("JWT_SECRET", process.env.NODE_ENV === "production" ? undefined : "dev-secret"),
+  /** Signs session tokens and, with a separate prefix, private file links. No fallback, so a forgotten value can never mean a guessable secret. */
+  jwtSecret: required("JWT_SECRET"),
   /** Customer and provider sign-ins last this many days; staff sign-ins are much shorter. */
   sessionDays: Number(process.env.SESSION_DAYS ?? 30),
   staffSessionHours: Number(process.env.STAFF_SESSION_HOURS ?? 12),
   /** Scales every rate limit (2 doubles them). 0 turns rate limiting off, for load tests only. */
   rateLimitMultiplier: Number(process.env.RATE_LIMIT_MULTIPLIER ?? 1),
+  /**
+   * Proxies in front of the API that add an X-Forwarded-For entry (a load balancer is 1; a CDN in front of it
+   * makes 2). Rate limits are per visitor address, so a wrong count makes everyone share one limit (too low)
+   * or lets visitors pick their own address (too high).
+   */
+  trustProxyHops: Number(process.env.TRUST_PROXY_HOPS ?? 1),
   corsOrigins: list(process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:5173,http://localhost:5174"),
   timezone: process.env.APP_TIMEZONE ?? "Asia/Kolkata",
   /** Scheduled jobs (plan expiry, reminders, nightly ranking). Turn on in exactly one API instance. */
@@ -86,9 +101,46 @@ export const env = {
     webhookAuth: process.env.REVENUECAT_WEBHOOK_AUTH ?? "",
     projectId: process.env.REVENUECAT_PROJECT_ID ?? "",
   },
-  uploadDir: process.env.UPLOAD_DIR ?? "uploads",
+  /**
+   * Product analytics (PostHog). Off unless POSTHOG_KEY is set. The key is the project token shared with the
+   * web and mobile apps, so server events land on the same people.
+   */
+  posthog: {
+    key: process.env.POSTHOG_KEY ?? "",
+    host: (process.env.POSTHOG_HOST ?? "https://us.i.posthog.com").replace(/\/$/, ""),
+    environment: process.env.APP_ENV ?? process.env.NODE_ENV ?? "development",
+  },
+  /** Public images (logos, covers, portfolio, review and profile photos), served at PUBLIC_URL/uploads. */
+  uploadDir: fromRepoRoot(process.env.UPLOAD_DIR || "uploads/public"),
   /** ID proofs, ownership documents and support attachments. Never served publicly; see lib/private-files.ts. */
-  uploadPrivateDir: process.env.UPLOAD_PRIVATE_DIR ?? "uploads-private",
+  uploadPrivateDir: fromRepoRoot(process.env.UPLOAD_PRIVATE_DIR || "uploads/private"),
 };
 
 export const isProduction = env.nodeEnv === "production";
+
+/**
+ * Settings that work in development but are wrong for real users: a weak token secret, links that
+ * point at localhost, email printed to the console instead of sent. Production refuses to start with
+ * any of them, so a missed variable shows up at deploy time instead of in a customer's inbox.
+ */
+function productionProblems(): string[] {
+  const problems: string[] = [];
+  if (env.jwtSecret.length < 32 || env.jwtSecret === "change-me-in-production") {
+    problems.push("JWT_SECRET must be a random value of at least 32 characters (for example `openssl rand -base64 48`)");
+  }
+  const local = /localhost|127\.0\.0\.1|10\.0\.2\.2/;
+  for (const [name, value] of [["PUBLIC_URL", env.publicUrl], ["WEB_URL", env.webUrl], ["PROVIDER_URL", env.providerUrl], ["ADMIN_URL", env.adminUrl]] as const) {
+    if (local.test(value) || !value.startsWith("https://")) problems.push(`${name} must be the public https address, not ${value}`);
+  }
+  if (!process.env.CORS_ORIGINS) problems.push("CORS_ORIGINS must list the web, provider and admin origins");
+  if (!env.smtp.host) problems.push("SMTP_HOST is empty, so sign-up codes and password reset links would only be printed to the log");
+  if (env.rateLimitMultiplier <= 0) problems.push("RATE_LIMIT_MULTIPLIER must be above 0; 0 turns off every rate limit");
+  return problems;
+}
+
+if (isProduction) {
+  const problems = productionProblems();
+  if (problems.length) {
+    throw new Error(`Refusing to start with NODE_ENV=production:\n- ${problems.join("\n- ")}`);
+  }
+}

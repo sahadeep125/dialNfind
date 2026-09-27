@@ -4,19 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex w-fit shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors [&>svg]:pointer-events-none [&>svg]:size-3",
+  "inline-flex w-fit shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-xs font-medium transition-colors [&>svg]:pointer-events-none [&>svg]:size-3",
   {
     variants: {
       variant: {
         default: "border-transparent bg-primary text-primary-foreground",
         secondary: "border-transparent bg-secondary text-secondary-foreground",
         outline: "bg-card text-foreground",
-        success: "border-transparent bg-success-soft text-[oklch(0.42_0.1_165)]",
+        success: "border-transparent bg-success-soft text-[oklch(0.4_0.1_155)]",
         warning: "border-transparent bg-warning-soft text-[oklch(0.45_0.1_60)]",
         muted: "border-transparent bg-muted text-muted-foreground",
         destructive: "border-transparent bg-destructive/10 text-destructive",
-        soft: "border-transparent bg-primary/10 text-primary",
-        chip: "rounded-lg border-transparent bg-muted px-3 py-1 text-[13px] font-medium text-foreground/75",
+        soft: "border-transparent bg-accent text-primary",
+        cta: "border-transparent bg-cta-soft text-cta-hover",
+        chip: "rounded-md border-transparent bg-muted px-2.5 py-1 text-[13px] font-medium text-foreground/75",
       },
     },
     defaultVariants: { variant: "default" },

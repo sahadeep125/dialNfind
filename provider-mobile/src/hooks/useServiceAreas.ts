@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import type { ProviderProfile, ServiceArea } from "@/types";
 import type { ProfileResponse } from "@/types/listing";
@@ -34,6 +35,9 @@ export function useSaveServiceAreas(): UseMutationResult<ProviderProfile, Error,
         })
       ).provider;
     },
-    onSuccess: (provider: ProviderProfile) => refreshListing(qc, provider),
+    onSuccess: (provider: ProviderProfile, { areas, serviceRadiusKm }: SaveAreasInput) => {
+      track("listing_section_saved", { section: "serviceAreas", item_count: areas.length, service_radius_km: serviceRadiusKm });
+      return refreshListing(qc, provider);
+    },
   });
 }

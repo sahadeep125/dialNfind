@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { initAnalytics } from "./lib/analytics";
 
 // Browser errors. Off unless NEXT_PUBLIC_SENTRY_DSN is set.
 Sentry.init({
@@ -15,5 +16,8 @@ Sentry.init({
     return event;
   },
 });
+
+// Product analytics (PostHog); off unless NEXT_PUBLIC_POSTHOG_KEY is set.
+initAnalytics();
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

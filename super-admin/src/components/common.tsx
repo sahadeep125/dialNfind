@@ -1,9 +1,32 @@
-import { ChevronLeft, ChevronRight, Loader2, Star } from "lucide-react";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight, CloudOff, Loader2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * What a page shows until its data arrives. If a request on the page failed and nothing is loading any
+ * more, it shows the error with a Retry button instead, so a failed request never looks like endless loading.
+ */
 export function PageSkeleton() {
+  const qc = useQueryClient();
+  const fetching = useIsFetching();
+  const failed = fetching
+    ? []
+    : qc.getQueryCache().findAll({ type: "active", predicate: (q) => q.state.status === "error" && q.state.data === undefined });
+  if (failed.length) {
+    const error = failed[0].state.error;
+    return (
+      <div className="flex flex-col items-center rounded-2xl border border-dashed px-6 py-16 text-center">
+        <CloudOff className="size-8 text-muted-foreground" />
+        <p className="mt-3 font-semibold">This page could not load</p>
+        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{error instanceof Error ? error.message : "Check your connection and try again."}</p>
+        <Button className="mt-5" variant="outline" onClick={() => failed.forEach((q) => void qc.refetchQueries({ queryKey: q.queryKey, exact: true }))}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
       <Skeleton className="h-8 w-56" />

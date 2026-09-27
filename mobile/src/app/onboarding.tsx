@@ -27,6 +27,7 @@ import { MAX_FORM_WIDTH } from "@/constants/spacing";
 import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
+import { track } from "@/services/analytics";
 import { errorMessage } from "@/services/api";
 import { getCurrentLocation } from "@/services/location";
 import { useLocationStore } from "@/stores/useLocationStore";
@@ -82,6 +83,7 @@ export default function OnboardingScreen() {
   const split = sizeClass === "expanded";
 
   const finish = useCallback(() => {
+    track("onboarding_completed", { app: "customer" });
     markOnboarded();
     router.replace("/");
   }, []);

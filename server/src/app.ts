@@ -14,7 +14,7 @@ import { providersRouter } from "./routes/providers.js";
 import { leadsRouter } from "./routes/leads.js";
 import { reviewsRouter } from "./routes/reviews.js";
 import { meRouter, pushTokensRouter } from "./routes/me.js";
-import { miscRouter } from "./routes/misc.js";
+import { healthRouter, miscRouter } from "./routes/misc.js";
 import { adminRouter } from "./routes/admin.js";
 import { supportRouter } from "./routes/support.js";
 import { uploadsRouter } from "./routes/uploads.js";
@@ -30,15 +30,19 @@ import { limits } from "./lib/rate-limit.js";
 import path from "node:path";
 import { checkFileSignature, PRIVATE_FILES_ROUTE, privateDir, signPrivateUrls } from "./lib/private-files.js";
 
+morgan.token("url-path", (req: express.Request) => req.originalUrl.split("?")[0]);
+
 export function createApp() {
   const app = express();
-  app.set("trust proxy", 1);
+  app.set("trust proxy", env.trustProxyHops);
   app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
   app.use(cors({ origin: env.corsOrigins, credentials: true }));
   // Payment webhooks read the raw body to check signatures, so they come before the JSON parser.
   app.use("/api/v1/webhooks", webhooksRouter);
   app.use(express.json({ limit: "1mb" }));
-  if (env.nodeEnv !== "test") app.use(morgan("dev"));
+  // Production logs one plain line per request without the query string, which can carry signed file links.
+  if (env.nodeEnv === "production") app.use(morgan(':remote-addr ":method :url-path HTTP/:http-version" :status :res[content-length] :response-time ms'));
+  else if (env.nodeEnv !== "test") app.use(morgan("dev"));
 
   // Every response body goes through toPlain so BigInt ids and Decimals serialize as numbers, and
   // private document URLs become signed, time-limited links.
@@ -85,6 +89,7 @@ export function createApp() {
   });
 
   const api = Router();
+  api.use(healthRouter);
   api.use(limits.global);
   api.use("/auth", authRouter);
   api.use("/categories", categoriesRouter);

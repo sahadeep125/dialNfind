@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { ArrowLeft, BadgeCheck, CheckCircle2, FileText, Loader2, MapPin, Search, Star } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,7 @@ export function ClaimPage() {
         method: "POST",
         json: { providerId: listing.id, documentUrl: docUrl },
       });
+      track("claim_submitted", { provider_id: listing.id, claim_id: res.claim.id, was_customer: res.token !== null });
       if (res.token) await signIn(res.token);
       setStep({ kind: "document-sent", listing });
     } catch (err) {

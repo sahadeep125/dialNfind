@@ -1,5 +1,6 @@
-import { Navigate, Outlet, Route, Routes, useLocation } from "react-router";
-import { Loader2 } from "lucide-react";
+import { Link, Navigate, Outlet, Route, Routes, useLocation } from "react-router";
+import { CloudOff, Loader2, SearchX } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { AppLayout } from "@/layouts/app-layout";
 import { OnboardingLayout } from "@/layouts/onboarding-layout";
@@ -29,10 +30,39 @@ function FullScreenLoader() {
   );
 }
 
+/** Shown when the API cannot be reached, so an outage does not look like being signed out. */
+function Unreachable() {
+  const { refresh } = useAuth();
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
+      <CloudOff className="size-10 text-muted-foreground" />
+      <h1 className="mt-5 text-2xl font-bold">We could not reach DialNFind</h1>
+      <p className="mt-2 max-w-md text-muted-foreground">Check your connection. If it keeps happening, the service may be down for a moment.</p>
+      <Button className="mt-6" onClick={() => void refresh()}>
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <div className="flex flex-col items-center py-24 text-center">
+      <SearchX className="size-10 text-muted-foreground" />
+      <h1 className="mt-4 text-xl font-bold">Page not found</h1>
+      <p className="mt-1 text-sm text-muted-foreground">The link may be old, or the page has moved.</p>
+      <Button asChild className="mt-6" variant="outline">
+        <Link to="/">Go to the dashboard</Link>
+      </Button>
+    </div>
+  );
+}
+
 function RequireAuth() {
-  const { user, loading } = useAuth();
+  const { user, loading, unreachable } = useAuth();
   const location = useLocation();
   if (loading) return <FullScreenLoader />;
+  if (unreachable) return <Unreachable />;
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   if (!user.emailVerifiedAt) return <Navigate to="/verify-email" replace />;
   return <Outlet />;
@@ -46,8 +76,9 @@ function RequireProvider() {
 }
 
 function PublicOnly() {
-  const { user, loading } = useAuth();
+  const { user, loading, unreachable } = useAuth();
   if (loading) return <FullScreenLoader />;
+  if (unreachable) return <Unreachable />;
   if (user) return <Navigate to="/" replace />;
   return <Outlet />;
 }
@@ -85,10 +116,10 @@ export function App() {
             <Route path="/support" element={<SupportPage />} />
             <Route path="/support/:id" element={<SupportTicketPage />} />
             <Route path="/account" element={<AccountPage />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

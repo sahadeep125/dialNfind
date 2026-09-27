@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/queryKeys";
 import { notificationKeys } from "@/hooks/useNotifications";
 import { supportKeys } from "@/hooks/useSupport";
+import { track } from "@/services/analytics";
 import { reportError } from "@/services/monitoring";
 import { pushOptedOut, registerForPush } from "@/services/push";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -57,6 +58,8 @@ export function PushRegistrar() {
     const id = last.notification.request.identifier;
     if (handled.current === id) return;
     handled.current = id;
+    const data = last.notification.request.content.data as PushData;
+    track("notification_opened", { notification_type: typeof data?.type === "string" ? data.type : null, source: "push" });
     router.push(routeForNotification(last.notification.request.content.data as PushData));
   }, [last, token]);
 

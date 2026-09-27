@@ -27,7 +27,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-10">
-      <div className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-primary to-[oklch(0.45_0.19_275)] p-7 text-primary-foreground md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl bg-primary p-7 text-primary-foreground md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold md:text-3xl">Hello, {firstName}</h1>
           <p className="mt-1 text-primary-foreground/80">Need something fixed? Find a trusted provider near {location.name}.</p>

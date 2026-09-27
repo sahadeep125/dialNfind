@@ -6,6 +6,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { ProviderProfile } from "@/types";
@@ -34,6 +35,7 @@ export function useSetAvailability(): UseMutationResult<unknown, Error, boolean,
     onMutate: (isAvailable: boolean) => {
       qc.setQueriesData<Dashboard>({ queryKey: ["dashboard"] }, (d) => (d ? { ...d, provider: { ...d.provider, isAvailable } } : d));
     },
+    onSuccess: (_data, isAvailable: boolean) => track("availability_toggled", { is_available: isAvailable }),
     onError: () => void qc.invalidateQueries({ queryKey: ["dashboard"] }),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["dashboard"] });

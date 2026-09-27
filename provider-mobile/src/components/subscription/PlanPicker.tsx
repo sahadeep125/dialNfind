@@ -27,7 +27,8 @@ interface Props {
 
 /**
  * Monthly / yearly toggle and a card per plan with its store price. Buying goes through the App
- * Store or Google Play; a plan bought on the web is managed there instead.
+ * Store or Google Play. Store rules (App Store 3.1.1, Google Play Payments) forbid pointing people to
+ * another way to pay, so nothing here links to or mentions buying on the website.
  */
 export function PlanPicker({ billing, paidOnly, onPurchased }: Props) {
   const theme = useTheme();
@@ -79,17 +80,17 @@ export function PlanPicker({ billing, paidOnly, onPurchased }: Props) {
           tone="info"
           title={
             billing.managedIn === "web"
-              ? "Your plan is billed on the website"
+              ? "Your plan is billed outside the app"
               : "Your plan was set up by our team"
           }
         >
           {billing.managedIn === "web"
-            ? "To change it, sign in to DialNFind for Business on the web. Buying here as well would charge you twice."
+            ? "It stays active here too. Buying here as well would charge you twice."
             : "Contact support to change it."}
         </AppCallout>
       ) : !purchasesEnabled || !billing.store.enabled ? (
-        <AppCallout tone="info" title="Upgrade on the website">
-          {`Buying in the app is not available yet. You can upgrade on the DialNFind for Business website; your plan works here too.`}
+        <AppCallout tone="info" title="Upgrades are not available right now">
+          Please try again later. Your current plan keeps working.
         </AppCallout>
       ) : offerings.isError ? (
         <AppCallout tone="warning" title={`Could not reach the ${storeName}`}>

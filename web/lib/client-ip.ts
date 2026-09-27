@@ -1,13 +1,17 @@
 import "server-only";
 
 /**
- * The visitor's address as seen by the proxy in front of this app (the platform or nginx sets these
- * headers). The API limits requests per address, so without it every visitor would share one limit.
- * The rightmost X-Forwarded-For entry is the one our own proxy added; entries to its left come from the visitor.
+ * The visitor's address as seen by the proxy in front of this app. The API limits requests per address, so
+ * without it every visitor would share one limit. The rightmost X-Forwarded-For entry is the one our own
+ * proxy added; entries to its left come from the visitor and can be anything.
+ *
+ * Headers such as X-Real-IP or CF-Connecting-IP are only trustworthy when the host always overwrites them,
+ * so they are read only when CLIENT_IP_HEADER names one (for example `x-real-ip` behind nginx or
+ * `cf-connecting-ip` behind Cloudflare). A visitor could otherwise send their own and dodge the limits.
  */
 export function clientIp(headers: Headers): string | null {
-  const realIp = headers.get("x-real-ip")?.trim();
-  if (realIp) return realIp;
+  const trusted = process.env.CLIENT_IP_HEADER?.trim().toLowerCase();
+  if (trusted && trusted !== "x-forwarded-for") return headers.get(trusted)?.trim() || null;
   const forwarded = headers.get("x-forwarded-for");
   const last = forwarded?.split(",").map((part) => part.trim()).filter(Boolean).pop();
   return last ?? null;

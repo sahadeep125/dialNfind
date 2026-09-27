@@ -11,3 +11,4 @@ export { SessionRefresher } from "./SessionRefresher";
 export { PurchasesSync } from "./PurchasesSync";
 export { PushRegistrar } from "./PushRegistrar";
 export { OfflineBanner } from "./OfflineBanner";
+export { AnalyticsSync } from "./AnalyticsSync";

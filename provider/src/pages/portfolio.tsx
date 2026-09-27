@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ImagePlus, Images, Loader2, Lock, Pencil, Star, Trash2 } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import type { PortfolioItem, ProviderProfile } from "@/lib/types";
 import { useProfile } from "@/layouts/app-layout";
@@ -43,6 +44,7 @@ export function PortfolioPage() {
       return d.id ? api(`/provider/portfolio/${d.id}`, { method: "PATCH", json }) : api("/provider/portfolio", { method: "POST", json });
     },
     onSuccess: (_r, d) => {
+      track(d.id ? "portfolio_photo_updated" : "portfolio_photo_added");
       toast.success(d.id ? "Photo updated" : "Photo added");
       setDraft(null);
       void qc.invalidateQueries();
@@ -64,11 +66,13 @@ export function PortfolioPage() {
       if (ctx?.before) qc.setQueryData(["profile"], ctx.before);
       toast.error(errorMessage(err));
     },
+    onSuccess: (_r, ids) => track("portfolio_reordered", { photo_count: ids.length }),
     onSettled: () => void qc.invalidateQueries({ queryKey: ["profile"] }),
   });
   const cover = useMutation({
     mutationFn: (id: number) => api(`/provider/portfolio/${id}`, { method: "PATCH", json: { isCover: true } }),
     onSuccess: () => {
+      track("portfolio_cover_set");
       toast.success("Cover photo set. It shows first on your listing.");
       void qc.invalidateQueries({ queryKey: ["profile"] });
     },
@@ -78,6 +82,7 @@ export function PortfolioPage() {
   const remove = useMutation({
     mutationFn: (id: number) => api(`/provider/portfolio/${id}`, { method: "DELETE" }),
     onSuccess: () => {
+      track("portfolio_photo_removed");
       toast.success("Photo removed");
       void qc.invalidateQueries();
     },

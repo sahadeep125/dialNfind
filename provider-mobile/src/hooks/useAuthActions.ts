@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
+import { track } from "@/services/analytics";
 import {
   socialSignOut,
   type ApplePayload,
@@ -57,6 +58,7 @@ export function useAuthActions() {
     onSuccess: ({ token, user }: AuthResponse) => {
       qc.clear();
       signIn(token, user);
+      track("logged_in", { method: "password" });
     },
   });
 
@@ -77,6 +79,7 @@ export function useAuthActions() {
     onSuccess: ({ token, user }: AuthResponse) => {
       qc.clear();
       signIn(token, user);
+      track("signed_up", { method: "password", role: "provider" });
     },
   });
 
@@ -88,9 +91,10 @@ export function useAuthActions() {
         token: null,
         body: { ...payload, role: "provider" },
       }),
-    onSuccess: ({ token, user }: SocialResponse) => {
+    onSuccess: ({ token, user, isNewUser }: SocialResponse, { provider }: SocialInput) => {
       qc.clear();
       signIn(token, user);
+      track(isNewUser ? "signed_up" : "logged_in", { method: provider, role: "provider" });
     },
   });
 
@@ -102,6 +106,7 @@ export function useAuthActions() {
   };
 
   const signOut = (): void => {
+    track("logged_out");
     // Ends the session on the server too; the request carries the token before the store clears it.
     // The push token goes with it so this device stops getting the account's alerts.
     const pushToken = storedPushToken();
@@ -119,7 +124,8 @@ export function useAuthActions() {
    */
   const deleteAccount = useMutation<DeleteResult, Error, { password?: string; confirm?: string }>({
     mutationFn: (input) => api<DeleteResult>("/auth/me", { method: "DELETE", body: input }),
-    onSuccess: () => {
+    onSuccess: ({ storeSubscription }) => {
+      track("account_deleted", { had_store_subscription: storeSubscription !== null });
       // The server already ended the session; clear everything local without calling logout.
       forgetPushToken();
       signOutStore();

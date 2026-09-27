@@ -111,6 +111,17 @@ export interface Review {
   photos: string[];
 }
 
+/** A recent 4 or 5 star review picked for the home page. */
+export interface ReviewHighlight {
+  id: number;
+  rating: number;
+  reviewText: string;
+  isVerifiedContact: boolean;
+  createdAt: string;
+  authorName: string;
+  provider: { slug: string; businessName: string; city: string; category: { name: string; slug: string } | null };
+}
+
 export interface Paged {
   page: number;
   pageSize: number;

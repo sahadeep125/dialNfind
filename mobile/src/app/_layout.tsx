@@ -6,6 +6,7 @@ import {
   setMonitoringUser,
   wrapRoot,
 } from "@/services/monitoring";
+import { posthog } from "@/services/analytics";
 
 import { useCallback, useEffect, useState } from "react";
 import { LogBox, StyleSheet, View } from "react-native";
@@ -14,6 +15,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { PostHogProvider } from "posthog-react-native";
 import { vars } from "nativewind";
 import Animated, { FadeOut } from "react-native-reanimated";
 import {
@@ -31,6 +33,7 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 
 import {
+  AnalyticsSync,
   BrandSplash,
   ErrorState,
   OfflineBanner,
@@ -117,7 +120,7 @@ function RootLayout() {
 
   if (!ready) return null;
 
-  return (
+  const tree = (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <View
@@ -129,6 +132,7 @@ function RootLayout() {
         >
           <StatusBar style={showSplash || theme.mode === "dark" ? "light" : "dark"} />
           <SessionRefresher />
+          <AnalyticsSync />
           <PushRegistrar />
           <RatingPrompter />
           <Stack
@@ -170,6 +174,14 @@ function RootLayout() {
         </View>
       </SafeAreaProvider>
     </QueryClientProvider>
+  );
+  // Screens are recorded by AnalyticsSync (Expo Router paths); the provider adds tap autocapture.
+  return posthog ? (
+    <PostHogProvider client={posthog} autocapture={{ captureScreens: false, captureTouches: true }}>
+      {tree}
+    </PostHogProvider>
+  ) : (
+    tree
   );
 }
 

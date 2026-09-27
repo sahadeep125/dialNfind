@@ -17,7 +17,10 @@
       "usesAppleSignIn": true,
       "associatedDomains": [
         "applinks:dialnfind.com"
-      ]
+      ],
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.dialnfind.app",
@@ -74,7 +77,11 @@
           ]
         }
       ],
-      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.dialnfind.app"
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.dialnfind.app",
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -102,17 +109,26 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "DialNFind uses your location to show service providers near you."
+          "locationWhenInUsePermission": "DialNFind uses your location to show service providers near you.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "motionUsagePermission": false
         }
       ],
       "expo-asset",
       "expo-apple-authentication",
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       [
         "expo-image-picker",
         {
           "photosPermission": "DialNFind uses your photos for your profile picture, review photos and support requests.",
-          "cameraPermission": "DialNFind uses the camera to take photos for your reviews and support requests."
+          "cameraPermission": "DialNFind uses the camera to take photos for your reviews and support requests.",
+          "microphonePermission": false
         }
       ],
       [
@@ -122,7 +138,8 @@
           "color": "#355EDD"
         }
       ],
-      "./plugins/withSceneLifecycle"
+      "./plugins/withSceneLifecycle",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

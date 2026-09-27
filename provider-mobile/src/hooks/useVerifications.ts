@@ -6,6 +6,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import type {
   SubmittableVerificationType,
@@ -38,7 +39,8 @@ export function useSubmitVerification(): UseMutationResult<Verification, Error, 
           body,
         })
       ).verification,
-    onSuccess: async () => {
+    onSuccess: async (_data, { type }) => {
+      track("verification_submitted", { verification_type: type });
       await qc.invalidateQueries({ queryKey: listingKeys.verifications });
       await refreshListing(qc);
     },

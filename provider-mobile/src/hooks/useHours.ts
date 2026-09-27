@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import type { Hours, ProviderProfile } from "@/types";
 import type { ProfileResponse } from "@/types/listing";
@@ -11,6 +12,9 @@ export function useSaveHours(): UseMutationResult<ProviderProfile, Error, Hours[
   return useMutation<ProviderProfile, Error, Hours[]>({
     mutationFn: async (hours: Hours[]): Promise<ProviderProfile> =>
       (await api<ProfileResponse>("/provider/hours", { method: "PUT", body: { hours } })).provider,
-    onSuccess: (provider: ProviderProfile) => refreshListing(qc, provider),
+    onSuccess: (provider: ProviderProfile, hours: Hours[]) => {
+      track("listing_section_saved", { section: "hours", item_count: hours.length });
+      return refreshListing(qc, provider);
+    },
   });
 }

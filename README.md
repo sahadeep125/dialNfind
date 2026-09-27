@@ -39,6 +39,10 @@ pnpm --filter server db:seed
 pnpm dev
 ```
 
+For production, see [docs/DEPLOY.md](docs/DEPLOY.md).
+
+The websites, both apps and the API send product analytics to one PostHog project once their keys are set; events, properties and identity rules are in [docs/ANALYTICS.md](docs/ANALYTICS.md).
+
 ## Checks
 
 | App | Commands |
@@ -94,7 +98,7 @@ In development, emails (sign-up confirmation, password reset, decisions on listi
 
 **Support tickets.** Customers raise tickets from the website (Dashboard, Help and support, or the contact form) and providers from the provider portal. Staff reply from the console; customers see replies as "DialNFind Support", and internal notes are never shown to them. References look like `DNF-000123`.
 
-**Plans and promotions without online payment.** Providers do not pay in the apps. "Request this plan" and "Request campaign" open a billing support ticket; the team arranges payment, then uses Change plan on the provider page or New promotion, ticking "The provider paid" to record the amount and reference.
+**Plans and promotions.** Providers pay for plans online: Razorpay on the provider website and the App Store or Google Play (through RevenueCat) in the business app; see [docs/billing.md](docs/billing.md). Promotions can be paid online on the website, or requested with "Request campaign", which opens a billing ticket. The team can also grant a plan after an offline payment with Change plan on the provider page, or start a promotion with New promotion, ticking "The provider paid" to record the amount and reference.
 
 **Lead reports.** Providers can report a contact as spam, fake or a wrong number within 30 days (Leads, Report). Accepted reports stop counting in the provider's numbers and refund any promotion charge for that contact.
 
@@ -131,7 +135,7 @@ On a real phone, point `EXPO_PUBLIC_API_URL` at your computer's LAN address (for
 
 - **Tabs**: Dashboard (period stats, daily chart, profile checklist), Leads (channel filter, call or WhatsApp back), Reviews (filter and reply), More.
 - **Screens**: Sign in, Create account, Start, Claim a listing (search, then an ownership document), Add your business (step by step), Edit profile, Services, Hours, Service areas, Portfolio, Verification, Promote, Plan, Support tickets and chat, Notifications, Help, Terms and Privacy.
-- **Account**: providers cannot delete their account from the app because the API refuses it for businesses; the More tab's Close account row opens a support ticket instead.
+- **Account**: Delete account (More tab, or on the setup screen for an account without a business) takes the listing out of search, stops plan renewals and ends promotions, then erases the sign-in details. A plan bought in a store has to be cancelled there; the app says so after deleting.
 - **Design system**: the same token files and `App*` components as `mobile/`, plus form parts in `src/components/forms` (select sheet, segmented control, switch row, progress bar, image and document upload fields).
 
 ```bash
@@ -147,7 +151,7 @@ Demo login: `provider@dialnfind.com` / `password123` (has a business); `newprovi
 
 ## Email, sign-in and security
 
-- **Email** is sent by the API over SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` in `server/.env`; links point at `WEB_URL` and `PROVIDER_URL`). New accounts get a confirmation link (not required to use the apps; a banner asks until it is done). "Forgot password" on the website, provider portal, admin console and both mobile apps emails a one-hour reset link to `/reset-password` on the website. Links are single-use and only their SHA-256 hash is stored.
+- **Email** is sent by the API over SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` in `server/.env`; links point at `WEB_URL` and `PROVIDER_URL`). New accounts get a confirmation code by email and must enter it before using their account (the API answers `email_unverified` until then). "Forgot password" on the website, provider portal, admin console and both mobile apps emails a one-hour reset link to `/reset-password` on the website. Links are single-use and only their SHA-256 hash is stored.
 - **Sessions**: every sign-in is a row in `auth_sessions` and the token carries its id, so signing out ends it on the server. Customers and providers stay signed in for `SESSION_DAYS` (30); team members for `STAFF_SESSION_HOURS` (12). Changing or resetting a password, suspension, deletion and removal from the team sign the person out everywhere.
 - **Rate limits** (`server/src/lib/rate-limit.ts`): sign-in, sign-up and password reset allow 10 attempts per 15 minutes per address and email; there are separate limits for contacts, the contact form, tickets, claims, billing requests, lead reports, reviews and reports, uploads and search, plus 600 requests per 15 minutes overall. `RATE_LIMIT_MULTIPLIER` scales them. Counters are kept in memory, so move them to Redis before running more than one API instance.
 - **Documents** (ID proofs, ownership papers, support attachments) are stored in `UPLOAD_PRIVATE_DIR`, never served publicly. The API returns them as signed links that work for an hour; `GET /api/v1/files/...` refuses anything unsigned, expired or tampered with. `pnpm --filter server move-documents` moves documents uploaded before this change.
@@ -162,7 +166,8 @@ The API runs these itself when `RUN_JOBS=true` (set it in exactly one instance),
 | `complete-campaigns` | Hourly | Promotions past their last day are marked completed |
 | `remind-subscriptions` | 09:00 daily | Emails providers whose plan ends in 3 days |
 | `recalculate-rankings` | 02:00 daily | Recalculates every provider's ranking score |
-| `cleanup` | 03:30 daily | Removes old sessions, used email links and cached map lookups |
+| `staff-digest` | 09:00 daily | Emails each team member what is waiting in the sections they can open |
+| `cleanup` | 03:30 daily | Removes old sessions, used email links and cached map lookups, and uploaded files no record uses (older than 48 hours; `DRY_RUN=1` only reports) |
 
 Run one by hand with `pnpm --filter server job <name>`.
 
@@ -177,7 +182,7 @@ Run one by hand with `pnpm --filter server job <name>`.
 Every image or document field (profile photo, business logo and cover, portfolio photos, review photos, verification and claim documents) is an upload field. The browser checks type and size, sends the file to `POST /api/v1/uploads?purpose=...`, and the returned URL is saved with the form.
 
 - The server checks the file's real type from its first bytes, not its name. Images must be JPG, PNG or WebP; documents may also be PDF. Limits are 5 MB for avatars, logos and review photos, 8 MB for covers and portfolio photos, and 10 MB for documents.
-- Images are written to `server/uploads/` (`UPLOAD_DIR`) and served from `PUBLIC_URL/uploads/...`; documents go to the private folder described above. Replaced or deleted logos, covers, portfolio and review photos are removed from disk.
+- Images are written to `uploads/public/` at the repository root (`UPLOAD_DIR`) and served from `PUBLIC_URL/uploads/...`; documents go to the private folder described above. Replaced or deleted logos, covers, portfolio and review photos are removed from disk.
 - Storage sits behind the small `Storage` interface in `server/src/storage/index.ts`. Moving to S3 or another object store means adding one class with `put` and `remove` and returning it from `createStorage()`.
 - In production set `PUBLIC_URL` to the API's public origin so stored links resolve for customers.
 
@@ -193,7 +198,8 @@ All forms validate in the browser with the same rules the API enforces (`server/
 | `pnpm build` | Builds all apps |
 | `pnpm typecheck` | Type-checks all apps |
 | `pnpm --filter server db:migrate` | Creates a new migration after schema changes |
-| `pnpm --filter server db:seed` | Reloads demo data |
+| `pnpm --filter server db:seed` | Wipes the database and loads demo data (refused when `NODE_ENV=production`) |
+| `pnpm --filter server db:bootstrap` | Adds the plans, settings, categories and first super admin a new production database needs; safe to run on every deploy |
 | `pnpm --filter server smoke` | Calls every API endpoint as each role against the running server (reseed afterwards; restart the API first if you ran it recently, since it signs in often) |
 | `pnpm --filter server job <name>` | Runs one scheduled job now |
 | `pnpm --filter server move-documents` | Moves documents uploaded before they became private |

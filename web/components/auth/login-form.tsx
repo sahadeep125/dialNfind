@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { SocialButtons } from "@/components/auth/social-buttons";
+import { track } from "@/lib/analytics";
 import { safeRedirect } from "@/lib/safe-redirect";
 import { email } from "@/lib/validation";
 
@@ -45,6 +46,7 @@ export function LoginForm() {
       setError(body?.error?.message ?? "Could not log in");
       return;
     }
+    track("logged_in", { method: "password" });
     router.push(body?.user?.emailVerifiedAt === null ? `/verify-email?next=${encodeURIComponent(next)}` : next);
     router.refresh();
   });

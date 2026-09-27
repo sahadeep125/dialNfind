@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgeCheck, Building2, CheckCircle2, Clock, IdCard, Loader2, MapPin, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -74,6 +75,7 @@ function VerificationCard({ def, latest }: { def: (typeof TYPES)[number]; latest
   const mutation = useMutation({
     mutationFn: () => api("/provider/verifications", { method: "POST", json: { type: def.type, documentUrl: url.trim() } }),
     onSuccess: () => {
+      track("verification_submitted", { verification_type: def.type });
       toast.success("Document submitted for review");
       setUrl("");
       void qc.invalidateQueries();

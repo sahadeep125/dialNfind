@@ -10,5 +10,5 @@ out/
 coverage/
 *.tsbuildinfo
 next-env.d.ts
-server/uploads/
-server/uploads-private/
+# Uploaded files (uploads/public and uploads/private): user data, never committed.
+/uploads/

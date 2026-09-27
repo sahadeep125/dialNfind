@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
+import { track } from "@/services/analytics";
 import { forgetPushToken, storedPushToken } from "@/services/push";
 import {
   socialSignOut,
@@ -49,6 +50,7 @@ export function useAuthActions() {
       }),
     onSuccess: ({ token, user }: AuthResponse) => {
       signIn(token, user);
+      track("logged_in", { method: "password" });
       void qc.invalidateQueries();
     },
   });
@@ -69,6 +71,7 @@ export function useAuthActions() {
       }),
     onSuccess: ({ token, user }: AuthResponse) => {
       signIn(token, user);
+      track("signed_up", { method: "password", role: "customer" });
       void qc.invalidateQueries();
     },
   });
@@ -81,13 +84,15 @@ export function useAuthActions() {
         token: null,
         body: { ...payload, role: "customer" },
       }),
-    onSuccess: ({ token, user }: SocialResponse) => {
+    onSuccess: ({ token, user, isNewUser }: SocialResponse, { provider }: SocialInput) => {
       signIn(token, user);
+      track(isNewUser ? "signed_up" : "logged_in", { method: provider, role: "customer" });
       void qc.invalidateQueries();
     },
   });
 
   const signOut = (): void => {
+    track("logged_out");
     // Ends the session on the server too; the request carries the token before the store clears it.
     const pushToken = storedPushToken();
     void api("/auth/logout", { method: "POST", body: pushToken ? { pushToken } : undefined }).catch(() => undefined);

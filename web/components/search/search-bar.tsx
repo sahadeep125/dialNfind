@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Building2, Layers, Search, Wrench } from "lucide-react";
+import { Building2, Layers, Search, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { clientApi, saveLocationCookie } from "@/lib/client";
+import { track } from "@/lib/analytics";
 import type { LocationOption, Suggestion } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { LocationPicker } from "./location-picker";
@@ -23,8 +24,8 @@ export function SearchBar({
   /** Leave out on cached pages; the saved location is read in the browser. */
   initialLocation?: LocationOption;
   size?: "lg" | "md";
-  /** "split": separate white fields (on dark banners). "joined": one white box with a labelled service field. */
-  variant?: "split" | "joined";
+  /** "split": separate fields. "joined": one large box with labelled fields (hero). "compact": a slim header search. */
+  variant?: "split" | "joined" | "compact";
   className?: string;
 }) {
   const router = useRouter();
@@ -85,6 +86,13 @@ export function SearchBar({
   function go(s?: Suggestion) {
     setOpen(false);
     saveLocationCookie(location);
+    track("search_submitted", {
+      query: s ? s.label : query.trim(),
+      suggestion_type: s?.type ?? null,
+      slug: s?.slug,
+      city: location.city,
+      location: location.label,
+    });
     if (s?.type === "provider") {
       router.push(`/providers/${s.slug}`);
       return;
@@ -115,8 +123,10 @@ export function SearchBar({
 
   const tall = size === "lg";
   const joined = variant === "joined";
+  const compact = variant === "compact";
   const listOpen = open && suggestions.length > 0;
-  const listId = `service-suggestions-${size}`;
+  const listId = `service-suggestions-${variant}-${size}`;
+  const inputId = `service-search-${variant}-${size}`;
   const optionId = (i: number) => `${listId}-${i}`;
 
   return (
@@ -126,8 +136,11 @@ export function SearchBar({
         go(active >= 0 ? suggestions[active] : undefined);
       }}
       className={cn(
-        "relative flex w-full flex-col gap-2 md:flex-row md:items-stretch",
-        joined && "rounded-xl border bg-card p-2 shadow-[var(--shadow-lift)] md:gap-0",
+        "relative flex w-full",
+        compact
+          ? "h-10 items-stretch rounded-lg border border-input bg-card transition-shadow focus-within:border-foreground/30 focus-within:shadow-[var(--shadow-lift)]"
+          : "flex-col gap-2 md:flex-row md:items-stretch",
+        joined && "rounded-xl bg-card p-1.5 shadow-[0_12px_40px_-12px_rgb(10_20_40/0.45)] ring-1 ring-black/5 md:gap-0",
         className,
       )}
       role="search"
@@ -135,40 +148,43 @@ export function SearchBar({
       <div
         ref={boxRef}
         className={cn(
-          "relative flex min-w-0 flex-1 items-center gap-3 px-4",
-          joined ? "h-14 rounded-lg" : "rounded-lg border bg-card shadow-xs focus-within:ring-[3px] focus-within:ring-ring",
-          !joined && (tall ? "h-14" : "h-12"),
+          // Stacked on phones, where flex-1 would override the field's height, so it only grows in a row.
+          "relative flex min-w-0 items-center",
+          compact ? "flex-1 gap-2 pl-3" : "gap-3 px-4 md:flex-1",
+          joined && "h-16 rounded-lg transition-colors focus-within:bg-muted/60 md:h-[4.25rem]",
+          !joined && !compact && "rounded-lg border border-input bg-card focus-within:ring-[3px] focus-within:ring-cta/25",
+          !joined && !compact && (tall ? "h-14" : "h-12"),
         )}
       >
-        <Search className={cn("size-5 shrink-0", joined ? "text-foreground/70" : "text-muted-foreground")} aria-hidden />
+        <Search className={cn("shrink-0", compact ? "size-4 text-muted-foreground" : "size-5 text-foreground/60")} aria-hidden />
         <div className={cn("flex h-full min-w-0 flex-1 flex-col", joined && "justify-center")}>
-        <label htmlFor={`service-search-${size}`} className={joined ? "text-[15px] font-medium leading-tight text-foreground" : "sr-only"}>
-          {joined ? "What service do you need?" : "Service"}
-        </label>
-        <input
-          id={`service-search-${size}`}
-          value={query}
-          autoComplete="off"
-          role="combobox"
-          aria-autocomplete="list"
-          aria-expanded={listOpen}
-          aria-controls={listId}
-          aria-activedescendant={listOpen && active >= 0 ? optionId(active) : undefined}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={onKeyDown}
-          placeholder={joined ? "e.g. AC repair, plumber, electrician" : "What service do you need?"}
-          className={cn(
-            "min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground",
-            joined ? "h-6 text-sm" : "h-full flex-1 text-[15px]",
-          )}
-        />
+          <label htmlFor={inputId} className={joined ? "text-xs font-bold uppercase tracking-wide text-foreground/70" : "sr-only"}>
+            {joined ? "What do you need?" : "Service"}
+          </label>
+          <input
+            id={inputId}
+            value={query}
+            autoComplete="off"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={listOpen}
+            aria-controls={listId}
+            aria-activedescendant={listOpen && active >= 0 ? optionId(active) : undefined}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={onKeyDown}
+            placeholder={joined ? "Plumber, AC repair, electrician..." : compact ? "Search a service" : "What service do you need?"}
+            className={cn(
+              "min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground",
+              joined ? "mt-0.5 h-6 text-base" : compact ? "h-full flex-1 text-sm" : "h-full flex-1 text-[15px]",
+            )}
+          />
         </div>
         {listOpen && (
-          <div id={listId} role="listbox" aria-label="Suggestions" className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border bg-popover p-1 text-foreground shadow-[var(--shadow-lift)]">
+          <div id={listId} role="listbox" aria-label="Suggestions" className="absolute left-0 right-0 top-full z-30 mt-2 min-w-72 overflow-hidden rounded-lg border bg-popover p-1 text-foreground shadow-[var(--shadow-lift)]">
             {suggestions.map((s, i) => {
               const Icon = s.type === "provider" ? Building2 : s.type === "category" ? Layers : Wrench;
               return (
@@ -179,9 +195,9 @@ export function SearchBar({
                   aria-selected={i === active}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => go(s)}
-                  className={cn("flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-left", i === active ? "bg-accent" : "hover:bg-muted")}
+                  className={cn("flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left", i === active ? "bg-accent" : "hover:bg-muted")}
                 >
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                     <Icon className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -196,20 +212,33 @@ export function SearchBar({
           </div>
         )}
       </div>
-      {joined && <div className="hidden w-px self-stretch bg-border md:my-2 md:block" />}
+      {(joined || compact) && <div className={cn("hidden w-px self-stretch bg-border", compact ? "my-2 sm:block" : "md:my-3 md:block")} />}
       <div
         className={cn(
-          "flex items-center px-4 text-foreground",
-          joined ? "h-14 border-t md:w-64 md:border-t-0" : "rounded-lg border bg-card shadow-xs md:w-[40%] md:max-w-md",
-          !joined && (tall ? "h-14" : "h-12"),
+          "flex items-center text-foreground",
+          joined && "h-16 rounded-lg border-t px-4 transition-colors focus-within:bg-muted/60 md:h-auto md:w-72 md:border-t-0",
+          compact && "hidden w-44 px-3 sm:flex [&_svg:first-child]:size-4",
+          !joined && !compact && "rounded-lg border border-input bg-card px-4 md:w-[40%] md:max-w-md",
+          !joined && !compact && (tall ? "h-14" : "h-12"),
         )}
       >
-        <LocationPicker value={location} onChange={changeLocation} triggerClassName="w-full [&>svg:first-child]:text-muted-foreground" hideLabel />
+        <LocationPicker
+          value={location}
+          onChange={changeLocation}
+          triggerClassName={cn("w-full", compact && "text-sm [&>span>span:last-child]:text-sm")}
+          hideLabel={!joined}
+        />
       </div>
-      <Button type="submit" className={cn("rounded-lg text-base", joined ? "h-14 px-8 md:h-auto" : tall ? "h-14 px-10" : "h-12 px-10")}>
-        Search
-        {joined && <ArrowRight className="size-5" />}
-      </Button>
+      {compact ? (
+        <button type="submit" aria-label="Search" className="m-1 flex w-8 shrink-0 cursor-pointer items-center justify-center rounded-md bg-cta text-cta-foreground transition-colors hover:bg-cta-hover">
+          <Search className="size-4" />
+        </button>
+      ) : (
+        <Button type="submit" variant="cta" className={cn("text-base", joined ? "h-14 px-8 md:h-auto" : tall ? "h-14 px-10" : "h-12 px-8")}>
+          <Search className="size-5 md:hidden" />
+          Search
+        </Button>
+      )}
     </form>
   );
 }

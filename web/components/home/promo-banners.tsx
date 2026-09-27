@@ -1,74 +1,69 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, MapPin, Search, Star } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BusinessIllustration } from "@/components/illustrations/spots";
-import { LogoMark } from "@/components/site/logo";
-import { CategoryGlyph } from "@/components/site/category-icon";
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/config";
-import { DEFAULT_LOCATION } from "@/lib/default-location";
-import { cn } from "@/lib/utils";
+import { PROVIDER_IMAGE } from "@/lib/stock-images";
 
-/** "Get the app" beside "Are you a service provider?"; the app banner only shows when a store link is configured. */
-export function PromoBanners({ providerImage }: { providerImage: string | null }) {
+const PROVIDER_PERKS = ["Free listing, no commission on jobs", "Customers call and WhatsApp you directly", "Reply to reviews and see who contacted you"];
+
+/** "Are you a service provider?" with a photo, then a slim "Get the app" strip when a store link is configured. */
+export function PromoBanners() {
   const hasApp = Boolean(APP_STORE_URL || PLAY_STORE_URL);
   return (
-    <section className="container-page pt-2">
-      <div className={cn("grid gap-5", hasApp && "lg:grid-cols-[1.55fr_1fr]")}>
-        {hasApp && <AppBanner />}
-        <ProviderBanner image={providerImage} wide={!hasApp} />
+    <div className="space-y-5">
+      <div className="grid overflow-hidden rounded-xl bg-primary text-white md:grid-cols-[1.1fr_1fr]">
+        <div className="p-7 sm:p-10 lg:p-14">
+          <p className="eyebrow mb-3 text-[oklch(0.8_0.13_60)]">For professionals</p>
+          <h2 className="text-2xl font-bold text-white md:text-[2rem] md:leading-tight">Grow your business with local customers</h2>
+          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-white/75">
+            List your services for free and get found by people nearby who are ready to hire.
+          </p>
+          <ul className="mt-6 space-y-2.5">
+            {PROVIDER_PERKS.map((perk) => (
+              <li key={perk} className="flex items-center gap-2.5 text-[15px] text-white/90">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cta">
+                  <Check className="size-3.5 text-white" strokeWidth={3} aria-hidden />
+                </span>
+                {perk}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button asChild variant="cta" size="lg">
+              <Link href="/claim">
+                List your business <ArrowRight />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="ghost" className="text-white ring-1 ring-white/25 hover:bg-white/10 hover:text-white">
+              <Link href="/about#providers">How listing works</Link>
+            </Button>
+          </div>
+        </div>
+        <div className="relative min-h-64 md:min-h-full">
+          <Image src={PROVIDER_IMAGE.src} alt={PROVIDER_IMAGE.alt} fill sizes="(min-width: 768px) 38rem, 100vw" className="object-cover" />
+        </div>
       </div>
-    </section>
-  );
-}
 
-function AppBanner() {
-  return (
-    <div className="relative isolate flex min-h-64 overflow-hidden rounded-xl border bg-[linear-gradient(110deg,oklch(0.975_0.012_255),oklch(0.94_0.035_262))] p-7 md:p-9">
-      <div className="max-w-sm md:max-w-[55%]">
-        <h2 className="text-2xl font-bold text-foreground md:text-[1.75rem]">Get the DialNFind App</h2>
-        <p className="mt-2 text-[15px] leading-relaxed text-foreground/70">Find and connect with local service professionals on the go. Faster, easier and always at your fingertips.</p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          {APP_STORE_URL && (
-            <StoreBadge href={APP_STORE_URL} caption="Download on the" name="App Store">
-              <AppleLogo />
-            </StoreBadge>
-          )}
-          {PLAY_STORE_URL && (
-            <StoreBadge href={PLAY_STORE_URL} caption="GET IT ON" name="Google Play">
-              <PlayLogo />
-            </StoreBadge>
-          )}
+      {hasApp && (
+        <div className="flex flex-col items-start justify-between gap-5 rounded-xl border bg-card p-6 sm:flex-row sm:items-center sm:p-8">
+          <div>
+            <h2 className="text-xl font-bold">Get the DialNFind app</h2>
+            <p className="mt-1 text-[15px] text-muted-foreground">Find and call local professionals on the go, and keep your saved pros in one place.</p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-3">
+            {APP_STORE_URL && (
+              <StoreBadge href={APP_STORE_URL} caption="Download on the" name="App Store">
+                <AppleLogo />
+              </StoreBadge>
+            )}
+            {PLAY_STORE_URL && (
+              <StoreBadge href={PLAY_STORE_URL} caption="GET IT ON" name="Google Play">
+                <PlayLogo />
+              </StoreBadge>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="pointer-events-none absolute -bottom-16 right-4 hidden md:block lg:right-6" aria-hidden>
-        <div className="relative h-72 w-[19rem]">
-          <PhoneMock className="absolute left-0 top-0 -rotate-6" />
-          <PhoneMock className="absolute left-36 top-8 rotate-6 scale-90" compact />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProviderBanner({ image, wide }: { image: string | null; wide: boolean }) {
-  return (
-    <div className="relative isolate flex min-h-64 items-center overflow-hidden rounded-xl border bg-[linear-gradient(110deg,oklch(0.985_0.012_75),oklch(0.965_0.03_70))] p-7 md:p-9">
-      <div className={cn("relative z-10", wide ? "max-w-xl" : "max-w-[60%]")}>
-        <h2 className="text-2xl font-bold text-foreground md:text-[1.75rem]">Are you a service provider?</h2>
-        <p className="mt-2 text-[15px] leading-relaxed text-foreground/70">Grow your business, get more customers and build your reputation.</p>
-        <Button asChild size="lg" className="mt-6">
-          <Link href="/claim">
-            Join as a Provider <ArrowRight />
-          </Link>
-        </Button>
-      </div>
-      {image ? (
-        <div className={cn("absolute bottom-0 right-0 top-0", wide ? "w-[40%]" : "w-[42%]")}>
-          <Image src={image} alt="" fill className="object-cover object-top" sizes="(min-width: 1024px) 18rem, 40vw" />
-        </div>
-      ) : (
-        <BusinessIllustration className={cn("pointer-events-none absolute -right-6 bottom-0 w-[46%] max-w-72 opacity-95", wide && "right-8 w-[34%]")} />
       )}
     </div>
   );
@@ -80,13 +75,13 @@ function StoreBadge({ href, caption, name, children }: { href: string; caption: 
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex h-14 items-center gap-2.5 rounded-xl bg-black px-4 text-white shadow-sm transition-transform hover:-translate-y-0.5"
+      className="inline-flex h-12 items-center gap-2.5 rounded-lg bg-black px-4 text-white transition-opacity hover:opacity-85"
       aria-label={`${caption} ${name}`}
     >
       {children}
       <span className="flex flex-col leading-none">
         <span className="text-[10px] font-medium tracking-wide text-white/80">{caption}</span>
-        <span className="mt-1 text-lg font-semibold">{name}</span>
+        <span className="mt-0.5 text-base font-semibold">{name}</span>
       </span>
     </a>
   );
@@ -108,56 +103,5 @@ function PlayLogo() {
       <path d="M16.4 8.8 5.2 2.2c-.7-.4-1.2-.3-1.6.1l9.6 9.7 3.2-3.2Z" fill="#00f076" />
       <path d="m20.1 10.9-3.7-2.1-3.2 3.2 3.2 3.2 3.7-2.1c1.1-.6 1.1-1.6 0-2.2Z" fill="#ffc900" />
     </svg>
-  );
-}
-
-/** A small drawn phone showing the app's home screen, so the banner needs no screenshot. */
-function PhoneMock({ className, compact = false }: { className?: string; compact?: boolean }) {
-  const categories = [
-    { slug: "home-appliances", label: "AC Repair" },
-    { slug: "electricians", label: "Electrician" },
-    { slug: "plumbing", label: "Plumber" },
-  ];
-  return (
-    <div className={cn("w-40 overflow-hidden rounded-[1.75rem] border-[6px] border-[oklch(0.22_0.03_262)] bg-card shadow-[0_24px_48px_-16px_rgb(16_24_40/0.35)]", className)}>
-      <div className="flex h-72 flex-col px-2.5 pt-2">
-        <div className="mx-auto h-1.5 w-12 rounded-full bg-[oklch(0.22_0.03_262)]" />
-        <div className="mt-2.5 flex items-center justify-center gap-1">
-          <LogoMark className="size-4" />
-          <span className="text-[10px] font-bold text-brand-deep">
-            Dial<span className="text-primary">N</span>Find
-          </span>
-        </div>
-        <div className="mt-2.5 flex items-center gap-1 rounded-md border px-1.5 py-1 text-[7px] text-muted-foreground">
-          <Search className="size-2.5" /> Search for a service...
-        </div>
-        <div className="mt-1.5 flex items-center gap-1 text-[7px] font-medium">
-          <MapPin className="size-2.5 text-primary" /> {DEFAULT_LOCATION.city}
-        </div>
-        {compact ? (
-          <div className="mt-2 flex-1 rounded-md bg-[linear-gradient(135deg,oklch(0.92_0.05_200),oklch(0.9_0.06_150))]" />
-        ) : (
-          <>
-            <div className="mt-2.5 grid grid-cols-3 gap-1">
-              {categories.map((c) => (
-                <div key={c.slug} className="flex flex-col items-center gap-0.5 rounded-md border py-1">
-                  <CategoryGlyph slug={c.slug} className="size-3 text-primary" />
-                  <span className="text-[6px] text-foreground/70">{c.label}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-2.5 flex items-center gap-1.5 rounded-md border p-1.5">
-              <div className="size-6 shrink-0 rounded bg-[oklch(0.93_0.04_225)]" />
-              <div className="min-w-0">
-                <div className="truncate text-[7px] font-semibold">AC Repair Experts</div>
-                <div className="flex items-center gap-0.5 text-[6px] text-muted-foreground">
-                  <Star className="size-2 text-warning" fill="currentColor" strokeWidth={0} /> 4.8 · Open now
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
   );
 }

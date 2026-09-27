@@ -9,6 +9,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import type { NewTicketInput, ReplyInput, Ticket, TicketDetail, TicketPage } from "@/types/support";
 
@@ -49,7 +50,8 @@ export function useCreateTicket(): UseMutationResult<{ ticket: Ticket }, Error, 
         method: "POST",
         body: { ...input, subject: input.subject.trim(), message: input.message.trim() },
       }),
-    onSuccess: () => {
+    onSuccess: ({ ticket }, input) => {
+      track("support_ticket_created", { ticket_id: ticket.id, category: input.category, attachment_count: input.attachments?.length ?? 0 });
       void qc.invalidateQueries({ queryKey: supportKeys.list });
     },
   });

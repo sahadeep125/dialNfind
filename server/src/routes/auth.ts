@@ -1,8 +1,8 @@
 import express, { Router } from "express";
-import { storage } from "../storage/index.js";
+import { optionalUploadedImageUrl, releaseFile } from "../storage/references.js";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { email, optionalPhone, optionalUrl, password, personName } from "../lib/rules.js";
+import { email, optionalPhone, password, personName } from "../lib/rules.js";
 import { prisma } from "../lib/prisma.js";
 import { parse } from "../lib/validate.js";
 import { badRequest, conflict, forbidden, HttpError, notConfigured, unauthorized } from "../lib/errors.js";
@@ -16,6 +16,7 @@ import { anonymiseUser, closeBusinessAccount } from "../services/accounts.js";
 import { sendAccountDeleted, sendPasswordChanged, sendProviderWelcome, sendVerificationEmail } from "../services/emails.js";
 import { appleEnabled, exchangeAppleCode, verifyAppleIdToken, verifyAppleNotification, verifyGoogleIdToken } from "../lib/oauth.js";
 import { signInWithIdentity, storeAppleRefreshToken } from "../services/social-auth.js";
+import { captureServer } from "../services/analytics.js";
 
 export const authRouter = Router();
 
@@ -65,6 +66,7 @@ authRouter.post("/register", limits.auth, async (req, res) => {
     },
   });
   void sendVerificationEmail(user);
+  captureServer(user.id, "user_signed_up", { role: user.role, method: "password" });
   res.status(201).json({ token: await startSession(user.id, user.role, req), user: await sessionUser(user.id) });
 });
 
@@ -96,7 +98,10 @@ authRouter.post("/google", limits.auth, async (req, res) => {
   const body = parse(z.object({ idToken, nonce: rawNonce, role: socialRole }), req.body);
   const identity = await verifyGoogleIdToken(body.idToken, body.nonce);
   const { user, isNewUser } = await signInWithIdentity({ provider: "google", identity, role: body.role });
-  if (isNewUser) void sendProviderWelcome(user);
+  if (isNewUser) {
+    void sendProviderWelcome(user);
+    captureServer(user.id, "user_signed_up", { role: user.role, method: "google" });
+  }
   res.status(isNewUser ? 201 : 200).json({ token: await startSession(user.id, user.role, req), user: await sessionUser(user.id), isNewUser });
 });
 
@@ -119,7 +124,10 @@ authRouter.post("/apple", limits.auth, async (req, res) => {
   const identity = await verifyAppleIdToken(body.idToken, body.nonce);
   const name = [body.name?.givenName, body.name?.familyName].filter(Boolean).join(" ");
   const { user, isNewUser } = await signInWithIdentity({ provider: "apple", identity, role: body.role, name });
-  if (isNewUser) void sendProviderWelcome(user);
+  if (isNewUser) {
+    void sendProviderWelcome(user);
+    captureServer(user.id, "user_signed_up", { role: user.role, method: "apple" });
+  }
   if (body.authorizationCode) {
     const code = body.authorizationCode;
     const link = await prisma.userOAuthAccount.findUnique({
@@ -194,14 +202,14 @@ authRouter.get("/me", requireSignedIn, async (req, res) => {
 const updateSchema = z.object({
   name: personName.optional(),
   phone: optionalPhone,
-  profilePhotoUrl: optionalUrl.optional(),
+  profilePhotoUrl: optionalUploadedImageUrl.optional(),
 });
 
 authRouter.patch("/me", requireAuth, async (req, res) => {
   const body = parse(updateSchema, req.body);
   const before = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id }, select: { profilePhotoUrl: true } });
   const user = await prisma.user.update({ where: { id: currentUser(req).id }, data: body, select: publicUser });
-  if (body.profilePhotoUrl !== undefined && before.profilePhotoUrl && before.profilePhotoUrl !== user.profilePhotoUrl) void storage.remove(before.profilePhotoUrl);
+  if (body.profilePhotoUrl !== undefined && before.profilePhotoUrl && before.profilePhotoUrl !== user.profilePhotoUrl) void releaseFile(before.profilePhotoUrl);
   res.json({ user: await sessionUser(user.id) });
 });
 
@@ -243,6 +251,7 @@ authRouter.delete("/me", requireSignedIn, async (req, res) => {
   const { storeSubscription } = user.role === "provider" ? await closeBusinessAccount(user.id) : { storeSubscription: null };
   // The address is erased next, so the confirmation has to be sent first.
   await sendAccountDeleted(user, storeSubscription);
+  captureServer(user.id, "account_deleted", { role: user.role });
   await anonymiseUser(user.id);
   res.json({ ok: true, storeSubscription });
 });

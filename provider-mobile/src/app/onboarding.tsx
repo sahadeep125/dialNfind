@@ -16,6 +16,7 @@ import { useCreateListing } from "@/hooks/useOnboarding";
 import { useSession } from "@/hooks/useSession";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
+import { track } from "@/services/analytics";
 import { errorMessage } from "@/services/api";
 import { STORAGE_KEYS, readJson, storage, writeJson } from "@/services/storage";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -57,6 +58,9 @@ export default function OnboardingScreen() {
   };
 
   const goTo = (index: number): void => {
+    if (index > step) {
+      track("onboarding_step_completed", { step: step + 1, step_name: ONBOARDING_STEPS[step], total_steps: ONBOARDING_STEPS.length });
+    }
     setErrors({});
     setFormError(null);
     setStep(index);

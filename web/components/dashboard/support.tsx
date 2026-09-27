@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
+import { track } from "@/lib/analytics";
 import { clientApi, ClientApiError } from "@/lib/client";
 import { checkFile, uploadFile } from "@/lib/upload";
 
@@ -111,6 +112,7 @@ export function NewTicketButton({ label = "New request" }: { label?: string }) {
     try {
       const { ticket } = await clientApi<{ ticket: { id: number; reference: string } }>("/support/tickets", { method: "POST", body: JSON.stringify({ ...v, attachments: files }) });
       toast.success(`Request ${ticket.reference} sent`);
+      track("support_ticket_created", { ticket_id: ticket.id, category: v.category, attachment_count: files.length });
       reset();
       setFiles([]);
       setOpen(false);

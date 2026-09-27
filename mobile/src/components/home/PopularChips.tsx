@@ -5,6 +5,7 @@ import { TrendingUp } from "lucide-react-native";
 import { AppPressable, AppText } from "@/components/design-system";
 import { usePopularSearches } from "@/hooks/usePopularSearches";
 import { useTheme } from "@/hooks/useTheme";
+import { track } from "@/services/analytics";
 
 interface Props {
   /** Horizontal page padding, so the row scrolls edge to edge but starts in line with the content. */
@@ -29,7 +30,10 @@ export function PopularChips({ inset }: Props) {
           key={term}
           accessibilityRole="button"
           accessibilityLabel={`Search for ${term}`}
-          onPress={() => router.push({ pathname: "/search", params: { q: term } })}
+          onPress={() => {
+            track("search_submitted", { query: term, suggestion_type: null, source: "popular" });
+            router.push({ pathname: "/search", params: { q: term } });
+          }}
           style={[styles.chip, { borderRadius: theme.radius.full }]}
         >
           <TrendingUp size={14} color={theme.colors.brand.accent} strokeWidth={2.4} />

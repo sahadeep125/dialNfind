@@ -52,3 +52,11 @@ jest.mock("@sentry/react-native", () => ({
   captureException: jest.fn(),
   reactNavigationIntegration: jest.fn(() => ({ registerNavigationContainer: jest.fn() })),
 }));
+
+// Analytics is off in tests (no EXPO_PUBLIC_POSTHOG_KEY); the stub keeps PostHog's native replay module out of Jest.
+jest.mock("posthog-react-native", () => ({
+  __esModule: true,
+  default: jest.fn(),
+  PostHogProvider: ({ children }) => children,
+  usePostHog: jest.fn(() => null),
+}));

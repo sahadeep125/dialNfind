@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import type { Hours, ProviderProfile, ProviderService, ServiceArea } from "@/lib/types";
 import { useProfile } from "@/layouts/app-layout";
@@ -34,6 +35,7 @@ function useListEditor<T>(select: (p: ProviderProfile) => T, endpoint: string, k
     setSaving(true);
     try {
       await api(endpoint, { method: "PUT", json: { [key]: payload } });
+      track("listing_section_saved", { section: key, item_count: Array.isArray(payload) ? payload.length : undefined });
       await qc.invalidateQueries();
       toast.success("Saved");
     } catch (err) {
@@ -166,6 +168,7 @@ function ServiceDetails() {
         return { providerServiceId, attributeId, value: value === "" ? null : value };
       });
       await api("/provider/attributes", { method: "PUT", json: { values } });
+      track("listing_section_saved", { section: "attributes", item_count: values.length });
       setEdits({});
       await qc.invalidateQueries({ queryKey: ["attributes"] });
       toast.success("Service details saved");

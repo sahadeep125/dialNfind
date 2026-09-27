@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -48,6 +48,7 @@ import { useSimilarProviders } from "@/hooks/useSimilarProviders";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { ApiError, errorMessage } from "@/services/api";
+import { track } from "@/services/analytics";
 import { openEmail, openMaps, openUrl } from "@/services/links";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatDate, formatPrice } from "@/utils/format";
@@ -70,6 +71,23 @@ export default function ProviderScreen() {
     () => reviews.data?.pages.flatMap((page) => page.reviews) ?? [],
     [reviews.data],
   );
+  const viewedId = p?.id;
+  useEffect(() => {
+    if (!p || viewedId === undefined) return;
+    track("provider_viewed", {
+      provider_id: p.id,
+      provider_slug: p.slug,
+      category: p.primaryCategory?.slug ?? null,
+      provider_city: p.city,
+      avg_rating: p.avgRating,
+      total_reviews: p.totalReviews,
+      verification_status: p.verificationStatus,
+      is_claimed: p.isClaimed,
+    });
+    // Once per provider shown, not on every refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewedId]);
+
   // Large tablets put the practical details (hours, areas, contact) in a side column.
   const split = sizeClass === "expanded";
 

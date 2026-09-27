@@ -3,7 +3,7 @@ import type { Provider, ProviderStatus } from "@prisma/client";
 import { email, optionalPhone, optionalUrl, phone, pincode } from "../lib/rules.js";
 import { prisma } from "../lib/prisma.js";
 import { uniqueProviderSlug } from "../lib/slug.js";
-import { storage } from "../storage/index.js";
+import { optionalUploadedImageUrl, releaseFile } from "../storage/references.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "../routes/provider/shared.js";
 import { recalculateCategoryCounts, recalculateProvider } from "./ranking.js";
 
@@ -70,8 +70,8 @@ export const listingProfileSchema = z.object({
   whatsappNumber: optionalPhone,
   email: z.union([z.literal(""), z.null(), email]).transform((v) => v || null),
   website: optionalUrl,
-  logoUrl: optionalUrl,
-  coverUrl: optionalUrl,
+  logoUrl: optionalUploadedImageUrl,
+  coverUrl: optionalUploadedImageUrl,
   addressLine: z.string().trim().max(200).nullable(),
   locality: z.string().trim().max(80).nullable(),
   city: z.string().trim().min(2).max(60),
@@ -91,7 +91,7 @@ export async function updateListingProfile(provider: Provider, body: Partial<z.i
   const slug = renamed ? await uniqueProviderSlug(body.businessName ?? provider.businessName, body.city ?? provider.city, provider.id) : undefined;
   await prisma.provider.update({ where: { id: provider.id }, data: { ...body, ...(slug ? { slug } : {}) } });
   for (const key of ["logoUrl", "coverUrl"] as const) {
-    if (body[key] !== undefined && provider[key] && body[key] !== provider[key]) void storage.remove(provider[key]!);
+    if (body[key] !== undefined && provider[key] && body[key] !== provider[key]) void releaseFile(provider[key]);
   }
   await recalculateProvider(provider.id);
 }

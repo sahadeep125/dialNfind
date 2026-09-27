@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { identifyUser, resetUser } from "@/lib/analytics";
 import type { SessionUser } from "@/lib/types";
 
 interface SessionState {
@@ -63,6 +64,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [pathname, apply]);
+
+  // Analytics follows the session: identify on sign-in (and on role or profile changes), reset on sign-out.
+  const identified = useRef<string | null>(null);
+  useEffect(() => {
+    if (loading) return;
+    const key = user ? `${user.id}:${user.role}:${user.name}:${user.email}:${user.provider?.id ?? ""}` : null;
+    if (key === identified.current) return;
+    if (user) identifyUser(user);
+    else if (identified.current !== null) resetUser();
+    identified.current = key;
+  }, [user, loading]);
 
   return <SessionContext.Provider value={{ user, unread, loading, refresh, setUnread }}>{children}</SessionContext.Provider>;
 }

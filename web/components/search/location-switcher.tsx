@@ -11,7 +11,7 @@ export function LocationSwitcher({ location }: { location: LocationOption }) {
   const { update } = useUrlParams();
   const [value, setValue] = useState(location);
   return (
-    <div className="h-14 w-full rounded-xl border bg-card px-4 shadow-xs md:w-80">
+    <div className="h-14 w-full rounded-lg border border-input bg-card px-4 md:w-80">
       <LocationPicker
         value={value}
         triggerClassName="w-full"

@@ -5,7 +5,8 @@ import { publicApi } from "@/lib/api";
 import { PROVIDER_APP_URL } from "@/lib/config";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { BusinessIllustration } from "@/components/illustrations/spots";
+import { PhotoFrame } from "@/components/site/photo-frame";
+import { PROVIDER_IMAGE } from "@/lib/stock-images";
 import { ClaimSearch } from "@/components/site/claim-search";
 import { cn } from "@/lib/utils";
 
@@ -29,19 +30,18 @@ export default async function ClaimPage() {
   const { plans } = await publicApi<{ plans: Plan[] }>("/plans", { revalidate: 600 });
   return (
     <div>
-      <section className="relative overflow-hidden">
-        <div className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)]" />
+      <section className="relative overflow-hidden border-b bg-card">
         <div className="container-page relative grid items-center gap-10 py-14 lg:grid-cols-2 lg:py-20">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
-              <Store className="size-3.5 text-primary" /> For service providers
+            <span className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground">
+              <Store className="size-3.5 text-cta" /> For service providers
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight text-brand-deep md:text-5xl">Get more calls from customers nearby</h1>
             <p className="mt-5 max-w-xl text-lg text-muted-foreground">
               Thousands of people search DialNFind when something breaks. List your business for free, or claim your existing listing to take control of it.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg">
+              <Button asChild size="lg" variant="cta">
                 <a href={`${PROVIDER_APP_URL}/register`}>Create a free listing</a>
               </Button>
               <Button asChild size="lg" variant="outline">
@@ -49,11 +49,11 @@ export default async function ClaimPage() {
               </Button>
             </div>
           </div>
-          <BusinessIllustration className="mx-auto w-full max-w-md" />
+          <PhotoFrame image={PROVIDER_IMAGE} priority className="mx-auto max-w-xl" />
         </div>
       </section>
 
-      <section className="container-page grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="container-page grid gap-4 pt-12 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { icon: PhoneCall, t: "Direct calls", d: "Customers call your number. No commission on jobs." },
           { icon: BadgeCheck, t: "Verified badge", d: "Verify once and stand out in every search." },
@@ -61,7 +61,7 @@ export default async function ClaimPage() {
           { icon: BarChart3, t: "See your numbers", d: "Profile views, calls and WhatsApp enquiries, every day." },
         ].map((f) => (
           <div key={f.t} className="card-surface p-5">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-accent text-primary">
+            <span className="flex size-10 items-center justify-center rounded-md bg-accent text-primary">
               <f.icon className="size-5" />
             </span>
             <div className="mt-4 font-semibold">{f.t}</div>
@@ -84,11 +84,11 @@ export default async function ClaimPage() {
 
       <section className="container-page">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-sm font-semibold uppercase tracking-wider text-primary">Plans</span>
+          <span className="eyebrow">Plans</span>
           <h2 className="mt-2 text-3xl font-bold text-brand-deep">Start free, upgrade when you grow</h2>
           <p className="mt-3 text-muted-foreground">Paid plans add more leads and insights. They give a small ranking boost, never enough to outrank better-rated providers.</p>
         </div>
-        <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-5 md:grid-cols-3 lg:grid-cols-3">
           {plans.map((plan) => {
             const featured = plan.name === "Pro";
             return (

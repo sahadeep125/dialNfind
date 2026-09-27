@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { clientApi, ClientApiError } from "@/lib/client";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,7 @@ export function FavoriteButton({
       try {
         await clientApi(`/me/favorites/${providerId}`, { method: next ? "PUT" : "DELETE" });
         toast.success(next ? "Saved to favorites" : "Removed from favorites");
+        track("favorite_toggled", { provider_id: providerId, favorited: next });
         router.refresh();
       } catch (err) {
         setSaved(!next);

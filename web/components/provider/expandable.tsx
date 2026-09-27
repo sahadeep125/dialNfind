@@ -23,7 +23,7 @@ export function ExpandableGrid({
   return (
     <>
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold md:text-xl">{title}</h2>
+        <h2 className="text-xl font-bold">{title}</h2>
         {canExpand && <ToggleLink open={open} onClick={() => setOpen(!open)} label={moreLabel} />}
       </div>
       <div className={className}>{open ? items : items.slice(0, initial)}</div>
@@ -49,12 +49,12 @@ export function ExpandableChips({ header, chips, initial, noun, linkLabel }: { h
       {chips.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {shown.map((c) => (
-            <span key={c} className="rounded-lg bg-muted px-3 py-1.5 text-[13px] font-medium text-foreground/75">
+            <span key={c} className="rounded-md bg-muted px-2.5 py-1 text-[13px] font-medium text-foreground/75">
               {c}
             </span>
           ))}
           {!open && hidden > 0 && (
-            <button type="button" onClick={() => setOpen(true)} className="cursor-pointer rounded-lg bg-muted px-3 py-1.5 text-[13px] font-medium text-foreground/75 transition-colors hover:bg-accent hover:text-primary">
+            <button type="button" onClick={() => setOpen(true)} className="cursor-pointer rounded-md bg-muted px-2.5 py-1 text-[13px] font-medium text-foreground/75 transition-colors hover:bg-accent hover:text-primary">
               +{hidden} {noun}
             </button>
           )}

@@ -11,7 +11,8 @@ import { useSession } from "./session-provider";
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/services", label: "All services" },
-  { href: "/search", label: "Search" },
+  { href: "/search", label: "Find a pro" },
+  { href: "/#how", label: "How it works" },
   { href: "/guides", label: "Guides" },
   { href: "/about", label: "About" },
   { href: "/help", label: "Help" },
@@ -39,7 +40,7 @@ export function MobileNav() {
         </SheetHeader>
         <nav className="flex flex-col gap-1 px-4">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 font-medium hover:bg-muted">
+            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-md px-3 py-2.5 font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground">
               {l.label}
             </Link>
           ))}
@@ -51,7 +52,7 @@ export function MobileNav() {
             </Button>
           ) : (
             <>
-              <Button asChild onClick={() => setOpen(false)}>
+              <Button asChild variant="cta" onClick={() => setOpen(false)}>
                 <Link href="/register">Create an account</Link>
               </Button>
               <Button asChild variant="outline" onClick={() => setOpen(false)}>

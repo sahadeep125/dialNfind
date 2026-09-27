@@ -2,13 +2,11 @@ import { Linking, StyleSheet, View } from "react-native";
 import { Crown } from "lucide-react-native";
 
 import { AppBadge, AppButton, AppCard, AppText } from "@/components/design-system";
-import { PROVIDER_WEB_URL } from "@/constants/config";
 import { SOURCE_LABEL } from "@/constants/plans";
 import { openStoreSubscriptions } from "@/hooks/usePurchases";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
-import { openUrl } from "@/services/links";
 import type { BillingResponse } from "@/types/billing";
 import { formatDate } from "@/utils/format";
 
@@ -20,7 +18,10 @@ const STATUS = {
   cancelled: { label: "Cancelled", tone: "neutral" },
 } as const;
 
-/** The plan the business is on, where it is billed, usage this month, and where to manage it. */
+/**
+ * The plan the business is on, where it is billed, usage this month, and the store's manage screen. A plan
+ * bought on the web has no button here: store rules forbid linking to another way to pay.
+ */
 export function CurrentPlanCard({ billing }: { billing: BillingResponse }) {
   const theme = useTheme();
   const toast = useToast();
@@ -96,15 +97,6 @@ export function CurrentPlanCard({ billing }: { billing: BillingResponse }) {
             {billing.managedIn === "app_store"
               ? "Manage in the App Store"
               : "Manage in Google Play"}
-          </AppButton>
-        ) : billing.managedIn === "web" ? (
-          <AppButton
-            variant="neutral"
-            size="sm"
-            onPress={() => void openUrl(`${PROVIDER_WEB_URL}/subscription`)}
-            style={styles.manage}
-          >
-            Manage on the website
           </AppButton>
         ) : null}
       </View>

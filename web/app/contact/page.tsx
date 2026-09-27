@@ -52,11 +52,11 @@ export default async function ContactPage() {
               </div>
             </div>
           ))}
-          <div className="rounded-2xl bg-brand-deep p-5 text-white">
+          <div className="rounded-xl bg-brand-deep p-5 text-white">
             <div className="flex items-center gap-2 font-semibold">
               <LifeBuoy className="size-5 text-[oklch(0.8_0.1_200)]" /> Support tips
             </div>
-            <ul className="mt-3 space-y-2 text-sm text-[oklch(0.85_0.03_266)]">
+            <ul className="mt-3 space-y-2 text-sm text-white/75">
               <li>For a problem with a provider, include their name and the date you called.</li>
               <li>Business owners can update details directly from the provider dashboard.</li>
               <li>To report a wrong number, use Report on the listing page.</li>

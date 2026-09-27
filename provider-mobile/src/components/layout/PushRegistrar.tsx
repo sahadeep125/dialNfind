@@ -4,6 +4,7 @@ import * as Notifications from "expo-notifications";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useSession } from "@/hooks/useSession";
+import { track } from "@/services/analytics";
 import { pushOptedOut, registerForPush } from "@/services/push";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { logError } from "@/utils/log";
@@ -57,7 +58,9 @@ export function PushRegistrar() {
     const id = last.notification.request.identifier;
     if (handled.current === id) return;
     handled.current = id;
-    router.push(routeFor(last.notification.request.content.data as PushData));
+    const data = last.notification.request.content.data as PushData;
+    track("notification_opened", { notification_type: typeof data?.type === "string" ? data.type : null, source: "push" });
+    router.push(routeFor(data));
   }, [last, token]);
 
   useEffect(() => {

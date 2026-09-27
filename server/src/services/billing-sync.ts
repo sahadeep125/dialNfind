@@ -96,7 +96,11 @@ export async function recordGatewayPayment(input: {
   type?: "subscription" | "sponsored_ad";
 }) {
   const existing = await prisma.transaction.findUnique({ where: { gatewayPaymentId: input.paymentId } });
-  if (existing) return existing;
+  if (existing) {
+    // A retry after the invoice step failed: the payment is recorded, so only the invoice is missing.
+    if (existing.gateway === "razorpay") await issueInvoice(existing.id);
+    return existing;
+  }
   const txn = await prisma.transaction.create({
     data: {
       providerId: input.providerId,

@@ -45,6 +45,7 @@ import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
+import { track } from "@/services/analytics";
 import { ApiError, errorMessage } from "@/services/api";
 import { legalUrl, openEmail, openPhone, openUrl, openWebPage } from "@/services/links";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -254,7 +255,10 @@ export default function SettingsScreen() {
             title="Own a business?"
             subtitle="List it on DialNFind for free, or claim your listing"
             leading={<Store size={18} color={icon} />}
-            onPress={() => void run(() => openWebPage("/claim"), "Could not open the page.")}
+            onPress={() => {
+              track("claim_clicked", { source: "settings" });
+              void run(() => openWebPage("/claim"), "Could not open the page.");
+            }}
           />
           <AppListItem
             title="Rate DialNFind"

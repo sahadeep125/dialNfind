@@ -7,6 +7,7 @@ import { Bell, CheckCheck, LifeBuoy, MessageSquareReply } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/components/site/session-provider";
+import { track } from "@/lib/analytics";
 import { clientApi } from "@/lib/client";
 import { formatRelative } from "@/lib/format";
 import { notificationHref } from "@/lib/notification-href";
@@ -96,6 +97,7 @@ export function NotificationList({ initial }: { initial: NotificationItem[] }) {
                   href={href}
                   className={cn(rowClass, "transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none")}
                   onClick={() => {
+                    track("notification_opened", { notification_type: n.type, source: "inbox" });
                     if (!n.isRead) void markRead([n.id]);
                   }}
                 >

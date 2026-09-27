@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { AlertTriangle, KeyRound, Loader2, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
@@ -170,6 +171,7 @@ function DeleteDialog({ user, open, onClose }: { user: User; open: boolean; onCl
       }),
     onSuccess: ({ storeSubscription }) => {
       const store = storeSubscription ? STORE_MANAGE[storeSubscription] : null;
+      track("account_deleted", { had_store_subscription: storeSubscription !== null });
       // The session is already gone on the server; clear it here too.
       signOut();
       navigate("/login", { replace: true });

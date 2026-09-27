@@ -6,6 +6,7 @@ import { entitlementsFor, FEATURES, GRACE_DAYS, type Entitlement, type Feature, 
 import { notify, notifyAndEmail } from "./notify.js";
 import { sendPaymentFailed } from "./emails.js";
 import { recalculateProvider } from "./ranking.js";
+import { captureServer } from "./analytics.js";
 
 /** Statuses in which a subscription still unlocks its plan. */
 export const LIVE_STATUSES: SubscriptionStatus[] = ["active", "past_due"];
@@ -179,8 +180,20 @@ export async function applySubscriptionChange(change: SubscriptionChange) {
   const after = (await liveSubscription(change.providerId))?.plan.code ?? "free";
   if (before !== after) await onPlanChanged(change.providerId, before, after, change.quiet ? null : change.periodEnd);
   // Once per failed renewal: webhooks and syncs repeat while the gateway retries.
-  if (change.status === "past_due" && priorStatus !== "past_due") await onPaymentFailed(change.providerId, plan.name, change.graceUntil ?? null);
+  const paymentFailed = change.status === "past_due" && priorStatus !== "past_due";
+  if (paymentFailed) await onPaymentFailed(change.providerId, plan.name, change.graceUntil ?? null);
+  if (before !== after || paymentFailed) void trackSubscription(change, before, after, paymentFailed);
   return subscription;
+}
+
+/** Analytics for plan moves, whichever gateway (or admin) caused them; sent as the business owner's account. */
+async function trackSubscription(change: SubscriptionChange, before: string, after: string, paymentFailed: boolean) {
+  const provider = await prisma.provider.findUnique({ where: { id: change.providerId }, select: { userId: true } });
+  const props = { provider_id: Number(change.providerId), plan_before: before, plan_after: after, billing_cycle: change.billingCycle, payment_source: change.source };
+  if (paymentFailed) captureServer(provider?.userId, "subscription_payment_failed", { ...props, plan_after: change.planCode });
+  if (before === after) return;
+  const event = before === "free" ? "subscription_activated" : after === "free" ? "subscription_ended" : "subscription_plan_changed";
+  captureServer(provider?.userId, event, { ...props, end_status: after === "free" ? change.status : undefined });
 }
 
 async function onPaymentFailed(providerId: bigint, planName: string, graceUntil: Date | null) {

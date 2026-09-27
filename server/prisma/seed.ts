@@ -59,6 +59,10 @@ async function wipe() {
 }
 
 async function main() {
+  // The demo seed empties every table and adds accounts with a public password. Production uses bootstrap.ts.
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "1") {
+    throw new Error("Refusing to wipe the database with NODE_ENV=production. Use `pnpm db:bootstrap` for a real deployment.");
+  }
   console.log("Wiping existing data...");
   await wipe();
   const passwordHash = await bcrypt.hash("password123", 10);

@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Image as ImageIcon, MapPin, Star, UsersRound, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
-  { id: "overview", label: "Overview", icon: FileText },
-  { id: "services", label: "Service", icon: Wrench },
-  { id: "reviews", label: "Reviews", icon: Star },
-  { id: "photos", label: "Photos", icon: ImageIcon },
-  { id: "location", label: "Location", icon: MapPin },
-  { id: "similar", label: "Similar Providers", icon: UsersRound },
+  { id: "overview", label: "Overview" },
+  { id: "services", label: "Services" },
+  { id: "photos", label: "Photos" },
+  { id: "reviews", label: "Reviews" },
+  { id: "location", label: "Location" },
+  { id: "similar", label: "Similar pros" },
 ];
 
 /** Sticky anchor tabs under the header; highlights whichever section is nearest the top of the viewport. */
@@ -33,22 +32,21 @@ export function SectionNav({ reviewCount, photoCount, hidden = [] }: { reviewCou
   }, []);
 
   return (
-    <nav aria-label="Profile sections" className="sticky top-16 z-30 -mx-4 border-y bg-card px-2 shadow-[var(--shadow-card)] sm:mx-0 sm:rounded-xl sm:border">
-      <div className="flex overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <nav aria-label="Profile sections" className="sticky top-16 z-30 -mx-4 border-b bg-background/95 px-4 backdrop-blur-md sm:mx-0 sm:px-0">
+      <div className="no-scrollbar -mb-px flex gap-1 overflow-x-auto">
         {items.map((item) => (
           <a
             key={item.id}
             href={`#${item.id}`}
             aria-current={active === item.id ? "true" : undefined}
             className={cn(
-              "relative flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3.5 text-[15px] font-medium transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:transition-colors",
-              active === item.id ? "text-primary after:bg-primary" : "text-muted-foreground after:bg-transparent hover:text-foreground",
+              "shrink-0 whitespace-nowrap border-b-2 px-3 py-3.5 text-sm font-semibold transition-colors",
+              active === item.id ? "border-cta text-foreground" : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
             )}
           >
-            <item.icon className="size-[18px]" aria-hidden />
             {item.label}
-            {item.id === "reviews" && reviewCount > 0 && ` (${reviewCount})`}
-            {item.id === "photos" && photoCount > 0 && ` (${photoCount})`}
+            {item.id === "reviews" && reviewCount > 0 && <span className="ml-1 font-normal text-muted-foreground">({reviewCount})</span>}
+            {item.id === "photos" && photoCount > 0 && <span className="ml-1 font-normal text-muted-foreground">({photoCount})</span>}
           </a>
         ))}
       </div>

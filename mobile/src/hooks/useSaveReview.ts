@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
+import { track } from "@/services/analytics";
 import { askAfterReview } from "@/services/reviewPrompt";
 import { logError } from "@/utils/log";
 
@@ -28,6 +29,11 @@ export function useSaveReview(): UseMutationResult<void, Error, SaveReviewInput>
       else await api("/reviews", { method: "POST", body: { ...body, providerId } });
     },
     onSuccess: (_data, input) => {
+      track(input.reviewId ? "review_updated" : "review_submitted", {
+        provider_id: input.providerId,
+        rating: input.rating,
+        photo_count: input.photos?.length ?? 0,
+      });
       // Only a new review is a moment to ask; editing one is not.
       if (!input.reviewId) void askAfterReview().catch((e: unknown) => logError("[rating] Prompt failed", e));
       void qc.invalidateQueries({

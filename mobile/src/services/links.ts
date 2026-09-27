@@ -2,6 +2,7 @@ import { Linking, Platform, Share } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 
 import { WEB_URL } from "@/constants/config";
+import { track } from "@/services/analytics";
 
 export async function openPhone(number: string): Promise<void> {
   await Linking.openURL(`tel:${number}`);
@@ -49,9 +50,10 @@ export async function openMaps(latitude: number, longitude: number, label: strin
 /** Opens the share sheet with a link to the provider's page on the website. */
 export async function shareProvider(slug: string, businessName: string): Promise<void> {
   const url = `${WEB_URL}/providers/${encodeURIComponent(slug)}`;
-  await Share.share(
+  const result = await Share.share(
     Platform.OS === "ios"
       ? { message: `${businessName} on DialNFind`, url }
       : { message: `${businessName} on DialNFind: ${url}` },
   );
+  track("provider_shared", { provider_slug: slug, method: "native", completed: result.action === Share.sharedAction });
 }

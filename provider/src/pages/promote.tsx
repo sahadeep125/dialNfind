@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CreditCard, Eye, Loader2, Megaphone, MousePointerClick, Pause, Play, Send, Wallet } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { formatDate, formatPrice } from "@/lib/format";
 import { openOrderCheckout } from "@/lib/razorpay";
@@ -34,17 +35,22 @@ export function PromotePage() {
   const create = useMutation({
     mutationFn: () => api<{ ticket: { id: number; reference: string } }>("/provider/sponsored/request", { method: "POST", json: choice() }),
     onSuccess: ({ ticket }) => {
+      const c = choice();
+      track("promotion_requested", { category_id: c.categoryId, days: c.days, budget: c.budget });
       toast.success(`Request sent (${ticket.reference}). Our team will contact you to arrange payment and start the campaign.`, {
         action: { label: "View", onClick: () => navigate(`/support/${ticket.id}`) },
       });
-      void qc.invalidateQueries({ queryKey: ["support"] });
+      void qc.invalidateQueries({ queryKey: ["support-tickets"] });
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
   // Pay online: Razorpay order for the budget plus GST; the campaign starts once the payment is confirmed.
   const pay = useMutation({
     mutationFn: async () => {
-      const order = await api<SponsoredCheckout>("/provider/sponsored/checkout", { method: "POST", json: choice() });
+      const c = choice();
+      const props = { category_id: c.categoryId, days: c.days, budget: c.budget };
+      const order = await api<SponsoredCheckout>("/provider/sponsored/checkout", { method: "POST", json: c });
+      track("promotion_checkout_started", { ...props, amount: order.amount });
       const result = await openOrderCheckout({
         key: order.keyId,
         order_id: order.orderId,
@@ -55,8 +61,12 @@ export function PromotePage() {
         prefill: order.prefill,
         theme: { color: "#355EDD" },
       });
-      if (!result) return false;
+      if (!result) {
+        track("promotion_checkout_dismissed", props);
+        return false;
+      }
       await api("/provider/sponsored/verify", { method: "POST", json: result });
+      track("promotion_purchased", { ...props, amount: order.amount });
       return true;
     },
     onSuccess: (paid) => {
@@ -66,7 +76,8 @@ export function PromotePage() {
       void qc.invalidateQueries({ queryKey: ["billing"] });
     },
     onError: (e) => {
-      if (e instanceof ApiError && e.message === "Add your billing details first") {
+      track("promotion_checkout_failed", { error: e instanceof ApiError ? e.code : "error" });
+      if (e instanceof ApiError && e.code === "billing_details_required") {
         toast.error("Add your billing details first. They go on your GST invoice.", { action: { label: "Add details", onClick: () => navigate("/subscription") } });
         return;
       }
@@ -75,7 +86,10 @@ export function PromotePage() {
   });
   const toggle = useMutation({
     mutationFn: (c: Campaign) => api(`/provider/sponsored/${c.id}`, { method: "PATCH", json: { status: c.status === "active" ? "paused" : "active" } }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["sponsored"] }),
+    onSuccess: (_r, c) => {
+      track("promotion_toggled", { campaign_id: c.id, status: c.status === "active" ? "paused" : "active" });
+      void qc.invalidateQueries({ queryKey: ["sponsored"] });
+    },
     onError: (e) => toast.error(errorMessage(e)),
   });
 

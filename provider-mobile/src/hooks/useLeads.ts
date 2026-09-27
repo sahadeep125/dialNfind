@@ -7,6 +7,7 @@ import {
   type UseMutationResult,
 } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import type { LeadFilters, LeadsPage, LeadStatus } from "@/types/leads";
 
@@ -43,7 +44,8 @@ export function useReportLead(): UseMutationResult<unknown, Error, { leadId: num
   return useMutation({
     mutationFn: ({ leadId, reason }: { leadId: number; reason: string }): Promise<unknown> =>
       api(`/provider/leads/${leadId}/dispute`, { method: "POST", body: { reason } }),
-    onSuccess: () => {
+    onSuccess: (_data, { leadId }) => {
+      track("lead_reported", { lead_id: leadId });
       void qc.invalidateQueries({ queryKey: leadKeys.all });
     },
   });
@@ -61,7 +63,8 @@ export function useUpdateLead(): UseMutationResult<unknown, Error, LeadUpdate> {
   return useMutation({
     mutationFn: ({ leadId, ...body }: LeadUpdate): Promise<unknown> =>
       api(`/provider/leads/${leadId}`, { method: "PATCH", body }),
-    onSuccess: () => {
+    onSuccess: (_data, { leadId, status, note }) => {
+      track("lead_updated", { lead_id: leadId, status, has_note: note === undefined ? undefined : Boolean(note) });
       void qc.invalidateQueries({ queryKey: leadKeys.all });
     },
   });

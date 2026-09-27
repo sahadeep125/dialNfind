@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, tokenStore } from "./api";
+import { identifyUser, resetUser } from "./analytics";
+import { api, ApiError, tokenStore } from "./api";
 import type { PlanState, User } from "./types";
 
 interface ProviderState {
@@ -14,6 +15,8 @@ interface AuthContextValue {
   user: User | null;
   providerState: ProviderState | null;
   loading: boolean;
+  /** The session could not be checked (API down, network error). Not the same as being signed out. */
+  unreachable: boolean;
   signIn: (token: string) => Promise<void>;
   signOut: () => void;
   refresh: () => Promise<void>;
@@ -43,6 +46,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("dnf:logout", onLogout);
   }, []);
 
+  // Analytics follows the session: identify once the account loads (again when the role or plan changes),
+  // reset when the token goes (sign-out, or a 401 anywhere).
+  const identified = useRef<string | null>(null);
+  const meUser = me.data?.user;
+  const planCode = me.data?.state?.plan?.plan.code ?? null;
+  useEffect(() => {
+    if (token && meUser) {
+      const key = `${meUser.id}:${meUser.role}:${meUser.name}:${meUser.email}:${meUser.provider?.id ?? ""}:${planCode ?? ""}`;
+      if (key !== identified.current) identifyUser(meUser, planCode);
+      identified.current = key;
+    } else if (!token && identified.current !== null) {
+      resetUser();
+      identified.current = null;
+    }
+  }, [token, meUser, planCode]);
+
   const signIn = useCallback(
     async (next: string) => {
       tokenStore.set(next);
@@ -69,11 +88,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: token ? (me.data?.user ?? null) : null,
       providerState: token ? (me.data?.state ?? null) : null,
       loading: !!token && me.isLoading,
+      unreachable: !!token && me.isError && !(me.error instanceof ApiError && me.error.status === 401),
       signIn,
       signOut,
       refresh,
     }),
-    [token, me.data, me.isLoading, signIn, signOut, refresh],
+    [token, me.data, me.isLoading, me.isError, me.error, signIn, signOut, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -5,6 +5,7 @@ export interface User {
   email: string;
   phone: string | null;
   emailVerifiedAt: string | null;
+  createdAt?: string;
   provider: { id: number; slug: string; businessName: string; status: string } | null;
   /** False for accounts created with Google or Apple until a password is set. */
   hasPassword: boolean;

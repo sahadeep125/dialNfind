@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import type { ProviderProfile } from "@/types";
 import type { ProfileResponse, ProfileUpdateBody } from "@/types/listing";
@@ -11,6 +12,9 @@ export function useSaveProfile(): UseMutationResult<ProviderProfile, Error, Prof
   return useMutation<ProviderProfile, Error, ProfileUpdateBody>({
     mutationFn: async (body: ProfileUpdateBody): Promise<ProviderProfile> =>
       (await api<ProfileResponse>("/provider/profile", { method: "PATCH", body })).provider,
-    onSuccess: (provider: ProviderProfile) => refreshListing(qc, provider),
+    onSuccess: (provider: ProviderProfile) => {
+      track("profile_saved");
+      return refreshListing(qc, provider);
+    },
   });
 }

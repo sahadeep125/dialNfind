@@ -16,6 +16,8 @@ export const forbidden = (message = "You do not have access to this resource") =
 export const emailUnverified = () => new HttpError(403, "Confirm your email address to continue", "email_unverified");
 export const notFound =(message = "Not found") => new HttpError(404, message, "not_found");
 export const conflict = (message: string) => new HttpError(409, message, "conflict");
+/** GST invoices need the buyer's state; apps send people to the billing details form on this code. */
+export const billingDetailsRequired = () => new HttpError(400, "Add your billing details first", "billing_details_required");
 export const notConfigured = (message: string) => new HttpError(501, message, "not_configured");
 /** The provider's plan does not include this feature. Apps open their upgrade screen on this code. */
 export const upgradeRequired = (message: string, entitlement: string, feature: string) =>

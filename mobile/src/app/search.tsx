@@ -9,6 +9,8 @@ import { FilterBar, ProviderResults, SuggestionList } from "@/components/search"
 import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
 import { useSearchHistoryStore } from "@/stores/useSearchHistoryStore";
+import { track } from "@/services/analytics";
+import { useLocationStore } from "@/stores/useLocationStore";
 import type { SearchFilters, SortOption, Suggestion } from "@/types";
 
 const SORTS: SortOption[] = ["relevance", "distance", "rating", "reviews"];
@@ -40,6 +42,7 @@ export default function SearchScreen() {
 
   const runSearch = (term: string): void => {
     const clean = term.trim();
+    track("search_submitted", { query: clean, suggestion_type: null, source: "search_bar", city: useLocationStore.getState().location.city });
     setText(clean);
     addSearch(clean);
     setFilters((f) => ({
@@ -53,6 +56,7 @@ export default function SearchScreen() {
   };
 
   const pickSuggestion = (s: Suggestion): void => {
+    track("search_submitted", { query: s.label, suggestion_type: s.type, slug: s.slug, source: "suggestion", city: useLocationStore.getState().location.city });
     if (s.type === "provider") return router.push(`/provider/${s.slug}`);
     if (s.type === "category") return router.push(`/category/${s.slug}`);
     addSearch(s.label);

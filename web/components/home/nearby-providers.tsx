@@ -28,15 +28,17 @@ export function NearbyProviders() {
   if (providers && providers.length === 0) return null;
   const place = location ? location.city || location.name : null;
   return (
-    <section className="container-page py-12 md:py-14">
+    // Follows the categories section, so it only needs space below.
+    <section className="container-page pb-14 md:pb-20">
       <SectionHeading
-        title={place ? `Popular in ${place}` : "Popular near you"}
+        eyebrow="Top rated"
+        title={place ? `Popular pros in ${place}` : "Popular pros near you"}
         action={{ href: location ? buildSearchHref("", location) : "/search", label: "See all" }}
       />
-      <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4" aria-busy={!providers}>
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-busy={!providers}>
         {providers
           ? providers.map((p) => <ProviderTile key={p.id} provider={p} />)
-          : Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[25rem] rounded-xl" />)}
+          : Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[24rem] rounded-lg" />)}
       </div>
     </section>
   );

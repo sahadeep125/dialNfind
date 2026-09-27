@@ -9,9 +9,9 @@ export function RatingStars({ value, size = "sm", className }: { value: number; 
         const fill = Math.max(0, Math.min(1, value - (i - 1)));
         return (
           <span key={i} className={cn("relative inline-block", px)}>
-            <Star className={cn("absolute inset-0 text-[oklch(0.88_0.02_85)]", px)} fill="currentColor" strokeWidth={0} />
+            <Star className={cn("absolute inset-0 text-border", px)} fill="currentColor" strokeWidth={0} />
             <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
-              <Star className={cn("text-warning", px)} fill="currentColor" strokeWidth={0} />
+              <Star className={cn("text-star", px)} fill="currentColor" strokeWidth={0} />
             </span>
           </span>
         );
@@ -32,6 +32,21 @@ export function RatingPill({ value, count, className }: { value: number; count: 
       </span>
       <span className="text-muted-foreground">
         {count.toLocaleString("en-IN")} {count === 1 ? "review" : "reviews"}
+      </span>
+    </span>
+  );
+}
+
+/** "★ 4.8 (126 reviews)" for cards, or "New listing" before the first review. */
+export function RatingInline({ value, count, short = false, className }: { value: number; count: number; short?: boolean; className?: string }) {
+  if (!count) return <span className={cn("text-sm font-medium text-muted-foreground", className)}>New listing</span>;
+  return (
+    <span className={cn("inline-flex items-center gap-1 text-sm", className)}>
+      <Star className="size-4 text-star" fill="currentColor" strokeWidth={0} aria-hidden />
+      <span className="font-semibold text-foreground">{value.toFixed(1)}</span>
+      <span className="text-muted-foreground">
+        ({count.toLocaleString("en-IN")}
+        {short ? "" : count === 1 ? " review" : " reviews"})
       </span>
     </span>
   );

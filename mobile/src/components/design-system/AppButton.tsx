@@ -51,8 +51,6 @@ export function AppButton({
   const inactive = disabled || loading;
   const raised = (variant === "primary" || variant === "success") && !disabled;
 
-  console.log("tokens", theme.components.button);
-
   return (
     <AppPressable
       accessibilityRole="button"

@@ -1,6 +1,7 @@
 import { useMutation, type UseMutationResult } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
+import { track } from "@/services/analytics";
 
 export type ReportTarget =
   | { kind: "provider"; slug: string; name: string }
@@ -16,5 +17,6 @@ export function useReport(): UseMutationResult<unknown, Error, { target: ReportT
           : `/reviews/${target.id}/report`,
         { method: "POST", body: { reason: reason.trim() } },
       ),
+    onSuccess: (_data, { target }) => track("report_submitted", { target: target.kind === "provider" ? "listing" : "review" }),
   });
 }

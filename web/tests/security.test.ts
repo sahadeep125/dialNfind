@@ -1,20 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { safeRedirect } from "@/lib/safe-redirect";
 import { clientIp, forwardClientIp } from "@/lib/client-ip";
+import { proxyPath } from "@/lib/proxy-path";
 import { crossSiteRejection } from "@/lib/same-origin";
 
 describe("safeRedirect", () => {
   it("keeps same-site paths", () => {
     expect(safeRedirect("/providers/abc?x=1")).toBe("/providers/abc?x=1");
   });
-  it.each(["//evil.example", "/\\evil.example", "https://evil.example", "javascript:alert(1)", "", null, undefined])("falls back for %s", (next) => {
+  it.each(["//evil.example", "/\\evil.example", "/\t/evil.example", "/\n/evil.example", "https://evil.example", "javascript:alert(1)", "", null, undefined])("falls back for %s", (next) => {
     expect(safeRedirect(next)).toBe("/dashboard");
   });
 });
 
 describe("clientIp", () => {
-  it("prefers x-real-ip", () => {
-    expect(clientIp(new Headers({ "x-real-ip": "1.1.1.1", "x-forwarded-for": "2.2.2.2" }))).toBe("1.1.1.1");
+  afterEach(() => vi.unstubAllEnvs());
+  it("ignores x-real-ip unless the host is known to set it", () => {
+    expect(clientIp(new Headers({ "x-real-ip": "1.1.1.1", "x-forwarded-for": "2.2.2.2" }))).toBe("2.2.2.2");
+  });
+  it("reads the header named in CLIENT_IP_HEADER", () => {
+    vi.stubEnv("CLIENT_IP_HEADER", "CF-Connecting-IP");
+    expect(clientIp(new Headers({ "cf-connecting-ip": "1.1.1.1", "x-forwarded-for": "2.2.2.2" }))).toBe("1.1.1.1");
   });
   it("uses the rightmost x-forwarded-for entry, which our proxy added", () => {
     expect(clientIp(new Headers({ "x-forwarded-for": "6.6.6.6, 10.0.0.1, 3.3.3.3" }))).toBe("3.3.3.3");
@@ -23,6 +29,15 @@ describe("clientIp", () => {
     const to = new Headers();
     forwardClientIp(new Headers({ "x-forwarded-for": "9.9.9.9, 4.4.4.4" }), to);
     expect(to.get("x-forwarded-for")).toBe("4.4.4.4");
+  });
+});
+
+describe("proxyPath", () => {
+  it("encodes each segment", () => {
+    expect(proxyPath(["providers", "a b", "reviews"])).toBe("providers/a%20b/reviews");
+  });
+  it.each([[[".."]], [["me", "..", "..", "uploads"]], [["."]], [["me", ""]], [[]]])("refuses %j", (segments) => {
+    expect(proxyPath(segments)).toBeNull();
   });
 });
 

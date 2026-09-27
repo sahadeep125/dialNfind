@@ -7,20 +7,31 @@ import { LOCATION_COOKIE, TOKEN_COOKIE } from "./config";
 import { DEFAULT_LOCATION } from "./default-location";
 import type { LocationOption, SessionUser } from "./types";
 
-export const getSession = cache(async (): Promise<SessionUser | null> => {
+/** The signed-in user, or `unreachable` when the API could not answer (which is not the same as signed out). */
+const loadSession = cache(async (): Promise<{ user: SessionUser | null; unreachable: boolean }> => {
   const token = (await cookies()).get(TOKEN_COOKIE)?.value;
-  if (!token) return null;
+  if (!token) return { user: null, unreachable: false };
   try {
     const { user } = await api<{ user: SessionUser }>("/auth/me");
-    return user;
+    return { user, unreachable: false };
   } catch (err) {
-    if (err instanceof ApiError && err.status === 401) return null;
-    return null;
+    if (err instanceof ApiError && err.status === 401) return { user: null, unreachable: false };
+    return { user: null, unreachable: true };
   }
 });
 
+/** The signed-in user or null. Public pages treat an API outage like a guest visit. */
+export async function getSession(): Promise<SessionUser | null> {
+  return (await loadSession()).user;
+}
+
+/**
+ * For signed-in pages. During an API outage it throws, so the page shows its error screen with Try again
+ * instead of sending a signed-in person to the login form.
+ */
 export async function requireSession(next: string): Promise<SessionUser> {
-  const user = await getSession();
+  const { user, unreachable } = await loadSession();
+  if (unreachable) throw new Error("We could not reach DialNFind to check your sign-in. Please try again in a moment.");
   if (!user) redirect(`/login?next=${encodeURIComponent(next)}`);
   if (!user.emailVerifiedAt) redirect(`/verify-email?next=${encodeURIComponent(next)}`);
   return user;

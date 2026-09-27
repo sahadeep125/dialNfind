@@ -1,6 +1,7 @@
 import { useMutation, type UseMutationResult } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
+import { track } from "@/services/analytics";
 import { useAuthActions } from "./useAuthActions";
 
 /**
@@ -13,6 +14,9 @@ export function useDeleteAccount(): UseMutationResult<void, Error, string | unde
     mutationFn: async (password: string | undefined): Promise<void> => {
       await api("/auth/me", { method: "DELETE", body: { password } });
     },
-    onSuccess: () => signOut(),
+    onSuccess: () => {
+      track("account_deleted");
+      signOut();
+    },
   });
 }

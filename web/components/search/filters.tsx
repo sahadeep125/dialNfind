@@ -95,11 +95,11 @@ function FilterFields({ categories, lockedCategory, lockedSub, defaultRadius }: 
               type="button"
               onClick={() => update({ minRating: r.value || null })}
               className={cn(
-                "flex h-9 cursor-pointer items-center justify-center gap-1 rounded-lg border text-sm font-medium transition-colors",
-                minRating === r.value ? "border-primary bg-accent text-accent-foreground" : "bg-card hover:bg-muted",
+                "flex h-9 cursor-pointer items-center justify-center gap-1 rounded-md border text-sm font-medium transition-colors",
+                minRating === r.value ? "border-primary bg-accent text-accent-foreground" : "border-input bg-card hover:bg-muted",
               )}
             >
-              {r.value && <Star className="size-3.5 fill-warning text-warning" />}
+              {r.value && <Star className="size-3.5 fill-star text-star" />}
               {r.label}
             </button>
           ))}
@@ -128,8 +128,8 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       type="button"
       onClick={onClick}
       className={cn(
-        "cursor-pointer rounded-full border px-3 py-1 text-sm transition-colors",
-        active ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:border-primary/40 hover:text-primary",
+        "cursor-pointer rounded-md border px-3 py-1 text-sm transition-colors",
+        active ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card hover:border-foreground/25",
       )}
     >
       {children}
@@ -153,9 +153,9 @@ export function FiltersSheet(props: FilterProps & { activeCount: number }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button className="h-10 shrink-0 rounded-lg border border-primary/20 bg-primary/10 px-3.5 text-sm font-medium text-primary shadow-none hover:bg-primary/15">
-          <SlidersHorizontal /> All Filters
-          {props.activeCount > 0 && <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[11px] text-primary-foreground">{props.activeCount}</span>}
+        <Button variant="outline" className="h-9 shrink-0 px-3 text-sm font-semibold">
+          <SlidersHorizontal /> All filters
+          {props.activeCount > 0 && <span className="flex size-5 items-center justify-center rounded-full bg-cta text-[11px] text-cta-foreground">{props.activeCount}</span>}
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-full px-5 pb-8 sm:max-w-md">

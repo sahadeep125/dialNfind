@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { FileUpload } from "@/components/file-upload";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { track } from "@/lib/analytics";
 import { clientApi, ClientApiError } from "@/lib/client";
 import { normalizePhone, optionalPhone, password, personName, pincode } from "@/lib/validation";
 import type { Address } from "@/lib/types";
@@ -318,6 +319,7 @@ export function DeleteAccountForm({ hasPassword }: { hasPassword: boolean }) {
     setError(null);
     try {
       await clientApi("/auth/me", { method: "DELETE", body: JSON.stringify(hasPassword ? { password: pw } : {}) });
+      track("account_deleted");
       // The API has already ended the session; this clears the cookie.
       await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
       toast.success("Your account has been deleted");

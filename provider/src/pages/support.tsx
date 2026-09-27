@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ChevronDown, ChevronRight, Clock, FileText, Headset, LifeBuoy, Loader2, Mail, Paperclip, Phone, Plus, Send, X } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatPhone, formatRelative, telLink } from "@/lib/format";
 import { useAppConfig } from "@/lib/app-config";
@@ -185,7 +186,8 @@ function NewTicketDialog({ onClose }: { onClose: () => void }) {
   const { errors } = formState;
   const create = useMutation({
     mutationFn: (v: TicketValues) => api<{ ticket: Ticket }>("/support/tickets", { method: "POST", json: { ...v, attachments: files } }),
-    onSuccess: ({ ticket }) => {
+    onSuccess: ({ ticket }, v) => {
+      track("support_ticket_created", { ticket_id: ticket.id, category: v.category, attachment_count: files.length });
       toast.success(`Request ${ticket.reference} sent`);
       void qc.invalidateQueries({ queryKey: ["support-tickets"] });
       navigate(`/support/${ticket.id}`);

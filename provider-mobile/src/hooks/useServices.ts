@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import type { ProviderProfile, ProviderService } from "@/types";
 import type { ProfileResponse, ServiceInput } from "@/types/listing";
@@ -23,7 +24,8 @@ export function useSaveServices(): UseMutationResult<ProviderProfile, Error, Ser
     mutationFn: async (services: ServiceInput[]): Promise<ProviderProfile> =>
       (await api<ProfileResponse>("/provider/services", { method: "PUT", body: { services } }))
         .provider,
-    onSuccess: async (provider: ProviderProfile) => {
+    onSuccess: async (provider: ProviderProfile, services: ServiceInput[]) => {
+      track("listing_section_saved", { section: "services", item_count: services.length });
       await refreshListing(qc, provider);
       await qc.invalidateQueries({ queryKey: listingKeys.attributes });
     },

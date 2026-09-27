@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { api, errorMessage } from "@/services/api";
+import { track } from "@/services/analytics";
 import { openPhone, openWhatsApp } from "@/services/links";
 import { recordContact } from "@/services/reviewPrompt";
 import type { ProviderCard } from "@/types";
@@ -27,6 +28,7 @@ export function useContactProvider(): (
       source: Source = "profile",
     ): Promise<void> => {
       let number = channel === "call" ? provider.phone : provider.whatsappNumber || provider.phone;
+      track("contact_clicked", { provider_id: provider.id, channel, source });
       try {
         const res = await api<{ contact: { number: string } }>("/leads", {
           method: "POST",

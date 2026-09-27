@@ -13,3 +13,4 @@ export { RatingPrompter } from "./RatingPrompter";
 export { FocusStatusBar } from "./FocusStatusBar";
 export { TabHeader } from "./TabHeader";
 export { OnboardingGate } from "./OnboardingGate";
+export { AnalyticsSync } from "./AnalyticsSync";

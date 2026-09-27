@@ -42,11 +42,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   const what = data.resolved.subcategory?.name ?? data.resolved.category?.name ?? (q ? q : null);
   const heading = (
-    <h2 className="text-[15px] text-foreground/80">
-      <span className="font-semibold text-foreground">
-        {data.total.toLocaleString("en-IN")} {what ? `${what} ${data.total === 1 ? "Professional" : "Professionals"}` : data.total === 1 ? "Service Provider" : "Service Providers"}
+    <h2 className="text-base text-muted-foreground">
+      <span className="font-bold text-foreground">
+        {data.total.toLocaleString("en-IN")} {data.total === 1 ? "pro" : "pros"}
       </span>{" "}
-      near {location.label}
+      {what ? `for ${what.toLowerCase()} ` : ""}near {location.label}
     </h2>
   );
   const popular = categories.slice(0, 8).map((c) => ({
@@ -57,8 +57,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   return (
     <div>
       <SearchHero
-        title={<>Find trusted professionals<br className="hidden sm:block" /> for your home services</>}
-        subtitle="Compare, read reviews and connect with verified experts near you."
+        title={what ? `${what} near ${location.label}` : "Find trusted local professionals"}
+        subtitle="Compare ratings, reviews and prices, then call or WhatsApp the pro you prefer directly."
         initialQuery={q}
         initialLocation={location}
         popular={popular}

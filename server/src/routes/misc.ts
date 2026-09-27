@@ -81,7 +81,9 @@ miscRouter.get("/stats", async (_req, res) => {
   res.json({ providers, categories, cities: cities.length, reviews });
 });
 
-miscRouter.get("/health", async (_req, res) => {
+/** Load balancer and uptime checks. Mounted before the rate limiter (app.ts): probes come often, from one address. */
+export const healthRouter = Router();
+healthRouter.get("/health", async (_req, res) => {
   await prisma.$queryRaw`SELECT 1`;
   res.json({ ok: true });
 });

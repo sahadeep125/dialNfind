@@ -21,6 +21,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { WEB_URL } from "@/lib/config";
@@ -201,7 +202,12 @@ export function AppLayout() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={signOut}>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    track("logged_out");
+                    signOut();
+                  }}
+                >
                   <LogOut /> Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>

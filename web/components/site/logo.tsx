@@ -1,31 +1,23 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
+/** A navy tile with a white map pin and an orange dot: "find someone near you". */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 40 40" className={cn("size-9", className)} aria-hidden>
-      <defs>
-        <linearGradient id="dnf-logo" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="oklch(0.6 0.2 266)" />
-          <stop offset="1" stopColor="oklch(0.45 0.19 270)" />
-        </linearGradient>
-      </defs>
-      <rect width="40" height="40" rx="11" fill="url(#dnf-logo)" />
-      <path d="M20 8.5c-5.1 0-9 3.9-9 8.9 0 6.2 7.4 13 8.2 13.7.5.4 1.1.4 1.6 0 .8-.7 8.2-7.5 8.2-13.7 0-5-3.9-8.9-9-8.9Z" fill="white" />
-      <path
-        d="M17.3 13.6c.3-.3.8-.3 1 .1l1 1.6c.2.3.1.7-.1 1l-.6.5c.4.9 1.1 1.6 2 2l.5-.6c.3-.3.7-.3 1-.1l1.6 1c.4.2.4.7.1 1l-.8.8c-.5.5-1.3.6-1.9.3-1.9-.9-3.4-2.4-4.3-4.3-.3-.6-.2-1.4.3-1.9l.2-.4Z"
-        fill="oklch(0.53 0.2 266)"
-      />
+      <rect width="40" height="40" rx="9" fill="var(--primary)" />
+      <path d="M20 8c-5.2 0-9.2 4-9.2 9.1 0 6.4 7.6 13.4 8.4 14.1.5.4 1.1.4 1.6 0 .8-.7 8.4-7.7 8.4-14.1C29.2 12 25.2 8 20 8Z" fill="white" />
+      <circle cx="20" cy="17.2" r="3.6" fill="var(--cta)" />
     </svg>
   );
 }
 
-export function Logo({ className, href = "/" }: { className?: string; href?: string }) {
+export function Logo({ className, href = "/", inverted = false }: { className?: string; href?: string; inverted?: boolean }) {
   return (
-    <Link href={href} className={cn("flex items-center gap-2.5", className)} aria-label="DialNFind home">
+    <Link href={href} className={cn("flex shrink-0 items-center gap-2.5", className)} aria-label="DialNFind home">
       <LogoMark />
-      <span className="font-display text-xl font-bold tracking-tight text-brand-deep">
-        Dial<span className="text-primary">N</span>Find
+      <span className={cn("font-display text-xl font-extrabold tracking-tight", inverted ? "text-white" : "text-primary")}>
+        Dial<span className={inverted ? "text-[oklch(0.8_0.13_60)]" : "text-cta"}>N</span>Find
       </span>
     </Link>
   );

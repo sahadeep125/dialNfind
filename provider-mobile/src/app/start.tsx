@@ -11,6 +11,7 @@ import {
   AppText,
 } from "@/components/design-system";
 import { BrandMark, ErrorState, Screen } from "@/components/layout";
+import { DeleteAccountSheet } from "@/components/more/DeleteAccountSheet";
 import { StartChoiceCard } from "@/components/onboarding/StartChoiceCard";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useLayout } from "@/hooks/useLayout";
@@ -26,6 +27,7 @@ export default function StartScreen() {
   const session = useSession();
   const { signOut } = useAuthActions();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (!token) return <Redirect href="/login" />;
   if (session.data?.state.provider) return <Redirect href="/" />;
@@ -134,6 +136,11 @@ export default function StartScreen() {
             style={isTablet ? styles.card : null}
           />
         </View>
+
+        {/* The More tab is only reachable with a business, and the app stores require deletion inside the app. */}
+        <AppButton variant="ghost" size="sm" onPress={() => setDeleting(true)} style={styles.delete}>
+          Delete my account
+        </AppButton>
       </ScrollView>
 
       <AppSheet visible={confirmSignOut} onClose={() => setConfirmSignOut(false)} title="Sign out?">
@@ -149,6 +156,12 @@ export default function StartScreen() {
           </AppButton>
         </View>
       </AppSheet>
+      <DeleteAccountSheet
+        visible={deleting}
+        onClose={() => setDeleting(false)}
+        businessName={null}
+        hasPassword={session.data?.user.hasPassword ?? true}
+      />
     </Screen>
   );
 }
@@ -164,4 +177,5 @@ const styles = StyleSheet.create({
   row: { alignItems: "center", flexDirection: "row", gap: 8 },
   grid: { flexDirection: "row" },
   card: { flex: 1 },
+  delete: { alignSelf: "center" },
 });

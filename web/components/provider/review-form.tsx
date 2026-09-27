@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { PhotoListUpload } from "@/components/file-upload";
 import { clientApi, ClientApiError } from "@/lib/client";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { refreshProvider } from "@/app/providers/[slug]/actions";
 
@@ -84,6 +85,7 @@ export function ReviewForm({
       if (existing) await clientApi(`/reviews/${existing.id}`, { method: "PATCH", body: JSON.stringify(body) });
       else await clientApi("/reviews", { method: "POST", body: JSON.stringify({ providerId, ...body }) });
       toast.success(existing ? "Review updated" : "Thanks for sharing your experience");
+      track(existing ? "review_updated" : "review_submitted", { provider_id: providerId, rating: v.rating, photo_count: v.photos?.length ?? 0 });
       setOpen(false);
       if (slug) await refreshProvider(slug);
       router.refresh();
@@ -125,7 +127,7 @@ export function ReviewForm({
                       className="cursor-pointer p-0.5"
                       aria-label={`${i} star${i > 1 ? "s" : ""}, ${LABELS[i]}`}
                     >
-                      <Star className={cn("size-8 transition-colors", i <= shown ? "fill-warning text-warning" : "text-[oklch(0.88_0.02_85)]")} strokeWidth={1.5} />
+                      <Star className={cn("size-8 transition-colors", i <= shown ? "fill-star text-star" : "text-border")} strokeWidth={1.5} />
                     </button>
                   ))}
                   <span className="ml-2 text-sm font-medium text-muted-foreground">{LABELS[shown]}</span>

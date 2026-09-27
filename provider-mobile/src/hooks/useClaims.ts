@@ -1,5 +1,6 @@
 import { useMutation, useQuery, type UseQueryResult } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import type { ClaimListing, StartClaimInput, StartClaimResponse } from "@/types/onboarding";
 
@@ -38,5 +39,7 @@ export function useStartClaim() {
   return useMutation<StartClaimResponse, Error, StartClaimInput>({
     mutationFn: (input: StartClaimInput): Promise<StartClaimResponse> =>
       api<StartClaimResponse>("/provider/claims", { method: "POST", body: input }),
+    onSuccess: (res, input) =>
+      track("claim_submitted", { provider_id: input.providerId, claim_id: res.claim?.id, was_customer: res.token !== null }),
   });
 }

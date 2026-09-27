@@ -3,6 +3,7 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import { STORAGE_KEYS, storage } from "@/services/storage";
 import { logWarn } from "@/utils/log";
@@ -58,7 +59,10 @@ export async function registerForPush({ ask }: { ask: boolean }): Promise<PushSt
     });
   }
   let { status } = await Notifications.getPermissionsAsync();
-  if (status !== "granted" && ask) status = (await Notifications.requestPermissionsAsync()).status;
+  if (status !== "granted" && ask) {
+    status = (await Notifications.requestPermissionsAsync()).status;
+    track("push_permission_answered", { status });
+  }
   if (status !== "granted") return status === "denied" ? "denied" : "off";
 
   const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId: id });

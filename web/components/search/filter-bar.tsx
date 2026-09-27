@@ -16,8 +16,8 @@ const RATINGS = [
   { value: "4.5", label: "4.5+" },
 ];
 
-const PILL = "inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-lg border bg-card px-3.5 text-sm font-medium text-foreground/85 transition-colors hover:bg-muted";
-const PILL_ON = "border-primary/40 bg-primary/5 text-primary hover:bg-primary/10";
+const PILL = "inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-md border border-input bg-card px-3 text-sm font-medium text-foreground/85 transition-colors hover:border-foreground/25 hover:bg-muted";
+const PILL_ON = "border-cta/50 bg-cta-soft text-cta-hover hover:border-cta/60 hover:bg-cta-soft";
 
 /** One row of quick filters under the search banner; every change is written to the URL. */
 export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius }: { categories?: Category[]; lockedCategory?: Category; lockedSub?: string; defaultRadius: number }) {
@@ -34,19 +34,20 @@ export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius
   const activeSub = activeCategory?.subcategories.find((s) => s.slug === subSlug);
 
   return (
-    <div className="border-b bg-card">
-      <div className="container-wide flex items-center gap-2.5 overflow-x-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    // Stays under the site header while the results scroll, so filters are always at hand.
+    <div className="sticky top-16 z-30 border-b bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/85">
+      <div className="container-wide no-scrollbar flex items-center gap-2 overflow-x-auto py-2.5">
         <FiltersSheet categories={categories} lockedCategory={lockedCategory} lockedSub={lockedSub} defaultRadius={defaultRadius} activeCount={activeCount} />
 
         <RadiusPill radius={radius} active={params.has("radius")} onCommit={(v) => update({ radius: String(v) })} />
 
-        <button type="button" aria-pressed={openNow} onClick={() => update({ openNow: openNow ? null : "true" })} className={cn(PILL, openNow && "border-success/50 bg-success-soft text-[oklch(0.42_0.1_165)] hover:bg-success-soft")}>
+        <button type="button" aria-pressed={openNow} onClick={() => update({ openNow: openNow ? null : "true" })} className={cn(PILL, openNow && "border-success/50 bg-success-soft text-[oklch(0.4_0.1_155)] hover:border-success/60 hover:bg-success-soft")}>
           <span className={cn("size-2 rounded-full", openNow ? "bg-success" : "bg-muted-foreground/40")} /> Open now
         </button>
 
         <Popover>
           <PopoverTrigger className={cn(PILL, minRating && PILL_ON)}>
-            <Star className="size-4 text-warning" fill="currentColor" strokeWidth={0} />
+            <Star className="size-4 text-star" fill="currentColor" strokeWidth={0} />
             {minRating ? `Rating ${minRating}+` : "Rating"}
             <ChevronDown className="size-4 opacity-60" />
           </PopoverTrigger>
@@ -60,7 +61,7 @@ export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius
         </Popover>
 
         <button type="button" aria-pressed={verified} onClick={() => update({ verified: verified ? null : "true" })} className={cn(PILL, verified && PILL_ON)}>
-          <BadgeCheck className={cn("size-4", verified ? "text-primary" : "text-[oklch(0.6_0.13_165)]")} /> Verified only
+          <BadgeCheck className={cn("size-4", verified ? "text-cta" : "text-success")} /> Verified only
         </button>
 
         {categories && !lockedCategory && (
@@ -122,7 +123,7 @@ function RadiusPill({ radius, active, onCommit }: { radius: number; active: bool
       <PopoverContent align="start" className="w-72">
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium">Distance</span>
-          <span className="font-semibold text-primary">Within {value} km</span>
+          <span className="font-semibold text-cta">Within {value} km</span>
         </div>
         <Slider className="mt-4" min={1} max={50} step={1} value={[value]} onValueChange={([v]) => setValue(v)} onValueCommit={([v]) => onCommit(v)} />
         <div className="mt-2 flex justify-between text-xs text-muted-foreground">

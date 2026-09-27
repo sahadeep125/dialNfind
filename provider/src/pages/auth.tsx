@@ -4,6 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { BarChart3, BadgeCheck, Loader2, MailCheck, PhoneCall } from "lucide-react";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/types";
@@ -66,6 +67,7 @@ export function LoginPage() {
     try {
       const res = await api<{ token: string; user: User }>("/auth/login", { method: "POST", json: values });
       await signIn(res.token);
+      track("logged_in", { method: "password" });
       navigate(next, { replace: true });
     } catch (err) {
       setError(errorMessage(err));
@@ -102,17 +104,20 @@ export function LoginPage() {
           Create a business account
         </Link>
       </p>
-      <div className="mt-6 space-y-1 rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">
-        <div>
-          Demo with a listing: <span className="font-mono text-foreground">provider@dialnfind.com</span>
+      {/* Demo accounts only exist in a seeded development database. */}
+      {import.meta.env.DEV && (
+        <div className="mt-6 space-y-1 rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">
+          <div>
+            Demo with a listing: <span className="font-mono text-foreground">provider@dialnfind.com</span>
+          </div>
+          <div>
+            Demo without a listing: <span className="font-mono text-foreground">newprovider@dialnfind.com</span>
+          </div>
+          <div>
+            Password: <span className="font-mono text-foreground">password123</span>
+          </div>
         </div>
-        <div>
-          Demo without a listing: <span className="font-mono text-foreground">newprovider@dialnfind.com</span>
-        </div>
-        <div>
-          Password: <span className="font-mono text-foreground">password123</span>
-        </div>
-      </div>
+      )}
     </Shell>
   );
 }
@@ -148,6 +153,7 @@ export function RegisterPage() {
         json: { ...values, phone: values.phone ? normalizePhone(values.phone) : undefined, role: "provider" },
       });
       await signIn(res.token);
+      track("signed_up", { method: "password", role: "provider" });
       navigate("/verify-email?sent=1", { replace: true });
     } catch (err) {
       setError(errorMessage(err));

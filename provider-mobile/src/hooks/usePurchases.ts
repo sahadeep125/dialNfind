@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Purchases, { PURCHASES_ERROR_CODE, type PurchasesError, type PurchasesPackage } from "react-native-purchases";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import { purchasesEnabled } from "@/services/purchases";
 import type { BillingCycle, Plan, PlanState } from "@/types/billing";
@@ -42,14 +43,29 @@ export function usePurchase() {
   const refresh = useRefreshPlan();
   return useMutation({
     mutationFn: async ({ pkg, replacing }: { pkg: PurchasesPackage; replacing?: string | null }): Promise<PlanState | null> => {
+      const props = {
+        product_id: pkg.product.identifier,
+        package_type: pkg.packageType,
+        price: pkg.product.price,
+        currency: pkg.product.currencyCode,
+        is_plan_change: Boolean(replacing),
+        payment_source: Platform.OS === "ios" ? "app_store" : "play_store",
+      };
+      track("checkout_started", props);
       try {
         // On Google Play a plan change must name the subscription it replaces; the App Store handles it within the group.
         await Purchases.purchasePackage(pkg, null, Platform.OS === "android" && replacing ? { oldProductIdentifier: replacing } : null);
       } catch (error: unknown) {
-        if (isCancelled(error)) return null;
+        if (isCancelled(error)) {
+          track("checkout_dismissed", props);
+          return null;
+        }
+        track("checkout_failed", { ...props, error: (error as PurchasesError | null)?.code ?? "unknown" });
         throw error;
       }
-      return (await syncPlan()).state;
+      const { state } = await syncPlan();
+      track("subscription_purchased", { ...props, plan: state.plan.code });
+      return state;
     },
     onSettled: () => refresh(),
   });
@@ -61,7 +77,9 @@ export function useRestore() {
   return useMutation({
     mutationFn: async (): Promise<PlanState> => {
       await Purchases.restorePurchases();
-      return (await syncPlan()).state;
+      const { state } = await syncPlan();
+      track("purchases_restored", { plan: state.plan.code });
+      return state;
     },
     onSettled: () => refresh(),
   });

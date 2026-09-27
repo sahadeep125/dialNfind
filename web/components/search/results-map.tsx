@@ -11,7 +11,7 @@ import { useHoveredResult } from "./results-hover";
 import { MAP_ATTRIBUTION, MAP_TILE_URL } from "@/lib/config";
 
 function pinIcon(rating: number, active: boolean) {
-  const bg = active ? "oklch(0.27 0.09 268)" : "oklch(0.53 0.2 266)";
+  const bg = active ? "oklch(0.553 0.195 38.4)" : "oklch(0.3 0.07 252)";
   return L.divIcon({
     className: "",
     iconSize: [44, 30],
@@ -27,7 +27,7 @@ const originIcon = L.divIcon({
   className: "",
   iconSize: [22, 22],
   iconAnchor: [11, 11],
-  html: `<div style="width:22px;height:22px;border-radius:999px;background:white;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px oklch(0.53 0.2 266 / .18)"><div style="width:12px;height:12px;border-radius:999px;background:oklch(0.53 0.2 266)"></div></div>`,
+  html: `<div style="width:22px;height:22px;border-radius:999px;background:white;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px oklch(0.3 0.07 252 / .18)"><div style="width:12px;height:12px;border-radius:999px;background:oklch(0.3 0.07 252)"></div></div>`,
 });
 
 function FitBounds({ points }: { points: [number, number][] }) {
@@ -65,7 +65,7 @@ export default function ResultsMap({
       {origin && (
         <>
           <Marker position={[origin.lat, origin.lng]} icon={originIcon} />
-          {radiusKm && <Circle center={[origin.lat, origin.lng]} radius={radiusKm * 1000} pathOptions={{ color: "oklch(0.53 0.2 266)", weight: 1, fillOpacity: 0.04, dashArray: "4 6" }} />}
+          {radiusKm && <Circle center={[origin.lat, origin.lng]} radius={radiusKm * 1000} pathOptions={{ color: "oklch(0.3 0.07 252)", weight: 1, fillOpacity: 0.04, dashArray: "4 6" }} />}
         </>
       )}
       {providers.map((p) => (
@@ -77,7 +77,7 @@ export default function ResultsMap({
                 <img src={(p.coverUrl ?? p.logoUrl)!} alt="" style={{ width: 52, height: 52, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
               ) : null}
               <span style={{ minWidth: 0 }}>
-                <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: "oklch(0.21 0.035 262)" }}>{p.businessName}</span>
+                <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: "oklch(0.23 0.025 265)" }}>{p.businessName}</span>
                 <span style={{ display: "block", fontSize: 12, marginTop: 2, color: "#64748b" }}>
                   {p.totalReviews ? (
                     <>

@@ -70,17 +70,20 @@ export function LoginPage() {
               {isSubmitting && <Loader2 className="animate-spin" />} Sign in
             </Button>
           </form>
-          <div className="mt-6 space-y-1 rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">
-            <div>
-              Super admin: <span className="font-mono text-foreground">admin@dialnfind.com</span>
+          {/* Demo accounts only exist in a seeded development database. */}
+          {import.meta.env.DEV && (
+            <div className="mt-6 space-y-1 rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">
+              <div>
+                Super admin: <span className="font-mono text-foreground">admin@dialnfind.com</span>
+              </div>
+              <div>
+                Team: <span className="font-mono text-foreground">ops@</span>, <span className="font-mono text-foreground">support.agent@</span>, <span className="font-mono text-foreground">finance@dialnfind.com</span>
+              </div>
+              <div>
+                Password: <span className="font-mono text-foreground">password123</span>
+              </div>
             </div>
-            <div>
-              Team: <span className="font-mono text-foreground">ops@</span>, <span className="font-mono text-foreground">support.agent@</span>, <span className="font-mono text-foreground">finance@dialnfind.com</span>
-            </div>
-            <div>
-              Password: <span className="font-mono text-foreground">password123</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
       <div className="relative hidden overflow-hidden bg-brand-deep p-12 text-white lg:flex lg:flex-col lg:justify-center">

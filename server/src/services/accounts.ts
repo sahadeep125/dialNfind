@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma.js";
-import { storage } from "../storage/index.js";
+import { releaseFile } from "../storage/references.js";
 import { recalculateProvider } from "./ranking.js";
 import { revokeAllSessions } from "./sessions.js";
 import { revokeAppleToken } from "../lib/oauth.js";
@@ -65,7 +65,7 @@ export async function anonymiseUser(userId: bigint): Promise<void> {
   ]);
   await revokeAllSessions(userId);
   for (const link of appleLinks) if (link.refreshToken && link.clientId) void revokeAppleToken(link.refreshToken, link.clientId);
-  for (const r of reviews) for (const p of r.photos) void storage.remove(p.photoUrl);
+  for (const r of reviews) for (const p of r.photos) void releaseFile(p.photoUrl);
   for (const providerId of new Set(reviews.map((r) => r.providerId))) await recalculateProvider(providerId);
-  if (user.profilePhotoUrl) void storage.remove(user.profilePhotoUrl);
+  void releaseFile(user.profilePhotoUrl);
 }

@@ -5,6 +5,7 @@ import { BadgeCheck, Loader2, MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { track } from "@/lib/analytics";
 import { clientApi } from "@/lib/client";
 import { readSavedLocation } from "@/lib/saved-location";
 import type { LocationOption, ProviderCard, SearchResponse } from "@/lib/types";
@@ -41,6 +42,7 @@ export function ClaimSearch({ providerAppUrl }: { providerAppUrl: string }) {
     try {
       const data = await clientApi<SearchResponse>(`/search/providers?q=${encodeURIComponent(q.trim())}&city=${encodeURIComponent(city)}&pageSize=8&log=false`);
       setResults(data.results);
+      track("claim_search_submitted", { query: q.trim(), city, result_count: data.results.length });
     } catch {
       setError("Search is not available right now. Please try again.");
     } finally {
@@ -112,7 +114,7 @@ export function ClaimSearch({ providerAppUrl }: { providerAppUrl: string }) {
                 </span>
               ) : (
                 <Button asChild size="sm">
-                  <a href={`${providerAppUrl}/claim?listing=${p.id}`}>Claim</a>
+                  <a href={`${providerAppUrl}/claim?listing=${p.id}`} onClick={() => track("claim_clicked", { provider_id: p.id })}>Claim</a>
                 </Button>
               )}
             </div>

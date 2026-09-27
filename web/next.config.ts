@@ -1,6 +1,12 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import { IMAGE_ORIGINS } from "./lib/image-hosts";
+import pkg from "./package.json" with { type: "json" };
+
+// Analytics (lib/analytics.ts) is sent to /ingest on this site and passed on to PostHog, so ad blockers do not drop it.
+const POSTHOG_HOST = (process.env.POSTHOG_INGEST_HOST ?? "https://us.i.posthog.com").replace(/\/$/, "");
+const POSTHOG_ASSETS_HOST = POSTHOG_HOST.replace(/^https:\/\/(\w+)\.i\./, "https://$1-assets.i.");
 
 const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
@@ -13,7 +19,13 @@ const securityHeaders = [
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
+// Docker images (web/Dockerfile) run the self-contained server that `standalone` produces. Tracing starts at
+// the workspace root because pnpm keeps packages there. `next start` does not work with it, so it is opt-in.
+const standalone = process.env.NEXT_OUTPUT_STANDALONE === "1";
+
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION ?? pkg.version },
+  ...(standalone ? { output: "standalone" as const, outputFileTracingRoot: path.resolve(process.cwd(), "..") } : {}),
   images: {
     // Only our own upload origins (NEXT_PUBLIC_IMAGE_ORIGINS). Other image URLs render unoptimized; see lib/image-hosts.ts.
     remotePatterns: IMAGE_ORIGINS.map((origin) => {
@@ -31,6 +43,19 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  // PostHog's endpoints end in a slash (/ingest/e/), which the default trailing-slash redirect would strip.
+  // It is turned off, and the redirect below does the same job for every other path.
+  skipTrailingSlashRedirect: true,
+  async redirects() {
+    return [{ source: "/:path((?!ingest/).+)/", destination: "/:path", permanent: true }];
+  },
+  async rewrites() {
+    return [
+      { source: "/ingest/static/:path*", destination: `${POSTHOG_ASSETS_HOST}/static/:path*` },
+      { source: "/ingest/array/:path*", destination: `${POSTHOG_ASSETS_HOST}/array/:path*` },
+      { source: "/ingest/:path*", destination: `${POSTHOG_HOST}/:path*` },
+    ];
   },
 };
 

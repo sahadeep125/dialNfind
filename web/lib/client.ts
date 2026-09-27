@@ -1,5 +1,6 @@
 "use client";
 
+import { setCity } from "./analytics";
 import { LOCATION_COOKIE } from "./config";
 import type { LocationOption } from "./types";
 
@@ -32,6 +33,7 @@ export async function clientApi<T>(path: string, init: RequestInit = {}): Promis
 }
 
 export function saveLocationCookie(location: LocationOption) {
+  setCity(location);
   const value = encodeURIComponent(JSON.stringify(location));
   document.cookie = `${LOCATION_COOKIE}=${value}; path=/; max-age=${60 * 60 * 24 * 180}; samesite=lax`;
 }

@@ -13,7 +13,7 @@ import { notifyAndEmail } from "../../services/notify.js";
 import { recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
 import { createListing, listingProfileSchema, newListingSchema, updateListingProfile, type NewListing } from "../../services/listings.js";
 import { searchPlaces } from "../../services/geocode.js";
-import { storage } from "../../storage/index.js";
+import { releaseFile } from "../../storage/references.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "../provider/shared.js";
 import { loadProfile } from "../provider/profile.js";
 
@@ -230,7 +230,7 @@ adminProvidersRouter.delete("/providers/:id", async (req, res) => {
   ]);
   await prisma.provider.delete({ where: { id: provider.id } });
   const files = [provider.logoUrl, provider.coverUrl, ...portfolio.map((p) => p.imageUrl), ...reviewPhotos.map((p) => p.photoUrl), ...verifications.map((v) => v.documentUrl), ...claims.map((c) => c.documentUrl)];
-  for (const url of files) if (url) void storage.remove(url);
+  for (const url of files) void releaseFile(url);
   await recalculateCategoryCounts();
   await logAdmin(currentUser(req).id, "provider.delete", "provider", provider.id, {
     businessName: provider.businessName,

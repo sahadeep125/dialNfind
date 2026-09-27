@@ -18,6 +18,9 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** The API's error code (for example "conflict", "not_found"), so screens can react without reading the message. */
+    public code?: string,
+    public details?: unknown,
   ) {
     super(message);
   }
@@ -37,7 +40,7 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
       tokenStore.clear();
       window.dispatchEvent(new Event("dnf:logout"));
     }
-    throw new ApiError(res.status, body?.error?.message ?? "Something went wrong");
+    throw new ApiError(res.status, body?.error?.message ?? "Something went wrong", body?.error?.code, body?.error?.details);
   }
   return body as T;
 }
@@ -56,7 +59,7 @@ export async function downloadCsv(entity: string, filters: Record<string, string
   const res = await fetch(`${API_URL}/admin/export/${entity}${params.size ? `?${params}` : ""}`, { headers: token ? { authorization: `Bearer ${token}` } : {} });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new ApiError(res.status, body?.error?.message ?? "Could not download the file");
+    throw new ApiError(res.status, body?.error?.message ?? "Could not download the file", body?.error?.code);
   }
   const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? `dialnfind-${entity}.csv`;
   const url = URL.createObjectURL(await res.blob());
@@ -64,5 +67,6 @@ export async function downloadCsv(entity: string, filters: Record<string, string
   document.body.append(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // Some browsers start the download after click() returns; revoking at once can cancel it.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

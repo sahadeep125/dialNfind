@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { SocialButtons } from "@/components/auth/social-buttons";
+import { track } from "@/lib/analytics";
 import { safeRedirect } from "@/lib/safe-redirect";
 import { email, normalizePhone, optionalPhone, password, personName } from "@/lib/validation";
 
@@ -59,6 +60,7 @@ export function RegisterForm() {
       setError(body?.error?.message ?? "Could not create your account");
       return;
     }
+    track("signed_up", { method: "password", role: "customer" });
     router.push(`/verify-email?sent=1&next=${encodeURIComponent(next)}`);
     router.refresh();
   });

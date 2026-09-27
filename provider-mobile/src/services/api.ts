@@ -1,5 +1,6 @@
 import { API_URL } from "@/constants/config";
 import type { ApiErrorBody } from "@/types";
+import { reportError } from "@/services/monitoring";
 import { logError } from "@/utils/log";
 
 export class ApiError extends Error {
@@ -83,13 +84,15 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     }
     // Validation errors carry a list of fields; other errors may carry an object (e.g. the plan feature).
     const fieldErrors = Array.isArray(details) ? Object.fromEntries(details.map((d) => [d.path, d.message])) : {};
-    throw new ApiError(
+    const error = new ApiError(
       res.status,
       body.error?.message ?? "Something went wrong. Please try again.",
       fieldErrors,
       body.error?.code,
       Array.isArray(details) ? undefined : details,
     );
+    if (res.status >= 500) reportError(error, { path, status: res.status });
+    throw error;
   }
   return json as T;
 }

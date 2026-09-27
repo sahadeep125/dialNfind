@@ -12,6 +12,7 @@ import { useLayout } from "@/hooks/useLayout";
 import { useMarkNotificationsRead, useNotifications } from "@/hooks/useNotifications";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
+import { track } from "@/services/analytics";
 import { errorMessage } from "@/services/api";
 import type { AppNotification } from "@/types/notifications";
 
@@ -28,6 +29,7 @@ export default function NotificationsScreen() {
 
   const onPress = useCallback(
     (n: AppNotification) => {
+      track("notification_opened", { notification_type: n.type, source: "inbox" });
       if (!n.isRead) mutate([n.id], { onError: (e: Error) => toast(errorMessage(e), "error") });
       const target = routeForNotification({ ...(n.dataJson as object | null), type: n.type });
       if (target !== "/notifications") router.push(target);

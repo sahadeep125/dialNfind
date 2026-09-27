@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CategoryListing, getCategory, listingMetadata } from "@/components/search/category-listing";
 import type { SearchParamsRecord } from "@/components/search/results-section";
+import { TrackView } from "@/components/site/track-view";
 
 type Params = { category: string };
 
@@ -16,5 +17,10 @@ export default async function CategoryListingPage({ params, searchParams }: { pa
   const [{ category: slug }, sp] = await Promise.all([params, searchParams]);
   const data = await getCategory(slug);
   if (!data) notFound();
-  return <CategoryListing category={data.category} searchParams={sp} />;
+  return (
+    <>
+      <TrackView event="category_viewed" properties={{ category: data.category.slug, subcategory: null }} />
+      <CategoryListing category={data.category} searchParams={sp} />
+    </>
+  );
 }

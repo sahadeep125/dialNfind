@@ -40,10 +40,17 @@ export async function runJob(name: string): Promise<boolean> {
  * Schedules every job in this process. Only one API instance should do this (RUN_JOBS=true),
  * otherwise each instance would expire subscriptions and send reminder emails.
  */
+const scheduled: ReturnType<typeof cron.schedule>[] = [];
+
 export function startJobs() {
   if (!env.runJobs) return;
   for (const [name, job] of Object.entries(JOBS)) {
-    cron.schedule(job.schedule, () => runJob(name), { name, timezone: env.timezone, noOverlap: true });
+    scheduled.push(cron.schedule(job.schedule, () => runJob(name), { name, timezone: env.timezone, noOverlap: true }));
   }
   console.info(`[job] scheduled ${Object.keys(JOBS).length} jobs in ${env.timezone}`);
+}
+
+/** Stops scheduling new runs on shutdown. A run already in progress finishes with the process. */
+export async function stopJobs() {
+  await Promise.all(scheduled.splice(0).map((task) => task.stop()));
 }

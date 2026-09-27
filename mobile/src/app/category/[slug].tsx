@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Search } from "lucide-react-native";
@@ -10,6 +10,7 @@ import { FilterBar, ProviderResults } from "@/components/search";
 import { useCategories } from "@/hooks/useCategories";
 import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
+import { track } from "@/services/analytics";
 import type { SearchFilters } from "@/types";
 import { plural } from "@/utils/format";
 
@@ -19,6 +20,9 @@ export default function CategoryScreen() {
   const { slug, sub } = useLocalSearchParams<{ slug: string; sub?: string }>();
   const { data: categories } = useCategories();
   const category = useMemo(() => categories?.find((c) => c.slug === slug), [categories, slug]);
+  useEffect(() => {
+    track("category_viewed", { category: slug, subcategory: sub || null });
+  }, [slug, sub]);
   const [filters, setFilters] = useState<SearchFilters>({
     category: slug,
     subcategory: sub || undefined,

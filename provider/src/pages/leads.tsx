@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, CircleHelp, Download, Flag, Loader2, Lock, MessageCircle, Phone, PhoneIncoming, Search, StickyNote, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, download, errorMessage } from "@/lib/api";
 import { formatPhone, formatRelative, telLink, whatsappLink } from "@/lib/format";
 import type { Lead, LeadsResponse, LeadStatus } from "@/lib/types";
@@ -220,11 +221,12 @@ export function LeadsPage() {
 function CallBack({ phone }: { phone: string }) {
   return (
     <div className="mt-1 flex items-center gap-1.5">
-      <a href={telLink(phone)} className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium hover:bg-muted" aria-label={`Call ${formatPhone(phone)}`}>
+      <a href={telLink(phone)} onClick={() => track("lead_contacted", { channel: "call" })} className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium hover:bg-muted" aria-label={`Call ${formatPhone(phone)}`}>
         <Phone className="size-3" /> {formatPhone(phone)}
       </a>
       <a
         href={whatsappLink(phone)}
+        onClick={() => track("lead_contacted", { channel: "whatsapp" })}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium text-success hover:bg-muted"
@@ -240,7 +242,10 @@ function useUpdateLead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...json }: { id: number; status?: LeadStatus; note?: string | null }) => api(`/provider/leads/${id}`, { method: "PATCH", json }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["leads"] }),
+    onSuccess: (_r, { id, status, note }) => {
+      track("lead_updated", { lead_id: id, status, has_note: note === undefined ? undefined : Boolean(note) });
+      void qc.invalidateQueries({ queryKey: ["leads"] });
+    },
     onError: (e) => toast.error(errorMessage(e)),
   });
 }
@@ -358,6 +363,7 @@ function ReportLead({ lead, onClose }: { lead: Lead | null; onClose: () => void 
   const report = useMutation({
     mutationFn: (reason: string) => api(`/provider/leads/${lead!.id}/dispute`, { method: "POST", json: { reason } }),
     onSuccess: () => {
+      track("lead_reported", { lead_id: lead?.id });
       toast.success("Thanks. Our team will look at this contact.");
       onClose();
       void qc.invalidateQueries({ queryKey: ["leads"] });

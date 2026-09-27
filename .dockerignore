@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/.next
+**/.expo
+**/.env
+**/.env.local
+**/*.log
+**/*.tsbuildinfo
+**/coverage
+**/test-results
+.git
+uploads
+mobile
+provider-mobile

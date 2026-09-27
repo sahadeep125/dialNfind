@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import express, { Router, type Request, type Response } from "express";
 import { Prisma, type WebhookSource } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
@@ -23,7 +24,20 @@ async function once(source: WebhookSource, eventId: string, type: string, payloa
     res.json({ ok: true, duplicate: true });
     return;
   }
-  const event = seen ?? (await prisma.webhookEvent.create({ data: { source, eventId, type, payload: payload as Prisma.InputJsonValue } }));
+  let event = seen;
+  if (!event) {
+    try {
+      event = await prisma.webhookEvent.create({ data: { source, eventId, type, payload: payload as Prisma.InputJsonValue } });
+    } catch (err) {
+      // The same event arrived twice at once and the other delivery stored it first. That delivery's
+      // answer decides whether the sender retries, so this one is acknowledged.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        res.json({ ok: true, duplicate: true });
+        return;
+      }
+      throw err;
+    }
+  }
   try {
     const providerId = await handle();
     await prisma.webhookEvent.update({ where: { id: event.id }, data: { processedAt: new Date(), error: null, providerId: providerId ?? null } });
@@ -65,7 +79,8 @@ webhooksRouter.post("/razorpay", async (req, res) => {
     res.status(400).json({ ok: false });
     return;
   }
-  const eventId = req.get("x-razorpay-event-id") ?? `${body.event}:${body.payload.subscription?.entity.id ?? body.payload.payment?.entity.id ?? Date.now()}`;
+  // Razorpay sends an event id header; without one, the same bytes redelivered must still map to the same id.
+  const eventId = req.get("x-razorpay-event-id") ?? `body:${createHash("sha256").update(req.body as Buffer).digest("hex")}`;
   await once("razorpay", eventId, body.event, body, res, () => handleRazorpay(body));
 });
 
@@ -106,8 +121,16 @@ export async function handleRazorpay(body: RazorpayEvent): Promise<bigint | null
 const STORE_GATEWAY: Record<string, "app_store" | "play_store"> = { APP_STORE: "app_store", MAC_APP_STORE: "app_store", PLAY_STORE: "play_store" };
 const PAID_EVENTS = new Set(["INITIAL_PURCHASE", "RENEWAL", "NON_RENEWING_PURCHASE"]);
 
+/** Compares the Authorization header in constant time, so its value cannot be guessed from response timing. */
+function revenueCatAuthorized(header: string | undefined): boolean {
+  if (!env.revenuecat.webhookAuth || !header) return false;
+  const expected = createHash("sha256").update(env.revenuecat.webhookAuth).digest();
+  const given = createHash("sha256").update(header).digest();
+  return timingSafeEqual(expected, given);
+}
+
 webhooksRouter.post("/revenuecat", async (req, res) => {
-  if (!env.revenuecat.webhookAuth || req.get("authorization") !== env.revenuecat.webhookAuth) {
+  if (!revenueCatAuthorized(req.get("authorization"))) {
     res.status(401).json({ ok: false });
     return;
   }
@@ -124,13 +147,20 @@ export async function handleRevenueCat(event: RcWebhookEvent): Promise<bigint | 
   if (event.type === "TEST") return null;
   const ids = [event.app_user_id, event.original_app_user_id, ...(event.aliases ?? []), ...(event.transferred_to ?? []), ...(event.transferred_from ?? [])];
   const providerIds = [...new Set(ids.map(providerIdFromAppUserId).filter((id): id is bigint => id !== null))];
-  if (!providerIds.length) throw new Error(`No provider for app user ${event.app_user_id}`);
+  // Anonymous ids ($RCAnonymousID:...) and ids from other apps never become a provider; retrying cannot change that.
+  if (!providerIds.length) {
+    console.warn(`[webhook] revenuecat ${event.type}: no provider for app user ${event.app_user_id}`);
+    return null;
+  }
   const existing = await prisma.provider.findMany({ where: { id: { in: providerIds } }, select: { id: true } });
   for (const p of existing) await syncRevenueCatProvider(p.id);
 
   const providerId = providerIdFromAppUserId(event.app_user_id) ?? existing[0]?.id ?? null;
   const gateway = STORE_GATEWAY[event.store ?? ""];
-  if (providerId && gateway && PAID_EVENTS.has(event.type) && event.transaction_id && (event.price_in_purchased_currency ?? 0) > 0) {
+  // Sandbox purchases still switch the plan on (App Review buys with sandbox accounts against the live API),
+  // but they are not money received, so no payment is recorded.
+  const sandbox = event.environment === "SANDBOX";
+  if (providerId && gateway && !sandbox && PAID_EVENTS.has(event.type) && event.transaction_id && (event.price_in_purchased_currency ?? 0) > 0) {
     const live = await liveSubscription(providerId);
     await recordGatewayPayment({
       providerId,
@@ -140,7 +170,7 @@ export async function handleRevenueCat(event: RcWebhookEvent): Promise<bigint | 
       amount: event.price_in_purchased_currency!,
       currency: event.currency ?? "INR",
       reference: event.product_id ?? null,
-      note: event.environment === "SANDBOX" ? "Sandbox purchase" : null,
+      note: null,
     });
   }
   if (event.type === "CANCELLATION" && (event as { cancel_reason?: string }).cancel_reason === "CUSTOMER_SUPPORT" && gateway && event.transaction_id) {

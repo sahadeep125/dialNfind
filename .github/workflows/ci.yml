@@ -1,0 +1,92 @@
+# Checks every push and pull request: types, lint and tests for the four workspace apps, the two mobile apps,
+# and the API's smoke test against a fresh PostGIS database.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workspace:
+    name: Server, web, provider, admin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter server exec prisma generate
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm --filter web test
+      - name: Build
+        run: pnpm --filter provider build && pnpm --filter super-admin build && pnpm --filter server build
+
+  api-smoke:
+    name: API smoke test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: dialnfind
+          POSTGRES_PASSWORD: dialnfind
+          POSTGRES_DB: dialnfind
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U dialnfind" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://dialnfind:dialnfind@localhost:5432/dialnfind?schema=public
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else
+      RUN_JOBS: "false"
+      GEOCODER_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter server...
+      - run: pnpm --filter server db:deploy
+      - run: pnpm --filter server db:seed
+      - name: Start the API
+        working-directory: server
+        run: |
+          npx tsx src/index.ts > api.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf localhost:4000/api/v1/health && exit 0; sleep 1; done
+          cat api.log; exit 1
+      - run: pnpm --filter server smoke
+      - name: API log
+        if: failure()
+        run: cat server/api.log
+
+  mobile:
+    name: Mobile (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [mobile, provider-mobile]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx expo lint
+      # The screen walkthroughs need a running API and skip themselves here; unit tests still run.
+      - run: npx jest

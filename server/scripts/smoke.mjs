@@ -126,14 +126,23 @@ await call("PUT", "/provider/services", { token: prov, body: { services: svcs.sl
 const after = await call("GET", "/provider/attributes", { token: prov });
 results.push(`     answer after removing anchor service: ${JSON.stringify(after.groups[0].attributes[0].value)}`);
 await call("PUT", "/provider/services", { token: prov, body: { services: svcs } });
-const pf = (await call("POST", "/provider/portfolio", { token: prov, body: { title: "Smoke photo", imageUrl: "https://example.com/a.jpg" } })).item;
+// Image fields only take files uploaded to this API.
+const sharp = (await import("sharp")).default;
+const png = await sharp({ create: { width: 800, height: 600, channels: 3, background: "#2a9d8f" } }).png().toBuffer();
+const photo = await (await fetch(B + "/uploads?purpose=portfolio", { method: "POST", headers: { "content-type": "image/png", authorization: `Bearer ${prov}` }, body: png })).json();
+await call("POST", "/provider/portfolio", { token: prov, body: { title: "Outside photo", imageUrl: "https://example.com/a.jpg" }, expect: 400, label: "outside image refused" });
+const pf = (await call("POST", "/provider/portfolio", { token: prov, body: { title: "Smoke photo", imageUrl: photo.url } })).item;
 await call("PATCH", `/provider/portfolio/${pf.id}`, { token: prov, body: { title: "Smoke photo 2" } });
-const pf2 = (await call("POST", "/provider/portfolio", { token: prov, body: { title: "Smoke photo B", imageUrl: "https://example.com/b.jpg" } })).item;
+const pf2 = (await call("POST", "/provider/portfolio", { token: prov, body: { title: "Smoke photo B", imageUrl: photo.url } })).item;
 await call("PATCH", `/provider/portfolio/${pf2.id}`, { token: prov, body: { isCover: true }, label: "set cover photo" });
 const pfAll = (await call("GET", "/provider/profile", { token: prov })).provider.portfolio;
 await call("PUT", "/provider/portfolio/order", { token: prov, body: { ids: [...pfAll].reverse().map((p) => Number(p.id)) }, label: "reorder photos" });
 await call("PUT", "/provider/portfolio/order", { token: prov, body: { ids: [Number(pf.id)] }, expect: 400, label: "reorder must list every photo" });
 await call("DELETE", `/provider/portfolio/${pf.id}`, { token: prov });
+// Another record still points at the file, so deleting the first one must keep it.
+const kept = (await fetch(photo.url)).status;
+kept === 200 ? pass++ : fail++;
+results.push(`${kept === 200 ? "ok  " : "FAIL"} ${kept} GET shared upload after deleting one of two records that use it`);
 await call("DELETE", `/provider/portfolio/${pf2.id}`, { token: prov });
 
 // lead follow-up, filters and export
@@ -386,10 +395,11 @@ const strict = await call("GET", "/search/providers?lat=26.87&lng=88.43&radiusKm
 // without an explicit radius, when they travel that far; so the default search finds at least as many.
 results.push(`     default search ${near.total} vs explicit 15 km ${strict.total}`);
 near.total >= strict.total ? pass++ : (fail++, results.push("FAIL the default search should include providers who travel further"));
-const places = (await call("GET", "/locations?q=darjeeling")).locations;
+// With GEOCODER_ENABLED=false (CI) these answer without map places; only the status is checked then.
+const places = (await call("GET", "/locations?q=darjeeling"))?.locations ?? [];
 results.push(`     location search falls back to the map: ${JSON.stringify(places.slice(0, 2).map((l) => `${l.kind}:${l.label}`))}`);
-const here = (await call("GET", "/locations/reverse?lat=26.7338&lng=88.4325")).location;
-results.push(`     reverse lookup: ${here.label}`);
+const here = (await call("GET", "/locations/reverse?lat=26.7338&lng=88.4325"))?.location;
+results.push(`     reverse lookup: ${here?.label ?? "(no geocoder)"}`);
 
 console.log(results.join("\n"));
 console.log(`\n${pass} passed, ${fail} failed`);

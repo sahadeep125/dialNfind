@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
-import { badRequest, conflict, HttpError, notConfigured, notFound } from "../../lib/errors.js";
+import { badRequest, billingDetailsRequired, conflict, HttpError, notConfigured, notFound } from "../../lib/errors.js";
 import { limits } from "../../lib/rate-limit.js";
 import { num } from "../../lib/serialize.js";
 import { GSTIN_PATTERN, GST_STATE_CODES, stateCodeFor } from "../../lib/gst.js";
@@ -148,7 +148,7 @@ billingRouter.post("/billing/razorpay/checkout", limits.billing, async (req, res
   if (!razorpayConfigured()) throw notConfigured("Online payments are not set up yet. Please contact support.");
   const live = await liveSubscription(provider.id);
   if (live?.source !== "admin") assertCanBuyOnWeb(live);
-  if (!(provider.billingStateCode ?? stateCodeFor(provider.state))) throw badRequest("Add your billing details first");
+  if (!(provider.billingStateCode ?? stateCodeFor(provider.state))) throw billingDetailsRequired();
   const price = await webPrice(body.planCode, body.billingCycle);
   const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUser(req).id }, select: { name: true, email: true, phone: true } });
 

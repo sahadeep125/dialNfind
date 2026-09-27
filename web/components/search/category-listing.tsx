@@ -10,6 +10,7 @@ import { SearchHero } from "@/components/search/search-hero";
 import { ServiceContent } from "@/components/seo/service-content";
 import { JsonLd } from "@/components/json-ld";
 import { CATEGORY_SEO } from "@/content/seo/categories";
+import { categoryImage } from "@/lib/stock-images";
 import { SUBCATEGORY_SEO } from "@/content/seo/subcategories";
 import { guidesForCategory, guidesForSubcategory } from "@/lib/guides";
 import { resolveLocation } from "@/lib/location";
@@ -89,34 +90,36 @@ export async function CategoryListing({ category, sub, searchParams: sp }: { cat
       />
       <SearchHero
         above={
-          <nav className="mb-4 flex items-center gap-1.5 text-sm text-white/70" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-white">Home</Link>
-            <ChevronRight className="size-3.5" />
-            <Link href="/services" className="hover:text-white">Services</Link>
-            <ChevronRight className="size-3.5" />
+          <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb">
+            <Link href="/" className="hover:text-foreground">Home</Link>
+            <ChevronRight className="size-3.5" aria-hidden />
+            <Link href="/services" className="hover:text-foreground">Services</Link>
+            <ChevronRight className="size-3.5" aria-hidden />
             {sub ? (
               <>
-                <Link href={serviceHref(category.slug)} className="hover:text-white">{category.name}</Link>
-                <ChevronRight className="size-3.5" />
-                <span aria-current="page" className="text-white">{sub.name}</span>
+                <Link href={serviceHref(category.slug)} className="hover:text-foreground">{category.name}</Link>
+                <ChevronRight className="size-3.5" aria-hidden />
+                <span aria-current="page" className="font-medium text-foreground">{sub.name}</span>
               </>
             ) : (
-              <span aria-current="page" className="text-white">{category.name}</span>
+              <span aria-current="page" className="font-medium text-foreground">{category.name}</span>
             )}
           </nav>
         }
-        title={
-          <span className="flex items-center gap-4">
-            <CategoryIcon slug={category.slug} className="size-12 shrink-0 rounded-xl md:size-14" iconClassName="size-6 md:size-7" />
-            {copy.h1}
-          </span>
-        }
+        title={copy.h1}
         subtitle={category.description}
+        image={categoryImage(category.slug)}
       >
-        <div className="mt-6 [&>div]:h-12 [&>div]:rounded-lg [&>div]:border-0 [&>div]:text-foreground">
-          <LocationSwitcher location={location} />
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="[&>div]:h-12">
+            <LocationSwitcher location={location} />
+          </div>
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CategoryIcon slug={category.slug} className="size-8 rounded-md" iconClassName="size-4" />
+            {category.providerCount.toLocaleString("en-IN")} {category.name.toLowerCase()} {category.providerCount === 1 ? "professional" : "professionals"} listed
+          </p>
         </div>
-        <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="no-scrollbar mt-5 flex gap-2 overflow-x-auto pb-1">
           <SubLink href={serviceHref(category.slug)} active={!sub} sp={sp}>
             All {category.name.toLowerCase()}
           </SubLink>
@@ -132,10 +135,11 @@ export async function CategoryListing({ category, sub, searchParams: sp }: { cat
         searchParams={sp}
         basePath={basePath}
         heading={
-          <h2 className="text-[15px] text-foreground/80">
-            <span className="font-semibold text-foreground">
-              {data.total.toLocaleString("en-IN")} {sub ? sub.name : category.name} {data.total === 1 ? "Professional" : "Professionals"}
+          <h2 className="text-base text-muted-foreground">
+            <span className="font-bold text-foreground">
+              {data.total.toLocaleString("en-IN")} {data.total === 1 ? "pro" : "pros"}
             </span>{" "}
+            for {(sub ? sub.name : category.name).toLowerCase()}{" "}
             within {data.radiusKm} km of {location.label}
           </h2>
         }
@@ -170,10 +174,11 @@ function SubLink({ href, active, sp, children }: { href: string; active: boolean
   return (
     <Link
       href={s ? `${href}?${s}` : href}
+      aria-current={active ? "page" : undefined}
       className={
         active
-          ? "shrink-0 rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-brand-deep"
-          : "shrink-0 rounded-full bg-white/15 px-4 py-1.5 text-sm text-white ring-1 ring-white/10 transition-colors hover:bg-white/25"
+          ? "shrink-0 rounded-md bg-primary px-3.5 py-1.5 text-sm font-semibold text-primary-foreground"
+          : "shrink-0 rounded-md border bg-background px-3.5 py-1.5 text-sm text-foreground/80 transition-colors hover:border-foreground/25 hover:text-foreground"
       }
     >
       {children}

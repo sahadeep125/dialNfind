@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { CheckCircle2, Circle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { WEB_URL } from "@/lib/config";
 import type { ProviderProfile } from "@/lib/types";
@@ -141,6 +142,7 @@ function ProfileEditor({ profile }: { profile: ProviderProfile }) {
             serviceRadiusKm: location.serviceRadiusKm,
           },
         });
+        track("profile_saved");
         await qc.invalidateQueries();
         toast.success("Profile updated");
       } catch (err) {

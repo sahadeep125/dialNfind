@@ -34,6 +34,9 @@ interface AuthContextValue {
   loading: boolean;
   /** Set when the account signed in but has no admin access. */
   denied: boolean;
+  /** The session could not be checked (API down, network error). Not the same as being signed out. */
+  unreachable: boolean;
+  retry: () => void;
   signIn: (token: string) => Promise<void>;
   signOut: () => void;
 }
@@ -82,10 +85,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       can: (m) => permissions.has(m),
       loading: !!token && me.isLoading,
       denied: !!token && me.error instanceof ApiError && me.error.status === 403,
+      unreachable: !!token && me.isError && !(me.error instanceof ApiError && (me.error.status === 401 || me.error.status === 403)),
+      retry: () => void me.refetch(),
       signIn,
       signOut,
     };
-  }, [token, me.data, me.isLoading, me.error, signIn, signOut]);
+  }, [token, me, signIn, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

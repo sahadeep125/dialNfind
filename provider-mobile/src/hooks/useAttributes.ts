@@ -6,6 +6,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import type { AttributeGroup, AttributeValueInput } from "@/types/listing";
 import { listingKeys } from "./listingKeys";
@@ -26,6 +27,9 @@ export function useSaveAttributes(): UseMutationResult<void, Error, AttributeVal
     mutationFn: async (values: AttributeValueInput[]): Promise<void> => {
       await api<{ ok: boolean }>("/provider/attributes", { method: "PUT", body: { values } });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: listingKeys.attributes }),
+    onSuccess: (_data, values) => {
+      track("listing_section_saved", { section: "attributes", item_count: values.length });
+      return qc.invalidateQueries({ queryKey: listingKeys.attributes });
+    },
   });
 }

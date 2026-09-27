@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { OnboardingDraft, OnboardingResponse } from "@/types/onboarding";
@@ -41,5 +42,12 @@ export function useCreateListing() {
       }
       return { ...res, imagesSaved };
     },
+    onSuccess: (res, draft) =>
+      track("onboarding_completed", {
+        app: "provider",
+        was_customer: res.token !== null,
+        service_count: draft.services?.length,
+        area_count: draft.areas?.length,
+      }),
   });
 }

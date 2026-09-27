@@ -7,6 +7,7 @@ import {
   type UseMutationResult,
 } from "@tanstack/react-query";
 
+import { track } from "@/services/analytics";
 import { api } from "@/services/api";
 import type { ReviewFilter, ReviewsPage } from "@/types/reviews";
 import { dashboardKeys } from "./useDashboard";
@@ -46,7 +47,8 @@ export function useReplyToReview(): UseMutationResult<unknown, Error, ReplyInput
   return useMutation({
     mutationFn: ({ reviewId, reply }: ReplyInput) =>
       api(`/provider/reviews/${reviewId}/reply`, { method: "PUT", body: { reply } }),
-    onSuccess: () => {
+    onSuccess: (_data, { reviewId, reply }) => {
+      track(reply ? "review_replied" : "review_reply_removed", { review_id: reviewId });
       void queryClient.invalidateQueries({ queryKey: reviewKeys.all });
       void queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
@@ -59,7 +61,8 @@ export function useReportReview(): UseMutationResult<unknown, Error, { reviewId:
   return useMutation({
     mutationFn: ({ reviewId, reason }: { reviewId: number; reason: string }) =>
       api(`/provider/reviews/${reviewId}/report`, { method: "POST", body: { reason } }),
-    onSuccess: () => {
+    onSuccess: (_data, { reviewId }) => {
+      track("review_reported", { review_id: reviewId });
       void queryClient.invalidateQueries({ queryKey: reviewKeys.all });
     },
   });

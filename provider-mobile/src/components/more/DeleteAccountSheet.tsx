@@ -13,7 +13,8 @@ import { ApiError, errorMessage } from "@/services/api";
 interface Props {
   visible: boolean;
   onClose: () => void;
-  businessName: string;
+  /** Null for an account that never added or claimed a business. */
+  businessName: string | null;
   /** False for Google/Apple-only accounts, who type DELETE instead. */
   hasPassword: boolean;
 }
@@ -68,7 +69,9 @@ export function DeleteAccountSheet({ visible, onClose, businessName, hasPassword
     <AppSheet visible={visible} onClose={close} title="Delete your account?">
       <View style={{ gap: theme.spacing[4], paddingHorizontal: theme.spacing[4] }}>
         <AppText tone="secondary">
-          {`${businessName} will be removed from DialNFind search straight away, your plan will stop renewing and running promotions will end. Your sign-in details are erased. This cannot be undone.`}
+          {businessName
+            ? `${businessName} will be removed from DialNFind search straight away, your plan will stop renewing and running promotions will end. Your sign-in details are erased. This cannot be undone.`
+            : "Your account and sign-in details are erased. This cannot be undone."}
         </AppText>
         {hasPassword ? (
           <PasswordInput

@@ -27,6 +27,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useLeads } from "@/hooks/useLeads";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
+import { track } from "@/services/analytics";
 import { errorMessage } from "@/services/api";
 import { openPhone, openWhatsApp } from "@/services/links";
 import type { Lead, LeadFilter, LeadStatus } from "@/types/leads";
@@ -65,12 +66,14 @@ export default function LeadsScreen() {
 
   const onCall = useCallback(
     (phone: string) => {
+      track("lead_contacted", { channel: "call" });
       openPhone(phone).catch((e: unknown) => toast(errorMessage(e), "error"));
     },
     [toast],
   );
   const onWhatsApp = useCallback(
     (phone: string) => {
+      track("lead_contacted", { channel: "whatsapp" });
       openWhatsApp(phone).catch((e: unknown) => toast(errorMessage(e), "error"));
     },
     [toast],

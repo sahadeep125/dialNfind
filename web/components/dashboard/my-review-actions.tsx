@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { track } from "@/lib/analytics";
 import { clientApi } from "@/lib/client";
 
 export function DeleteReviewButton({ id, providerName }: { id: number; providerName: string }) {
@@ -13,6 +14,7 @@ export function DeleteReviewButton({ id, providerName }: { id: number; providerN
     try {
       await clientApi(`/reviews/${id}`, { method: "DELETE" });
       toast.success("Review deleted");
+      track("review_deleted", { review_id: id });
       router.refresh();
     } catch {
       toast.error("Could not delete the review");

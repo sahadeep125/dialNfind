@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { clientApi, ClientApiError } from "@/lib/client";
+import { track } from "@/lib/analytics";
 
 export function ShareButton({ title, withLabel = false }: { title: string; withLabel?: boolean }) {
   async function share() {
@@ -15,12 +16,14 @@ export function ShareButton({ title, withLabel = false }: { title: string; withL
     if (navigator.share) {
       try {
         await navigator.share({ title, url });
+        track("provider_shared", { method: "native", path: window.location.pathname });
       } catch {
         /* dismissed */
       }
       return;
     }
     await navigator.clipboard.writeText(url);
+    track("provider_shared", { method: "copy_link", path: window.location.pathname });
     toast.success("Link copied");
   }
   if (withLabel) {
@@ -80,6 +83,7 @@ function ReportDialog({ endpoint, trigger, title, description, placeholder, done
     try {
       await clientApi(endpoint, { method: "POST", body: JSON.stringify({ reason: text }) });
       toast.success(done);
+      track("report_submitted", { target: endpoint.startsWith("/reviews/") ? "review" : "listing" });
       setOpen(false);
       setReason("");
     } catch (err) {

@@ -10,6 +10,7 @@ import { notify } from "../services/notify.js";
 import { currentUser, optionalAuth, requireAuth } from "../middleware/auth.js";
 import { recalculateProvider } from "../services/ranking.js";
 import { limits } from "../lib/rate-limit.js";
+import { captureServer } from "../services/analytics.js";
 
 export const leadsRouter = Router();
 
@@ -113,6 +114,10 @@ leadsRouter.post("/", limits.leads, optionalAuth, async (req, res) => {
       : "A customer just tapped to contact you from your DialNFind profile.",
     { leadId: Number(lead.id), locked: overLimit },
   );
+
+  const leadProps = { lead_id: Number(lead.id), provider_id: Number(provider.id), channel: body.channel, lead_source: body.source, category_id: categoryId === null ? null : Number(categoryId) };
+  captureServer(req.user?.id, "lead_created", leadProps);
+  captureServer(provider.userId, "lead_received", { ...leadProps, over_limit: overLimit });
 
   const number = body.channel === "whatsapp" ? (provider.whatsappNumber ?? provider.phone) : provider.phone;
   res.status(201).json({ lead: { id: lead.id, channel: lead.channel, createdAt: lead.createdAt }, contact: { number } });

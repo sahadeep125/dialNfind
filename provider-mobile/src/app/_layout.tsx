@@ -1,12 +1,20 @@
 import "../../global.css";
+import {
+  navigationIntegration,
+  reportError,
+  setMonitoringUser,
+  wrapRoot,
+} from "@/services/monitoring";
+import { posthog } from "@/services/analytics";
 
 import { useCallback, useEffect, useState } from "react";
 import { LogBox, StyleSheet, View } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, useNavigationContainerRef, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { PostHogProvider } from "posthog-react-native";
 import { vars } from "nativewind";
 import Animated, { FadeOut } from "react-native-reanimated";
 import {
@@ -23,7 +31,16 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 
-import { BrandSplash, OfflineBanner, PurchasesSync, PushRegistrar, SessionRefresher, ToastPortal } from "@/components/layout";
+import {
+  AnalyticsSync,
+  BrandSplash,
+  ErrorState,
+  OfflineBanner,
+  PurchasesSync,
+  PushRegistrar,
+  SessionRefresher,
+  ToastPortal,
+} from "@/components/layout";
 import { EmailVerificationGate } from "@/components/auth";
 import { colorVariables } from "@/constants/colors";
 import { useTheme } from "@/hooks/useTheme";
@@ -51,7 +68,17 @@ const queryClient = new QueryClient({
   },
 });
 
-export default function RootLayout() {
+/** Shown instead of a screen that crashed while rendering; the error is reported and the person can retry. */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => reportError(error), [error]);
+  return (
+    <View style={[styles.fill, styles.crash]}>
+      <ErrorState error={error} onRetry={() => void retry()} />
+    </View>
+  );
+}
+
+function RootLayout() {
   const theme = useTheme();
   const [showSplash, setShowSplash] = useState(true);
   const [fontsLoaded, fontError] = useFonts({
@@ -66,6 +93,13 @@ export default function RootLayout() {
   });
   const hydrated = useAuthStore((s) => s.hydrated);
   const ready = (fontsLoaded || !!fontError) && hydrated;
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const navigationRef = useNavigationContainerRef();
+
+  useEffect(() => setMonitoringUser(userId), [userId]);
+  useEffect(() => {
+    if (navigationRef) navigationIntegration?.registerNavigationContainer(navigationRef);
+  }, [navigationRef]);
 
   // The session token is read from the secure store before any screen decides where to go.
   useEffect(() => {
@@ -84,7 +118,7 @@ export default function RootLayout() {
 
   if (!ready) return null;
 
-  return (
+  const tree = (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <View
@@ -96,6 +130,7 @@ export default function RootLayout() {
         >
           <StatusBar style={showSplash || theme.mode === "dark" ? "light" : "dark"} />
           <SessionRefresher />
+          <AnalyticsSync />
           <PurchasesSync />
           <PushRegistrar />
           <Stack
@@ -125,8 +160,19 @@ export default function RootLayout() {
       </SafeAreaProvider>
     </QueryClientProvider>
   );
+  // Screens are recorded by AnalyticsSync (Expo Router paths); the provider adds tap autocapture.
+  return posthog ? (
+    <PostHogProvider client={posthog} autocapture={{ captureScreens: false, captureTouches: true }}>
+      {tree}
+    </PostHogProvider>
+  ) : (
+    tree
+  );
 }
 
 const styles = StyleSheet.create({
+  crash: { justifyContent: "center", padding: 24 },
   fill: { flex: 1 },
 });
+
+export default wrapRoot(RootLayout);

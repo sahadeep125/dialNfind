@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Hours, ProviderService, ServiceArea } from "@/lib/types";
@@ -124,6 +125,7 @@ export function OnboardingPage() {
 
   function next() {
     if (!validate()) return;
+    track("onboarding_step_completed", { step: step + 1, step_name: STEPS[step], total_steps: STEPS.length });
     if (step < STEPS.length - 1) setStep(step + 1);
     else void submit();
   }
@@ -154,6 +156,7 @@ export function OnboardingPage() {
         },
       });
       clearDraft(draftKey);
+      track("onboarding_completed", { service_count: services.length, area_count: areas.length, business_type: business.businessType });
       if (res.token) await signIn(res.token);
       else await refresh();
       toast.success("Your business is live on DialNFind");
