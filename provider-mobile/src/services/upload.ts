@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { FileSystemUploadType, createUploadTask } from "expo-file-system/legacy";
+import { FileSystemUploadType, createUploadTask, getInfoAsync } from "expo-file-system/legacy";
 
 import { API_URL } from "@/constants/config";
 import { UPLOAD_RULES } from "@/constants/uploads";
@@ -42,6 +42,7 @@ export async function pickImage(
   const options: ImagePicker.ImagePickerOptions = {
     mediaTypes: ["images"],
     quality: 0.85,
+    exif: false,
     allowsEditing: !!ASPECT[purpose],
     aspect: ASPECT[purpose],
   };
@@ -57,6 +58,8 @@ export async function pickImage(
     name,
     mimeType: asset.mimeType ?? guessMime(name),
     size: asset.fileSize ?? null,
+    width: asset.width,
+    height: asset.height,
   };
 }
 
@@ -77,16 +80,34 @@ export async function pickDocument(): Promise<PickedFile | null> {
   };
 }
 
-/** Checks type and size before uploading. Returns an error message or null. */
+/**
+ * Checks type, size and (when the picker reported them) image dimensions before uploading. Returns an
+ * error message or null. The API repeats every check, so this only saves a wasted upload.
+ */
 export function checkFile(file: PickedFile, purpose: UploadPurpose): string | null {
   const rule = UPLOAD_RULES[purpose];
   if (!rule.types.includes(file.mimeType))
     return purpose === "document"
       ? "Choose a JPG, PNG, WebP or PDF file"
       : "Choose a JPG, PNG or WebP image";
+  if (file.size === 0) return "This file is empty. Choose another one.";
   if (file.size && file.size > rule.maxMb * 1024 * 1024)
     return `This file is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is ${rule.maxMb} MB.`;
+  if (file.width && file.height && Math.min(file.width, file.height) < rule.minSide)
+    return `This image is ${file.width} × ${file.height} px. Use one at least ${rule.minSide} px on each side.`;
   return null;
+}
+
+/** Fills in the file size when the picker did not report it, so the size limit is always checked. */
+async function withSize(file: PickedFile): Promise<PickedFile> {
+  if (file.size !== null || Platform.OS === "web") return file;
+  try {
+    const info = await getInfoAsync(file.uri);
+    return info.exists ? { ...file, size: info.size } : file;
+  } catch (error: unknown) {
+    logError("[upload] Could not read file size", error);
+    return file;
+  }
 }
 
 function readUploadResponse(status: number, body: string): string {
@@ -109,6 +130,7 @@ export async function uploadFile(
   purpose: UploadPurpose,
   onProgress?: (pct: number) => void,
 ): Promise<string> {
+  file = await withSize(file);
   const problem = checkFile(file, purpose);
   if (problem) throw new Error(problem);
   const url = `${API_URL}/uploads?purpose=${purpose}`;

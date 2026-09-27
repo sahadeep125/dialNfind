@@ -44,6 +44,11 @@ export function createStorage(): Storage {
 
 export const storage = createStorage();
 
+/** Deletes a replaced upload once its record points somewhere else (or nowhere). Fire and forget. */
+export function removeReplaced(before: string | null | undefined, after: string | null | undefined) {
+  if (before && before !== after) void storage.remove(before);
+}
+
 /** Builds a collision-free key like "portfolio/2026/09/3f2c...e1.webp". */
 export function storageKey(folder: string, ext: string) {
   const now = new Date();

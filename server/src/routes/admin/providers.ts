@@ -221,13 +221,16 @@ adminProvidersRouter.delete("/providers/:id", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
   const { confirmName } = parse(z.object({ confirmName: z.string() }), req.body ?? {});
   if (confirmName.trim().toLowerCase() !== provider.businessName.trim().toLowerCase()) throw badRequest("Type the business name exactly to confirm");
-  const [portfolio, reviewPhotos, counts] = await Promise.all([
+  const [portfolio, reviewPhotos, verifications, claims, counts] = await Promise.all([
     prisma.providerPortfolio.findMany({ where: { providerId: provider.id }, select: { imageUrl: true } }),
     prisma.reviewPhoto.findMany({ where: { review: { providerId: provider.id } }, select: { photoUrl: true } }),
+    prisma.verification.findMany({ where: { providerId: provider.id }, select: { documentUrl: true } }),
+    prisma.providerClaim.findMany({ where: { providerId: provider.id }, select: { documentUrl: true } }),
     prisma.provider.findUniqueOrThrow({ where: { id: provider.id }, select: { _count: { select: { leads: true, reviews: true } } } }),
   ]);
   await prisma.provider.delete({ where: { id: provider.id } });
-  for (const url of [provider.logoUrl, provider.coverUrl, ...portfolio.map((p) => p.imageUrl), ...reviewPhotos.map((p) => p.photoUrl)]) if (url) void storage.remove(url);
+  const files = [provider.logoUrl, provider.coverUrl, ...portfolio.map((p) => p.imageUrl), ...reviewPhotos.map((p) => p.photoUrl), ...verifications.map((v) => v.documentUrl), ...claims.map((c) => c.documentUrl)];
+  for (const url of files) if (url) void storage.remove(url);
   await recalculateCategoryCounts();
   await logAdmin(currentUser(req).id, "provider.delete", "provider", provider.id, {
     businessName: provider.businessName,

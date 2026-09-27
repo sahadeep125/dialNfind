@@ -38,7 +38,7 @@ export function FileUpload({ value, onChange, purpose, previewClassName = "aspec
 
   async function handle(file: File | undefined) {
     if (!file) return;
-    const problem = checkFile(file, purpose);
+    const problem = await checkFile(file, purpose);
     if (problem) {
       setError(problem);
       return;
@@ -138,7 +138,7 @@ export function FileUpload({ value, onChange, purpose, previewClassName = "aspec
                 <span className="font-semibold text-primary">Click to upload</span> or drag and drop
               </span>
               <span className="text-xs text-muted-foreground">
-                {typesLabel}, up to {rule.maxMb} MB
+                {typesLabel}, up to {rule.maxMb} MB{isDocument ? "" : `, at least ${rule.minSide} px`}
               </span>
             </>
           )}
@@ -170,7 +170,7 @@ export function PhotoListUpload({ value, onChange, purpose, max, id, onUploading
     const added: string[] = [];
     try {
       for (const file of picked) {
-        const problem = checkFile(file, purpose);
+        const problem = await checkFile(file, purpose);
         if (problem) {
           setError(`${file.name}: ${problem}`);
           continue;
@@ -226,7 +226,7 @@ export function PhotoListUpload({ value, onChange, purpose, max, id, onUploading
         </p>
       ) : (
         <p id={`${inputId}-upload-hint`} className="mt-2 text-xs text-muted-foreground">
-          Up to {max} photos. JPG, PNG or WebP, up to {rule.maxMb} MB each.
+          Up to {max} photos. JPG, PNG or WebP, at least {rule.minSide} px, up to {rule.maxMb} MB each.
         </p>
       )}
     </div>

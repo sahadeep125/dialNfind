@@ -339,7 +339,7 @@ function Composer({ ticketId, status }: { ticketId: number; status: Status }) {
   async function attach(file: File | undefined) {
     if (!file) return;
     if (files.length >= 5) return setError("You can attach up to 5 files");
-    const problem = checkFile(file, "document");
+    const problem = await checkFile(file, "document");
     if (problem) return setError(problem);
     setUploading(true);
     try {

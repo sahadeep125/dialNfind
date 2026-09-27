@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { notFound } from "../lib/errors.js";
+import { removeReplaced } from "../storage/index.js";
 import { currentUser } from "../middleware/auth.js";
 import { requirePermission } from "../lib/permissions.js";
 import { slugify } from "../lib/slug.js";
@@ -59,7 +60,9 @@ categoriesRouter.patch("/:id", requirePermission("categories"), async (req, res)
   const body = parse(categorySchema.partial(), req.body);
   const admin = currentUser(req);
   const id = idParam(req.params.id);
+  const before = await prisma.category.findUniqueOrThrow({ where: { id }, select: { iconUrl: true } });
   const category = await prisma.category.update({ where: { id }, data: { ...body, updatedBy: admin.id } });
+  if (body.iconUrl !== undefined) removeReplaced(before.iconUrl, category.iconUrl);
   await logAdmin(admin.id, "category.update", "category", id, body);
   res.json({ category });
 });
@@ -96,7 +99,9 @@ categoriesRouter.patch("/subcategories/:id", requirePermission("categories"), as
   const body = parse(subcategorySchema.partial(), req.body);
   const admin = currentUser(req);
   const id = idParam(req.params.id);
+  const before = await prisma.subcategory.findUniqueOrThrow({ where: { id }, select: { iconUrl: true } });
   const subcategory = await prisma.subcategory.update({ where: { id }, data: { ...body, updatedBy: admin.id } });
+  if (body.iconUrl !== undefined) removeReplaced(before.iconUrl, subcategory.iconUrl);
   await logAdmin(admin.id, "subcategory.update", "subcategory", id, body);
   res.json({ subcategory });
 });

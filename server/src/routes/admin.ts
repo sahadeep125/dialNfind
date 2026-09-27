@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { badRequest, notFound } from "../lib/errors.js";
+import { removeReplaced } from "../storage/index.js";
 import { pageMeta, paginationSchema } from "../lib/pagination.js";
 import { currentUser } from "../middleware/auth.js";
 import { guardAdminPath, requireStaff } from "../lib/permissions.js";
@@ -257,7 +258,9 @@ adminRouter.post("/badges", async (req, res) => {
 adminRouter.patch("/badges/:id", async (req, res) => {
   const body = parse(badgeSchema.partial(), req.body);
   const id = idParam(req.params.id as string);
+  const before = await prisma.badge.findUniqueOrThrow({ where: { id }, select: { iconUrl: true } });
   const badge = await prisma.badge.update({ where: { id }, data: body });
+  if (body.iconUrl !== undefined) removeReplaced(before.iconUrl, badge.iconUrl);
   await logAdmin(currentUser(req).id, "badge.update", "badge", id, body);
   res.json({ badge });
 });
@@ -266,7 +269,8 @@ adminRouter.delete("/badges/:id", async (req, res) => {
   const id = idParam(req.params.id as string);
   const plans = await prisma.subscriptionPlan.count({ where: { badgeId: id, isActive: true } });
   if (plans) throw badRequest("This badge is granted by an active plan. Change the plan first.");
-  await prisma.badge.delete({ where: { id } });
+  const badge = await prisma.badge.delete({ where: { id } });
+  removeReplaced(badge.iconUrl, null);
   await logAdmin(currentUser(req).id, "badge.delete", "badge", id);
   res.json({ ok: true });
 });

@@ -58,7 +58,7 @@ function AttachmentPicker({ files, setFiles, uploading, setUploading }: { files:
   const [error, setError] = useState<string | null>(null);
   async function attach(file: File | undefined) {
     if (!file) return;
-    const problem = checkFile(file, "document");
+    const problem = await checkFile(file, "document");
     if (problem) return setError(problem);
     setError(null);
     setUploading(true);

@@ -250,6 +250,9 @@ export interface PickedFile {
   name: string;
   mimeType: string;
   size: number | null;
+  /** Pixel size, known for images picked from the photo library or camera. */
+  width?: number;
+  height?: number;
 }
 
 export interface SelectOption<T extends string | number> {
