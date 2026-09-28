@@ -4,10 +4,9 @@ import { AppIconButton } from "@/components/design-system";
 import { ErrorState, Screen, ScreenHeader } from "@/components/layout";
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
 import { ProfileSkeleton } from "@/components/profile/ProfileSkeleton";
-import { WEB_URL } from "@/constants/config";
 import { useProfile } from "@/hooks/useProfile";
 import { useTheme } from "@/hooks/useTheme";
-import { openUrl } from "@/services/links";
+import { openPublicProfile } from "@/services/links";
 
 export default function ProfileScreen() {
   const theme = useTheme();
@@ -24,7 +23,7 @@ export default function ProfileScreen() {
             <AppIconButton
               accessibilityLabel="View public profile"
               icon={<ExternalLink size={18} color={theme.colors.text.primary} />}
-              onPress={() => void openUrl(`${WEB_URL}/providers/${slug}`)}
+              onPress={() => void openPublicProfile(slug, profile.data?.status).catch(() => undefined)}
             />
           ) : undefined
         }

@@ -19,6 +19,7 @@ import { stateCodeFor } from "../../lib/gst.js";
 import { razorpay, razorpayConfigured, toPaise, verifyOrderSignature } from "../../services/razorpay.js";
 import { activateSponsoredOrder } from "../../services/sponsored-orders.js";
 import { assertFeature, getPlanState, hasEntitlement, lockedLeadIds, planOf } from "../../services/entitlements.js";
+import { refreshProviderSlugs } from "../../services/web-cache.js";
 
 /** What a locked lead shows instead of the customer's details. */
 const LOCKED = "Upgrade to see this contact";
@@ -385,6 +386,7 @@ insightsRouter.put("/reviews/:id/reply", async (req, res) => {
   if (reply && !review.providerReply) {
     void notify(review.userId, "review_reply", `${provider.businessName} replied to your review`, reply.slice(0, 120), { providerSlug: provider.slug, reviewId: Number(id) });
   }
+  refreshProviderSlugs([provider.slug], ["reviews"]);
   res.json({ review: updated });
 });
 

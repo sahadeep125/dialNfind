@@ -42,7 +42,7 @@ export default async function GuidePage({ params }: { params: Promise<Params> })
   const guide = getGuide((await params).slug);
   if (!guide) notFound();
 
-  const data = await publicApiOrNull<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] });
+  const data = await publicApiOrNull<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] }).catch(() => null);
   const category = data?.categories.find((c) => c.slug === guide.category);
   const categoryName = category?.name ?? guide.category;
   const subs = (category?.subcategories ?? []).filter((s) => guide.subcategories.includes(s.slug));

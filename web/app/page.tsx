@@ -32,7 +32,7 @@ export const revalidate = 600;
 export default async function HomePage() {
   const [{ categories }, stats, { terms }] = await Promise.all([
     publicApi<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] }),
-    publicApi<{ providers: number; categories: number; cities: number; reviews: number }>("/stats", { revalidate: 3600 }),
+    publicApi<{ providers: number; categories: number; cities: number; reviews: number }>("/stats", { revalidate: 3600, tags: ["stats"] }),
     publicApi<{ terms: { term: string }[] }>("/search/popular", { revalidate: 600 }),
   ]);
   const popular = terms.length ? terms.slice(0, 6).map((t) => t.term) : ["AC repair", "Electrician", "Plumber", "TV repair", "Carpenter", "RO service"];

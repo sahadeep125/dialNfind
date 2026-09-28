@@ -12,6 +12,7 @@ import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, servic
 import { privateFileUrl } from "../../lib/private-files.js";
 import { listingProfileSchema, updateListingProfile } from "../../services/listings.js";
 import { planOf } from "../../services/entitlements.js";
+import { previewUrl, refreshProviderSlugs } from "../../services/web-cache.js";
 
 export const profileRouter = Router();
 
@@ -39,6 +40,12 @@ export async function loadProfile(providerId: bigint) {
 profileRouter.get("/profile", async (req, res) => {
   const provider = await ownProvider(req);
   res.json({ provider: await loadProfile(provider.id) });
+});
+
+/** GET /provider/preview-link — opens the listing on the website, even while it is waiting for approval. */
+profileRouter.get("/preview-link", async (req, res) => {
+  const provider = await ownProvider(req);
+  res.json({ url: previewUrl(provider), status: provider.status });
 });
 
 profileRouter.patch("/profile", async (req, res) => {
@@ -146,6 +153,7 @@ profileRouter.put("/attributes", async (req, res) => {
       }
     }
   });
+  refreshProviderSlugs([provider.slug]);
   res.json({ ok: true });
 });
 
@@ -186,6 +194,7 @@ profileRouter.put("/portfolio/order", async (req, res) => {
     throw badRequest("Send every photo exactly once");
   }
   await prisma.$transaction(ids.map((id, i) => prisma.providerPortfolio.update({ where: { id: BigInt(id) }, data: { sortOrder: i } })));
+  refreshProviderSlugs([provider.slug]);
   res.json({ ok: true });
 });
 
@@ -204,6 +213,7 @@ profileRouter.patch("/portfolio/:id", async (req, res) => {
     }),
   ]);
   if (body.imageUrl && body.imageUrl !== existing.imageUrl) void releaseFile(existing.imageUrl);
+  refreshProviderSlugs([provider.slug]);
   res.json({ item });
 });
 

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, apiOrNull, ApiError, publicApi, publicApiOrNull, toQuery } from "@/lib/api";
 import { getSavedLocation, getSession, requireSession } from "@/lib/session";
 import { resolveLocation } from "@/lib/location";
@@ -71,15 +71,25 @@ describe("api", () => {
     expect(fetch.mock.calls[0]![1]).toMatchObject({ next: { revalidate: 300, tags: ["t"] } });
     expect(await publicApiOrNull("/missing")).toBeNull();
     await expect(publicApi("/missing")).rejects.toMatchObject({ message: "Gone" });
-    // Any failure means "no data" for the OrNull variant.
-    expect(await publicApiOrNull("/down")).toBeNull();
+    // Only 404 means "no data"; other failures throw, so an outage is never cached as "not found".
+    await expect(publicApiOrNull("/down")).rejects.toMatchObject({ status: 503 });
     await expect(publicApi("/down")).rejects.toMatchObject({ status: 503, message: "Down" });
     expect(await publicApiOrNull("/p")).toEqual({ v: 1 });
     await publicApi("/p");
   });
 });
 
+describe("publicApi when the API cannot be reached", () => {
+  it("throws at runtime, so the empty page is not cached", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
+    await expect(publicApi("/categories")).rejects.toThrow("fetch failed");
+    await expect(publicApiOrNull("/providers/x")).rejects.toThrow("fetch failed");
+  });
+});
+
 describe("publicApi when the API cannot be reached (builds without an API)", () => {
+  beforeEach(() => vi.stubEnv("NEXT_PHASE", "phase-production-build"));
+  afterEach(() => vi.unstubAllEnvs());
   it("returns empty data shaped for each endpoint", async () => {
     mockApi({});
     expect(await publicApi("/stats")).toEqual({ providers: 0, categories: 0, cities: 0, reviews: 0 });

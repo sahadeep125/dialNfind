@@ -23,6 +23,7 @@ import { offlinePaymentSchema, recordPayment } from "./admin/records.js";
 import { ticketRef } from "../services/tickets.js";
 import { adminBillingRouter } from "./admin/billing.js";
 import { entitlementsFor } from "../lib/plans.js";
+import { refreshProviderPages, refreshProviderSlugs, refreshShared } from "../services/web-cache.js";
 
 /**
  * Admin endpoints for the super admin and their team. Each path is guarded by the module it
@@ -63,6 +64,7 @@ adminRouter.patch("/claims/:id", async (req, res) => {
         ]
       : []),
   ]);
+  if (decision === "approved") refreshProviderSlugs([claim.provider.slug]);
   await logAdmin(admin.id, `claim.${decision}`, "provider_claim", claim.id);
   void notifyAndEmail(
     claim.userId,
@@ -261,6 +263,7 @@ adminRouter.patch("/badges/:id", async (req, res) => {
   const before = await prisma.badge.findUniqueOrThrow({ where: { id }, select: { iconUrl: true } });
   const badge = await prisma.badge.update({ where: { id }, data: body });
   if (body.iconUrl !== undefined) removeReplaced(before.iconUrl, badge.iconUrl);
+  refreshShared("providers");
   await logAdmin(currentUser(req).id, "badge.update", "badge", id, body);
   res.json({ badge });
 });
@@ -271,6 +274,7 @@ adminRouter.delete("/badges/:id", async (req, res) => {
   if (plans) throw badRequest("This badge is granted by an active plan. Change the plan first.");
   const badge = await prisma.badge.delete({ where: { id } });
   removeReplaced(badge.iconUrl, null);
+  refreshShared("providers");
   await logAdmin(currentUser(req).id, "badge.delete", "badge", id);
   res.json({ ok: true });
 });
@@ -288,6 +292,7 @@ adminRouter.post("/providers/:id/badges", async (req, res) => {
     create: { providerId, badgeId: badge.id },
     update: {},
   });
+  void refreshProviderPages(providerId);
   await logAdmin(currentUser(req).id, "badge.award", "provider", providerId, { badgeId });
   void notify(provider.userId, "listing", `You earned the ${badge.name} badge`, "It now shows on your DialNFind profile.", { badgeId });
   res.status(201).json({ providerBadge: awarded });
@@ -297,6 +302,7 @@ adminRouter.delete("/providers/:id/badges/:badgeId", async (req, res) => {
   const providerId = idParam(req.params.id as string);
   const badgeId = idParam(req.params.badgeId as string);
   await prisma.providerBadge.deleteMany({ where: { providerId, badgeId } });
+  void refreshProviderPages(providerId);
   await logAdmin(currentUser(req).id, "badge.revoke", "provider", providerId, { badgeId });
   res.json({ ok: true });
 });
@@ -342,6 +348,7 @@ adminRouter.get("/plans", async (_req, res) => {
 adminRouter.post("/plans", async (req, res) => {
   const body = parse(planSchema, req.body);
   const plan = await prisma.subscriptionPlan.create({ data: planData(body) as Parameters<typeof prisma.subscriptionPlan.create>[0]["data"] });
+  refreshShared("plans");
   await logAdmin(currentUser(req).id, "plan.create", "subscription_plan", plan.id, body);
   res.status(201).json({ plan });
 });
@@ -351,6 +358,7 @@ adminRouter.patch("/plans/:id", async (req, res) => {
   const { code: _code, ...body } = parse(planSchema.partial(), req.body);
   const id = idParam(req.params.id as string);
   const plan = await prisma.subscriptionPlan.update({ where: { id }, data: planData(body) });
+  refreshShared("plans");
   await logAdmin(currentUser(req).id, "plan.update", "subscription_plan", id, body);
   res.json({ plan });
 });

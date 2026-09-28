@@ -8,6 +8,7 @@ import { currentUser } from "../middleware/auth.js";
 import { requirePermission } from "../lib/permissions.js";
 import { slugify } from "../lib/slug.js";
 import { logAdmin } from "../services/audit.js";
+import { refreshShared } from "../services/web-cache.js";
 
 export const categoriesRouter = Router();
 
@@ -52,6 +53,8 @@ categoriesRouter.post("/", requirePermission("categories"), async (req, res) => 
   const category = await prisma.category.create({
     data: { ...body, slug: body.slug || slugify(body.name), createdBy: admin.id, updatedBy: admin.id },
   });
+  // Names, icons and service details show on profiles too, not only on category pages.
+  refreshShared("categories", "providers");
   await logAdmin(admin.id, "category.create", "category", category.id, body);
   res.status(201).json({ category });
 });
@@ -63,6 +66,7 @@ categoriesRouter.patch("/:id", requirePermission("categories"), async (req, res)
   const before = await prisma.category.findUniqueOrThrow({ where: { id }, select: { iconUrl: true } });
   const category = await prisma.category.update({ where: { id }, data: { ...body, updatedBy: admin.id } });
   if (body.iconUrl !== undefined) removeReplaced(before.iconUrl, category.iconUrl);
+  refreshShared("categories", "providers");
   await logAdmin(admin.id, "category.update", "category", id, body);
   res.json({ category });
 });
@@ -72,6 +76,7 @@ categoriesRouter.delete("/:id", requirePermission("categories"), async (req, res
   const id = idParam(req.params.id);
   // Soft delete keeps provider_services referentially valid.
   await prisma.category.update({ where: { id }, data: { isActive: false, updatedBy: admin.id } });
+  refreshShared("categories", "providers");
   await logAdmin(admin.id, "category.deactivate", "category", id);
   res.json({ ok: true });
 });
@@ -91,6 +96,7 @@ categoriesRouter.post("/:id/subcategories", requirePermission("categories"), asy
   const subcategory = await prisma.subcategory.create({
     data: { ...body, categoryId, slug: body.slug || slugify(body.name), createdBy: admin.id, updatedBy: admin.id },
   });
+  refreshShared("categories", "providers");
   await logAdmin(admin.id, "subcategory.create", "subcategory", subcategory.id, body);
   res.status(201).json({ subcategory });
 });
@@ -102,6 +108,7 @@ categoriesRouter.patch("/subcategories/:id", requirePermission("categories"), as
   const before = await prisma.subcategory.findUniqueOrThrow({ where: { id }, select: { iconUrl: true } });
   const subcategory = await prisma.subcategory.update({ where: { id }, data: { ...body, updatedBy: admin.id } });
   if (body.iconUrl !== undefined) removeReplaced(before.iconUrl, subcategory.iconUrl);
+  refreshShared("categories", "providers");
   await logAdmin(admin.id, "subcategory.update", "subcategory", id, body);
   res.json({ subcategory });
 });
@@ -133,6 +140,7 @@ categoriesRouter.post("/:id/attributes", requirePermission("categories"), async 
       createdBy: admin.id,
     },
   });
+  refreshShared("categories", "providers");
   await logAdmin(admin.id, "attribute.create", "category_attribute", attribute.id, body);
   res.status(201).json({ attribute });
 });
@@ -142,6 +150,7 @@ categoriesRouter.delete("/subcategories/:id", requirePermission("categories"), a
   const id = idParam(req.params.id as string);
   // Soft delete, like categories, so existing provider services stay valid.
   await prisma.subcategory.update({ where: { id }, data: { isActive: false, updatedBy: admin.id } });
+  refreshShared("categories", "providers");
   await logAdmin(admin.id, "subcategory.deactivate", "subcategory", id);
   res.json({ ok: true });
 });
@@ -159,6 +168,7 @@ categoriesRouter.patch("/attributes/:id", requirePermission("categories"), async
       ...(subcategoryId !== undefined ? { subcategoryId: subcategoryId ? BigInt(subcategoryId) : null } : {}),
     },
   });
+  refreshShared("categories", "providers");
   await logAdmin(admin.id, "attribute.update", "category_attribute", id, body);
   res.json({ attribute });
 });
@@ -168,6 +178,7 @@ categoriesRouter.delete("/attributes/:id", requirePermission("categories"), asyn
   const admin = currentUser(req);
   const id = idParam(req.params.id as string);
   await prisma.categoryAttribute.delete({ where: { id } });
+  refreshShared("categories", "providers");
   await logAdmin(admin.id, "attribute.delete", "category_attribute", id);
   res.json({ ok: true });
 });

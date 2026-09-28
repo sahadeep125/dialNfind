@@ -347,6 +347,25 @@ describe("provider profile page", () => {
     await act(async () => undefined);
     expect(screen.getByRole("heading", { name: "Similar pros nearby" })).toBeInTheDocument();
   });
+  it("previews a listing that is not live, with the signed token and without caching", async () => {
+    const { default: Preview, dynamic, metadata } = await import("@/app/providers/[slug]/preview/page");
+    expect(dynamic).toBe("force-dynamic");
+    expect(metadata.robots).toEqual({ index: false, follow: false });
+    await expect(Preview({ params: sp({ slug: "shop" }), searchParams: sp({}) })).rejects.toBeInstanceOf(NotFoundError);
+    const fetch = mockApi(routes({ status: "pending" }));
+    const a = await renderAsync(await Preview({ params: sp({ slug: "shop" }), searchParams: sp({ token: "tok" }) }));
+    expect(screen.getByRole("status")).toHaveTextContent("not live yet (status: pending)");
+    const [input, init] = fetch.mock.calls.find(([u]) => new URL(String(u)).pathname.endsWith("/providers/shop"))!;
+    expect(new URL(String(input)).searchParams.get("previewToken")).toBe("tok");
+    expect(init).toMatchObject({ cache: "no-store" });
+    expect(fetch.mock.calls.some(([u]) => String(u).includes("/reviews"))).toBe(false);
+    a.unmount();
+    mockApi(routes({ status: "active" }));
+    await renderAsync(await Preview({ params: sp({ slug: "shop" }), searchParams: sp({ token: "tok" }) }));
+    expect(screen.getByRole("status")).toHaveTextContent("This listing is live");
+    mockApi(routes(null));
+    await expect(Preview({ params: sp({ slug: "shop" }), searchParams: sp({ token: "bad" }) })).rejects.toBeInstanceOf(NotFoundError);
+  });
 });
 
 describe("dashboard pages", () => {

@@ -8,7 +8,7 @@ import { CheckCircle2, Circle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
-import { WEB_URL } from "@/lib/config";
+import { previewIfNotLive, publicProfileUrl } from "@/lib/public-profile";
 import type { ProviderProfile } from "@/lib/types";
 import { normalizePhone, optionalEmail, optionalInt, optionalPhone, optionalUrl, orNull, phone } from "@/lib/validation";
 import { useProfile } from "@/layouts/app-layout";
@@ -159,7 +159,7 @@ function ProfileEditor({ profile }: { profile: ProviderProfile }) {
         description="What customers see on your public profile."
         actions={
           <Button variant="outline" asChild>
-            <a href={`${WEB_URL}/providers/${profile.slug}`} target="_blank" rel="noreferrer">
+            <a href={publicProfileUrl(profile.slug)} onClick={previewIfNotLive(profile.status)} target="_blank" rel="noreferrer">
               View public profile <ExternalLink />
             </a>
           </Button>

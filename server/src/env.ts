@@ -45,6 +45,13 @@ export const env = {
   webUrl: (process.env.WEB_URL ?? "http://localhost:3000").replace(/\/$/, ""),
   providerUrl: (process.env.PROVIDER_URL ?? "http://localhost:5173").replace(/\/$/, ""),
   adminUrl: (process.env.ADMIN_URL ?? "http://localhost:5174").replace(/\/$/, ""),
+  /**
+   * Public pages on the website are cached. After a change, the API asks the website to rebuild them at
+   * WEB_INTERNAL_URL/api/revalidate (http://web:3000 inside Docker). Without REVALIDATE_SECRET (the same value
+   * as on the website) nothing is sent, and pages refresh only when their cache time runs out.
+   */
+  webInternalUrl: (process.env.WEB_INTERNAL_URL || process.env.WEB_URL || "http://localhost:3000").replace(/\/$/, ""),
+  revalidateSecret: process.env.REVALIDATE_SECRET ?? "",
   /** Outgoing email. With no SMTP_HOST, emails are printed to the console instead of sent. */
   smtp: {
     host: process.env.SMTP_HOST ?? "",
@@ -148,5 +155,8 @@ if (isProduction) {
   const problems = productionProblems();
   if (problems.length) {
     throw new Error(`Refusing to start with NODE_ENV=production:\n- ${problems.join("\n- ")}`);
+  }
+  if (!env.revalidateSecret) {
+    console.warn("REVALIDATE_SECRET is empty: website pages will show changes only when their cache runs out (up to an hour).");
   }
 }
