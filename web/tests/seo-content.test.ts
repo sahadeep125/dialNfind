@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { CATEGORY_SEO } from "@/content/seo/categories";
@@ -8,21 +9,12 @@ import { serviceHref } from "@/lib/service-href";
 import { articleJsonLd } from "@/lib/structured-data";
 import { proxy } from "@/proxy";
 
-/** Categories and subcategories created by server/prisma/seed-data.ts (slugs as the server's slugify makes them). */
-const SEEDED: Record<string, string[]> = {
-  "electronics-repair": ["tv-repair", "mobile-phone-repair", "laptop-and-computer-repair", "home-theatre-and-audio-repair", "cctv-installation"],
-  "home-appliances": ["ac-repair-and-service", "refrigerator-repair", "washing-machine-repair", "microwave-repair", "water-purifier-service", "geyser-repair"],
-  electricians: ["wiring-and-rewiring", "fan-and-light-installation", "inverter-and-battery", "switchboard-repair", "electrical-safety-inspection"],
-  plumbing: ["leak-repair", "bathroom-fitting", "water-tank-cleaning", "drain-unblocking", "motor-and-pump-repair"],
-  carpentry: ["furniture-repair", "modular-kitchen", "door-and-window-work", "custom-furniture"],
-  cleaning: ["home-deep-cleaning", "sofa-and-carpet-cleaning", "bathroom-cleaning", "kitchen-cleaning", "office-cleaning"],
-  "pest-control": ["cockroach-control", "termite-treatment", "bed-bug-treatment", "mosquito-control", "rodent-control"],
-  painting: ["interior-painting", "exterior-painting", "waterproofing", "texture-and-wallpaper"],
-  "packers-movers": ["local-shifting", "intercity-relocation", "vehicle-transport", "office-relocation"],
-  tutors: ["maths-tutor", "science-tutor", "english-tutor", "music-teacher", "competitive-exam-coaching"],
-  "beauty-salon": ["salon-at-home-women", "men-s-grooming", "bridal-makeup", "spa-and-massage"],
-  "vehicle-repair": ["car-service", "bike-service", "car-wash-and-detailing", "tyre-and-puncture", "car-ac-repair"],
-};
+/** The default categories and subcategories every install gets (server/prisma/data/categories.json, created by bootstrap). */
+const SEEDED: Record<string, string[]> = Object.fromEntries(
+  (JSON.parse(readFileSync(new URL("../../server/prisma/data/categories.json", import.meta.url), "utf8")) as { slug: string; subcategories: { slug: string }[] }[]).map(
+    (c) => [c.slug, c.subcategories.map((s) => s.slug)],
+  ),
+);
 
 // The root layout adds " | DialNFind" (13 characters); 50 keeps the full title near Google's ~60-character cut-off.
 const MAX_TITLE = 50;

@@ -17,8 +17,12 @@ storage.set(STORAGE_KEYS.onboarded, "1");
 jest.setTimeout(60000);
 
 const apiUp = isApiUp();
-const describeLive = apiUp ? describe : describe.skip;
+// The customer account from server/scripts/smoke-fixtures.ts (run after `pnpm --filter server db:bootstrap`).
+const PASSWORD = process.env.E2E_PASSWORD ?? "";
+const CUSTOMER = process.env.E2E_CUSTOMER_EMAIL ?? "smoke.customer@example.com";
+const describeLive = apiUp && PASSWORD ? describe : describe.skip;
 if (!apiUp) console.warn("API is not running on :4000; skipping the app walkthrough.");
+else if (!PASSWORD) console.warn("E2E_PASSWORD is not set (the smoke-fixtures password); skipping the app walkthrough.");
 
 const find = (text: string | RegExp) =>
   waitFor(() => expect(screen.getAllByText(text)[0]).toBeOnTheScreen(), { timeout: 8000 });
@@ -57,8 +61,8 @@ describeLive("DialNFind app on Android", () => {
     await find("Welcome back");
     fireEvent.press(screen.getAllByText("Sign in").at(-1)!);
     await find("Enter your email address");
-    fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "demo@dialnfind.com");
-    fireEvent.changeText(screen.getByPlaceholderText("Your password"), "password123");
+    fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), CUSTOMER);
+    fireEvent.changeText(screen.getByPlaceholderText("Your password"), PASSWORD);
     fireEvent.press(screen.getAllByText("Sign in").at(-1)!);
     await waitFor(() => expect(useAuthStore.getState().token).toBeTruthy());
     await waitFor(() => expect(screen.getByLabelText("Your profile")).toBeOnTheScreen());
@@ -109,7 +113,7 @@ describeLive("DialNFind app on Android", () => {
       require("./helpers/liveApi").curl("http://localhost:4000/api/v1/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: "demo@dialnfind.com", password: "password123" }),
+        body: JSON.stringify({ email: CUSTOMER, password: PASSWORD }),
       }).body,
     ) as { token: string; user: Parameters<ReturnType<typeof useAuthStore.getState>["signIn"]>[1] };
     act(() => useAuthStore.getState().signIn(login.token, login.user));

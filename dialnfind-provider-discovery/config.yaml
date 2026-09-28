@@ -1,0 +1,830 @@
+# dialnfind provider discovery configuration.
+# Precedence: built-in defaults < this file < environment (.env) < CLI flags.
+
+city: Siliguri
+state: West Bengal
+country: India
+
+# Put a real address here (or CONTACT_EMAIL in .env). It is sent in the User-Agent
+# so website owners can contact you about the crawler.
+contact_email: ""
+
+output_dir: output
+state_db: output/discovery.db
+max_results: 20000             # cap on discovered candidates across all sources
+
+# Category slugs of the dialnfind server; every category rule below must map onto them.
+dialnfind_categories: ../server/prisma/data/categories.json
+
+crawler:
+  request_delay: 2            # seconds between requests to the same domain (minimum 1)
+  max_pages_per_domain: 5
+  timeout: 15
+  max_retries: 2              # retries for temporary errors (429/5xx/network); never infinite
+  max_concurrent_domains: 3   # domains crawled in parallel; one request at a time per domain
+  max_response_bytes: 3000000
+  max_redirects: 5
+  max_attempts_per_url: 3     # across --resume runs
+  robots_cache_hours: 24
+  max_crawl_delay: 120        # sites asking for a longer Crawl-delay are skipped
+
+scoring:
+  minimum_relevance: 50       # main CSV threshold (overridden by --min-score)
+  minimum_quality: 40         # below this -> review CSV
+  reject_below_relevance: 20  # below this -> rejected entirely
+
+sources:
+  osm: true
+  overture: true              # Overture Maps places (open data, needs `duckdb`)
+  foursquare: false           # Foursquare OS Places; needs FSQ_TOKEN + FSQ_RELEASE_DATE in .env
+  websites: true
+  manual_urls: true
+  licensed_search_api: false  # Brave / Google CSE; turn on once BRAVE_SEARCH_API_KEY is in .env
+  directories: false
+
+# Which source wins when merged records disagree (first = highest priority).
+source_priority: [website, overture, fsq, osm, directory, search_api, manual]
+
+osm:
+  # One small bounding-box query per run. Endpoints are tried in order; the next one
+  # is used only if the previous fails (public servers are often busy).
+  endpoints:
+    - https://overpass-api.de/api/interpreter
+    - https://overpass.kumi.systems/api/interpreter
+    - https://overpass.private.coffee/api/interpreter
+  request_delay: 5            # seconds between Overpass requests (fair-use policy)
+  timeout: 90                 # server-side query timeout, seconds
+  # Search area [south, west, north, east]. Empty = one cached Nominatim lookup of the city.
+  # Siliguri example: [26.64, 88.38, 26.79, 88.49]
+  bbox: []
+  bbox_padding_km: 2          # widen the looked-up city box (suburbs, Matigara, NJP...)
+  cache_hours: 168
+
+overture:
+  release: 2026-09-23.1       # https://docs.overturemaps.org/release/latest/
+  s3_region: us-west-2
+  min_confidence: 0.3         # Overture's existence score; real local shops often sit at 0.3-0.5
+  cache_hours: 720            # extract cached as output/overture_*.parquet
+
+foursquare:
+  release_date: ""            # dt= folder of the Hugging Face release, e.g. 2025-09-09 (or FSQ_RELEASE_DATE)
+  max_age_days: 730           # skip places not refreshed for two years
+  cache_hours: 720
+
+search_api:
+  provider: brave             # brave | google_cse  (keys go in .env)
+  results_per_query: 10
+  request_delay: 1.5
+  cache_hours: 168
+  max_queries_per_category: 2  # x 69 rules = about 140 queries per run
+
+geocoding:
+  enabled: false
+  provider: none              # none | nominatim | opencage
+  request_delay: 1.1          # Nominatim policy: max 1 request/second
+  cache_hours: 720
+
+extraction:
+  include_description: true   # short meta/JSON-LD description, truncated
+  description_max_chars: 300
+
+dedup:
+  name_merge_threshold: 92      # fuzzy name score needed to auto-merge (with location agreement)
+  name_candidate_threshold: 85  # fuzzy name score that flags duplicate_candidate (no merge)
+  address_match_threshold: 85
+  shared_hosting_domains:
+    - blogspot.com
+    - wordpress.com
+    - wixsite.com
+    - weebly.com
+    - github.io
+    - godaddysites.com
+    - webnode.page
+    - jimdosite.com
+    - site123.me
+    - netlify.app
+    - vercel.app
+
+# Never fetched by any source. Includes sites whose terms forbid automated access,
+# login-walled social networks, and map/search result pages.
+# Patterns: exact domain (also blocks subdomains) or wildcard TLD like "google.*".
+blocked_domains:
+  - google.*
+  - goo.gl
+  - g.page
+  - g.co
+  - business.site
+  - bing.com
+  - yahoo.com
+  - duckduckgo.com
+  - justdial.com
+  - jdmagicbox.com
+  - indiamart.com
+  - tradeindia.com
+  - sulekha.com
+  - urbancompany.com
+  - facebook.com
+  - fb.com
+  - fb.me
+  - instagram.com
+  - linkedin.com
+  - twitter.com
+  - x.com
+  - youtube.com
+  - youtu.be
+  - pinterest.com
+  - whatsapp.com
+  - wa.me
+  - yelp.*
+  - tripadvisor.*
+  - zomato.com
+  - swiggy.com
+  - amazon.*
+  - flipkart.com
+  - apple.com
+  - wikipedia.org
+
+# Directories you have confirmed permit automated access (check their robots.txt AND terms).
+# Disabled by default. Each entry needs permission_confirmed: true to run.
+# seed_urls may use {city} and {category} placeholders.
+directories: []
+#  - name: example-directory
+#    permission_confirmed: true
+#    seed_urls:
+#      - https://directory.example.org/{city}/{category}
+
+# Per-city knowledge used only to recognise values that are literally present on a page.
+# Nothing here is ever written into a record unless the page/source mentions it.
+locations:
+  Siliguri:
+    aliases: [Shiliguri]
+    localities:
+      - Pradhan Nagar
+      - Sevoke Road
+      - Hill Cart Road
+      - Burdwan Road
+      - Hakimpara
+      - Ashrampara
+      - Subhash Pally
+      - Babupara
+      - Khalpara
+      - Deshbandhupara
+      - Shaktigarh
+      - Punjabipara
+      - Bhaktinagar
+      - Jyotinagar
+      - Haiderpara
+      - Hyderpara
+      - Milan More
+      - Champasari
+      - Matigara
+      - Salugara
+      - Salbari
+      - Dabgram
+      - Uttorayon
+      - Shivmandir
+      - Bidhan Road
+      - New Jalpaiguri
+      - Tinbatti More
+      - Darjeeling More
+      - Airview More
+      - Check Post
+      - Bagdogra
+      - Mallaguri
+      - Sukna
+
+# Category rules. There is one rule per dialnfind subcategory, plus one category-level rule per
+# category that catches businesses whose evidence doesn't name a specific service.
+# Rule names are listed in categories.txt, and `dialnfind:` maps each rule onto the slugs in
+# ../server/prisma/data/categories.json. The CLI refuses to run if any mapping is unknown.
+#
+# Evidence per rule:
+#   keywords       phrases looked for in the name (weak) and in page text, JSON-LD and OSM descriptions
+#   queries        Brave / Google search queries; the city is appended
+#   osm_tags       OSM tags that on their own mean the service is offered (strong)
+#   osm_weak_tags  shop types that only suggest it and need a name match (osm_name_regex or keywords)
+#   osm_name_regex name pattern (POSIX ERE and Python compatible) that corroborates weak tags
+#   overture / overture_weak   Overture taxonomy ids (taxonomy.primary or hierarchy), strong / weak
+#   fsq / fsq_weak             Foursquare category names (last label segment), strong / weak
+# A strong tag belongs to exactly one rule; the build warns otherwise. Tags shared by a
+# category's services (craft=electronics_repair) are strong on the category-level rule and weak
+# on the specific ones, so a name like "... Mobile Repairing" picks the specific service.
+category_rules:
+  # --- Electronics Repair ----------------------------------------------------------------------
+  Electronics Repair:
+    dialnfind: {category: electronics-repair}
+    keywords: [electronics repair, electronic repair, electronics service, electronic service centre,
+               electronics service center, electronic works]
+    queries: [electronics repair, electronic repair shop]
+    osm_tags: [craft=electronics_repair, shop=electronics_repair]
+    overture: [electronics_repair_shop]
+    overture_weak: [electronics_store, electronic_parts_supplier]
+    fsq: [electronics repair shop]
+    osm_name_regex: "electronic.*(repair|service|care|works)"
+  TV Repair:
+    dialnfind: {category: electronics-repair, subcategory: tv-repair}
+    keywords: [tv repair, television repair, led tv repair, lcd tv repair, smart tv repair, tv service,
+               tv servicing, tv repairing, tv mechanic, led repair]
+    queries: [TV repair, LED TV repair, smart TV repair]
+    osm_weak_tags: [craft=electronics_repair, shop=electronics_repair, shop=electronics, shop=television]
+    overture_weak: [electronics_repair_shop, electronics_store]
+    osm_name_regex: "\\btv\\b|television|led repair"
+  Mobile Phone Repair:
+    dialnfind: {category: electronics-repair, subcategory: mobile-phone-repair}
+    keywords: [mobile repair, mobile repairing, mobile phone repair, phone repair, smartphone repair,
+               cell phone repair, mobile service, mobile service centre, mobile service center,
+               mobile screen replacement, iphone repair, mobile care]
+    queries: [mobile repair, mobile phone repair shop]
+    osm_weak_tags: [craft=electronics_repair, shop=mobile_phone, shop=electronics_repair]
+    overture: [mobile_phone_repair]
+    overture_weak: [mobile_phone_store, electronics_repair_shop, mobile_phone_accessory_store]
+    fsq: [mobile phone repair shop]
+    fsq_weak: [mobile phone store]
+    osm_name_regex: "mobile.*(repair|service|care|clinic|point|solution)|phone repair|cell ?care|i ?care"
+  Laptop & Computer Repair:
+    dialnfind: {category: electronics-repair, subcategory: laptop-and-computer-repair}
+    keywords: [laptop repair, computer repair, pc repair, desktop repair, computer service, laptop service,
+               computer servicing, laptop servicing, computer hardware repair, motherboard repair,
+               laptop screen replacement, data recovery, printer repair]
+    queries: [laptop repair, computer repair, laptop service center]
+    osm_tags: [craft=computer_repair]
+    osm_weak_tags: [shop=computer, craft=electronics_repair]
+    overture: [it_service_and_computer_repair]
+    overture_weak: [computer_store, computer_hardware_company, electronics_repair_shop]
+    fsq: [computer repair service]
+    fsq_weak: [computer store]
+    osm_name_regex: "laptop|computer.*(repair|service|care|solution|clinic)|\\bpc\\b.*(repair|care)|infotech|computers?$"
+  Home Theatre & Audio Repair:
+    dialnfind: {category: electronics-repair, subcategory: home-theatre-and-audio-repair}
+    keywords: [home theatre repair, home theater repair, speaker repair, amplifier repair, audio repair,
+               music system repair, sound system repair, car stereo installation]
+    queries: [home theatre repair, speaker repair]
+    osm_weak_tags: [craft=electronics_repair, shop=hifi]
+    overture: [car_stereo_installation]
+    overture_weak: [electronics_repair_shop, car_stereo_store]
+    osm_name_regex: "sound|audio|speaker|amplifier|home theat"
+  CCTV Installation:
+    dialnfind: {category: electronics-repair, subcategory: cctv-installation}
+    keywords: [cctv installation, cctv camera installation, cctv service, cctv repair, cctv camera, cctv dealer,
+               security camera installation, surveillance system, access control, biometric attendance,
+               video door phone, fire alarm system]
+    queries: [CCTV installation, CCTV camera installation]
+    osm_weak_tags: [shop=security, craft=security]
+    overture: [home_security]
+    overture_weak: [security_service, fire_protection_service]
+    fsq: [security system service]
+    osm_name_regex: "cctv|security system|surveillance"
+
+  # --- Home Appliances -------------------------------------------------------------------------
+  Home Appliances:
+    dialnfind: {category: home-appliances}
+    keywords: [home appliance repair, appliance repair, appliances repair, home appliances service,
+               appliance service, appliance service centre, appliance service center, appliance care]
+    queries: [home appliance repair, appliance repair service]
+    overture: [appliance_repair_service]
+    overture_weak: [appliance_store]
+    fsq: [appliance repair service]
+    osm_weak_tags: [shop=appliance, craft=electronics_repair]
+    osm_name_regex: "appliance.*(repair|service|care)|service cent(er|re)"
+  AC Repair & Service:
+    dialnfind: {category: home-appliances, subcategory: ac-repair-and-service}
+    keywords: [ac repair, ac service, ac services, ac servicing, ac maintenance, ac mechanic, ac installation,
+               air conditioner repair, air conditioner service, air conditioning repair, air conditioning service,
+               split ac, window ac, hvac, gas refilling, ac gas filling, refrigeration and air conditioning]
+    queries: [AC repair, AC service, air conditioner repair]
+    osm_tags: [craft=hvac]
+    osm_weak_tags: [shop=air_conditioning, shop=appliance, craft=electronics_repair]
+    overture: [hvac_service]
+    overture_weak: [appliance_repair_service, appliance_store]
+    fsq: [hvac contractor]
+    osm_name_regex: "\\bac\\b|a\\.c\\.|air ?condition|hvac|cooling|refrigeration"
+  Refrigerator Repair:
+    dialnfind: {category: home-appliances, subcategory: refrigerator-repair}
+    keywords: [refrigerator repair, fridge repair, refrigerator service, fridge service, refrigeration service,
+               refrigerator servicing, deep freezer repair, visi cooler repair]
+    queries: [refrigerator repair, fridge repair]
+    overture: [commercial_refrigeration]
+    overture_weak: [appliance_repair_service, appliance_store]
+    osm_weak_tags: [craft=electronics_repair, shop=appliance]
+    osm_name_regex: "fridge|refrigerat"
+  Washing Machine Repair:
+    dialnfind: {category: home-appliances, subcategory: washing-machine-repair}
+    keywords: [washing machine repair, washing machine service, washing machine servicing,
+               front load washing machine, top load washing machine]
+    queries: [washing machine repair, washing machine service]
+    overture_weak: [appliance_repair_service, appliance_store]
+    osm_weak_tags: [craft=electronics_repair, shop=appliance]
+    osm_name_regex: "washing machine"
+  Microwave Repair:
+    dialnfind: {category: home-appliances, subcategory: microwave-repair}
+    keywords: [microwave repair, microwave oven repair, microwave service, oven repair, otg repair]
+    queries: [microwave repair]
+    overture_weak: [appliance_repair_service, appliance_store]
+    osm_weak_tags: [craft=electronics_repair, shop=appliance]
+    osm_name_regex: "microwave"
+  Water Purifier Service:
+    dialnfind: {category: home-appliances, subcategory: water-purifier-service}
+    keywords: [ro service, ro repair, ro water purifier, water purifier service, water purifier repair,
+               ro installation, aquaguard service, kent ro service, water filter service, ro amc]
+    queries: [RO service, water purifier service, RO repair]
+    osm_weak_tags: [shop=water_purifier, shop=appliance]
+    overture: [water_purification_service]
+    overture_weak: [b2b_water_treatment_service, appliance_store]
+    fsq: [water treatment service]
+    osm_name_regex: "water purifier|aquaguard|kent ro|\\bro\\b|aqua|purifier"
+  Geyser Repair:
+    dialnfind: {category: home-appliances, subcategory: geyser-repair}
+    keywords: [geyser repair, water heater repair, geyser service, geyser installation, chimney repair,
+               chimney service, chimney cleaning]
+    queries: [geyser repair, chimney service]
+    overture_weak: [appliance_repair_service, appliance_store]
+    osm_weak_tags: [craft=electronics_repair, shop=appliance]
+    osm_name_regex: "geyser|water heater|chimney"
+
+  # --- Electricians ----------------------------------------------------------------------------
+  Electricians:
+    dialnfind: {category: electricians}
+    keywords: [electrician, electricians, electrical repair, electrical service, electrical services,
+               electrical work, electrical works, electrical contractor, electric works]
+    queries: [electrician, electrician service, electrical contractor]
+    osm_tags: [craft=electrician]
+    overture: [electrician]
+    overture_weak: [electrical_supply_store]
+    fsq: [electrician]
+    osm_weak_tags: [shop=electrical]
+    osm_name_regex: "electric(al|ian)s?.*(works|service|contractor|solution)|electrician"
+  Wiring & Rewiring:
+    dialnfind: {category: electricians, subcategory: wiring-and-rewiring}
+    keywords: [house wiring, wiring work, rewiring, concealed wiring, electrical wiring, internal wiring]
+    queries: [house wiring electrician]
+    osm_weak_tags: [craft=electrician]
+    overture_weak: [electrician]
+    osm_name_regex: "wiring"
+  Fan & Light Installation:
+    dialnfind: {category: electricians, subcategory: fan-and-light-installation}
+    keywords: [fan repair, fan installation, light installation, light fitting, fan fitting, ceiling fan,
+               lighting installation, decorative lighting]
+    queries: [fan repair, light fitting electrician]
+    osm_weak_tags: [craft=electrician, shop=lighting]
+    overture_weak: [electrician, lighting_store]
+    osm_name_regex: "\\bfans?\\b|light(ing)? (fitting|installation)"
+  Inverter & Battery:
+    dialnfind: {category: electricians, subcategory: inverter-and-battery}
+    keywords: [inverter installation, inverter repair, inverter service, battery service, ups repair,
+               ups service, battery replacement, solar installation, solar panel installation]
+    queries: [inverter repair, inverter battery service]
+    overture: [solar_installation]
+    overture_weak: [battery_store, electrician, electrical_supply_store]
+    osm_weak_tags: [craft=electrician, shop=batteries]
+    osm_name_regex: "inverter|\\bups\\b|battery|batteries|solar"
+  Switchboard Repair:
+    dialnfind: {category: electricians, subcategory: switchboard-repair}
+    keywords: [switchboard repair, switch board repair, mcb installation, db box, distribution board,
+               socket repair, short circuit repair]
+    queries: [switchboard repair electrician]
+    osm_weak_tags: [craft=electrician]
+    overture_weak: [electrician]
+    osm_name_regex: "switch ?board|\\bmcb\\b"
+  Electrical Safety Inspection:
+    dialnfind: {category: electricians, subcategory: electrical-safety-inspection}
+    keywords: [electrical safety inspection, electrical audit, electrical safety audit, earthing,
+               earthing work, lightning arrester, electrical testing]
+    queries: [electrical safety audit, earthing work]
+    osm_weak_tags: [craft=electrician]
+    overture_weak: [electrician]
+    osm_name_regex: "earthing|electrical (audit|safety|testing)"
+
+  # --- Plumbing --------------------------------------------------------------------------------
+  Plumbing:
+    dialnfind: {category: plumbing}
+    keywords: [plumber, plumbers, plumbing, plumbing service, plumbing services, plumbing works,
+               plumbing contractor, sanitary fitting, sanitary works, pipe fitting]
+    queries: [plumber, plumbing service]
+    osm_tags: [craft=plumber]
+    overture: [plumbing]
+    overture_weak: [kitchen_and_bath_store]
+    fsq: [plumber]
+    osm_weak_tags: [shop=bathroom_furnishing]
+    osm_name_regex: "plumb|sanitary"
+  Leak Repair:
+    dialnfind: {category: plumbing, subcategory: leak-repair}
+    keywords: [leak repair, leakage repair, pipe repair, pipe leakage, tap repair, faucet repair,
+               water leakage, seepage repair]
+    queries: [leakage repair plumber]
+    osm_weak_tags: [craft=plumber]
+    overture_weak: [plumbing]
+    osm_name_regex: "leak"
+  Bathroom Fitting:
+    dialnfind: {category: plumbing, subcategory: bathroom-fitting}
+    keywords: [bathroom fitting, bathroom fittings, sanitary fitting, sanitaryware installation, shower installation,
+               bathroom renovation, cp fitting, commode installation]
+    queries: [bathroom fitting plumber]
+    osm_weak_tags: [craft=plumber, shop=bathroom_furnishing]
+    overture_weak: [plumbing, kitchen_and_bath_store]
+    osm_name_regex: "bath"
+  Water Tank Cleaning:
+    dialnfind: {category: plumbing, subcategory: water-tank-cleaning}
+    keywords: [water tank cleaning, tank cleaning, overhead tank cleaning, underground tank cleaning,
+               sump cleaning]
+    queries: [water tank cleaning]
+    osm_weak_tags: [craft=plumber]
+    overture_weak: [plumbing, home_cleaning]
+    osm_name_regex: "tank clean"
+  Drain Unblocking:
+    dialnfind: {category: plumbing, subcategory: drain-unblocking}
+    keywords: [drain cleaning, drain blockage, drain unblocking, sewer cleaning, septic tank cleaning,
+               blockage removal, choke removal]
+    queries: [drain cleaning, septic tank cleaning]
+    osm_weak_tags: [craft=plumber]
+    overture: [septic_services]
+    overture_weak: [plumbing]
+    osm_name_regex: "drain|septic|sewer"
+  Motor & Pump Repair:
+    dialnfind: {category: plumbing, subcategory: motor-and-pump-repair}
+    keywords: [motor repair, pump repair, water pump repair, submersible pump, motor rewinding,
+               pump installation, borewell]
+    queries: [water pump repair, motor rewinding]
+    osm_weak_tags: [craft=plumber, craft=electrician]
+    overture_weak: [plumbing]
+    osm_name_regex: "motor (repair|rewind|works)|pump|borewell|rewinding"
+
+  # --- Carpentry -------------------------------------------------------------------------------
+  Carpentry:
+    dialnfind: {category: carpentry}
+    keywords: [carpenter, carpenters, carpentry, carpentry work, carpentry works, wood work, woodwork,
+               wooden work, furniture work]
+    queries: [carpenter, carpentry service]
+    osm_tags: [craft=carpenter, craft=joiner, craft=cabinet_maker]
+    overture: [carpenter]
+    overture_weak: [furniture_manufacturer, woodworking_supply_store]
+    fsq: [carpenter]
+    osm_name_regex: "carpent|wood ?work|timber"
+  Furniture Repair:
+    dialnfind: {category: carpentry, subcategory: furniture-repair}
+    keywords: [furniture repair, sofa repair, chair repair, bed repair, furniture polish, sofa making]
+    queries: [furniture repair]
+    overture: [furniture_repair]
+    overture_weak: [furniture_store, furniture_manufacturer]
+    osm_weak_tags: [craft=carpenter, craft=upholsterer, shop=furniture]
+    osm_name_regex: "furniture (repair|polish|works)|sofa (repair|making)"
+  Modular Kitchen:
+    dialnfind: {category: carpentry, subcategory: modular-kitchen}
+    keywords: [modular kitchen, modular kitchens, kitchen cabinet, kitchen cabinets, modular wardrobe,
+               kitchen interior]
+    queries: [modular kitchen]
+    overture_weak: [interior_design, kitchen_and_bath_store, furniture_store, kitchen_supply_store]
+    osm_weak_tags: [shop=kitchen, craft=carpenter, shop=interior_decoration]
+    osm_name_regex: "modular|kitchen"
+  Door & Window Work:
+    dialnfind: {category: carpentry, subcategory: door-and-window-work}
+    keywords: [door repair, door fitting, door installation, window installation, window repair,
+               upvc windows, aluminium windows, aluminium partition, sliding window, wooden doors]
+    queries: [door and window work, aluminium window fitting]
+    overture: [windows_installation]
+    overture_weak: [glass_and_mirror_sales_service]
+    osm_weak_tags: [craft=carpenter, craft=window_construction, shop=doors]
+    osm_name_regex: "\\bdoors?\\b|windows?|upvc|alumin"
+  Custom Furniture:
+    dialnfind: {category: carpentry, subcategory: custom-furniture}
+    keywords: [custom furniture, furniture making, furniture manufacturer, wardrobe making, made to order furniture,
+               furniture assembly]
+    queries: [custom furniture maker]
+    overture: [furniture_assembly]
+    overture_weak: [furniture_manufacturer, furniture_store]
+    osm_weak_tags: [craft=carpenter, shop=furniture]
+    osm_name_regex: "furniture (making|maker|works|house|industr)|interiors?$"
+
+  # --- Cleaning Services -----------------------------------------------------------------------
+  Cleaning Services:
+    dialnfind: {category: cleaning}
+    keywords: [cleaning service, cleaning services, house cleaning, home cleaning, housekeeping service,
+               housekeeping services, facility management, cleaning company]
+    queries: [cleaning service, home cleaning service]
+    osm_tags: [craft=cleaning, office=cleaning]
+    overture: [home_cleaning]
+    fsq: [housekeeping service]
+    osm_name_regex: "cleaning|housekeeping|facility"
+    negative_keywords: [dry cleaning, dry cleaner, laundry]
+  Home Deep Cleaning:
+    dialnfind: {category: cleaning, subcategory: home-deep-cleaning}
+    keywords: [deep cleaning, home deep cleaning, full home cleaning, move in cleaning, move out cleaning]
+    queries: [home deep cleaning]
+    overture_weak: [home_cleaning]
+    osm_weak_tags: [craft=cleaning]
+    osm_name_regex: "deep clean"
+  Sofa & Carpet Cleaning:
+    dialnfind: {category: cleaning, subcategory: sofa-and-carpet-cleaning}
+    keywords: [sofa cleaning, carpet cleaning, upholstery cleaning, mattress cleaning, sofa shampooing,
+               carpet shampooing]
+    queries: [sofa cleaning, carpet cleaning]
+    overture: [carpet_cleaning]
+    overture_weak: [home_cleaning]
+    osm_weak_tags: [craft=cleaning]
+    osm_name_regex: "sofa|carpet|upholster"
+  Bathroom Cleaning:
+    dialnfind: {category: cleaning, subcategory: bathroom-cleaning}
+    keywords: [bathroom cleaning, toilet cleaning, washroom cleaning, tile cleaning]
+    queries: [bathroom cleaning service]
+    overture_weak: [home_cleaning]
+    osm_weak_tags: [craft=cleaning]
+    osm_name_regex: "bathroom clean|washroom"
+  Kitchen Cleaning:
+    dialnfind: {category: cleaning, subcategory: kitchen-cleaning}
+    keywords: [kitchen cleaning, kitchen deep cleaning, chimney cleaning, kitchen degreasing]
+    queries: [kitchen cleaning service]
+    overture_weak: [home_cleaning]
+    osm_weak_tags: [craft=cleaning]
+    osm_name_regex: "kitchen clean"
+  Office Cleaning:
+    dialnfind: {category: cleaning, subcategory: office-cleaning}
+    keywords: [office cleaning, commercial cleaning, facility management, housekeeping services,
+               manpower and housekeeping]
+    queries: [office cleaning service, facility management]
+    overture: [janitorial_service, commercial_cleaning]
+    overture_weak: [home_cleaning]
+    osm_weak_tags: [office=cleaning, craft=cleaning]
+    osm_name_regex: "facility|housekeeping|office clean"
+
+  # --- Pest Control ----------------------------------------------------------------------------
+  Pest Control:
+    dialnfind: {category: pest-control}
+    keywords: [pest control, pest control service, pest control services, pest management, fumigation,
+               disinfection service, sanitization service]
+    queries: [pest control, pest control service]
+    overture: [pest_control_service]
+    fsq: [pest control service]
+    osm_tags: [craft=pest_control, shop=pest_control]
+    osm_name_regex: "pest|fumigat"
+  Cockroach Control:
+    dialnfind: {category: pest-control, subcategory: cockroach-control}
+    keywords: [cockroach control, cockroach treatment, gel treatment]
+    queries: [cockroach control]
+    overture_weak: [pest_control_service]
+    osm_name_regex: "cockroach"
+  Termite Treatment:
+    dialnfind: {category: pest-control, subcategory: termite-treatment}
+    keywords: [termite control, termite treatment, anti termite, anti-termite treatment, white ant control]
+    queries: [termite treatment, anti termite treatment]
+    overture_weak: [pest_control_service]
+    osm_name_regex: "termite"
+  Bed Bug Treatment:
+    dialnfind: {category: pest-control, subcategory: bed-bug-treatment}
+    keywords: [bed bug treatment, bed bug control, bedbug control]
+    queries: [bed bug treatment]
+    overture_weak: [pest_control_service]
+    osm_name_regex: "bed ?bug"
+  Mosquito Control:
+    dialnfind: {category: pest-control, subcategory: mosquito-control}
+    keywords: [mosquito control, mosquito fogging, fogging service, mosquito treatment]
+    queries: [mosquito control, fogging service]
+    overture_weak: [pest_control_service]
+    osm_name_regex: "mosquito|fogging"
+  Rodent Control:
+    dialnfind: {category: pest-control, subcategory: rodent-control}
+    keywords: [rodent control, rat control, rat treatment, rodent treatment]
+    queries: [rat control, rodent control]
+    overture_weak: [pest_control_service]
+    osm_name_regex: "rodent|\\brats?\\b"
+
+  # --- Painting --------------------------------------------------------------------------------
+  Painting:
+    dialnfind: {category: painting}
+    keywords: [painter, painters, painting service, painting services, painting contractor, painting contractors,
+               house painting, wall painting, home painting, painting work, painting works]
+    queries: [painter, house painting service, painting contractor]
+    osm_tags: [craft=painter]
+    overture: [painting]
+    overture_weak: [paint_store]
+    fsq: [painter]
+    osm_weak_tags: [shop=paint]
+    osm_name_regex: "painter|painting"
+  Interior Painting:
+    dialnfind: {category: painting, subcategory: interior-painting}
+    keywords: [interior painting, interior wall painting, room painting, putty work, pop work, false ceiling]
+    queries: [interior painting]
+    osm_weak_tags: [craft=painter]
+    overture_weak: [painting]
+    osm_name_regex: "interior paint|putty|\\bpop\\b"
+  Exterior Painting:
+    dialnfind: {category: painting, subcategory: exterior-painting}
+    keywords: [exterior painting, exterior wall painting, building painting, outer wall painting]
+    queries: [exterior painting]
+    osm_weak_tags: [craft=painter]
+    overture_weak: [painting]
+    osm_name_regex: "exterior"
+  Waterproofing:
+    dialnfind: {category: painting, subcategory: waterproofing}
+    keywords: [waterproofing, water proofing, roof waterproofing, terrace waterproofing, damp proofing,
+               seepage treatment]
+    queries: [waterproofing service]
+    overture: [waterproofing]
+    overture_weak: [painting]
+    osm_weak_tags: [craft=painter, craft=roofer]
+    osm_name_regex: "water ?proof|damp"
+  Texture & Wallpaper:
+    dialnfind: {category: painting, subcategory: texture-and-wallpaper}
+    keywords: [texture painting, texture paint, wallpaper, wall paper, stencil painting, wall art, 3d wallpaper]
+    queries: [wallpaper installation, texture painting]
+    overture_weak: [painting, interior_design]
+    osm_weak_tags: [craft=painter, shop=wallpaper]
+    osm_name_regex: "texture|wall ?paper|wall art"
+
+  # --- Packers & Movers ------------------------------------------------------------------------
+  Packers & Movers:
+    dialnfind: {category: packers-movers}
+    keywords: [packers and movers, packers & movers, packers movers, movers and packers, relocation service,
+               shifting service, household shifting, home shifting]
+    queries: [packers and movers, relocation service]
+    overture: [mover]
+    overture_weak: [freight_and_cargo_service]
+    fsq: [moving company]
+    osm_weak_tags: [office=moving_company, shop=storage_rental]
+    osm_name_regex: "packers|movers|relocation|shifting"
+  Local Shifting:
+    dialnfind: {category: packers-movers, subcategory: local-shifting}
+    keywords: [local shifting, house shifting, home shifting, household shifting, local relocation, tempo service]
+    queries: [local house shifting]
+    overture_weak: [mover]
+    osm_name_regex: "house shifting|local shifting|tempo"
+  Intercity Relocation:
+    dialnfind: {category: packers-movers, subcategory: intercity-relocation}
+    keywords: [intercity relocation, domestic relocation, all india relocation, long distance moving,
+               intercity shifting]
+    queries: [intercity relocation packers]
+    overture_weak: [mover, freight_and_cargo_service]
+    osm_name_regex: "all india|intercity|domestic relocation"
+  Vehicle Transport:
+    dialnfind: {category: packers-movers, subcategory: vehicle-transport}
+    keywords: [car transport, bike transport, vehicle transport, car carrier, two wheeler transport]
+    queries: [car transport service, bike transport]
+    overture_weak: [mover, freight_and_cargo_service]
+    osm_name_regex: "car carrier|vehicle transport|bike transport|car transport"
+  Office Relocation:
+    dialnfind: {category: packers-movers, subcategory: office-relocation}
+    keywords: [office relocation, office shifting, corporate relocation, commercial relocation]
+    queries: [office shifting]
+    overture_weak: [mover]
+    osm_name_regex: "office (shifting|relocation)"
+
+  # --- Tutors ----------------------------------------------------------------------------------
+  Tutors:
+    dialnfind: {category: tutors}
+    keywords: [tutor, tutors, home tutor, home tuition, private tuition, tuition, tuition classes, tutorial,
+               tutorials, coaching classes, coaching centre, coaching center]
+    queries: [home tutor, tuition classes]
+    overture: [tutoring_service]
+    fsq: [tutoring service]
+    osm_weak_tags: [amenity=prep_school, office=tutoring]
+    osm_name_regex: "tutor|tuition|coaching|classes|academy"
+  Maths Tutor:
+    dialnfind: {category: tutors, subcategory: maths-tutor}
+    keywords: [maths tutor, math tutor, maths tuition, mathematics tuition, maths classes, mathematics classes]
+    queries: [maths tutor]
+    overture_weak: [tutoring_service]
+    osm_name_regex: "math"
+  Science Tutor:
+    dialnfind: {category: tutors, subcategory: science-tutor}
+    keywords: [science tutor, science tuition, physics tuition, chemistry tuition, biology tuition,
+               physics classes, chemistry classes]
+    queries: [science tuition, physics tuition]
+    overture_weak: [tutoring_service]
+    osm_name_regex: "science|physics|chemistry|biology"
+  English Tutor:
+    dialnfind: {category: tutors, subcategory: english-tutor}
+    keywords: [english tutor, english tuition, spoken english, english speaking course, english classes,
+               ielts coaching]
+    queries: [spoken english classes]
+    overture: [language_school]
+    overture_weak: [tutoring_service]
+    osm_weak_tags: [amenity=language_school]
+    osm_name_regex: "english|ielts"
+  Music Teacher:
+    dialnfind: {category: tutors, subcategory: music-teacher}
+    keywords: [music teacher, music classes, guitar classes, keyboard classes, vocal classes, music academy,
+               music school, tabla classes, piano classes]
+    queries: [music classes, guitar classes]
+    overture: [music_school]
+    overture_weak: [tutoring_service, art_school]
+    osm_weak_tags: [amenity=music_school]
+    osm_name_regex: "music|guitar|tabla|sangeet|vocal|piano"
+  Competitive Exam Coaching:
+    dialnfind: {category: tutors, subcategory: competitive-exam-coaching}
+    keywords: [competitive exam coaching, jee coaching, neet coaching, wbcs coaching, ssc coaching,
+               bank coaching, upsc coaching, entrance exam coaching, test preparation]
+    queries: [NEET coaching, JEE coaching, competitive exam coaching]
+    overture: [test_preparation]
+    overture_weak: [tutoring_service]
+    osm_name_regex: "\\bjee\\b|neet|wbcs|\\bssc\\b|upsc|competitive|entrance|career"
+
+  # --- Beauty & Salon --------------------------------------------------------------------------
+  Beauty & Salon:
+    dialnfind: {category: beauty-salon}
+    keywords: [beauty parlour, beauty parlor, beauty salon, salon, unisex salon, hair salon, beauty studio,
+               beauty care, makeover, nail studio, nail art]
+    queries: [beauty parlour, salon]
+    osm_tags: [shop=beauty]
+    overture: [beauty_salon, hair_salon, nail_salon]
+    overture_weak: [personal_or_beauty_service, skin_care_and_makeup]
+    fsq: [beauty salon, hair salon, nail salon]
+    osm_weak_tags: [shop=hairdresser]
+    osm_name_regex: "salon|parlou?r|beauty|makeover"
+  Salon at Home (Women):
+    dialnfind: {category: beauty-salon, subcategory: salon-at-home-women}
+    keywords: [salon at home, beauty services at home, home salon, parlour at home, beautician at home,
+               home service beautician]
+    queries: [salon at home, beautician at home]
+    overture_weak: [beauty_salon, makeup_artist]
+    osm_name_regex: "at home|home salon|doorstep"
+  Men's Grooming:
+    dialnfind: {category: beauty-salon, subcategory: men-s-grooming}
+    keywords: [men's salon, mens salon, gents salon, gents parlour, barber, barber shop, men's grooming,
+               hair cutting salon, unisex salon]
+    queries: [mens salon, barber shop]
+    osm_weak_tags: [shop=hairdresser]
+    overture: [barber]
+    overture_weak: [hair_salon, beauty_salon]
+    fsq: [barbershop]
+    osm_name_regex: "gents|\\bmen'?s\\b|barber|unisex|hair ?cut"
+  Bridal Makeup:
+    dialnfind: {category: beauty-salon, subcategory: bridal-makeup}
+    keywords: [bridal makeup, bridal make up, makeup artist, make up artist, party makeup, hd makeup,
+               airbrush makeup, bridal studio]
+    queries: [bridal makeup artist, makeup artist]
+    overture: [makeup_artist]
+    overture_weak: [beauty_salon, skin_care_and_makeup, bridal_shop]
+    fsq: [makeup artist]
+    osm_name_regex: "bridal|make ?up|mua\\b"
+  Spa & Massage:
+    dialnfind: {category: beauty-salon, subcategory: spa-and-massage}
+    keywords: [spa, day spa, massage, body massage, massage therapy, ayurvedic massage, thai spa]
+    queries: [spa, massage centre]
+    osm_tags: [shop=massage, leisure=spa]
+    overture: [spa, massage_therapy, day_spa, medical_spa]
+    overture_weak: [beauty_salon]
+    fsq: [spa, massage clinic]
+    osm_weak_tags: [amenity=spa]
+    osm_name_regex: "\\bspa\\b|massage"
+
+  # --- Vehicle Repair --------------------------------------------------------------------------
+  Vehicle Repair:
+    dialnfind: {category: vehicle-repair}
+    keywords: [garage, auto repair, vehicle repair, automobile repair, automobile service, motor works,
+               auto works, mechanic, service station, workshop]
+    queries: [vehicle repair garage, auto repair]
+    overture: [automotive_repair, automotive_service, engine_repair_service, auto_electrical_repair,
+               emergency_roadside_service, car_inspection]
+    overture_weak: [auto_dealer]
+    fsq: [automotive repair shop]
+    osm_weak_tags: [shop=car_parts]
+    osm_name_regex: "garage|auto ?(works|care|repair|service|mobile)|automobile|motor works|mechanic|service station|workshop"
+    negative_keywords: [restaurant, cafe, café, hotel, dhaba, bar, kitchen, bakery, resort]
+  Car Service:
+    dialnfind: {category: vehicle-repair, subcategory: car-service}
+    keywords: [car service, car repair, car servicing, car mechanic, car workshop, four wheeler service,
+               car garage, denting painting, car denting, car body repair]
+    queries: [car service, car repair workshop]
+    osm_tags: [shop=car_repair]
+    overture: [auto_body_shop, brake_service_and_repair, exhaust_and_muffler_repair, hybrid_car_repair,
+               auto_restoration_service, oil_change_station]
+    overture_weak: [automotive_repair, automotive_service, auto_dealer, used_auto_dealer]
+    fsq: [car repair shop]
+    osm_name_regex: "\\bcar\\b|four wheeler|4 ?wheeler|dent(ing)?"
+    negative_keywords: [restaurant, cafe, hotel, rental, rent a car, travels, tour]
+  Bike Service:
+    dialnfind: {category: vehicle-repair, subcategory: bike-service}
+    keywords: [bike service, bike repair, bike servicing, two wheeler service, two wheeler repair,
+               motorcycle repair, scooter repair, bike mechanic, bike garage]
+    queries: [bike service center, bike repair]
+    osm_tags: [shop=motorcycle_repair]
+    overture: [motorcycle_repair, bike_repair_maintenance]
+    overture_weak: [motorcycle_dealer, automotive_repair, bike_store, motorsport_vehicle_dealer]
+    fsq: [motorcycle repair shop]
+    osm_weak_tags: [shop=motorcycle, shop=bicycle]
+    osm_name_regex: "\\bbikes?\\b|motorcycle|scooter|two wheeler|2 ?wheeler|honda|hero|bajaj|tvs|yamaha|royal enfield"
+  Car Wash & Detailing:
+    dialnfind: {category: vehicle-repair, subcategory: car-wash-and-detailing}
+    keywords: [car wash, car washing, car detailing, car spa, ceramic coating, car polish, foam wash,
+               bike wash, auto detailing]
+    queries: [car wash, car detailing]
+    osm_tags: [amenity=car_wash]
+    overture: [car_wash, auto_detailing]
+    overture_weak: [auto_customization, automotive_service]
+    fsq: [car wash]
+    osm_name_regex: "car wash|detailing|car spa|ceramic|car care"
+  Tyre & Puncture:
+    dialnfind: {category: vehicle-repair, subcategory: tyre-and-puncture}
+    keywords: [tyre repair, tire repair, puncture repair, puncture shop, wheel alignment, wheel balancing,
+               tyre shop, tubeless tyre]
+    queries: [puncture repair, wheel alignment]
+    osm_tags: [shop=tyres]
+    overture: [tire_dealer_and_repair, tire_shop, tire_repair_shop]
+    overture_weak: [automotive_service]
+    fsq: [tire repair shop]
+    osm_name_regex: "tyre|tire|puncture|wheel (alignment|balancing)"
+  Car AC Repair:
+    dialnfind: {category: vehicle-repair, subcategory: car-ac-repair}
+    keywords: [car ac repair, car ac service, car air conditioning, car ac gas, auto ac, car ac]
+    queries: [car AC repair]
+    overture_weak: [automotive_repair, auto_electrical_repair, automotive_service]
+    osm_weak_tags: [shop=car_repair]
+    osm_name_regex: "car a\\.?c\\b|auto a\\.?c\\b|car air ?condition"

@@ -24,8 +24,10 @@ beforeEach(async () => {
 
 afterEach(async () => {
   vi.useRealTimers();
-  // Fire-and-forget work (notifications, emails) finishes before the next test empties the tables.
-  await new Promise((r) => setTimeout(r, 25));
+  // Fire-and-forget work (notifications, emails, website cache refreshes) finishes before the next test
+  // empties the tables; IDs restart after a reset, so a late write would land in the next test's rows.
+  // 100 ms leaves room for slow coverage runs.
+  await new Promise((r) => setTimeout(r, 100));
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });

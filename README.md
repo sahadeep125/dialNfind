@@ -31,9 +31,9 @@ cp web/.env.example web/.env.local
 cp provider/.env.example provider/.env
 cp super-admin/.env.example super-admin/.env
 
-# 3. Create the schema and load demo data
+# 3. Create the schema, a super admin, the default categories and the real Siliguri listings
 pnpm --filter server db:deploy
-pnpm --filter server db:seed
+BOOTSTRAP_ADMIN_EMAIL=you@example.com BOOTSTRAP_ADMIN_PASSWORD='a-long-password-1' pnpm --filter server db:bootstrap
 
 # 4. Run all four apps
 pnpm dev
@@ -78,23 +78,20 @@ A failed API call is never cached: the website shows an error, keeps serving the
 
 To clear the cache by hand (for example in `pnpm dev`, which also keeps fetched data): `rm -rf web/.next/cache`.
 
-`pnpm --filter server db:reset` drops and reseeds everything. `pnpm --filter server rank` recalculates ranking scores by hand; the nightly job does the same (see Scheduled jobs).
+`pnpm --filter server db:reset` drops everything and runs the bootstrap again (set `BOOTSTRAP_ADMIN_*` first). `pnpm --filter server rank` recalculates ranking scores by hand; the nightly job does the same (see Scheduled jobs).
 
-## Demo accounts
+## Data: one super admin, the default categories and real listings
 
-All demo accounts use the password `password123`.
+There is no demo data. A new database (local or production) gets what `pnpm --filter server db:bootstrap` adds, and deploys run the same step through `pnpm release`:
 
-| Account | Email | Use it for |
-| --- | --- | --- |
-| Customer | `demo@dialnfind.com` | Web dashboard: favourites, contact history, reviews |
-| Provider | `provider@dialnfind.com` | Provider portal with data: owns Sharma TV & Electronics Care, Pro plan |
-| New provider | `newprovider@dialnfind.com` | Provider portal empty state: onboarding or claiming a listing |
-| Super admin | `admin@dialnfind.com` | Admin console with every section, including Team |
-| Operations | `ops@dialnfind.com` | Admin console: providers, claims, verification, categories, reviews, support, leads |
-| Support agent | `support.agent@dialnfind.com` | Admin console: support tickets, reviews and reports, users |
-| Finance | `finance@dialnfind.com` | Admin console: plans, promotions, analytics |
+- one super admin from `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` (first run only);
+- plans, badges, settings and admin roles;
+- the default categories and subcategories from `server/prisma/data/categories.json`;
+- the real provider listings in `server/prisma/data/providers-*.json`: unclaimed, unverified and live. Many have no email; the business adds one after claiming.
 
-The seed also creates six sample support tickets. It creates 220 providers across 5 cities and 12 categories, with reviews, leads and 45 days of analytics. The default location is Sevoke Road, Siliguri.
+The listings were found by [`dialnfind-provider-discovery/`](dialnfind-provider-discovery/README.md) from open data (OpenStreetMap, Overture Maps and, optionally, Foursquare OS Places, a licensed search API and the businesses' own websites). The bundle is committed, so setting up a database never needs a new scrape. The import is idempotent: every source record is remembered in `provider_sources`, so a listing is imported once, and one the team deleted or edited is left alone. To add a new scrape to a running site, commit the new bundle and deploy, or run `pnpm --filter server db:import-providers`. `BOOTSTRAP_IMPORT_PROVIDERS=false` skips the import.
+
+For the smoke test and the mobile/web walkthroughs, `server/scripts/smoke-fixtures.ts` adds throwaway customer and provider accounts to a test database (never production); they use `SMOKE_PASSWORD`, which the walkthroughs read as `E2E_PASSWORD`.
 
 Claiming a listing needs an ownership document (trade licence, GST certificate, shop registration); the admin team approves it under Listing claims.
 
@@ -163,7 +160,7 @@ npm run typecheck && npm run lint
 npm test                  # walks the provider screens on the Android code path against the running API
 ```
 
-Demo login: `provider@dialnfind.com` / `password123` (has a business); `newprovider@dialnfind.com` goes through setup. Run only one Expo dev server at a time, or start the second with `--port 8082`. The tests call the API on `EXPO_PUBLIC_API_URL` (default `http://localhost:4000/api/v1`) and sign in once per account, because sign-in is rate limited.
+The walkthrough signs in as the smoke-fixture accounts: set `E2E_PASSWORD` (it skips without it); `smoke.provider@example.com` has a business and `smoke.newprovider@example.com` goes through setup. Run only one Expo dev server at a time, or start the second with `--port 8082`. The tests call the API on `EXPO_PUBLIC_API_URL` (default `http://localhost:4000/api/v1`) and sign in once per account, because sign-in is rate limited.
 
 ## Email, sign-in and security
 
@@ -214,8 +211,8 @@ All forms validate in the browser with the same rules the API enforces (`server/
 | `pnpm build` | Builds all apps |
 | `pnpm typecheck` | Type-checks all apps |
 | `pnpm --filter server db:migrate` | Creates a new migration after schema changes |
-| `pnpm --filter server db:seed` | Wipes the database and loads demo data (refused when `NODE_ENV=production`) |
-| `pnpm --filter server db:bootstrap` | Adds the plans, settings, categories and first super admin a new production database needs; safe to run on every deploy |
-| `pnpm --filter server smoke` | Calls every API endpoint as each role against the running server (reseed afterwards; restart the API first if you ran it recently, since it signs in often) |
+| `pnpm --filter server db:bootstrap` | Adds the plans, settings, categories, first super admin and the bundled provider listings; safe to run on every deploy |
+| `pnpm --filter server db:import-providers` | Imports only the provider bundles in `server/prisma/data/` (new source records only) |
+| `pnpm --filter server smoke` | Calls every API endpoint as each role against the running server. Test databases only: run `tsx scripts/smoke-fixtures.ts` first and set `SMOKE_PASSWORD` (restart the API first if you ran it recently, since it signs in often) |
 | `pnpm --filter server job <name>` | Runs one scheduled job now |
 | `pnpm --filter server move-documents` | Moves documents uploaded before they became private |

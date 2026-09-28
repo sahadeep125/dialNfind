@@ -1,0 +1,497 @@
+{
+  "metadata": {
+    "tool": "dialnfindProviderDiscovery/1.0.0",
+    "generated_at": "2026-09-28T13:09:56+00:00",
+    "disclaimer": "Discovered from public sources. These businesses have NOT joined dialnfind; records are unclaimed and unverified until the business claims its profile.",
+    "attribution": [
+      "© OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright)"
+    ],
+    "location": {
+      "city": "Siliguri",
+      "state": "West Bengal",
+      "country": "India"
+    },
+    "categories": [
+      "AC Repair",
+      "Electrician",
+      "Plumber",
+      "TV Repair",
+      "Refrigerator Repair",
+      "Washing Machine Repair",
+      "Home Appliance Repair",
+      "RO Service",
+      "Carpenter",
+      "Painter",
+      "Cleaning Service",
+      "CCTV Installation",
+      "Computer Repair",
+      "Laptop Repair",
+      "Mobile Repair"
+    ],
+    "sources_enabled": [
+      "osm",
+      "websites",
+      "manual_urls"
+    ],
+    "min_relevance": 50,
+    "min_quality": 40,
+    "stats": {
+      "discovered": 10,
+      "sites_total": 6,
+      "sites_crawled": 3,
+      "sites_skipped": 3,
+      "sites_failed": 0,
+      "raw_records": 7,
+      "valid": 7,
+      "duplicates": 2,
+      "duplicate_candidates": 2,
+      "rejected": 1,
+      "final": 4,
+      "needs_review": 2,
+      "below_threshold": 0,
+      "failed_queries": 0,
+      "exported": true,
+      "reject_reasons": {
+        "no matching category": 1
+      }
+    }
+  },
+  "providers": [
+    {
+      "provider_id": "nh_9c00c7fa60fd",
+      "provider_name": "CoolCare Appliances",
+      "normalized_name": "coolcare appliances",
+      "primary_category": "AC Repair",
+      "secondary_categories": [
+        "AC Installation",
+        "Gas Refilling",
+        "AC Cleaning"
+      ],
+      "phone": "+919933000001",
+      "additional_phones": [],
+      "whatsapp": "+919933000002",
+      "email": "info@coolcare-appliances.example",
+      "additional_emails": [],
+      "website": "https://coolcare-appliances.example/",
+      "address": "12 Sevoke Road, Siliguri, West Bengal, 734001",
+      "locality": "Sevoke Road",
+      "city": "Siliguri",
+      "state": "West Bengal",
+      "pincode": "734001",
+      "country": "India",
+      "latitude": 26.7271,
+      "longitude": 88.429,
+      "description": "AC repair and servicing for split and window air conditioners.",
+      "opening_hours": "Mo-Sa 09:00-20:00",
+      "hours_structured": [
+        {
+          "day": "Mo",
+          "opens": "09:00",
+          "closes": "20:00"
+        },
+        {
+          "day": "Tu",
+          "opens": "09:00",
+          "closes": "20:00"
+        },
+        {
+          "day": "We",
+          "opens": "09:00",
+          "closes": "20:00"
+        },
+        {
+          "day": "Th",
+          "opens": "09:00",
+          "closes": "20:00"
+        },
+        {
+          "day": "Fr",
+          "opens": "09:00",
+          "closes": "20:00"
+        },
+        {
+          "day": "Sa",
+          "opens": "09:00",
+          "closes": "20:00"
+        }
+      ],
+      "source_url": "https://coolcare-appliances.example/",
+      "source_domain": "coolcare-appliances.example",
+      "source_type": "discovered",
+      "source_urls": [
+        "https://coolcare-appliances.example/",
+        "https://www.openstreetmap.org/node/1001"
+      ],
+      "source_domains": [
+        "coolcare-appliances.example",
+        "openstreetmap.org"
+      ],
+      "source_types": [
+        "website",
+        "osm"
+      ],
+      "source_confidence": "high",
+      "discovery_query": "manual:urls.txt",
+      "is_claimed": false,
+      "claim_status": "unclaimed",
+      "verification_status": "none",
+      "data_quality_score": 100,
+      "relevance_score": 100,
+      "duplicate_candidate": true,
+      "duplicate_group_id": "dup_4ebb066e12",
+      "merged_record_count": 2,
+      "has_structured_data": true,
+      "classification_method": "rules",
+      "field_sources": {
+        "provider_name": "website:json-ld",
+        "whatsapp": "website:explicit whatsapp link/label",
+        "website": "website",
+        "description": "website:json-ld",
+        "opening_hours": "website:json-ld",
+        "address": "website",
+        "latitude": "website:json-ld",
+        "phone": "website:json-ld"
+      },
+      "score_breakdown": {
+        "relevance": {
+          "category_match": 30,
+          "service_match": 15,
+          "city_match": 20,
+          "phone": 10,
+          "website": 10,
+          "address": 5,
+          "opening_hours": 5,
+          "structured_data": 5
+        },
+        "quality": {
+          "name": 20,
+          "phone": 15,
+          "website": 10,
+          "address": 15,
+          "city": 10,
+          "category": 10,
+          "opening_hours": 5,
+          "coordinates": 5,
+          "description": 5,
+          "source_confidence": 5
+        }
+      },
+      "review_reasons": [
+        "possible duplicate"
+      ],
+      "scraped_at": "2026-09-28T13:09:56+00:00"
+    },
+    {
+      "provider_id": "nh_c6ec858b2d0b",
+      "provider_name": "Cool Care Appliance",
+      "normalized_name": "cool care appliance",
+      "primary_category": "AC Repair",
+      "secondary_categories": [],
+      "phone": "+919933000004",
+      "additional_phones": [],
+      "whatsapp": "",
+      "email": "",
+      "additional_emails": [],
+      "website": "",
+      "address": "",
+      "locality": "",
+      "city": "Siliguri",
+      "state": "West Bengal",
+      "pincode": "",
+      "country": "India",
+      "latitude": 26.8012,
+      "longitude": 88.3975,
+      "description": "",
+      "opening_hours": "",
+      "hours_structured": [],
+      "source_url": "https://www.openstreetmap.org/node/1003",
+      "source_domain": "openstreetmap.org",
+      "source_type": "discovered",
+      "source_urls": [
+        "https://www.openstreetmap.org/node/1003"
+      ],
+      "source_domains": [
+        "openstreetmap.org"
+      ],
+      "source_types": [
+        "osm"
+      ],
+      "source_confidence": "medium",
+      "discovery_query": "AC Repair Siliguri",
+      "is_claimed": false,
+      "claim_status": "unclaimed",
+      "verification_status": "none",
+      "data_quality_score": 63,
+      "relevance_score": 65,
+      "duplicate_candidate": true,
+      "duplicate_group_id": "dup_4ebb066e12",
+      "merged_record_count": 1,
+      "has_structured_data": true,
+      "classification_method": "rules",
+      "field_sources": {
+        "provider_name": "osm:osm-tag",
+        "address": "osm",
+        "city": "osm:derived:osm_bbox",
+        "state": "osm:derived:osm_bbox",
+        "country": "osm:derived:osm_bbox",
+        "latitude": "osm:osm-geometry",
+        "phone": "osm:osm-tag"
+      },
+      "score_breakdown": {
+        "relevance": {
+          "category_match": 30,
+          "city_match": 20,
+          "phone": 10,
+          "structured_data": 5
+        },
+        "quality": {
+          "name": 20,
+          "phone": 15,
+          "city": 10,
+          "category": 10,
+          "coordinates": 5,
+          "source_confidence": 3
+        }
+      },
+      "review_reasons": [
+        "possible duplicate",
+        "missing address"
+      ],
+      "scraped_at": "2026-09-28T13:09:56+00:00"
+    },
+    {
+      "provider_id": "nh_c3c23facda36",
+      "provider_name": "Sparkfix Electricals",
+      "normalized_name": "sparkfix electricals",
+      "primary_category": "Electrician",
+      "secondary_categories": [
+        "Wiring",
+        "Inverter Installation",
+        "Fan Repair"
+      ],
+      "phone": "+913532550101",
+      "additional_phones": [],
+      "whatsapp": "",
+      "email": "contact@sparkfix-electricals.example",
+      "additional_emails": [],
+      "website": "https://sparkfix-electricals.example/",
+      "address": "45 Hill Cart Road, Pradhan Nagar, Siliguri, West Bengal 734003",
+      "locality": "Pradhan Nagar",
+      "city": "Siliguri",
+      "state": "West Bengal",
+      "pincode": "734003",
+      "country": "India",
+      "latitude": 26.7101,
+      "longitude": 88.4302,
+      "description": "Electrician service for house wiring, electrical repair and inverter installation.",
+      "opening_hours": "Mo-Sa 10:00-19:00",
+      "hours_structured": [
+        {
+          "day": "Mo",
+          "opens": "10:00",
+          "closes": "19:00"
+        },
+        {
+          "day": "Tu",
+          "opens": "10:00",
+          "closes": "19:00"
+        },
+        {
+          "day": "We",
+          "opens": "10:00",
+          "closes": "19:00"
+        },
+        {
+          "day": "Th",
+          "opens": "10:00",
+          "closes": "19:00"
+        },
+        {
+          "day": "Fr",
+          "opens": "10:00",
+          "closes": "19:00"
+        },
+        {
+          "day": "Sa",
+          "opens": "10:00",
+          "closes": "19:00"
+        }
+      ],
+      "source_url": "https://sparkfix-electricals.example/",
+      "source_domain": "sparkfix-electricals.example",
+      "source_type": "discovered",
+      "source_urls": [
+        "https://sparkfix-electricals.example/",
+        "https://www.openstreetmap.org/way/2004"
+      ],
+      "source_domains": [
+        "sparkfix-electricals.example",
+        "openstreetmap.org"
+      ],
+      "source_types": [
+        "website",
+        "osm"
+      ],
+      "source_confidence": "high",
+      "discovery_query": "manual:urls.txt",
+      "is_claimed": false,
+      "claim_status": "unclaimed",
+      "verification_status": "none",
+      "data_quality_score": 100,
+      "relevance_score": 100,
+      "duplicate_candidate": false,
+      "duplicate_group_id": "",
+      "merged_record_count": 2,
+      "has_structured_data": true,
+      "classification_method": "rules",
+      "field_sources": {
+        "provider_name": "website:meta:title",
+        "website": "website",
+        "description": "website:meta:description",
+        "opening_hours": "website:text",
+        "address": "website",
+        "country": "website:derived:city",
+        "latitude": "osm:osm-geometry",
+        "phone": "website:text"
+      },
+      "score_breakdown": {
+        "relevance": {
+          "category_match": 30,
+          "service_match": 15,
+          "city_match": 20,
+          "phone": 10,
+          "website": 10,
+          "address": 5,
+          "opening_hours": 5,
+          "structured_data": 5
+        },
+        "quality": {
+          "name": 20,
+          "phone": 15,
+          "website": 10,
+          "address": 15,
+          "city": 10,
+          "category": 10,
+          "opening_hours": 5,
+          "coordinates": 5,
+          "description": 5,
+          "source_confidence": 5
+        }
+      },
+      "review_reasons": [],
+      "scraped_at": "2026-09-28T13:09:56+00:00"
+    },
+    {
+      "provider_id": "nh_de4ae577385f",
+      "provider_name": "Sharma Plumbing Works",
+      "normalized_name": "sharma plumbing works",
+      "primary_category": "Plumber",
+      "secondary_categories": [],
+      "phone": "+919933000003",
+      "additional_phones": [],
+      "whatsapp": "",
+      "email": "",
+      "additional_emails": [],
+      "website": "",
+      "address": "Hakimpara",
+      "locality": "Hakimpara",
+      "city": "Siliguri",
+      "state": "West Bengal",
+      "pincode": "",
+      "country": "India",
+      "latitude": 26.7155,
+      "longitude": 88.4232,
+      "description": "",
+      "opening_hours": "Mo-Sa 08:00-19:00",
+      "hours_structured": [
+        {
+          "day": "Mo",
+          "opens": "08:00",
+          "closes": "19:00"
+        },
+        {
+          "day": "Tu",
+          "opens": "08:00",
+          "closes": "19:00"
+        },
+        {
+          "day": "We",
+          "opens": "08:00",
+          "closes": "19:00"
+        },
+        {
+          "day": "Th",
+          "opens": "08:00",
+          "closes": "19:00"
+        },
+        {
+          "day": "Fr",
+          "opens": "08:00",
+          "closes": "19:00"
+        },
+        {
+          "day": "Sa",
+          "opens": "08:00",
+          "closes": "19:00"
+        }
+      ],
+      "source_url": "https://www.openstreetmap.org/node/1002",
+      "source_domain": "openstreetmap.org",
+      "source_type": "discovered",
+      "source_urls": [
+        "https://www.openstreetmap.org/node/1002"
+      ],
+      "source_domains": [
+        "openstreetmap.org"
+      ],
+      "source_types": [
+        "osm"
+      ],
+      "source_confidence": "medium",
+      "discovery_query": "Plumber Siliguri",
+      "is_claimed": false,
+      "claim_status": "unclaimed",
+      "verification_status": "none",
+      "data_quality_score": 83,
+      "relevance_score": 75,
+      "duplicate_candidate": false,
+      "duplicate_group_id": "",
+      "merged_record_count": 1,
+      "has_structured_data": true,
+      "classification_method": "rules",
+      "field_sources": {
+        "provider_name": "osm:osm-tag",
+        "opening_hours": "osm",
+        "address": "osm",
+        "city": "osm:derived:osm_bbox",
+        "state": "osm:derived:osm_bbox",
+        "country": "osm:derived:osm_bbox",
+        "latitude": "osm:osm-geometry",
+        "phone": "osm:osm-tag"
+      },
+      "score_breakdown": {
+        "relevance": {
+          "category_match": 30,
+          "city_match": 20,
+          "phone": 10,
+          "address": 5,
+          "opening_hours": 5,
+          "structured_data": 5
+        },
+        "quality": {
+          "name": 20,
+          "phone": 15,
+          "address": 15,
+          "city": 10,
+          "category": 10,
+          "opening_hours": 5,
+          "coordinates": 5,
+          "source_confidence": 3
+        }
+      },
+      "review_reasons": [],
+      "scraped_at": "2026-09-28T13:09:56+00:00"
+    }
+  ],
+  "below_threshold": []
+}

@@ -7,7 +7,7 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
-    "test": "pnpm -r --filter server --filter web --filter provider test",
-    "test:coverage": "pnpm -r --filter server --filter web --filter provider test:coverage"
+    "test": "pnpm -r --workspace-concurrency=1 --filter server --filter web --filter provider test",
+    "test:coverage": "pnpm -r --workspace-concurrency=1 --filter server --filter web --filter provider test:coverage"
   }
 }

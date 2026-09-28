@@ -231,8 +231,10 @@ describe("location fields", () => {
     await userEvent.click(screen.getByPlaceholderText("Search your locality or city"));
     await userEvent.click(await screen.findByRole("button", { name: "Andheri, Mumbai" }));
     expect(value<LocationValue>()).toMatchObject({ city: "Mumbai", state: "Maharashtra", locality: "Andheri", latitude: 19.11 });
-    // The search keeps focus after a pick; leave it so focusing again reopens the list.
+    // The search keeps focus after a pick; leave it so focusing again reopens the list, and let the
+    // 150 ms close that the blur schedules run first.
     await userEvent.tab();
+    await act(async () => new Promise((r) => setTimeout(r, 200)));
     await userEvent.click(screen.getByPlaceholderText("Search your locality or city"));
     await userEvent.click(await screen.findByRole("button", { name: "Pune" }));
     expect(value<LocationValue>()).toMatchObject({ city: "Pune", state: "Maharashtra", locality: "Andheri", latitude: 18.52 });

@@ -1,0 +1,23 @@
+[project]
+name = "dialnfind-provider-discovery"
+version = "1.0.0"
+description = "Discover local service providers from permitted public sources and export clean CSV/JSON."
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.27,<1.0",
+    "beautifulsoup4>=4.12,<5.0",
+    "lxml>=5.0",
+    "PyYAML>=6.0,<7.0",
+    "python-dotenv>=1.0,<2.0",
+    "rapidfuzz>=3.6,<4.0",
+    "phonenumbers>=8.13,<10.0",
+    "duckdb>=1.1,<2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+ai = ["anthropic>=0.40"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

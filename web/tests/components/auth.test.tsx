@@ -65,10 +65,9 @@ describe("LoginForm", () => {
     await waitFor(() => expect(nav.router.push).toHaveBeenCalledWith("/dashboard/favorites"));
     expect(nav.router.refresh).toHaveBeenCalled();
     expect(screen.getByRole("link", { name: "Create an account" })).toHaveAttribute("href", "/register?next=%2Fdashboard%2Ffavorites");
-    expect(screen.getByText(/Demo account/)).toBeInTheDocument();
+    expect(screen.queryByText(/password123/)).toBeNull(); // no demo accounts in any environment
   });
-  it("sends unconfirmed accounts to the code screen and hides the demo hint in production", async () => {
-    vi.stubEnv("NODE_ENV", "production");
+  it("sends unconfirmed accounts to the code screen", async () => {
     const u = userEvent.setup();
     mockApi({ "POST /api/auth/login": { user: { emailVerifiedAt: null } } });
     render(<LoginForm />);
@@ -77,7 +76,6 @@ describe("LoginForm", () => {
     await u.click(screen.getByRole("button", { name: /log in/i }));
     await waitFor(() => expect(nav.router.push).toHaveBeenCalledWith("/verify-email?next=%2Fdashboard"));
     expect(screen.getByRole("link", { name: "Create an account" })).toHaveAttribute("href", "/register");
-    expect(screen.queryByText(/Demo account/)).toBeNull();
   });
 });
 

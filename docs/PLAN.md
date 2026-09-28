@@ -77,16 +77,12 @@ Ranking: `ranking_score` = Bayesian-smoothed rating + review volume + profile co
 verification + response signal + a small plan boost. `self_reported_completed_jobs` is excluded,
 as the brief says. Recalculated on review/profile changes and by `pnpm --filter server rank`.
 
-## 3. Seed data
+## 3. Starting data
 
-~12 categories with subcategories and attributes, ~150 providers across Siliguri, Kolkata,
-Bengaluru, Delhi and Mumbai with real-looking localities and coordinates, business hours,
-services with prices, reviews with text, badges, plans, and demo logins:
-
-- customer `demo@dialnfind.com` / `password123`
-- provider `provider@dialnfind.com` / `password123`
-- admin `admin@dialnfind.com` / `password123`
-- admin team `ops@`, `support.agent@`, `finance@dialnfind.com` / `password123`
+No demo data. `pnpm --filter server db:bootstrap` (run by `pnpm release` on every deploy) adds one
+super admin, plans, settings, 12 categories with 57 subcategories and attributes
+(`server/prisma/data/categories.json`), and the real Siliguri listings found by
+`dialnfind-provider-discovery` (`server/prisma/data/providers-siliguri.json`), all unclaimed.
 
 ## 4. Web (Next.js)
 
@@ -186,6 +182,6 @@ File uploads are live: images are stored on the API server's disk and documents 
 ```
 pnpm install
 cp server/.env.example server/.env        # set DATABASE_URL (needs PostGIS)
-pnpm --filter server db:migrate && pnpm --filter server db:seed
+pnpm --filter server db:deploy && BOOTSTRAP_ADMIN_EMAIL=… BOOTSTRAP_ADMIN_PASSWORD=… pnpm --filter server db:bootstrap
 pnpm dev                                    # runs all four
 ```

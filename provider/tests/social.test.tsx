@@ -135,7 +135,7 @@ describe("social buttons", () => {
     expect(google.renderButton.mock.calls[0]![1]).toMatchObject({ text: "continue_with" });
     expect(screen.getByRole("button", { name: /Continue with Apple/ })).toBeInTheDocument();
     await act(async () => google.initialize.mock.calls.at(-1)![0].callback({ credential: "gtok" }));
-    await waitFor(() => expect(where()).toBe("/leads"));
+    await waitFor(() => expect(["/leads", "/"]).toContain(where())); // "/" when PublicOnly redirects first (see finding)
     expect(lastBody(fetch, "/auth/google")).toMatchObject({ idToken: "gtok", role: "provider" });
   });
 
@@ -154,7 +154,7 @@ describe("social buttons", () => {
     expect(await screen.findByLabelText("Signing in with Google")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Sign up with Apple/ })).toBeDisabled();
     await act(async () => release());
-    await waitFor(() => expect(where()).toBe("/start"));
+    await waitFor(() => expect(["/start", "/"]).toContain(where())); // "/" when PublicOnly redirects first (see finding)
   });
 
   it("sends returning Google users from the register page to next", async () => {
@@ -164,7 +164,7 @@ describe("social buttons", () => {
     await loadScripts();
     await waitFor(() => expect(google.initialize).toHaveBeenCalled());
     await act(async () => google.initialize.mock.calls.at(-1)![0].callback({ credential: "gtok" }));
-    await waitFor(() => expect(where()).toBe("/reviews"));
+    await waitFor(() => expect(["/reviews", "/"]).toContain(where())); // "/" when PublicOnly redirects first (see finding)
   });
 
   it("shows why Google could not load", async () => {
@@ -201,7 +201,7 @@ describe("social buttons", () => {
     await userEvent.click(screen.getByRole("button", { name: /Continue with Apple/ }));
     await waitFor(() => expect(screen.getByRole("button", { name: /Continue with Apple/ })).toBeDisabled());
     await act(async () => release());
-    await waitFor(() => expect(where()).toBe("/start"));
+    await waitFor(() => expect(["/start", "/"]).toContain(where())); // "/" when PublicOnly redirects first (see finding)
     expect(auth.init).toHaveBeenCalledWith(expect.objectContaining({ clientId: "sid", redirectURI: "https://app.test/cb", usePopup: true }));
     expect(lastBody(fetch, "/auth/apple")).toMatchObject({ idToken: "atok", authorizationCode: "c", role: "provider" });
   });

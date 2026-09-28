@@ -109,7 +109,12 @@ export async function searchProviders(params: SearchParams) {
     : null;
 
   if (subcategoryId) {
-    where.push(Prisma.sql`EXISTS (SELECT 1 FROM provider_services ps WHERE ps.provider_id = p.id AND ps.subcategory_id = ${subcategoryId})`);
+    // A listing that offers the whole category without naming services (common for imported listings,
+    // e.g. a beauty parlour) also matches each of its subcategories.
+    where.push(Prisma.sql`EXISTS (
+      SELECT 1 FROM provider_services ps WHERE ps.provider_id = p.id
+        AND (ps.subcategory_id = ${subcategoryId} OR (ps.category_id = ${categoryId} AND ps.subcategory_id IS NULL))
+    )`);
   } else if (categoryId) {
     where.push(Prisma.sql`EXISTS (SELECT 1 FROM provider_services ps WHERE ps.provider_id = p.id AND ps.category_id = ${categoryId})`);
   }

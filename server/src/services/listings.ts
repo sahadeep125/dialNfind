@@ -34,8 +34,12 @@ export const newListingSchema = z.object({
 });
 export type NewListing = z.infer<typeof newListingSchema>;
 
-/** Creates a listing. Without an owner it is an unclaimed listing that a business can claim later. */
-export async function createListing(input: NewListing, options: { ownerId: bigint | null; status: ProviderStatus }): Promise<Provider> {
+/** Creates a listing. Without an owner it is an unclaimed listing that a business can claim later.
+ * Bulk imports pass refreshCategoryCounts: false and recount once at the end. */
+export async function createListing(
+  input: NewListing,
+  options: { ownerId: bigint | null; status: ProviderStatus; refreshCategoryCounts?: boolean },
+): Promise<Provider> {
   const { services, serviceAreas, hours, ...profile } = input;
   const slug = await uniqueProviderSlug(profile.businessName, profile.city);
   const provider = await prisma.$transaction(async (tx) => {
@@ -56,7 +60,7 @@ export async function createListing(input: NewListing, options: { ownerId: bigin
     return created;
   });
   await recalculateProvider(provider.id);
-  await recalculateCategoryCounts();
+  if (options.refreshCategoryCounts !== false) await recalculateCategoryCounts();
   return provider;
 }
 

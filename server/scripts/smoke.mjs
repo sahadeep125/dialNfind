@@ -1,6 +1,19 @@
-// Calls every API endpoint as guest, customer, provider and admin against a seeded dev database.
-// It writes data, so run `pnpm --filter server db:seed` afterwards to restore the demo state.
+// Calls every API endpoint as guest, customer, provider and admin against a throwaway database prepared with
+// `pnpm db:bootstrap` (super admin, categories, imported listings) and `tsx scripts/smoke-fixtures.ts` (the
+// accounts below). It writes data: never point it at production.
+//   SMOKE_PASSWORD      password of the fixture accounts and of the bootstrap super admin
+//   SMOKE_ADMIN_EMAIL   the bootstrap super admin (defaults to BOOTSTRAP_ADMIN_EMAIL)
 const B = process.env.API_URL ?? "http://localhost:4000/api/v1";
+const PASSWORD = process.env.SMOKE_PASSWORD;
+const ADMIN_EMAIL = process.env.SMOKE_ADMIN_EMAIL ?? process.env.BOOTSTRAP_ADMIN_EMAIL;
+if (!PASSWORD || !ADMIN_EMAIL) {
+  console.error("Set SMOKE_PASSWORD and SMOKE_ADMIN_EMAIL (or BOOTSTRAP_ADMIN_EMAIL).");
+  process.exit(2);
+}
+const CUSTOMER_EMAIL = "smoke.customer@example.com";
+const PROVIDER_EMAIL = "smoke.provider@example.com";
+// Accounts the run registers and deletes itself.
+const TEMP_PASSWORD = "temp-password-123";
 let pass = 0, fail = 0;
 const results = [];
 async function call(method, path, { token, body, expect = [200, 201], label } = {}) {
@@ -11,10 +24,10 @@ async function call(method, path, { token, body, expect = [200, 201], label } = 
   results.push(`${ok ? "ok  " : "FAIL"} ${res.status} ${method} ${path}${label ? " (" + label + ")" : ""}${ok ? "" : " -> " + JSON.stringify(json).slice(0, 200)}`);
   return json;
 }
-const login = async (email) => (await call("POST", "/auth/login", { body: { email, password: "password123" } })).token;
-const admin = await login("admin@dialnfind.com");
-const cust = await login("demo@dialnfind.com");
-const prov = await login("provider@dialnfind.com");
+const login = async (email) => (await call("POST", "/auth/login", { body: { email, password: PASSWORD } })).token;
+const admin = await login(ADMIN_EMAIL);
+const cust = await login(CUSTOMER_EMAIL);
+const prov = await login(PROVIDER_EMAIL);
 
 // public
 await call("GET", "/health");
@@ -50,28 +63,28 @@ await call("PATCH", `/me/addresses/${addr.id}`, { token: cust, body: { isDefault
 await call("DELETE", `/me/addresses/${addr.id}`, { token: cust });
 await call("GET", "/me/reviews", { token: cust });
 // Account deletion: a fresh customer confirms with their password and can no longer sign in.
-const temp = (await call("POST", "/auth/register", { body: { name: "Smoke Delete", email: `smoke.delete.${Date.now()}@example.com`, password: "password123", role: "customer", acceptTerms: true } })).token;
+const temp = (await call("POST", "/auth/register", { body: { name: "Smoke Delete", email: `smoke.delete.${Date.now()}@example.com`, password: TEMP_PASSWORD, role: "customer", acceptTerms: true } })).token;
 await call("GET", "/me/overview", { token: temp, expect: 403, label: "unconfirmed email is gated" });
 await call("GET", "/auth/me", { token: temp, label: "unconfirmed account can still load itself" });
 await call("POST", "/auth/verify-email/code", { token: temp, body: { code: "000000" }, expect: 400, label: "wrong email code" });
 await call("POST", "/auth/resend-verification", { token: temp, expect: 429, label: "resend has a cooldown" });
 await call("DELETE", "/auth/me", { token: temp, body: { password: "wrong-password1" }, expect: 400, label: "delete account wrong password" });
-await call("DELETE", "/auth/me", { token: temp, body: { password: "password123" } });
+await call("DELETE", "/auth/me", { token: temp, body: { password: TEMP_PASSWORD } });
 await call("GET", "/auth/me", { token: temp, expect: 401, label: "deleted account is signed out" });
 await call("DELETE", "/auth/me", { token: prov, body: { password: "wrong-password1" }, expect: 400, label: "business delete checks the password" });
-await call("DELETE", "/auth/me", { token: admin, body: { password: "password123" }, expect: 403, label: "staff cannot self-delete" });
+await call("DELETE", "/auth/me", { token: admin, body: { password: PASSWORD }, expect: 403, label: "staff cannot self-delete" });
 // A business account can delete itself; the response says whether a store plan must be cancelled there.
-const tempProv = (await call("POST", "/auth/register", { body: { name: "Smoke Business", email: `smoke.biz.${Date.now()}@example.com`, password: "password123", role: "provider", acceptTerms: true } })).token;
-const bizDeleted = await call("DELETE", "/auth/me", { token: tempProv, body: { password: "password123" }, label: "business account deletion" });
+const tempProv = (await call("POST", "/auth/register", { body: { name: "Smoke Business", email: `smoke.biz.${Date.now()}@example.com`, password: TEMP_PASSWORD, role: "provider", acceptTerms: true } })).token;
+const bizDeleted = await call("DELETE", "/auth/me", { token: tempProv, body: { password: TEMP_PASSWORD }, label: "business account deletion" });
 results.push(`     business delete: ${JSON.stringify(bizDeleted)}`);
 await call("GET", "/me/contacts", { token: cust });
 
 // email links, sessions and rate limits
 await call("POST", "/auth/forgot-password", { body: { email: "nobody.here@example.com" }, label: "forgot password answers the same for unknown emails" });
-await call("POST", "/auth/forgot-password", { body: { email: "demo@dialnfind.com" } });
+await call("POST", "/auth/forgot-password", { body: { email: CUSTOMER_EMAIL } });
 await call("POST", "/auth/reset-password", { body: { token: "x".repeat(43), newPassword: "password456" }, expect: 400, label: "reset needs a real token" });
 await call("POST", "/auth/verify-email", { body: { token: "x".repeat(43) }, expect: 400, label: "verify needs a real token" });
-const second = await login("demo@dialnfind.com");
+const second = await login(CUSTOMER_EMAIL);
 await call("POST", "/auth/logout", { token: second });
 await call("GET", "/auth/me", { token: second, expect: 401, label: "token stops working after sign-out" });
 await call("GET", "/auth/me", { token: cust, label: "other sign-ins stay active" });
@@ -95,7 +108,7 @@ const myReviews = (await call("GET", "/me/reviews", { token: cust })).reviews;
 const r0 = myReviews[0];
 await call("PATCH", `/reviews/${r0.id}`, { token: cust, body: { rating: r0.rating, reviewText: (r0.reviewText ?? "Good work overall, would call again.") } });
 await call("POST", `/reviews/${r0.id}/report`, { body: { reason: "Smoke test flag" } });
-await call("POST", "/auth/change-password", { token: cust, body: { currentPassword: "password123", newPassword: "password123" } });
+await call("POST", "/auth/change-password", { token: cust, body: { currentPassword: PASSWORD, newPassword: PASSWORD } });
 
 // provider
 await call("GET", "/provider/profile", { token: prov });
@@ -267,7 +280,7 @@ await call("POST", `/support/tickets/${myTicket.id}/close`, { token: cust });
 await call("POST", `/support/tickets/${myTicket.id}/messages`, { token: cust, body: { body: "After close" }, expect: 400, label: "closed ticket rejects replies" });
 results.push(`     customer sees ${seen.messages.length} message(s) on a new ticket`);
 const users = await call("GET", "/admin/users?role=customer&q=a", { token: admin });
-const victim = users.users.find((u) => u.email !== "demo@dialnfind.com");
+const victim = users.users.find((u) => u.email !== CUSTOMER_EMAIL);
 await call("PATCH", `/admin/users/${victim.id}`, { token: admin, body: { status: "suspended" } });
 await call("PATCH", `/admin/users/${victim.id}`, { token: admin, body: { status: "active" } });
 await call("GET", "/admin/activity-logs", { token: admin });
@@ -311,7 +324,7 @@ await call("PATCH", `/admin/providers/${created.id}/profile`, { token: admin, bo
 await call("PUT", `/admin/providers/${created.id}/hours`, { token: admin, body: { hours: [{ dayOfWeek: 1, openTime: "09:00", closeTime: "18:00" }] } });
 await call("PUT", `/admin/providers/${created.id}/service-areas`, { token: admin, body: { serviceAreas: [{ areaName: "Hakimpara" }] } });
 await call("PUT", `/admin/providers/${created.id}/services`, { token: admin, body: { services: [{ categoryId: cats[1].id, isPrimary: true }] } });
-await call("POST", `/admin/providers/${created.id}/owner`, { token: admin, body: { email: "demo@dialnfind.com" }, label: "give listing to a customer account" });
+await call("POST", `/admin/providers/${created.id}/owner`, { token: admin, body: { email: CUSTOMER_EMAIL }, label: "give listing to a customer account" });
 await call("DELETE", `/admin/providers/${created.id}/owner`, { token: admin });
 await call("POST", "/admin/providers/bulk", { token: admin, body: { ids: [created.id], action: "suspend" } });
 await call("DELETE", `/admin/providers/${created.id}`, { token: admin, body: { confirmName: "wrong name" }, expect: 400, label: "delete needs the exact name" });
@@ -323,7 +336,7 @@ const imported = await call("POST", "/admin/providers/import", { token: admin, b
 imported.created === 1 ? pass++ : (fail++, results.push(`FAIL import created ${imported.created}`));
 await call("POST", "/admin/providers/import", { token: admin, body: { csv: "name,phone\nx,y\n" }, expect: 400, label: "import needs the template columns" });
 
-const someone = (await call("GET", "/admin/users?role=customer&pageSize=5", { token: admin })).users.find((u) => u.email !== "demo@dialnfind.com");
+const someone = (await call("GET", "/admin/users?role=customer&pageSize=5", { token: admin })).users.find((u) => u.email !== CUSTOMER_EMAIL);
 await call("GET", `/admin/users/${someone.id}`, { token: admin });
 await call("POST", `/admin/users/${someone.id}/sign-out`, { token: admin });
 await call("POST", "/admin/users/bulk", { token: admin, body: { ids: [someone.id], action: "suspend" } });

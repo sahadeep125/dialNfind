@@ -1,0 +1,72 @@
+# One category rule per line (lines starting with # are ignored).
+# Each name is a rule in config.yaml -> category_rules, mapped to a dialnfind category/subcategory.
+# Category-level rules (e.g. "Electronics Repair") catch businesses without a specific service.
+Electronics Repair
+TV Repair
+Mobile Phone Repair
+Laptop & Computer Repair
+Home Theatre & Audio Repair
+CCTV Installation
+Home Appliances
+AC Repair & Service
+Refrigerator Repair
+Washing Machine Repair
+Microwave Repair
+Water Purifier Service
+Geyser Repair
+Electricians
+Wiring & Rewiring
+Fan & Light Installation
+Inverter & Battery
+Switchboard Repair
+Electrical Safety Inspection
+Plumbing
+Leak Repair
+Bathroom Fitting
+Water Tank Cleaning
+Drain Unblocking
+Motor & Pump Repair
+Carpentry
+Furniture Repair
+Modular Kitchen
+Door & Window Work
+Custom Furniture
+Cleaning Services
+Home Deep Cleaning
+Sofa & Carpet Cleaning
+Bathroom Cleaning
+Kitchen Cleaning
+Office Cleaning
+Pest Control
+Cockroach Control
+Termite Treatment
+Bed Bug Treatment
+Mosquito Control
+Rodent Control
+Painting
+Interior Painting
+Exterior Painting
+Waterproofing
+Texture & Wallpaper
+Packers & Movers
+Local Shifting
+Intercity Relocation
+Vehicle Transport
+Office Relocation
+Tutors
+Maths Tutor
+Science Tutor
+English Tutor
+Music Teacher
+Competitive Exam Coaching
+Beauty & Salon
+Salon at Home (Women)
+Men's Grooming
+Bridal Makeup
+Spa & Massage
+Vehicle Repair
+Car Service
+Bike Service
+Car Wash & Detailing
+Tyre & Puncture
+Car AC Repair

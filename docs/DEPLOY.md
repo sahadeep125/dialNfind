@@ -33,9 +33,9 @@ docker run --rm --env-file api.env dialnfind-api pnpm release
 # = prisma migrate deploy && tsx prisma/bootstrap.ts
 ```
 
-`bootstrap.ts` only adds what is missing: the Free, Pro and Business plans, default settings, the starting categories and admin roles, and the first super admin. On the first deploy, set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` (12 or more characters). Sign in, change the password, then remove both variables.
+`bootstrap.ts` only adds what is missing: the Free, Pro and Business plans, default settings, the starting categories and admin roles, the first super admin, and the real provider listings bundled in `server/prisma/data/providers-*.json`. On the first deploy, set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` (12 or more characters). Sign in, change the password, then remove both variables.
 
-Never run `db:seed` against production. It empties every table, and it refuses to run when `NODE_ENV=production`.
+The provider import runs on every release and only adds source records it has not seen before (tracked in `provider_sources`), so listings the team edited or deleted stay that way. A fresh install therefore ends with exactly one user (the super admin), the default categories and every bundled listing, all unclaimed. Set `BOOTSTRAP_IMPORT_PROVIDERS=false` to skip it. There is no demo data and no seed script; `server/scripts/smoke-fixtures.ts` is for test databases only and refuses to run with `NODE_ENV=production`.
 
 ## Settings
 

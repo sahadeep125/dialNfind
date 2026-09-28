@@ -437,6 +437,7 @@ model Provider {
   sponsoredListings SponsoredListing[]
   sponsoredOrders   SponsoredOrder[]
   claims            ProviderClaim[]
+  sources           ProviderSource[]
   dailyStats        ProviderDailyStat[]
 
   @@index([status, rankingScore])
@@ -557,6 +558,23 @@ model ProviderClaim {
   @@index([providerId])
   @@index([userId])
   @@map("provider_claims")
+}
+
+// Where an imported listing came from (prisma/data/providers-*.json, built by dialnfind-provider-discovery).
+// One row per source record ("osm:node/123", "overture:…"). The row outlives its listing (providerId is set
+// to null when the listing is deleted), so re-running the import never brings a deleted listing back.
+model ProviderSource {
+  id         BigInt   @id @default(autoincrement())
+  sourceKey  String   @unique @map("source_key")
+  providerId BigInt?  @map("provider_id")
+  sourceType String   @map("source_type") @db.VarChar(20)
+  sourceUrl  String?  @map("source_url")
+  importedAt DateTime @default(now()) @map("imported_at")
+
+  provider Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+
+  @@index([providerId])
+  @@map("provider_sources")
 }
 
 // Per-day counters powering the provider dashboard.

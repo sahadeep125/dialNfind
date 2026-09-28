@@ -74,7 +74,7 @@ export default async function ClaimPage() {
         <div className="mx-auto max-w-3xl rounded-xl border bg-card p-6 shadow-[var(--shadow-lift)] md:p-10">
           <h2 className="text-2xl font-bold text-brand-deep md:text-3xl">Is your business already listed?</h2>
           <p className="mt-2 text-muted-foreground">
-            Search for it below. To claim, we send a verification code to the phone number on the listing. It takes about a minute.
+            Search for it below. Sign up with your own email, then upload a trade licence, GST certificate or shop registration. Our team checks it and hands the listing over to you. No email on the listing? That's fine: you add your business email once it's yours.
           </p>
           <div className="mt-6">
             <ClaimSearch providerAppUrl={PROVIDER_APP_URL} />

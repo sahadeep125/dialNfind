@@ -11,19 +11,16 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts",
     "db:bootstrap": "tsx prisma/bootstrap.ts",
+    "db:import-providers": "tsx prisma/import-providers.ts",
     "release": "prisma migrate deploy && tsx prisma/bootstrap.ts",
-    "db:reset": "prisma migrate reset --force",
+    "db:reset": "prisma migrate reset --force --skip-seed && tsx prisma/bootstrap.ts",
     "rank": "tsx src/scripts/recalculate-rankings.ts",
     "smoke": "node scripts/smoke.mjs",
     "move-documents": "tsx src/scripts/move-documents.ts",
     "job": "tsx src/scripts/run-job.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",

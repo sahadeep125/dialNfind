@@ -1,0 +1,5 @@
+# Known business websites, one per line. Optional category after a comma.
+# Lines starting with # are ignored. Blocked domains (see config.yaml) are skipped.
+#
+# https://www.example-ac-service.in
+# https://www.example-electrician.in, Electrician

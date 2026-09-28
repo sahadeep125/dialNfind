@@ -64,6 +64,11 @@ describe("env", () => {
   it("starts in production only with production settings", async () => {
     const { isProduction } = await loadEnv(PROD_OK);
     expect(isProduction).toBe(true);
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("REVALIDATE_SECRET is empty"));
+    process.env = { ...saved };
+    vi.mocked(console.warn).mockClear();
+    await loadEnv({ ...PROD_OK, REVALIDATE_SECRET: "s" });
+    expect(console.warn).not.toHaveBeenCalledWith(expect.stringContaining("REVALIDATE_SECRET"));
     process.env = { ...saved };
     const err = await loadEnv({ ...PROD_OK, JWT_SECRET: "change-me-in-production", PUBLIC_URL: "http://localhost:4000", WEB_URL: "http://dialnfind.com", CORS_ORIGINS: undefined, SMTP_HOST: "", RATE_LIMIT_MULTIPLIER: "0" }).catch((e: Error) => e);
     expect(String(err)).toContain("JWT_SECRET must be a random value");

@@ -110,8 +110,15 @@ describe("claim page", () => {
     mockApi({ ...signedIn({}, noBusiness), "/provider/claims/listing/5": { listing: listing({ isClaimed: true }) } });
     await renderApp("/claim?listing=5");
     expect(await screen.findByText(/already has an owner/)).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "help@x.co" })).toHaveAttribute("href", "mailto:help@x.co");
     await userEvent.click(screen.getByRole("button", { name: "Choose a different listing" }));
     expect(screen.getByLabelText("Business name or phone number")).toBeInTheDocument();
+  });
+
+  it("points to the support team when no support email is set", async () => {
+    mockApi({ ...signedIn({}, noBusiness), "/app-config": { config: { support_email: null } }, "/provider/claims/listing/5": { listing: listing({ isClaimed: true }) } });
+    await renderApp("/claim?listing=5");
+    expect(await screen.findByText(/contact our support team\./)).toBeInTheDocument();
   });
 
   it("reports a listing link that does not work", async () => {

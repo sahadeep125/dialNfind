@@ -1,5 +1,5 @@
 import { StrictMode, useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -316,5 +316,62 @@ describe("verify email edge cases", () => {
     expect(fetch.mock.calls.some(([u]) => String(u).includes("/verify-email/code"))).toBe(false);
     await userEvent.click(screen.getByRole("button", { name: "Email me a code" }));
     expect(await screen.findByText("Failed to fetch")).toBeInTheDocument();
+  });
+});
+
+describe("public profile preview links", () => {
+  const click = () => {
+    const event = { preventDefault: vi.fn() } as unknown as React.MouseEvent<HTMLAnchorElement>;
+    return event;
+  };
+
+  it("leaves live listings to the link's own href", async () => {
+    const { previewIfNotLive, publicProfileUrl } = await import("@/lib/public-profile");
+    expect(publicProfileUrl("shop")).toBe("http://web.test/providers/shop");
+    const event = click();
+    previewIfNotLive("active")(event);
+    expect(event.preventDefault).not.toHaveBeenCalled();
+  });
+
+  it("opens a signed preview in a new tab for listings that are not live", async () => {
+    const { previewIfNotLive } = await import("@/lib/public-profile");
+    mockApi({ "/provider/preview-link": { url: "http://web.test/providers/shop/preview?token=t" } });
+    const tab = { opener: {} as unknown, location: { href: "" }, close: vi.fn() };
+    vi.stubGlobal("open", vi.fn(() => tab));
+    const event = click();
+    previewIfNotLive("pending")(event);
+    expect(event.preventDefault).toHaveBeenCalled();
+    await waitFor(() => expect(tab.location.href).toBe("http://web.test/providers/shop/preview?token=t"));
+    expect(tab.opener).toBeNull();
+  });
+
+  it("uses the current tab when the popup is blocked", async () => {
+    const { previewIfNotLive } = await import("@/lib/public-profile");
+    mockApi({ "/provider/preview-link": { url: "http://localhost/preview" } });
+    vi.stubGlobal("open", vi.fn(() => null));
+    const assign = vi.fn();
+    const original = window.location;
+    Object.defineProperty(window, "location", { configurable: true, value: { ...original, set href(v: string) { assign(v); } } });
+    try {
+      previewIfNotLive(undefined)(click());
+      await waitFor(() => expect(assign).toHaveBeenCalledWith("http://localhost/preview"));
+    } finally {
+      Object.defineProperty(window, "location", { configurable: true, value: original });
+    }
+  });
+
+  it("closes the tab and explains a failed preview link", async () => {
+    const { previewIfNotLive } = await import("@/lib/public-profile");
+    mockApi({ "/provider/preview-link": json({ error: { message: "Preview unavailable" } }, 500) });
+    const tab = { opener: null, location: { href: "" }, close: vi.fn() };
+    vi.stubGlobal("open", vi.fn(() => tab));
+    renderWith(<div />);
+    previewIfNotLive("pending")(click());
+    await waitFor(() => expect(tab.close).toHaveBeenCalled());
+    expect(await screen.findByText("Preview unavailable")).toBeInTheDocument();
+
+    vi.stubGlobal("open", vi.fn(() => null));
+    previewIfNotLive("pending")(click());
+    expect(await screen.findAllByText("Preview unavailable")).not.toHaveLength(0);
   });
 });

@@ -182,6 +182,11 @@ describe("home and content pages", () => {
     mockApi({ "/categories": json({}, 404) });
     const b = await renderAsync(await guides.default());
     b.unmount();
+    // A failing categories request still renders the guides, grouped by category slug.
+    mockApi({ "/categories": json({ error: { message: "down" } }, 500) });
+    const b2 = await renderAsync(await guides.default());
+    expect(screen.getAllByRole("link").length).toBeGreaterThan(GUIDES.length);
+    b2.unmount();
 
     const page = await import("@/app/guides/[slug]/page");
     expect(page.generateStaticParams()).toHaveLength(GUIDES.length);
@@ -194,7 +199,11 @@ describe("home and content pages", () => {
     expect(screen.getByRole("heading", { level: 1, name: g.title })).toBeInTheDocument();
     c.unmount();
     mockApi({ "/categories": json({}, 404) });
+    const d = await renderAsync(await page.default({ params: sp({ slug: g.slug }) }));
+    d.unmount();
+    mockApi({ "/categories": json({ error: { message: "down" } }, 500) });
     await renderAsync(await page.default({ params: sp({ slug: g.slug }) }));
+    expect(screen.getByRole("heading", { level: 1, name: g.title })).toBeInTheDocument();
     await expect(page.default({ params: sp({ slug: "nope" }) })).rejects.toBeInstanceOf(NotFoundError);
   });
 });
@@ -361,6 +370,15 @@ describe("provider profile page", () => {
     expect(fetch.mock.calls.some(([u]) => String(u).includes("/reviews"))).toBe(false);
     a.unmount();
     mockApi(routes({ status: "active" }));
+    const live = await renderAsync(await Preview({ params: sp({ slug: "shop" }), searchParams: sp({ token: "tok" }) }));
+    expect(screen.getByRole("status")).toHaveTextContent("This listing is live");
+    live.unmount();
+    // A live listing whose reviews cannot be found, and a listing without a status, show no reviews.
+    mockApi({ ...routes({ status: "active" }), "/providers/shop/reviews": json({}, 404) });
+    const b = await renderAsync(await Preview({ params: sp({ slug: "shop" }), searchParams: sp({ token: "tok" }) }));
+    expect(screen.getByRole("status")).toHaveTextContent("This listing is live");
+    b.unmount();
+    mockApi(routes({ status: undefined }));
     await renderAsync(await Preview({ params: sp({ slug: "shop" }), searchParams: sp({ token: "tok" }) }));
     expect(screen.getByRole("status")).toHaveTextContent("This listing is live");
     mockApi(routes(null));

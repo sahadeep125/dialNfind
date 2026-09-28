@@ -60,8 +60,10 @@ done
 echo ""
 echo "✅ Database is ready!"
 
-# 5. Run Database Migrations & Release Bootstrap
-echo "⚡ Running database migrations and initial bootstrap..."
+# 5. Run Database Migrations & Release Bootstrap. On a fresh database this creates the super admin
+# (BOOTSTRAP_ADMIN_* in .env), the default categories and every provider in server/prisma/data/providers-*.json;
+# later deploys only add new source records, never re-adding listings that were edited or deleted.
+echo "⚡ Running database migrations, bootstrap and provider import..."
 docker compose run --build --rm server pnpm release
 
 # 6. Build and start all services

@@ -1,0 +1,469 @@
+[
+  {
+    "name": "Electronics Repair",
+    "slug": "electronics-repair",
+    "description": "TV, mobile, laptop and home entertainment repair by trained technicians.",
+    "icon": "tv",
+    "uiTemplate": "repair_appliance",
+    "subcategories": [
+      {
+        "name": "TV Repair",
+        "slug": "tv-repair"
+      },
+      {
+        "name": "Mobile Phone Repair",
+        "slug": "mobile-phone-repair"
+      },
+      {
+        "name": "Laptop & Computer Repair",
+        "slug": "laptop-and-computer-repair"
+      },
+      {
+        "name": "Home Theatre & Audio Repair",
+        "slug": "home-theatre-and-audio-repair"
+      },
+      {
+        "name": "CCTV Installation",
+        "slug": "cctv-installation"
+      }
+    ],
+    "attributes": [
+      {
+        "label": "Device type",
+        "appliesTo": "lead",
+        "fieldType": "select",
+        "options": [
+          "LED TV",
+          "Smart TV",
+          "Mobile",
+          "Laptop",
+          "Home theatre"
+        ]
+      },
+      {
+        "label": "Brands serviced",
+        "appliesTo": "provider",
+        "fieldType": "multiselect",
+        "options": [
+          "Samsung",
+          "LG",
+          "Sony",
+          "Mi",
+          "OnePlus",
+          "TCL",
+          "Panasonic"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Home Appliances",
+    "slug": "home-appliances",
+    "description": "AC, refrigerator, washing machine and kitchen appliance repair and servicing.",
+    "icon": "air-vent",
+    "uiTemplate": "repair_appliance",
+    "subcategories": [
+      {
+        "name": "AC Repair & Service",
+        "slug": "ac-repair-and-service"
+      },
+      {
+        "name": "Refrigerator Repair",
+        "slug": "refrigerator-repair"
+      },
+      {
+        "name": "Washing Machine Repair",
+        "slug": "washing-machine-repair"
+      },
+      {
+        "name": "Microwave Repair",
+        "slug": "microwave-repair"
+      },
+      {
+        "name": "Water Purifier Service",
+        "slug": "water-purifier-service"
+      },
+      {
+        "name": "Geyser Repair",
+        "slug": "geyser-repair"
+      }
+    ],
+    "attributes": [
+      {
+        "label": "Appliance",
+        "appliesTo": "lead",
+        "fieldType": "select",
+        "options": [
+          "Split AC",
+          "Window AC",
+          "Refrigerator",
+          "Washing machine",
+          "Microwave",
+          "RO purifier",
+          "Geyser"
+        ]
+      },
+      {
+        "label": "Offers AMC",
+        "appliesTo": "provider",
+        "fieldType": "boolean"
+      }
+    ]
+  },
+  {
+    "name": "Electricians",
+    "slug": "electricians",
+    "description": "Licensed electricians for wiring, fittings, inverters and safety checks.",
+    "icon": "zap",
+    "uiTemplate": "default",
+    "subcategories": [
+      {
+        "name": "Wiring & Rewiring",
+        "slug": "wiring-and-rewiring"
+      },
+      {
+        "name": "Fan & Light Installation",
+        "slug": "fan-and-light-installation"
+      },
+      {
+        "name": "Inverter & Battery",
+        "slug": "inverter-and-battery"
+      },
+      {
+        "name": "Switchboard Repair",
+        "slug": "switchboard-repair"
+      },
+      {
+        "name": "Electrical Safety Inspection",
+        "slug": "electrical-safety-inspection"
+      }
+    ],
+    "attributes": [
+      {
+        "label": "Licence number",
+        "appliesTo": "provider",
+        "fieldType": "text"
+      }
+    ]
+  },
+  {
+    "name": "Plumbing",
+    "slug": "plumbing",
+    "description": "Leak repair, bathroom fittings, drain unblocking and water tank cleaning.",
+    "icon": "wrench",
+    "uiTemplate": "default",
+    "subcategories": [
+      {
+        "name": "Leak Repair",
+        "slug": "leak-repair"
+      },
+      {
+        "name": "Bathroom Fitting",
+        "slug": "bathroom-fitting"
+      },
+      {
+        "name": "Water Tank Cleaning",
+        "slug": "water-tank-cleaning"
+      },
+      {
+        "name": "Drain Unblocking",
+        "slug": "drain-unblocking"
+      },
+      {
+        "name": "Motor & Pump Repair",
+        "slug": "motor-and-pump-repair"
+      }
+    ],
+    "attributes": [
+      {
+        "label": "Issue",
+        "appliesTo": "lead",
+        "fieldType": "select",
+        "options": [
+          "Leak",
+          "Blockage",
+          "New fitting",
+          "Low pressure",
+          "Motor"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Carpentry",
+    "slug": "carpentry",
+    "description": "Furniture repair, modular kitchens, doors, windows and custom woodwork.",
+    "icon": "hammer",
+    "uiTemplate": "default",
+    "subcategories": [
+      {
+        "name": "Furniture Repair",
+        "slug": "furniture-repair"
+      },
+      {
+        "name": "Modular Kitchen",
+        "slug": "modular-kitchen"
+      },
+      {
+        "name": "Door & Window Work",
+        "slug": "door-and-window-work"
+      },
+      {
+        "name": "Custom Furniture",
+        "slug": "custom-furniture"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Cleaning Services",
+    "slug": "cleaning",
+    "description": "Deep cleaning for homes and offices, sofas, carpets, kitchens and bathrooms.",
+    "icon": "sparkles",
+    "uiTemplate": "default",
+    "subcategories": [
+      {
+        "name": "Home Deep Cleaning",
+        "slug": "home-deep-cleaning"
+      },
+      {
+        "name": "Sofa & Carpet Cleaning",
+        "slug": "sofa-and-carpet-cleaning"
+      },
+      {
+        "name": "Bathroom Cleaning",
+        "slug": "bathroom-cleaning"
+      },
+      {
+        "name": "Kitchen Cleaning",
+        "slug": "kitchen-cleaning"
+      },
+      {
+        "name": "Office Cleaning",
+        "slug": "office-cleaning"
+      }
+    ],
+    "attributes": [
+      {
+        "label": "Home size",
+        "appliesTo": "lead",
+        "fieldType": "select",
+        "options": [
+          "1 BHK",
+          "2 BHK",
+          "3 BHK",
+          "4 BHK+",
+          "Office"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Pest Control",
+    "slug": "pest-control",
+    "description": "Safe, certified treatment for cockroaches, termites, bed bugs and mosquitoes.",
+    "icon": "bug",
+    "uiTemplate": "default",
+    "subcategories": [
+      {
+        "name": "Cockroach Control",
+        "slug": "cockroach-control"
+      },
+      {
+        "name": "Termite Treatment",
+        "slug": "termite-treatment"
+      },
+      {
+        "name": "Bed Bug Treatment",
+        "slug": "bed-bug-treatment"
+      },
+      {
+        "name": "Mosquito Control",
+        "slug": "mosquito-control"
+      },
+      {
+        "name": "Rodent Control",
+        "slug": "rodent-control"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Painting",
+    "slug": "painting",
+    "description": "Interior and exterior painting, waterproofing and textures.",
+    "icon": "paint-roller",
+    "uiTemplate": "default",
+    "subcategories": [
+      {
+        "name": "Interior Painting",
+        "slug": "interior-painting"
+      },
+      {
+        "name": "Exterior Painting",
+        "slug": "exterior-painting"
+      },
+      {
+        "name": "Waterproofing",
+        "slug": "waterproofing"
+      },
+      {
+        "name": "Texture & Wallpaper",
+        "slug": "texture-and-wallpaper"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Packers & Movers",
+    "slug": "packers-movers",
+    "description": "Local and intercity shifting, vehicle transport and office relocation.",
+    "icon": "truck",
+    "uiTemplate": "default",
+    "subcategories": [
+      {
+        "name": "Local Shifting",
+        "slug": "local-shifting"
+      },
+      {
+        "name": "Intercity Relocation",
+        "slug": "intercity-relocation"
+      },
+      {
+        "name": "Vehicle Transport",
+        "slug": "vehicle-transport"
+      },
+      {
+        "name": "Office Relocation",
+        "slug": "office-relocation"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Tutors",
+    "slug": "tutors",
+    "description": "Home and online tutors for school subjects, music and exam coaching.",
+    "icon": "graduation-cap",
+    "uiTemplate": "tutor",
+    "subcategories": [
+      {
+        "name": "Maths Tutor",
+        "slug": "maths-tutor"
+      },
+      {
+        "name": "Science Tutor",
+        "slug": "science-tutor"
+      },
+      {
+        "name": "English Tutor",
+        "slug": "english-tutor"
+      },
+      {
+        "name": "Music Teacher",
+        "slug": "music-teacher"
+      },
+      {
+        "name": "Competitive Exam Coaching",
+        "slug": "competitive-exam-coaching"
+      }
+    ],
+    "attributes": [
+      {
+        "label": "Subject taught",
+        "appliesTo": "provider",
+        "fieldType": "multiselect",
+        "options": [
+          "Maths",
+          "Physics",
+          "Chemistry",
+          "Biology",
+          "English",
+          "Music"
+        ]
+      },
+      {
+        "label": "Class / grade",
+        "appliesTo": "lead",
+        "fieldType": "select",
+        "options": [
+          "Primary",
+          "6-8",
+          "9-10",
+          "11-12",
+          "College",
+          "Adult"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Beauty & Salon",
+    "slug": "beauty-salon",
+    "description": "Salon at home, grooming, bridal makeup and spa services.",
+    "icon": "scissors",
+    "uiTemplate": "default",
+    "subcategories": [
+      {
+        "name": "Salon at Home (Women)",
+        "slug": "salon-at-home-women"
+      },
+      {
+        "name": "Men's Grooming",
+        "slug": "men-s-grooming"
+      },
+      {
+        "name": "Bridal Makeup",
+        "slug": "bridal-makeup"
+      },
+      {
+        "name": "Spa & Massage",
+        "slug": "spa-and-massage"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Vehicle Repair",
+    "slug": "vehicle-repair",
+    "description": "Car and bike servicing, washing, tyres and AC repair.",
+    "icon": "car",
+    "uiTemplate": "default",
+    "subcategories": [
+      {
+        "name": "Car Service",
+        "slug": "car-service"
+      },
+      {
+        "name": "Bike Service",
+        "slug": "bike-service"
+      },
+      {
+        "name": "Car Wash & Detailing",
+        "slug": "car-wash-and-detailing"
+      },
+      {
+        "name": "Tyre & Puncture",
+        "slug": "tyre-and-puncture"
+      },
+      {
+        "name": "Car AC Repair",
+        "slug": "car-ac-repair"
+      }
+    ],
+    "attributes": [
+      {
+        "label": "Vehicle",
+        "appliesTo": "lead",
+        "fieldType": "select",
+        "options": [
+          "Hatchback",
+          "Sedan",
+          "SUV",
+          "Scooter",
+          "Motorcycle"
+        ]
+      }
+    ]
+  }
+]

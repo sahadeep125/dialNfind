@@ -90,8 +90,8 @@ describe("admin providers", () => {
     expect((await c.delete(`/api/v1/admin/providers/${provider.id}`).send({ confirmName: "wrong" })).status).toBe(400);
     expect((await c.delete(`/api/v1/admin/providers/${provider.id}`)).status).toBe(400);
     expect((await c.delete(`/api/v1/admin/providers/${provider.id}`).send({ confirmName: " zeta repairs " })).body).toEqual({ ok: true });
-    await settle();
-    for (const f of ["logo.webp", "p.webp", "r.webp"]) await expect(stat(path.join(uploadDir, f))).rejects.toThrow();
+    // Files are removed in the background after the response; wait until they are gone.
+    for (const f of ["logo.webp", "p.webp", "r.webp"]) await vi.waitFor(() => expect(stat(path.join(uploadDir, f))).rejects.toThrow(), { timeout: 3000 });
     const log = await prisma.adminActivityLog.findFirstOrThrow({ where: { action: "provider.delete" } });
     expect(log.detailsJson).toMatchObject({ businessName: "Zeta Repairs", leads: 1, reviews: 1 });
     const unowned = await createProvider({ businessName: "Eta" });

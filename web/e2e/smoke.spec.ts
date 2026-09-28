@@ -41,9 +41,12 @@ test("robots.txt and the sitemap index are served", async ({ request }) => {
 });
 
 test("signing in never redirects to another site", async ({ page }) => {
+  // The customer account from server/scripts/smoke-fixtures.ts.
+  const password = process.env.E2E_PASSWORD ?? "";
+  test.skip(!password, "Set E2E_PASSWORD (the smoke-fixtures password) to test signing in.");
   await page.goto("/login?next=//evil.example");
-  await page.getByLabel("Email").fill("demo@dialnfind.com");
-  await page.getByLabel("Password", { exact: true }).fill("password123");
+  await page.getByLabel("Email").fill(process.env.E2E_CUSTOMER_EMAIL ?? "smoke.customer@example.com");
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Log in", exact: true }).click();
   await page.waitForURL("**/dashboard", { timeout: 30_000 });
   expect(new URL(page.url()).host).toBe(new URL(test.info().project.use.baseURL ?? "http://localhost:3000").host);

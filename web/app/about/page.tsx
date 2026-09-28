@@ -85,7 +85,7 @@ export default async function AboutPage() {
           <h2 className="mt-2 text-3xl font-bold text-brand-deep">How providers get listed</h2>
           <ol className="mt-6 space-y-5">
             {[
-              { t: "Create or claim a listing", d: "Sign up in the provider app. If your business is already listed, claim it by verifying the phone number on the listing." },
+              { t: "Create or claim a listing", d: "Sign up in the provider app. If your business is already listed, claim it by uploading an ownership document such as a trade licence; our team reviews it." },
               { t: "Set up your profile", d: "Pick your services from our categories, set prices, hours and the areas you cover." },
               { t: "Get verified", d: "Upload a trade licence or ID. Verified businesses get a badge and rank higher." },
               { t: "Receive calls", d: "Customers call you directly. Track calls, WhatsApp enquiries and reviews from your dashboard." },

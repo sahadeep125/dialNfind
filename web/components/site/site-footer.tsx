@@ -114,7 +114,13 @@ export async function SiteFooter() {
             <Link href="/terms" className="hover:text-white">Terms of use</Link>
             <Link href="/privacy" className="hover:text-white">Privacy policy</Link>
           </nav>
-          <p>Phone numbers are shown with each provider&apos;s consent. Report a listing from its profile page.</p>
+          <p>
+            Unclaimed listings are compiled from public business data, including{" "}
+            <a href="https://www.openstreetmap.org/copyright" className="underline hover:text-white" rel="noopener noreferrer" target="_blank">
+              &copy; OpenStreetMap contributors
+            </a>{" "}
+            and Overture Maps. Businesses can claim them; anyone can report one from its profile page.
+          </p>
         </div>
       </div>
     </footer>

@@ -48,6 +48,10 @@ jobs:
       JWT_SECRET: ci-only-secret-not-used-anywhere-else
       RUN_JOBS: "false"
       GEOCODER_ENABLED: "false"
+      # Bootstrap creates this super admin; smoke-fixtures gives its accounts the same password.
+      BOOTSTRAP_ADMIN_EMAIL: ci-admin@example.com
+      BOOTSTRAP_ADMIN_PASSWORD: ci-smoke-password-1
+      SMOKE_PASSWORD: ci-smoke-password-1
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -57,7 +61,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --filter server...
       - run: pnpm --filter server db:deploy
-      - run: pnpm --filter server db:seed
+      - run: pnpm --filter server db:bootstrap
+      - run: pnpm --filter server exec tsx scripts/smoke-fixtures.ts
       - name: Start the API
         working-directory: server
         run: |

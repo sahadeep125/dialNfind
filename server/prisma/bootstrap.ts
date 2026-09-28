@@ -1,16 +1,30 @@
-/* Production bootstrap: the reference data the API needs to work, and nothing else. No demo users, providers,
- * reviews or leads. Safe to run on every deploy: it only adds what is missing and never changes rows the team
- * has since edited in the admin console (plan prices, settings, categories).
+/* Production bootstrap: the reference data the API needs, one super admin, and the real provider listings in
+ * prisma/data/providers-*.json. No demo users, reviews or leads. Safe to run on every deploy: it only adds what
+ * is missing and never changes rows the team has since edited in the admin console (plan prices, settings,
+ * categories, listings).
  *
- * Run with `pnpm --filter server db:bootstrap`. The first run needs BOOTSTRAP_ADMIN_EMAIL and
- * BOOTSTRAP_ADMIN_PASSWORD to create the first super admin; later runs skip that step. */
-import { PrismaClient, Prisma } from "@prisma/client";
+ * Run with `pnpm --filter server db:bootstrap` (deploys run it through `pnpm release`). The first run needs
+ * BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD to create the first super admin; later runs skip that step.
+ * Set BOOTSTRAP_IMPORT_PROVIDERS=false to skip the provider import. */
+import { readFileSync } from "node:fs";
+import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { CATEGORIES } from "./seed-data.js";
-import { slugify } from "../src/lib/slug.js";
+import { prisma } from "../src/lib/prisma.js";
 import { recalculateCategoryCounts } from "../src/services/ranking.js";
+import { DATA_DIR, describe, importProviderBundles } from "./import-providers.js";
 
-const prisma = new PrismaClient();
+interface CategoryData {
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  uiTemplate: string;
+  subcategories: { name: string; slug: string }[];
+  attributes: { label: string; appliesTo: "lead" | "provider"; fieldType: "text" | "number" | "select" | "multiselect" | "boolean"; options?: string[] }[];
+}
+
+// The default directory, shared with dialnfind-provider-discovery (which maps what it finds onto these slugs).
+const CATEGORIES: CategoryData[] = JSON.parse(readFileSync(`${DATA_DIR}/categories.json`, "utf8"));
 
 const BADGES = [
   { name: "Top Rated", criteriaDescription: "Average rating of 4.5 or higher from at least 10 reviews" },
@@ -120,7 +134,7 @@ async function main() {
           iconUrl: `lucide:${c.icon}`,
           uiTemplate: c.uiTemplate,
           displayOrder: index,
-          subcategories: { create: c.subcategories.map((name, i) => ({ name, slug: slugify(name), displayOrder: i })) },
+          subcategories: { create: c.subcategories.map((sub, i) => ({ name: sub.name, slug: sub.slug, displayOrder: i })) },
           attributes: {
             create: c.attributes.map((a, i) => ({ appliesTo: a.appliesTo, label: a.label, fieldType: a.fieldType, optionsJson: a.options ?? Prisma.JsonNull, displayOrder: i })),
           },
@@ -141,6 +155,12 @@ async function main() {
       data: { role: "super_admin", name: "DialNFind Admin", email, passwordHash: await bcrypt.hash(password, 12), emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
     });
     log.push(`super admin ${email}`);
+  }
+
+  if (process.env.BOOTSTRAP_IMPORT_PROVIDERS !== "false") {
+    const imported = await importProviderBundles();
+    if (imported.files) console.log(`Provider import: ${describe(imported)}`);
+    if (imported.imported) log.push(`${imported.imported} providers`);
   }
 
   console.log(log.length ? `Bootstrap added: ${log.join(", ")}` : "Bootstrap: nothing to add");

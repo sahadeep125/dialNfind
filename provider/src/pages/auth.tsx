@@ -104,20 +104,6 @@ export function LoginPage() {
           Create a business account
         </Link>
       </p>
-      {/* Demo accounts only exist in a seeded development database. */}
-      {import.meta.env.DEV && (
-        <div className="mt-6 space-y-1 rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">
-          <div>
-            Demo with a listing: <span className="font-mono text-foreground">provider@dialnfind.com</span>
-          </div>
-          <div>
-            Demo without a listing: <span className="font-mono text-foreground">newprovider@dialnfind.com</span>
-          </div>
-          <div>
-            Password: <span className="font-mono text-foreground">password123</span>
-          </div>
-        </div>
-      )}
     </Shell>
   );
 }

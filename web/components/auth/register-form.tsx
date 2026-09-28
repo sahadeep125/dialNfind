@@ -115,7 +115,7 @@ export function RegisterForm() {
               <Link href="/privacy" target="_blank" className="font-medium text-primary hover:underline">
                 privacy policy
               </Link>
-              , and understand that provider phone numbers are shown publicly with their consent.
+              , and understand that provider phone numbers are shown publicly as business contact details.
             </span>
           </label>
           {errors.acceptTerms && (

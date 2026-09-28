@@ -16,8 +16,13 @@ jest.setTimeout(90000);
 
 const API = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
 const apiUp = isApiUp();
-const describeLive = apiUp ? describe : describe.skip;
+// Accounts from server/scripts/smoke-fixtures.ts (run after `pnpm --filter server db:bootstrap`).
+const PASSWORD = process.env.E2E_PASSWORD ?? "";
+const OWNER = process.env.E2E_PROVIDER_EMAIL ?? "smoke.provider@example.com";
+const NEW_OWNER = process.env.E2E_NEW_PROVIDER_EMAIL ?? "smoke.newprovider@example.com";
+const describeLive = apiUp && PASSWORD ? describe : describe.skip;
 if (!apiUp) console.warn("API is not running on :4000; skipping the app walkthrough.");
+else if (!PASSWORD) console.warn("E2E_PASSWORD is not set (the smoke-fixtures password); skipping the app walkthrough.");
 
 const find = (text: string | RegExp) =>
   waitFor(() => expect(screen.getAllByText(text)[0]).toBeOnTheScreen(), { timeout: 8000 });
@@ -32,7 +37,7 @@ function login(email: string): { token: string; user: SessionUser } {
     curl(`${API}/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, password: "password123" }),
+      body: JSON.stringify({ email, password: PASSWORD }),
     }).body,
   ) as { token: string; user: SessionUser };
   sessions.set(email, session);
@@ -57,7 +62,7 @@ afterEach(() => {
 });
 
 describeLive("DialNFind Business on Android", () => {
-  const owner = login("provider@dialnfind.com");
+  const owner = login(OWNER);
   const business = (
     JSON.parse(
       curl(`${API}/provider/me`, { headers: { authorization: `Bearer ${owner.token}` } }).body,
@@ -67,8 +72,8 @@ describeLive("DialNFind Business on Android", () => {
   test("signed-out launch shows log in, and logging in opens the dashboard", async () => {
     await launch();
     await find("Welcome back");
-    fireEvent.changeText(screen.getByPlaceholderText("you@business.com"), "provider@dialnfind.com");
-    fireEvent.changeText(screen.getByPlaceholderText("Your password"), "password123");
+    fireEvent.changeText(screen.getByPlaceholderText("you@business.com"), OWNER);
+    fireEvent.changeText(screen.getByPlaceholderText("Your password"), PASSWORD);
     fireEvent.press(screen.getAllByText("Log in").at(-1)!);
     await waitFor(() => expect(useAuthStore.getState().token).toBeTruthy());
     await find(business);
@@ -76,7 +81,7 @@ describeLive("DialNFind Business on Android", () => {
   });
 
   test("tabs show leads, reviews and more", async () => {
-    signInAs("provider@dialnfind.com");
+    signInAs(OWNER);
     await launch();
     await find(business);
     fireEvent.press(screen.getAllByText("Leads").at(-1)!);
@@ -105,7 +110,7 @@ describeLive("DialNFind Business on Android", () => {
     ["/account", "Change password"],
     ["/forgot-password", "Send reset link"],
   ])("%s renders", async (path, text) => {
-    signInAs("provider@dialnfind.com");
+    signInAs(OWNER);
     await launch();
     await find(business);
     act(() => router.push(path as never));
@@ -114,7 +119,7 @@ describeLive("DialNFind Business on Android", () => {
   });
 
   test("an account without a business goes to setup, then onboarding and claim", async () => {
-    signInAs("newprovider@dialnfind.com");
+    signInAs(NEW_OWNER);
     await launch();
     await find(/^Welcome/);
     fireEvent.press(screen.getByText("Add a new business"));

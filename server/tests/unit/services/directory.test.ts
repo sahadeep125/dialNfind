@@ -361,6 +361,15 @@ describe("search", () => {
     expect(await resolveTerm("zzzzqqq")).toEqual({ category: null, subcategory: null });
   });
 
+  it("counts a listing that offers the whole category as offering each of its services", async () => {
+    const { cat, tv, near, plumbing } = await directory();
+    const general = await createProvider({ businessName: "City Appliance Care", categoryId: cat.id, subcategoryId: null });
+    await createProvider({ businessName: "General Plumbing", categoryId: plumbing.id, subcategoryId: null });
+    const bySub = await searchProviders({ ...base, subcategory: tv.slug });
+    expect(bySub.results.map((r) => r.id).sort()).toEqual([near.id, general.id].sort());
+    expect((await searchProviders({ ...base, q: "tv repair" })).total).toBe(2);
+  });
+
   it("filters by category, text, place and flags", async () => {
     const { cat, tv, near, far, plumber } = await directory();
     const user = await createUser();

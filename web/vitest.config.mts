@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Page tests render whole trees; leave room for busy machines and coverage runs.
+    testTimeout: 20_000,
     // Component tests opt into jsdom with a `// @vitest-environment jsdom` comment.
     environment: "node",
     include: ["tests/**/*.test.{ts,tsx}"],

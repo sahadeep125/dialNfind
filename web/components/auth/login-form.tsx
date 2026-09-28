@@ -86,11 +86,6 @@ export function LoginForm() {
           Create an account
         </Link>
       </p>
-      {process.env.NODE_ENV !== "production" && (
-        <div className="mt-6 rounded-xl border border-dashed p-3 text-center text-xs text-muted-foreground">
-          Demo account: <span className="font-mono text-foreground">demo@dialnfind.com</span> / <span className="font-mono text-foreground">password123</span>
-        </div>
-      )}
     </>
   );
 }
