@@ -75,7 +75,7 @@ export function FileUpload({ value, onChange, purpose, previewClassName = "aspec
 
       {value && !uploading ? (
         <div className={cn("flex flex-col items-start gap-3", previewClassName.includes("size-") && "sm:flex-row sm:items-center")}>
-          {isDocument && (isPdf || !value) ? (
+          {isDocument && isPdf ? (
             <a href={value} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-xl border bg-muted/40 p-3 text-sm hover:bg-muted">
               <FileText className="size-8 text-primary" />
               <span className="font-medium">Document uploaded</span>

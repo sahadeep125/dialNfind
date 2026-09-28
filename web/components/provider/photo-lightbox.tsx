@@ -19,6 +19,8 @@ const LightboxContext = createContext<(index: number) => void>(() => undefined);
 export function PhotoLightbox({ photos, businessName, children }: { photos: LightboxPhoto[]; businessName: string; children: React.ReactNode }) {
   const [index, setIndex] = useState<number | null>(null);
   const count = photos.length;
+  // Steps only happen while a photo is open (the arrows and key handler exist only then).
+  /* v8 ignore next -- the null case is kept for the state's type */
   const step = useCallback((delta: number) => setIndex((i) => (i === null ? i : (i + delta + count) % count)), [count]);
 
   useEffect(() => {

@@ -119,3 +119,4 @@ describe("SocialButtons", () => {
     await waitFor(() => expect(props.onError).toHaveBeenCalledWith("Google sign-in is unavailable right now."));
   });
 });
+

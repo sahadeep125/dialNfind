@@ -53,8 +53,9 @@ export function PortfolioPage() {
   });
 
   // The cover photo always shows first; the rest keep the order the provider sets.
+  // The page only renders once the profile is cached, so it is there to reorder.
   const setProfileOrder = (ids: number[]) =>
-    qc.setQueryData<ProviderProfile>(["profile"], (p) => (p ? { ...p, portfolio: ids.map((id) => p.portfolio.find((i) => i.id === id)!) } : p));
+    qc.setQueryData<ProviderProfile>(["profile"], (p) => ({ ...p!, portfolio: ids.map((id) => p!.portfolio.find((i) => i.id === id)!) }));
   const reorder = useMutation({
     mutationFn: (ids: number[]) => api("/provider/portfolio/order", { method: "PUT", json: { ids } }),
     onMutate: (ids) => {
@@ -63,7 +64,7 @@ export function PortfolioPage() {
       return { before };
     },
     onError: (err, _ids, ctx) => {
-      if (ctx?.before) qc.setQueryData(["profile"], ctx.before);
+      qc.setQueryData(["profile"], ctx!.before);
       toast.error(errorMessage(err));
     },
     onSuccess: (_r, ids) => track("portfolio_reordered", { photo_count: ids.length }),

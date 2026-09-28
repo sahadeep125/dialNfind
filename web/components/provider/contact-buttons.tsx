@@ -61,10 +61,12 @@ export function ContactButtons({
     }
   }
 
-  function whatsapp() {
+  // Free listings have no WhatsApp number, so the button only shows when there is one to open.
+  const whatsappNumber = provider.acceptsWhatsapp ? provider.whatsappNumber : null;
+
+  function whatsapp(number: string) {
     recordLead(provider.id, "whatsapp", source, categorySlug);
-    if (!provider.whatsappNumber) return;
-    window.open(whatsappHref(provider.whatsappNumber, `Hi ${provider.businessName}, I found you on DialNFind and need help with a service.`), "_blank", "noopener");
+    window.open(whatsappHref(number, `Hi ${provider.businessName}, I found you on DialNFind and need help with a service.`), "_blank", "noopener");
   }
 
   return (
@@ -85,11 +87,11 @@ export function ContactButtons({
             {profile ? "Call Now" : "Call"}
           </Button>
         )}
-        {provider.acceptsWhatsapp && provider.whatsappNumber && (
+        {whatsappNumber && (
           <Button
             size={size}
             variant="outline"
-            onClick={whatsapp}
+            onClick={() => whatsapp(whatsappNumber)}
             className={cn(
               "border-[oklch(0.8_0.1_150)] text-[oklch(0.4_0.11_150)] hover:border-[oklch(0.7_0.13_150)] hover:bg-[oklch(0.97_0.03_150)]",
               layout === "row" && "flex-1",

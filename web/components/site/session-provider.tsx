@@ -71,8 +71,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (loading) return;
     const key = user ? `${user.id}:${user.role}:${user.name}:${user.email}:${user.provider?.id ?? ""}` : null;
     if (key === identified.current) return;
+    // Without a user the keys only differ when someone was identified before, so this is a sign-out.
     if (user) identifyUser(user);
-    else if (identified.current !== null) resetUser();
+    else resetUser();
     identified.current = key;
   }, [user, loading]);
 

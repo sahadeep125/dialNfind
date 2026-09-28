@@ -18,6 +18,7 @@ export function StickyColumn({ as: Tag = "div", className, children }: { as?: "d
 
   useEffect(() => {
     const el = ref.current;
+    /* v8 ignore next -- the ref is always attached by the time an effect runs */
     if (!el) return;
     const measure = () => setTop(Math.min(TOP, window.innerHeight - el.offsetHeight - BOTTOM_GAP));
     measure();

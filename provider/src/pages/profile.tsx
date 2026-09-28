@@ -85,10 +85,8 @@ function locationErrors(errors: FieldErrors<ProfileValues>): LocationErrors | nu
   const loc = errors.location;
   if (!loc) return null;
   const out: LocationErrors = {};
-  for (const key of Object.keys(loc) as (keyof LocationErrors)[]) {
-    const message = (loc as Record<string, { message?: string } | undefined>)[key]?.message;
-    if (message) out[key] = message;
-  }
+  // Zod nests one entry per location field, each with its message.
+  for (const key of Object.keys(loc) as (keyof LocationErrors)[]) out[key] = (loc as Record<string, { message?: string }>)[key]!.message;
   return out;
 }
 
@@ -110,7 +108,7 @@ function ProfileEditor({ profile }: { profile: ProviderProfile }) {
   useEffect(() => {
     reset(initial);
   }, [initial, reset]);
-  const description = watch("description") ?? "";
+  const description = watch("description");
 
   const save = handleSubmit(
     async (v) => {

@@ -95,3 +95,44 @@ export const user = (over: Record<string, unknown> = {}) => ({
   linkedAccounts: [],
   ...over,
 });
+
+export const detail = (over: Record<string, unknown> = {}) => ({
+  ...provider(),
+  description: "We fix TVs",
+  email: "shop@example.com",
+  website: "https://shop.example",
+  addressLine: "1 Main Road",
+  pincode: "400053",
+  serviceRadiusKm: 10,
+  selfReportedCompletedJobs: 120,
+  memberSince: "2024-01-01T00:00:00.000Z",
+  is24x7: false,
+  hours: [
+    { dayOfWeek: 1, day: "Monday", label: "9 AM - 6 PM", openTime: "09:00", closeTime: "18:00", isToday: true },
+    { dayOfWeek: 0, day: "Sunday", label: "Closed", openTime: null, closeTime: null, isToday: false },
+  ],
+  serviceAreas: [{ areaName: "Andheri", pincode: null }],
+  services: [
+    { id: 1, category: { id: 1, name: "Electronics Repair", slug: "electronics-repair" }, subcategory: { id: 11, name: "TV Repair", slug: "tv-repair" }, startingPrice: 300, priceUnit: "per_visit", isPrimary: false },
+    { id: 2, category: { id: 1, name: "Electronics Repair", slug: "electronics-repair" }, subcategory: null, startingPrice: null, priceUnit: "fixed", isPrimary: true },
+  ],
+  serviceDetails: [{ label: "Brands", value: "LG, Sony" }],
+  portfolio: [{ id: 1, title: "Before and after", description: null, imageUrl: "https://img.test/1.webp", category: null }],
+  verifications: [{ type: "business", verifiedAt: "2025-01-01T00:00:00.000Z" }],
+  ratingBreakdown: [{ rating: 4, count: 2 }, { rating: 5, count: 6 }],
+  myReview: null,
+  ...over,
+});
+
+export const review = (over: Record<string, unknown> = {}) => ({
+  id: 1,
+  rating: 5,
+  reviewText: "Fixed my TV the same day",
+  providerReply: null,
+  providerReplyAt: null,
+  isVerifiedContact: true,
+  createdAt: "2026-01-01T00:00:00.000Z",
+  author: { name: "Ravi Kumar", photoUrl: null },
+  photos: [],
+  ...over,
+});

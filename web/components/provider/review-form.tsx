@@ -85,7 +85,7 @@ export function ReviewForm({
       if (existing) await clientApi(`/reviews/${existing.id}`, { method: "PATCH", body: JSON.stringify(body) });
       else await clientApi("/reviews", { method: "POST", body: JSON.stringify({ providerId, ...body }) });
       toast.success(existing ? "Review updated" : "Thanks for sharing your experience");
-      track(existing ? "review_updated" : "review_submitted", { provider_id: providerId, rating: v.rating, photo_count: v.photos?.length ?? 0 });
+      track(existing ? "review_updated" : "review_submitted", { provider_id: providerId, rating: v.rating, photo_count: v.photos.length });
       setOpen(false);
       if (slug) await refreshProvider(slug);
       router.refresh();

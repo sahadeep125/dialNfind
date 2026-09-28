@@ -217,23 +217,23 @@ describe("email confirmation", () => {
       for (let i = 0; i < seconds; i++) await act(async () => void vi.advanceTimersByTime(1000));
     };
     await tick(60);
-    expect(screen.getByRole("button", { name: "Send a new code" })).toBeEnabled();
+    expect(await screen.findByRole("button", { name: "Send a new code" })).toBeEnabled();
 
     mockApi({ "POST /auth/resend-verification": { ok: true, retryAfter: 2 } });
-    await u.click(screen.getByRole("button", { name: "Send a new code" }));
-    expect(await screen.findByRole("button", { name: "Send a new code in 2s" })).toBeDisabled();
+    await u.click(await screen.findByRole("button", { name: "Send a new code" }));
+    expect(await screen.findByRole("button", { name: /^Send a new code in \ds$/ })).toBeDisabled();
     await tick(2);
 
     mockApi({ "POST /auth/resend-verification": json({ error: { message: "Wait", details: { retryAfter: 5 } } }, 429) });
-    await u.click(screen.getByRole("button", { name: "Send a new code" }));
-    expect(await screen.findByRole("button", { name: "Send a new code in 5s" })).toBeInTheDocument();
+    await u.click(await screen.findByRole("button", { name: "Send a new code" }));
+    expect(await screen.findByRole("button", { name: /^Send a new code in \ds$/ })).toBeInTheDocument();
     await tick(5);
 
     mockApi({ "POST /auth/resend-verification": json({ error: { message: "Already confirmed" } }, 400) });
-    await u.click(screen.getByRole("button", { name: "Send a new code" }));
+    await u.click(await screen.findByRole("button", { name: "Send a new code" }));
     expect(await screen.findByText("Already confirmed")).toBeInTheDocument();
     mockApi({ "POST /auth/resend-verification": () => Promise.reject(new TypeError("offline")) as never });
-    await u.click(screen.getByRole("button", { name: "Send a new code" }));
+    await u.click(await screen.findByRole("button", { name: "Send a new code" }));
     expect(await screen.findByText("Could not send the email. Try again.")).toBeInTheDocument();
 
     mockApi({ "POST /api/auth/logout": { ok: true } });

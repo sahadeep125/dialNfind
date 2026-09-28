@@ -31,11 +31,11 @@ function useListEditor<T>(select: (p: ProviderProfile) => T, endpoint: string, k
     if (initial) setValue(initial);
   }, [initial]);
 
-  async function save(payload: unknown) {
+  async function save(payload: unknown[]) {
     setSaving(true);
     try {
       await api(endpoint, { method: "PUT", json: { [key]: payload } });
-      track("listing_section_saved", { section: key, item_count: Array.isArray(payload) ? payload.length : undefined });
+      track("listing_section_saved", { section: key, item_count: payload.length });
       await qc.invalidateQueries();
       toast.success("Saved");
     } catch (err) {
@@ -88,7 +88,7 @@ export function HoursPage() {
         onReset={() => e.setValue(e.initial)}
         onSave={() => {
           if (validateHours(e.value!)) return toast.error("Fix the highlighted days before saving");
-          void e.save(e.value);
+          void e.save(e.value!);
         }}
       />
     </>
@@ -109,7 +109,7 @@ export function AreasPage() {
       <Panel>
         <AreasEditor value={e.value} onChange={e.setValue} />
       </Panel>
-      <SaveBar dirty={e.dirty} saving={e.saving} onReset={() => e.setValue(e.initial)} onSave={() => void e.save(e.value)} />
+      <SaveBar dirty={e.dirty} saving={e.saving} onReset={() => e.setValue(e.initial)} onSave={() => void e.save(e.value!)} />
     </>
   );
 }

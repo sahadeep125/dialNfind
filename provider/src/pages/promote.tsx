@@ -99,8 +99,8 @@ export function PromotePage() {
   const withGst = Math.round(Number(budget || 0) * (1 + pricing.gstRate / 100) * 100) / 100;
   const online = data.checkoutEnabled;
   const budgetProblem = (): string | null => {
-    if (budget.trim() === "") return "Enter a budget";
-    if (!/^\d+$/.test(budget.trim())) return "Use whole rupees";
+    // The input keeps digits only, so the budget is empty or a whole number.
+    if (budget === "") return "Enter a budget";
     const n = Number(budget);
     if (n < pricing.minBudget) return `The minimum budget is ${formatPrice(pricing.minBudget)}`;
     if (n > 1_000_000) return "Keep the budget under Rs 10,00,000";

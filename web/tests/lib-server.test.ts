@@ -71,9 +71,37 @@ describe("api", () => {
     expect(fetch.mock.calls[0]![1]).toMatchObject({ next: { revalidate: 300, tags: ["t"] } });
     expect(await publicApiOrNull("/missing")).toBeNull();
     await expect(publicApi("/missing")).rejects.toMatchObject({ message: "Gone" });
-    await expect(publicApiOrNull("/down")).rejects.toMatchObject({ status: 503, message: "Down" });
+    // Any failure means "no data" for the OrNull variant.
+    expect(await publicApiOrNull("/down")).toBeNull();
+    await expect(publicApi("/down")).rejects.toMatchObject({ status: 503, message: "Down" });
     expect(await publicApiOrNull("/p")).toEqual({ v: 1 });
     await publicApi("/p");
+  });
+});
+
+describe("publicApi when the API cannot be reached (builds without an API)", () => {
+  it("returns empty data shaped for each endpoint", async () => {
+    mockApi({});
+    expect(await publicApi("/stats")).toEqual({ providers: 0, categories: 0, cities: 0, reviews: 0 });
+    expect(await publicApi("/providers/sitemap")).toMatchObject({ totalPages: 0 });
+    expect(await publicApi("/reviews/highlights")).toMatchObject({ reviews: [] });
+    expect(await publicApi("/categories")).toEqual({ categories: [] });
+    expect(await publicApi("/search/popular")).toEqual({ terms: [] });
+    expect(await publicApi("/plans")).toEqual({ plans: [] });
+    expect(await publicApi("/app-config")).toEqual({ config: { min_review_length: 10 } });
+    expect(await publicApi("/providers/x/similar")).toEqual({ results: [] });
+    expect(await publicApiOrNull("/categories")).toEqual({ categories: [] });
+    expect(console.warn).toBeDefined();
+  });
+  it("answers anything else with a harmless empty object", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue("offline"));
+    const data = (await publicApi<Record<string | symbol, unknown>>("/providers/x")) as Record<string | symbol, unknown>;
+    expect(data.results).toEqual([]);
+    expect(data.config).toEqual({ min_review_length: 10 });
+    expect(data.totalPages).toBe(0);
+    expect(data.somethingElse).toBeUndefined();
+    expect(data.then).toBeUndefined();
+    expect(data[Symbol.iterator]).toBeUndefined();
   });
 });
 
