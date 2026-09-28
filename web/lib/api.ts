@@ -65,7 +65,9 @@ export async function publicApi<T>(path: string, { query, revalidate = 300, tags
     }
     return (await res.json()) as Promise<T>;
   } catch (err) {
-    if (err instanceof ApiError) throw err;
+    // At runtime a failure must throw: Next does not cache a failed render and keeps serving the last good
+    // page, whereas empty data would be cached as if it were real. Only `next build` (no API) gets fallbacks.
+    if (err instanceof ApiError || process.env.NEXT_PHASE !== "phase-production-build") throw err;
     console.warn(`[publicApi] API fetch fallback for ${path}:`, err instanceof Error ? err.message : err);
     if (path.includes("/stats")) return { providers: 0, categories: 0, cities: 0, reviews: 0 } as unknown as T;
     if (path.includes("/sitemap")) return { providers: [], totalPages: 0, page: 1, pageSize: 50 } as unknown as T;
@@ -88,13 +90,16 @@ export async function publicApi<T>(path: string, { query, revalidate = 300, tags
   }
 }
 
-/** publicApi, or null when the API answers 404 or is unreachable during build. */
+/**
+ * publicApi, or null when the API answers 404. Other failures throw, so an API outage never becomes a
+ * "not found" page that stays cached after the API is back.
+ */
 export async function publicApiOrNull<T>(path: string, options: Parameters<typeof publicApi>[1] = {}): Promise<T | null> {
   try {
     return await publicApi<T>(path, options);
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) return null;
-    return null;
+    throw err;
   }
 }
 

@@ -73,6 +73,8 @@ export interface ProviderCard {
 }
 
 export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
+  /** Listing status; only a preview (?previewToken=) ever sees one that is not "active". */
+  status?: "pending" | "active" | "rejected" | "suspended";
   description: string | null;
   email: string | null;
   website: string | null;

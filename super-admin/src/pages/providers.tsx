@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Award, BadgeCheck, CreditCard, ExternalLink, Loader2, MapPin, Pencil, Phone, Plus, Star, Store, Upload, X } from "lucide-react";
@@ -288,6 +288,23 @@ interface ProviderDetail {
   recentReviews: { id: number; rating: number; reviewText: string | null; status: string; createdAt: string; user: { name: string } }[];
 }
 
+/** A listing that is not live has no public page; the team gets a short-lived preview link instead. */
+function openPreview(event: MouseEvent, providerId: number) {
+  event.preventDefault();
+  // Opened before the request so the browser does not block it as a popup.
+  const tab = window.open("", "_blank");
+  api<{ url: string }>(`/admin/providers/${providerId}/preview-link`)
+    .then(({ url }) => {
+      if (!tab) return void (window.location.href = url);
+      tab.opener = null;
+      tab.location.href = url;
+    })
+    .catch((err: unknown) => {
+      tab?.close();
+      toast.error(errorMessage(err));
+    });
+}
+
 const STATUS_COPY: Record<string, { label: string; confirm: string; text: string; destructive?: boolean }> = {
   active: { label: "Approve and publish", confirm: "Publish listing", text: "The listing becomes visible in search and the owner is notified." },
   suspended: { label: "Suspend", confirm: "Suspend listing", text: "The listing is hidden from search straight away. The owner is notified and can contact support.", destructive: true },
@@ -380,8 +397,8 @@ export function ProviderDetailPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
-            <a href={`${WEB_URL}/providers/${p.slug}`} target="_blank" rel="noreferrer">
-              <ExternalLink /> Public page
+            <a href={`${WEB_URL}/providers/${p.slug}`} target="_blank" rel="noreferrer" onClick={p.status === "active" ? undefined : (e) => openPreview(e, p.id)}>
+              <ExternalLink /> {p.status === "active" ? "Public page" : "Preview"}
             </a>
           </Button>
           <Button asChild variant="outline">

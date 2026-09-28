@@ -13,7 +13,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const data = await publicApiOrNull<{ provider: ProviderDetail }>(`/providers/${encodeURIComponent(slug)}`, {
     query: { view: "false" },
     revalidate: 3600,
-    tags: [`provider:${slug}`],
+    tags: [`provider:${slug}`, "providers"],
   });
   const p = data?.provider;
   if (!p) return new ImageResponse(<OgFrame eyebrow="DialNFind" title="Trusted local service providers" />, size);

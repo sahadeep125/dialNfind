@@ -7,6 +7,7 @@ import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
 import { mailConfig, sendTestMail } from "../../services/mail.js";
 import { clearSettingsCache, SETTING_FIELDS, SETTING_GROUPS, type SettingField } from "../../services/settings.js";
+import { refreshShared } from "../../services/web-cache.js";
 
 /** Platform settings the admin team can change. */
 export const adminSettingsRouter = Router();
@@ -94,6 +95,7 @@ adminSettingsRouter.put("/settings", async (req, res) => {
   }
   await prisma.$transaction(writes.map((w) => (w.value === "" ? prisma.setting.deleteMany({ where: { key: w.key } }) : prisma.setting.upsert({ where: { key: w.key }, create: w, update: { value: w.value } }))));
   clearSettingsCache();
+  refreshShared("app-config");
   await logAdmin(currentUser(req).id, "settings.update", "setting", undefined, { changes: writes });
   res.json({ ok: true, saved: writes.length });
 });

@@ -17,6 +17,7 @@ async function freePhotoLimit() {
 }
 import { recordProfileView, searchProviders } from "../services/search.js";
 import { limits } from "../lib/rate-limit.js";
+import { verifyPreviewToken } from "../lib/jwt.js";
 
 export const providersRouter = Router();
 
@@ -59,15 +60,17 @@ providersRouter.get("/sitemap", async (req, res) => {
   res.json({ results: rows, ...pageMeta(q.page, q.pageSize, total) });
 });
 
-async function findActiveBySlug(slug: string) {
+/** A live listing, or any listing when `previewToken` was issued for it (see signPreviewToken). */
+async function findActiveBySlug(slug: string, previewToken?: unknown) {
   const provider = await prisma.provider.findUnique({ where: { slug }, select: { id: true, status: true } });
-  if (!provider || provider.status !== "active") throw notFound("Provider not found");
+  const previewing = !!provider && typeof previewToken === "string" && verifyPreviewToken(previewToken) === provider.id;
+  if (!provider || (provider.status !== "active" && !previewing)) throw notFound("Provider not found");
   return provider;
 }
 
-/** GET /providers/:slug — full public profile. */
+/** GET /providers/:slug — full public profile. With ?previewToken=, also a listing that is not live yet. */
 providersRouter.get("/:slug", optionalAuth, async (req, res) => {
-  const { id } = await findActiveBySlug(req.params.slug as string);
+  const { id, status } = await findActiveBySlug(req.params.slug as string, req.query.previewToken);
   const provider = await prisma.provider.findUniqueOrThrow({
     where: { id },
     include: {
@@ -142,6 +145,7 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
         .filter((v, i, all) => all.findIndex((x) => x.attribute.id === v.attribute.id) === i)
         .map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
       verifications: provider.verifications,
+      status,
       ratingBreakdown,
       myReview: myReview && { ...myReview, photos: myReview.photos.map((p) => p.photoUrl) },
     },

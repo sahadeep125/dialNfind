@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { num } from "../lib/serialize.js";
+import { refreshProviderSlugs, refreshShared } from "./web-cache.js";
 
 /** Minimum customer follow-ups before the response signal is trusted. */
 const MIN_RESPONSE_SAMPLES = 5;
@@ -66,8 +67,11 @@ export function computeRankingScore(input: {
   return Math.round(score * 100 * 10000) / 10000;
 }
 
-/** Recomputes denormalized rating, response signal, completeness and ranking for one provider. */
-export async function recalculateProvider(providerId: bigint): Promise<void> {
+/**
+ * Recomputes denormalized rating, response signal, completeness and ranking for one provider, then refreshes
+ * its cached page on the website. Bulk runs pass `refreshWeb: false` and refresh everything once instead.
+ */
+export async function recalculateProvider(providerId: bigint, { refreshWeb = true }: { refreshWeb?: boolean } = {}): Promise<void> {
   const provider = await prisma.provider.findUnique({
     where: { id: providerId },
     include: {
@@ -114,6 +118,8 @@ export async function recalculateProvider(providerId: bigint): Promise<void> {
       rankingScore,
     },
   });
+  // Every profile edit, review and lead ends here, so this one call keeps the cached public profile current.
+  if (refreshWeb) refreshProviderSlugs([provider.slug]);
 }
 
 export async function recalculateCategoryCounts(): Promise<void> {
@@ -124,12 +130,14 @@ export async function recalculateCategoryCounts(): Promise<void> {
       JOIN providers p ON p.id = ps.provider_id AND p.status = 'active'
       WHERE ps.category_id = c.id
     )`;
+  refreshShared("categories");
 }
 
 /** Recalculates every provider, for the nightly job and `pnpm --filter server rank`. */
 export async function recalculateAllProviders(): Promise<number> {
   const providers = await prisma.provider.findMany({ select: { id: true } });
-  for (const p of providers) await recalculateProvider(p.id);
+  for (const p of providers) await recalculateProvider(p.id, { refreshWeb: false });
   await recalculateCategoryCounts();
+  refreshShared("providers", "stats");
   return providers.length;
 }

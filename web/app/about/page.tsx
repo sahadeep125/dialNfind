@@ -16,7 +16,7 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function AboutPage() {
-  const stats = await publicApi<{ providers: number; categories: number; cities: number; reviews: number }>("/stats", { revalidate: 3600 });
+  const stats = await publicApi<{ providers: number; categories: number; cities: number; reviews: number }>("/stats", { revalidate: 3600, tags: ["stats"] });
   return (
     <div>
       <section className="container-page grid items-center gap-10 py-14 lg:grid-cols-2 lg:py-20">

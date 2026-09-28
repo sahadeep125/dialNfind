@@ -20,7 +20,7 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function GuidesPage() {
-  const data = await publicApiOrNull<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] });
+  const data = await publicApiOrNull<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] }).catch(() => null);
   const names = new Map(data?.categories.map((c) => [c.slug, c.name]));
   const groups = [...new Set(GUIDES.map((g) => g.category))].map((slug) => ({ slug, name: names.get(slug) ?? slug, guides: GUIDES.filter((g) => g.category === slug) }));
 

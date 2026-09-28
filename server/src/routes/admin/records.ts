@@ -13,6 +13,7 @@ import { recalculateProvider } from "../../services/ranking.js";
 import { issueInvoice, presentInvoice } from "../../services/invoices.js";
 import { razorpay } from "../../services/razorpay.js";
 import { rcCustomerUrl } from "../../services/revenuecat.js";
+import { refreshShared } from "../../services/web-cache.js";
 
 /** Where the admin team can look a subscription up at the payment provider. */
 export function externalSubscriptionUrl(s: { source: string; externalId: string | null }) {
@@ -157,6 +158,7 @@ async function moderateReview(adminId: bigint, id: bigint, status: z.infer<typeo
   const review = await prisma.review.update({ where: { id }, data: { status } });
   await prisma.reportFlag.updateMany({ where: { targetType: "review", targetId: id, status: "open" }, data: { status: "resolved", resolvedBy: adminId } });
   await recalculateProvider(review.providerId);
+  refreshShared("reviews");
   await logAdmin(adminId, "review.moderate", "review", id, { status });
   return review;
 }

@@ -5,6 +5,7 @@ import { revokeAllSessions } from "./sessions.js";
 import { revokeAppleToken } from "../lib/oauth.js";
 import { liveSubscription } from "./entitlements.js";
 import { razorpay, razorpayConfigured } from "./razorpay.js";
+import { refreshProviderPages } from "./web-cache.js";
 
 /**
  * Closes a business before its owner's account is anonymised: the listing leaves search (suspended),
@@ -24,6 +25,7 @@ export async function closeBusinessAccount(userId: bigint): Promise<{ storeSubsc
     prisma.providerSubscription.updateMany({ where: { providerId: provider.id, autoRenew: true }, data: { autoRenew: false } }),
     prisma.sponsoredListing.updateMany({ where: { providerId: provider.id, status: { in: ["active", "paused"] } }, data: { status: "completed" } }),
   ]);
+  void refreshProviderPages(provider.id, ["providers"]);
   const store = live?.source === "app_store" || live?.source === "play_store" ? live.source : null;
   return { storeSubscription: store };
 }

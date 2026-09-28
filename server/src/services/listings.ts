@@ -6,6 +6,7 @@ import { uniqueProviderSlug } from "../lib/slug.js";
 import { optionalUploadedImageUrl, releaseFile } from "../storage/references.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "../routes/provider/shared.js";
 import { recalculateCategoryCounts, recalculateProvider } from "./ranking.js";
+import { refreshProviderSlugs } from "./web-cache.js";
 
 /** Everything needed to create a listing: provider onboarding, admin "Add listing" and CSV import. */
 export const newListingSchema = z.object({
@@ -93,5 +94,7 @@ export async function updateListingProfile(provider: Provider, body: Partial<z.i
   for (const key of ["logoUrl", "coverUrl"] as const) {
     if (body[key] !== undefined && provider[key] && body[key] !== provider[key]) void releaseFile(provider[key]);
   }
+  // The old address stops existing; recalculateProvider refreshes the new one.
+  if (slug) refreshProviderSlugs([provider.slug]);
   await recalculateProvider(provider.id);
 }

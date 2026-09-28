@@ -44,8 +44,7 @@ import { usePlan } from "@/hooks/useSubscription";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
-import { openUrl } from "@/services/links";
-import { WEB_URL } from "@/constants/config";
+import { openPublicProfile, openUrl } from "@/services/links";
 import { useThemeStore } from "@/stores/useThemeStore";
 import type { SelectOption, ThemePreference } from "@/types";
 
@@ -181,7 +180,9 @@ export default function MoreScreen() {
             <AppListItem
               title="View public page"
               leading={<ExternalLink size={16} color={icon} />}
-              onPress={() => void openUrl(`${WEB_URL}/providers/${provider.slug}`)}
+              onPress={() =>
+                void openPublicProfile(provider.slug, provider.status).catch((e: unknown) => toast(errorMessage(e), "error"))
+              }
             />
           ) : null}
         </AppSection>

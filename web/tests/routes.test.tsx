@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { updateTag } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import { request } from "./next-state";
 import { json, mockApi, provider, user } from "./helpers";
 import { POST as login } from "@/app/api/auth/login/route";
@@ -22,6 +22,7 @@ import ProviderTwitter from "@/app/providers/[slug]/twitter-image";
 import GuideOg, { generateStaticParams as guideOgParams } from "@/app/guides/[slug]/opengraph-image";
 import GuideTwitter, { generateStaticParams as guideTwitterParams } from "@/app/guides/[slug]/twitter-image";
 import { refreshProvider } from "@/app/providers/[slug]/actions";
+import { POST as revalidate } from "@/app/api/revalidate/route";
 import sitemap, { generateSitemaps } from "@/app/sitemaps/sitemap";
 import { GUIDES } from "@/lib/guides";
 
@@ -181,5 +182,30 @@ describe("refreshProvider action", () => {
     mockApi({ "/auth/me": { user: user() } });
     await refreshProvider("sharma-tv");
     expect(updateTag).toHaveBeenCalledWith("provider:sharma-tv");
+  });
+});
+
+describe("revalidate route", () => {
+  const call = (body: unknown, secret?: string) => revalidate(post("/api/revalidate", body, secret === undefined ? {} : { "x-revalidate-secret": secret }));
+
+  it("refuses callers without the shared secret", async () => {
+    expect((await call({ tags: ["categories"] }, "anything")).status).toBe(401);
+    vi.stubEnv("REVALIDATE_SECRET", "s3cret");
+    expect((await call({ tags: ["categories"] })).status).toBe(401);
+    expect((await call({ tags: ["categories"] }, "wrong!")).status).toBe(401);
+    expect((await call({ tags: ["categories"] }, "s3cre")).status).toBe(401);
+    expect(revalidateTag).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+  it("expires each valid tag at once and rejects malformed lists", async () => {
+    vi.stubEnv("REVALIDATE_SECRET", "s3cret");
+    const res = await call({ tags: ["provider:sharma-tv-mumbai", "providers", "providers"] }, "s3cret");
+    expect(await res.json()).toEqual({ ok: true, revalidated: 3 });
+    expect(revalidateTag).toHaveBeenCalledWith("provider:sharma-tv-mumbai", { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledTimes(2);
+    for (const body of [{}, { tags: [] }, { tags: ["Bad Tag"] }, { tags: [1] }, { tags: Array.from({ length: 51 }, (_, i) => `t${i}`) }, "not json"]) {
+      expect((await call(body, "s3cret")).status).toBe(400);
+    }
+    vi.unstubAllEnvs();
   });
 });

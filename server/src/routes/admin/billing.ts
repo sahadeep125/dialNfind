@@ -13,6 +13,7 @@ import { razorpay, razorpayConfigured, toPaise } from "../../services/razorpay.j
 import { revenuecatConfigured } from "../../services/revenuecat.js";
 import { LIVE_STATUSES } from "../../services/entitlements.js";
 import { handleRazorpay, handleRevenueCat } from "../webhooks.js";
+import { refreshShared } from "../../services/web-cache.js";
 
 /** Billing for the admin team: revenue metrics, plan prices, invoices and the payment webhook log. */
 export const adminBillingRouter = Router();
@@ -104,6 +105,7 @@ adminBillingRouter.put("/plans/:id/prices", async (req, res) => {
     const monthly = prices.find((p) => p.billingCycle === "monthly");
     if (monthly) await tx.subscriptionPlan.update({ where: { id: planId }, data: { price: monthly.amount } });
   });
+  refreshShared("plans");
   await logAdmin(currentUser(req).id, "plan.prices", "subscription_plan", planId, { prices });
   res.json({ prices: await prisma.planPrice.findMany({ where: { planId }, orderBy: { billingCycle: "asc" } }) });
 });

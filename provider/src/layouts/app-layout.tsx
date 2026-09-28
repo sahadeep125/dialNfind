@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { WEB_URL } from "@/lib/config";
+import { previewIfNotLive, publicProfileUrl } from "@/lib/public-profile";
 import { initials } from "@/lib/format";
 import type { ProviderProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -146,7 +146,8 @@ export function AppLayout() {
       <SidebarNav onNavigate={() => setOpen(false)} />
       {provider && (
         <a
-          href={`${WEB_URL}/providers/${provider.slug}`}
+          href={publicProfileUrl(provider.slug)}
+          onClick={previewIfNotLive(provider.status)}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-auto flex items-center gap-2 rounded-xl bg-white/8 p-3 text-sm text-white/80 hover:bg-white/12 hover:text-white"

@@ -27,7 +27,7 @@ interface Plan {
 }
 
 export default async function ClaimPage() {
-  const { plans } = await publicApi<{ plans: Plan[] }>("/plans", { revalidate: 600 });
+  const { plans } = await publicApi<{ plans: Plan[] }>("/plans", { revalidate: 600, tags: ["plans"] });
   return (
     <div>
       <section className="relative overflow-hidden border-b bg-card">

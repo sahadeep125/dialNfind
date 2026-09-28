@@ -12,7 +12,7 @@ export interface SitemapPage {
 }
 
 export const sitemapProviders = (page: number) =>
-  publicApi<SitemapPage>("/providers/sitemap", { query: { page, pageSize: PROVIDERS_PER_SITEMAP }, revalidate: 3600, tags: ["sitemap"] });
+  publicApi<SitemapPage>("/providers/sitemap", { query: { page, pageSize: PROVIDERS_PER_SITEMAP }, revalidate: 3600, tags: ["sitemap", "providers"] });
 
 export const sitemapCategories = () => publicApi<{ categories: Category[] }>("/categories", { revalidate: 3600, tags: ["categories"] });
 

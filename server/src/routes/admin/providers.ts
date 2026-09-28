@@ -16,6 +16,7 @@ import { searchPlaces } from "../../services/geocode.js";
 import { releaseFile } from "../../storage/references.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "../provider/shared.js";
 import { loadProfile } from "../provider/profile.js";
+import { previewUrl, refreshProviderSlugs, refreshShared } from "../../services/web-cache.js";
 
 /** Listing management in the admin console: list, status, edit, create, import, ownership and delete. */
 export const adminProvidersRouter = Router();
@@ -112,6 +113,8 @@ async function setProviderStatus(adminId: bigint, id: bigint, change: { status?:
   if (change.status && change.status !== before.status) {
     const [title, body] = STATUS_COPY[change.status];
     void notifyAndEmail(provider.userId, "listing", title, body, { providerId: Number(id) }, { label: "Open your dashboard", url: env.providerUrl });
+    // Showing or hiding a listing also changes other profiles' "similar providers".
+    refreshShared("providers");
   }
   await recalculateProvider(id);
   return provider;
@@ -171,6 +174,12 @@ adminProvidersRouter.get("/providers/:id/profile", async (req, res) => {
   res.json({ provider: await loadProfile(provider.id) });
 });
 
+/** GET /admin/providers/:id/preview-link — the listing on the website, whatever its status. */
+adminProvidersRouter.get("/providers/:id/preview-link", async (req, res) => {
+  const provider = await findProvider(req.params.id as string);
+  res.json({ url: previewUrl(provider), status: provider.status });
+});
+
 adminProvidersRouter.patch("/providers/:id/profile", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
   const body = parse(listingProfileSchema.partial(), req.body);
@@ -222,6 +231,7 @@ adminProvidersRouter.post("/providers/:id/owner", async (req, res) => {
     prisma.user.update({ where: { id: user.id }, data: { role: "provider" } }),
   ]);
   await logAdmin(currentUser(req).id, "provider.owner", "provider", provider.id, { from: provider.userId ? Number(provider.userId) : null, to: Number(user.id), email });
+  refreshProviderSlugs([provider.slug]);
   void notifyAndEmail(user.id, "claim", `${provider.businessName} is now yours`, "The DialNFind team gave you access to this listing. Sign in to the provider app to manage it.", { providerId: Number(provider.id) }, { label: "Open the provider app", url: env.providerUrl });
   res.json({ ok: true });
 });
@@ -231,6 +241,7 @@ adminProvidersRouter.delete("/providers/:id/owner", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
   if (!provider.userId) throw badRequest("This listing has no owner");
   await prisma.provider.update({ where: { id: provider.id }, data: { userId: null, claimedAt: null } });
+  refreshProviderSlugs([provider.slug]);
   await logAdmin(currentUser(req).id, "provider.owner_removed", "provider", provider.id, { from: Number(provider.userId) });
   res.json({ ok: true });
 });
@@ -253,6 +264,7 @@ adminProvidersRouter.delete("/providers/:id", async (req, res) => {
   await prisma.provider.delete({ where: { id: provider.id } });
   const files = [provider.logoUrl, provider.coverUrl, ...portfolio.map((p) => p.imageUrl), ...reviewPhotos.map((p) => p.photoUrl), ...verifications.map((v) => v.documentUrl), ...claims.map((c) => c.documentUrl)];
   for (const url of files) void releaseFile(url);
+  refreshProviderSlugs([provider.slug], ["providers", "reviews"]);
   await recalculateCategoryCounts();
   await logAdmin(currentUser(req).id, "provider.delete", "provider", provider.id, {
     businessName: provider.businessName,

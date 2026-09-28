@@ -62,6 +62,22 @@ Besides `API_URL`, set these in `web/.env.local` (see `web/.env.example`):
 
 Support email, phone and hours, and links to published terms and privacy pages, come from the admin console (Settings).
 
+## Website caching
+
+Public pages (profiles, categories, the home page, the sitemap) are served from Next's cache, so they stay fast and cheap under load. They still show changes straight away because the API tells the website what changed:
+
+1. Every public fetch in `web/` is tagged (`publicApi` in `web/lib/api.ts`): `provider:<slug>`, `providers` (every profile), `categories`, `app-config`, `plans`, `stats`, `reviews`, `sitemap`.
+2. After a write, the API calls `POST <WEB_INTERNAL_URL>/api/revalidate` with the matching tags (`server/src/services/web-cache.ts`). The website expires those tags at once, and the next visit renders fresh data.
+3. Most profile changes go through `recalculateProvider`, which already refreshes the profile. **A new write that changes something public must call `refreshProviderPages`, `refreshProviderSlugs` or `refreshShared`**, or the change waits for the cache timer (5 minutes for profiles, up to an hour for stats and the sitemap).
+
+Set the same random `REVALIDATE_SECRET` in `server/.env` and `web/.env.local` (`openssl rand -hex 32`). `WEB_INTERNAL_URL` defaults to `WEB_URL`; in Docker it is `http://web:3000`. Without the secret nothing breaks, but changes show only when the cache runs out, and the API logs a warning at startup in production.
+
+A failed API call is never cached: the website shows an error, keeps serving the last good copy of the page, and does not store a "not found" page.
+
+**Listings that are not live yet** (pending, rejected, suspended) have no public page. "View public profile" in the provider apps and "Preview" in the admin console open `/providers/<slug>/preview?token=…` instead. That link is signed for that one listing, lasts 30 minutes, and is never cached or indexed.
+
+To clear the cache by hand (for example in `pnpm dev`, which also keeps fetched data): `rm -rf web/.next/cache`.
+
 `pnpm --filter server db:reset` drops and reseeds everything. `pnpm --filter server rank` recalculates ranking scores by hand; the nightly job does the same (see Scheduled jobs).
 
 ## Demo accounts
