@@ -143,7 +143,7 @@ adminUsersRouter.post("/users/:id/resend-verification", async (req, res) => {
   const target = await editableUser(req, idParam(req.params.id as string));
   if (target.status !== "active") throw badRequest("This account is not active");
   if (target.emailVerifiedAt) throw badRequest("This email address is already confirmed");
-  await sendVerificationEmail(target);
+  if (!(await sendVerificationEmail(target))) throw badRequest("The mail server refused the email. Use Settings → Email → Send test email to see why.");
   await logAdmin(currentUser(req).id, "user.resend_verification", "user", target.id);
   res.json({ ok: true });
 });

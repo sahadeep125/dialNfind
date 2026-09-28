@@ -51,9 +51,10 @@ export const env = {
     port: Number(process.env.SMTP_PORT ?? 587),
     user: process.env.SMTP_USER ?? "",
     pass: process.env.SMTP_PASS ?? "",
-    from: process.env.SMTP_FROM ?? "DialNFind <no-reply@dialnfind.com>",
+    /** Defaults to the SMTP login: Gmail and most providers rewrite or reject a From address the account does not own. */
+    from: process.env.SMTP_FROM || (process.env.SMTP_USER ? `DialNFind <${process.env.SMTP_USER}>` : "DialNFind <no-reply@dialnfind.com>"),
     /** Where replies to account emails go, so people who answer a no-reply message still reach someone. */
-    replyTo: process.env.SUPPORT_EMAIL ?? "support@dialnfind.com",
+    replyTo: process.env.SUPPORT_EMAIL || process.env.SMTP_USER || "support@dialnfind.com",
   },
   /** Public origin of this API, used to build URLs for uploaded files. */
   publicUrl: (process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 4000}`).replace(/\/$/, ""),
@@ -63,7 +64,7 @@ export const env = {
    */
   geocoder: {
     url: (process.env.GEOCODER_URL ?? "https://nominatim.openstreetmap.org").replace(/\/$/, ""),
-    userAgent: process.env.GEOCODER_USER_AGENT ?? "DialNFind/1.0 (support@dialnfind.com)",
+    userAgent: process.env.GEOCODER_USER_AGENT || `DialNFind/1.0 (${process.env.SUPPORT_EMAIL || process.env.SMTP_USER || "support@dialnfind.com"})`,
     country: process.env.GEOCODER_COUNTRY ?? "in",
     enabled: process.env.GEOCODER_ENABLED !== "false",
   },
@@ -125,7 +126,7 @@ export const isProduction = env.nodeEnv === "production";
  */
 function productionProblems(): string[] {
   const problems: string[] = [];
-  if (env.jwtSecret.length < 32 || env.jwtSecret === "change-me-in-production") {
+  if (env.jwtSecret.length < 32 || /change-me|change-this|replace_with/i.test(env.jwtSecret)) {
     problems.push("JWT_SECRET must be a random value of at least 32 characters (for example `openssl rand -base64 48`)");
   }
   const local = /localhost|127\.0\.0\.1|10\.0\.2\.2/;
@@ -134,6 +135,11 @@ function productionProblems(): string[] {
   }
   if (!process.env.CORS_ORIGINS) problems.push("CORS_ORIGINS must list the web, provider and admin origins");
   if (!env.smtp.host) problems.push("SMTP_HOST is empty, so sign-up codes and password reset links would only be printed to the log");
+  // Example values copied from .env.production.example; the mail server refuses them, so no email would arrive.
+  const placeholder = /your-email@|@example\.(com|org)|your-app-password/i;
+  for (const [name, value] of [["SMTP_USER", env.smtp.user], ["SMTP_PASS", env.smtp.pass], ["SMTP_FROM", env.smtp.from], ["SUPPORT_EMAIL", env.smtp.replyTo]] as const) {
+    if (placeholder.test(value)) problems.push(`${name} is still the example value; set the real mail account in .env`);
+  }
   if (env.rateLimitMultiplier <= 0) problems.push("RATE_LIMIT_MULTIPLIER must be above 0; 0 turns off every rate limit");
   return problems;
 }

@@ -38,7 +38,6 @@ import {
 } from "@/components/design-system";
 import { PasswordInput } from "@/components/auth";
 import { BrandMark, Screen, TabHeader } from "@/components/layout";
-import { SUPPORT_EMAIL, SUPPORT_PHONE } from "@/constants/config";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useDeleteAccount } from "@/hooks/useDeleteAccount";
@@ -75,8 +74,9 @@ export default function SettingsScreen() {
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  const email = config?.support_email || SUPPORT_EMAIL;
-  const phone = config?.support_phone || SUPPORT_PHONE;
+  // Set by the team under Settings in the admin console; a contact that is not set is not shown.
+  const email = config?.support_email || null;
+  const phone = config?.support_phone || null;
   const icon = theme.colors.brand.primary;
   const version = Constants.expoConfig?.version ?? "1.0.0";
 
@@ -233,24 +233,28 @@ export default function SettingsScreen() {
             leading={<HelpCircle size={18} color={icon} />}
             onPress={() => router.push("/help")}
           />
-          <AppListItem
-            title="Email support"
-            subtitle={email}
-            leading={<Mail size={18} color={icon} />}
-            onPress={() =>
-              void run(() => openEmail(email, "DialNFind app support"), "Could not open email.")
-            }
-          />
-          <AppListItem
-            title="Call support"
-            subtitle={
-              config?.support_hours
-                ? `${formatPhone(phone)} · ${config.support_hours}`
-                : formatPhone(phone)
-            }
-            leading={<Phone size={18} color={icon} />}
-            onPress={() => void run(() => openPhone(phone), "Calling is not available.")}
-          />
+          {email ? (
+            <AppListItem
+              title="Email support"
+              subtitle={email}
+              leading={<Mail size={18} color={icon} />}
+              onPress={() =>
+                void run(() => openEmail(email, "DialNFind app support"), "Could not open email.")
+              }
+            />
+          ) : null}
+          {phone ? (
+            <AppListItem
+              title="Call support"
+              subtitle={
+                config?.support_hours
+                  ? `${formatPhone(phone)} · ${config.support_hours}`
+                  : formatPhone(phone)
+              }
+              leading={<Phone size={18} color={icon} />}
+              onPress={() => void run(() => openPhone(phone), "Calling is not available.")}
+            />
+          ) : null}
           <AppListItem
             title="Own a business?"
             subtitle="List it on DialNFind for free, or claim your listing"

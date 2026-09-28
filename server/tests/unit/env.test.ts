@@ -74,5 +74,16 @@ describe("env", () => {
     expect(String(err)).toContain("RATE_LIMIT_MULTIPLIER must be above 0");
     process.env = { ...saved };
     await expect(loadEnv({ ...PROD_OK, JWT_SECRET: "short" })).rejects.toThrow("JWT_SECRET");
+    process.env = { ...saved };
+    await expect(loadEnv({ ...PROD_OK, JWT_SECRET: "replace_with_super_secret_jwt_key_minimum_32_characters_long" })).rejects.toThrow("JWT_SECRET");
+  });
+  it("refuses example mail settings in production and sends from the SMTP login by default", async () => {
+    const err = await loadEnv({ ...PROD_OK, SMTP_USER: "your-email@gmail.com", SMTP_PASS: "your-app-password", SMTP_FROM: undefined, SUPPORT_EMAIL: undefined }).catch((e: Error) => e);
+    expect(String(err)).toContain("SMTP_USER is still the example value");
+    expect(String(err)).toContain("SMTP_PASS is still the example value");
+    process.env = { ...saved };
+    const { env } = await loadEnv({ ...PROD_OK, SMTP_USER: "team@shop.in", SMTP_FROM: "", SUPPORT_EMAIL: "" });
+    expect(env.smtp.from).toBe("DialNFind <team@shop.in>");
+    expect(env.smtp.replyTo).toBe("team@shop.in");
   });
 });

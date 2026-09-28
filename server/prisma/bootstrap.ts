@@ -67,10 +67,12 @@ const PLANS = [
 ] as const;
 
 // Support phone and published legal links are left for the team to fill in under Settings.
+// The support address starts as the mail inbox from .env; without one it is left empty rather than made up.
+const supportEmail = (process.env.SUPPORT_EMAIL || process.env.SMTP_USER || "").trim().toLowerCase();
 const SETTINGS = [
   { key: "sponsored_cpc", value: "5" },
   { key: "sponsored_min_budget", value: "500" },
-  { key: "support_email", value: "support@dialnfind.com" },
+  ...(supportEmail ? [{ key: "support_email", value: supportEmail }] : []),
   { key: "default_search_radius_km", value: "15" },
   { key: "support_hours", value: "Mon to Sat, 9 AM to 7 PM" },
   { key: "auto_approve_listings", value: "false" },

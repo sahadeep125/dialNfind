@@ -21,7 +21,6 @@ import {
   type IconTileTone,
 } from "@/components/design-system";
 import { EmptyState, Screen, ScreenHeader, SectionHeader } from "@/components/layout";
-import { SUPPORT_EMAIL, SUPPORT_PHONE } from "@/constants/config";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useLayout } from "@/hooks/useLayout";
 import { useTheme } from "@/hooks/useTheme";
@@ -123,8 +122,9 @@ export default function HelpScreen() {
   const { data: config } = useAppConfig();
   const [open, setOpen] = useState<number | null>(0);
   const [query, setQuery] = useState("");
-  const email = config?.support_email || SUPPORT_EMAIL;
-  const phone = config?.support_phone || SUPPORT_PHONE;
+  // Set by the team under Settings in the admin console; a contact that is not set is not shown.
+  const email = config?.support_email || null;
+  const phone = config?.support_phone || null;
 
   const faq = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -241,20 +241,24 @@ export default function HelpScreen() {
                 onPress={() => router.push("/support")}
               />
             ) : null}
-            <ContactTile
-              icon={Mail}
-              tone="accent"
-              title="Email us"
-              text={email}
-              onPress={() => void run(() => openEmail(email, "Help with DialNFind"))}
-            />
-            <ContactTile
-              icon={Phone}
-              tone="success"
-              title="Call us"
-              text="Talk to the team"
-              onPress={() => void run(() => openPhone(phone))}
-            />
+            {email ? (
+              <ContactTile
+                icon={Mail}
+                tone="accent"
+                title="Email us"
+                text={email}
+                onPress={() => void run(() => openEmail(email, "Help with DialNFind"))}
+              />
+            ) : null}
+            {phone ? (
+              <ContactTile
+                icon={Phone}
+                tone="success"
+                title="Call us"
+                text="Talk to the team"
+                onPress={() => void run(() => openPhone(phone))}
+              />
+            ) : null}
           </View>
         </View>
       </ScrollView>

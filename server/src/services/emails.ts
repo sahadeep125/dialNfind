@@ -25,7 +25,7 @@ const longDate = (d: Date) => d.toLocaleDateString("en-IN", { timeZone: env.time
 /** Sign-up and "send a new code": a 6-digit code for the apps plus a link, both confirming the address. */
 export async function sendVerificationEmail(user: Recipient) {
   const [code, token] = await Promise.all([issueVerifyCode(user.id), issueUserToken(user.id, "verify_email")]);
-  await sendMail({
+  return sendMail({
     to: user.email,
     subject: `${code} is your DialNFind code`,
     lines: [

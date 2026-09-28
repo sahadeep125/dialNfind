@@ -45,19 +45,21 @@ ${action ? `<p style="margin:24px 0 8px"><a href="${escape(action.url)}" style="
 }
 
 /**
- * Sends an email. Never throws: a failed email must not fail the request that triggered it.
+ * Sends an email and reports whether the mail server took it. Never throws: a failed email must not fail the request that triggered it.
  * Without SMTP_HOST (development) the message is printed to the console instead.
  */
-export async function sendMail(message: MailMessage): Promise<void> {
+export async function sendMail(message: MailMessage): Promise<boolean> {
   const { text, html } = render(message);
   if (!env.smtp.host) {
     console.info(`\n[mail] to ${message.to}: ${message.subject}\n${text}\n`);
-    return;
+    return true;
   }
   try {
     await transport().sendMail({ from: env.smtp.from, replyTo: message.replyTo ?? env.smtp.replyTo, to: message.to, subject: message.subject, text, html });
+    return true;
   } catch (err) {
     console.error(`[mail] could not send "${message.subject}" to ${message.to}`, err);
+    return false;
   }
 }
 

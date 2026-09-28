@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useAppConfig } from "@/lib/app-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileUpload } from "@/components/file-upload";
@@ -29,6 +30,7 @@ type Step = { kind: "search" } | { kind: "confirm"; listing: Listing } | { kind:
 export function ClaimPage() {
   const [params] = useSearchParams();
   const { signIn } = useAuth();
+  const { data: config } = useAppConfig();
   const [step, setStep] = useState<Step>({ kind: "search" });
   const [q, setQ] = useState("");
   const [city, setCity] = useState("Siliguri");
@@ -153,7 +155,17 @@ export function ClaimPage() {
           <div className="space-y-6">
             <ListingRow listing={step.listing} />
             {step.listing.isClaimed ? (
-              <p className="rounded-xl bg-muted p-4 text-sm">This listing already has an owner. If you believe that is wrong, contact support@dialnfind.com.</p>
+              <p className="rounded-xl bg-muted p-4 text-sm">
+                This listing already has an owner. If you believe that is wrong, contact{" "}
+                {config?.support_email ? (
+                  <a href={`mailto:${config.support_email}`} className="font-medium text-primary hover:underline">
+                    {config.support_email}
+                  </a>
+                ) : (
+                  "our support team"
+                )}
+                .
+              </p>
             ) : (
               <>
                 <div className="rounded-xl border p-4">

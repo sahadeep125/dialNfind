@@ -4,6 +4,7 @@ import { FileText } from "lucide-react-native";
 
 import { AppButton, AppCallout, AppCard, AppText } from "@/components/design-system";
 import { DocumentUploadField } from "@/components/forms";
+import { useAppConfig } from "@/hooks/useAppConfig";
 import { useTheme } from "@/hooks/useTheme";
 import type { ClaimListing } from "@/types/onboarding";
 import { ListingRow } from "./ListingRow";
@@ -18,6 +19,7 @@ interface Props {
 /** Shows the chosen listing and asks for a document that proves ownership. */
 export function ClaimConfirm({ listing, busy, onStart, onChooseAnother }: Props) {
   const theme = useTheme();
+  const { data: config } = useAppConfig();
   const [docUrl, setDocUrl] = useState<string | null>(null);
   const [docError, setDocError] = useState<string | null>(null);
 
@@ -34,8 +36,8 @@ export function ClaimConfirm({ listing, busy, onStart, onChooseAnother }: Props)
       <ListingRow listing={listing} />
       {listing.isClaimed ? (
         <AppCallout tone="warning" title="Already claimed">
-          This listing already has an owner. If you believe that is wrong, contact
-          support@dialnfind.com.
+          This listing already has an owner. If you believe that is wrong, contact{" "}
+          {config?.support_email || "our support team from Help"}.
         </AppCallout>
       ) : (
         <>

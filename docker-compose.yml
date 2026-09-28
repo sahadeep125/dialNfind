@@ -43,13 +43,16 @@ services:
       UPLOAD_PRIVATE_DIR: uploads/private
       RUN_JOBS: "true"
       TRUST_PROXY_HOPS: "1"
-      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@dialnfind.com}
-      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-AdminPass123456!}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-DialNFind <no-reply@dialnfind.com>}
+      # Empty means "send from SMTP_USER"; SUPPORT_EMAIL also defaults to SMTP_USER.
+      SMTP_FROM: ${SMTP_FROM:-}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+      GEOCODER_USER_AGENT: ${GEOCODER_USER_AGENT:-}
     volumes:
       - ./uploads:/app/uploads
     depends_on:
