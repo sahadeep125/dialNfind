@@ -72,6 +72,28 @@ adminProvidersRouter.get("/providers", async (req, res) => {
   res.json({ providers, ...pageMeta(q.page, q.pageSize, total) });
 });
 
+/** Provider accounts with no listing yet, including ones that never confirmed their email (onboarding needs it). */
+adminProvidersRouter.get("/provider-signups", async (req, res) => {
+  const q = parse(paginationSchema.extend({ q: z.string().trim().max(100).optional() }), req.query);
+  const where: Prisma.UserWhereInput = {
+    role: "provider",
+    provider: null,
+    status: { not: "deleted" },
+    ...(q.q ? { OR: [{ name: { contains: q.q, mode: "insensitive" as const } }, { email: { contains: q.q, mode: "insensitive" as const } }, { phone: { contains: q.q } }] } : {}),
+  };
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (q.page - 1) * q.pageSize,
+      take: q.pageSize,
+      select: { id: true, name: true, email: true, phone: true, status: true, emailVerifiedAt: true, createdAt: true, lastLoginAt: true },
+    }),
+    prisma.user.count({ where }),
+  ]);
+  res.json({ users, ...pageMeta(q.page, q.pageSize, total) });
+});
+
 // Status ----------------------------------------------------------------------------------------
 
 const STATUS_COPY: Record<ProviderStatus, [string, string]> = {

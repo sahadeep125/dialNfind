@@ -5,6 +5,7 @@ import { parse } from "../../lib/validate.js";
 import { badRequest } from "../../lib/errors.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
+import { mailConfig, sendTestMail } from "../../services/mail.js";
 import { clearSettingsCache, SETTING_FIELDS, SETTING_GROUPS, type SettingField } from "../../services/settings.js";
 
 /** Platform settings the admin team can change. */
@@ -61,7 +62,26 @@ function check(field: SettingField, value: string): string {
   }
 }
 
-const saveSchema = z.object({ values: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])) });
+// Email ------------------------------------------------------------------------------------------
+
+adminSettingsRouter.get("/settings/email", (_req, res) => {
+  res.json({ config: mailConfig() });
+});
+
+/** Sends a test email and returns the SMTP server's reply, or its error so a wrong password or host is visible. */
+adminSettingsRouter.post("/settings/email/test", async (req, res) => {
+  const { to } = parse(z.object({ to: z.string().trim().toLowerCase().email() }), req.body);
+  try {
+    const { response } = await sendTestMail(to);
+    await logAdmin(currentUser(req).id, "settings.test_email", "setting", undefined, { to });
+    res.json({ ok: true, response });
+  } catch (err) {
+    const e = err as { message?: string; code?: string; responseCode?: number };
+    throw badRequest(`Could not send: ${[e.code, e.responseCode, e.message].filter(Boolean).join(" · ")}`);
+  }
+});
+
+const saveSchema =z.object({ values: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])) });
 
 /** Saves several settings at once. Send "" or null to reset a setting to its default. */
 adminSettingsRouter.put("/settings", async (req, res) => {

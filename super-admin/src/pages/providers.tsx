@@ -162,7 +162,72 @@ export function ProvidersPage() {
         </tbody>
       </Table>
       {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+      {!f.status && !f.verification && f.claimed !== "no" && <ProviderSignups key={f.q} q={f.q} />}
     </>
+  );
+}
+
+interface SignupRow {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  status: string;
+  emailVerifiedAt: string | null;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+/** Provider accounts that have not created a listing yet, including ones still to confirm their email. */
+function ProviderSignups({ q }: { q: string }) {
+  const [page, setPage] = useState(1);
+  const qs = new URLSearchParams({ ...(q ? { q } : {}), page: String(page), pageSize: "20" });
+  const { data, isLoading } = useQuery({ queryKey: ["admin-provider-signups", qs.toString()], queryFn: () => api<{ users: SignupRow[] } & Paged>(`/admin/provider-signups?${qs}`) });
+  if (!isLoading && !data?.total) return null;
+
+  return (
+    <Panel
+      className="mt-8"
+      title="Signed up, no listing yet"
+      description="Provider accounts that have not created a business profile. Accounts must confirm their email before they can add one."
+      actions={data && <span className="text-sm text-muted-foreground">{data.total.toLocaleString("en-IN")} accounts</span>}
+    >
+      <Table>
+        <thead>
+          <tr>
+            <Th>Account</Th>
+            <Th>Phone</Th>
+            <Th>Email</Th>
+            <Th>Status</Th>
+            <Th>Last sign-in</Th>
+            <Th>Signed up</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {isLoading && <TableSkeleton cols={6} />}
+          {data?.users.map((u) => (
+            <tr key={u.id} className="hover:bg-muted/40">
+              <Td>
+                <Link to={`/users/${u.id}`} className="block min-w-0">
+                  <span className="block truncate font-medium hover:text-primary">{u.name}</span>
+                  <span className="block max-w-56 truncate text-xs text-muted-foreground">{u.email}</span>
+                </Link>
+              </Td>
+              <Td className="text-muted-foreground">{u.phone ? formatPhone(u.phone) : "Not set"}</Td>
+              <Td>
+                <StatusBadge status={u.emailVerifiedAt ? "verified" : "pending"} label={u.emailVerifiedAt ? "Confirmed" : "Not confirmed"} />
+              </Td>
+              <Td>
+                <StatusBadge status={u.status} />
+              </Td>
+              <Td className="whitespace-nowrap text-muted-foreground">{u.lastLoginAt ? formatRelative(u.lastLoginAt) : "Never"}</Td>
+              <Td className="whitespace-nowrap text-muted-foreground">{formatDate(u.createdAt)}</Td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={setPage} />}
+    </Panel>
   );
 }
 

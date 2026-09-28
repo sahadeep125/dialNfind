@@ -63,6 +63,7 @@ const PATH_MODULES: Record<string, AdminModule | null> = {
   me: null,
   overview: null,
   providers: "providers",
+  "provider-signups": "providers",
   claims: "providers",
   verifications: "verifications",
   categories: "categories",

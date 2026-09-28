@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { Facts } from "@/components/admin-ui";
 import { formatRelative } from "@/lib/format";
 import { PageHeader, Panel } from "@/components/page-header";
 import { PageSkeleton } from "@/components/common";
@@ -131,6 +133,7 @@ export function SettingsPage() {
     <>
       <PageHeader title="Settings" description="Contact details, listing rules and fees used across the customer site and the provider app." />
       <div className="space-y-6">
+        <EmailPanel />
         {data.groups.map((g) => (
           <GroupForm key={g.key} group={g} />
         ))}
@@ -205,6 +208,65 @@ function GroupForm({ group }: { group: SettingsResponse["groups"][number] }) {
           </Button>
         </div>
       </form>
+    </Panel>
+  );
+}
+
+interface MailConfig {
+  host: string;
+  port: number;
+  user: string;
+  from: string;
+  replyTo: string;
+  hasPassword: boolean;
+}
+
+/** Shows the SMTP settings the server runs with and sends a test email, reporting the server's exact error. */
+function EmailPanel() {
+  const { user } = useAuth();
+  const { data } = useQuery({ queryKey: ["admin-settings-email"], queryFn: () => api<{ config: MailConfig }>("/admin/settings/email") });
+  const [to, setTo] = useState(user?.email ?? "");
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const send = useMutation({
+    mutationFn: () => api<{ response: string }>("/admin/settings/email/test", { method: "POST", json: { to: to.trim() } }),
+    onSuccess: ({ response }) => {
+      setResult({ ok: true, text: `Sent. The mail server replied: ${response}` });
+      toast.success("Test email sent");
+    },
+    onError: (err) => setResult({ ok: false, text: errorMessage(err) }),
+  });
+  const c = data?.config;
+
+  return (
+    <Panel title="Email" description="Sign-up codes, password resets and notifications go out through this mail server. Change these values in the server's .env file.">
+      {c && (
+        <Facts
+          items={[
+            ["SMTP server", c.host ? `${c.host}:${c.port}` : "Not set (emails are only printed to the server log)"],
+            ["Signs in as", c.user ? `${c.user}${c.hasPassword ? "" : " (no password set)"}` : "No username"],
+            ["Sent from", c.from],
+            ["Replies go to", c.replyTo],
+          ]}
+        />
+      )}
+      <form
+        className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-end"
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          setResult(null);
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())) return setResult({ ok: false, text: "Enter a valid email address" });
+          send.mutate();
+        }}
+      >
+        <Field id="test-email-to" label="Send a test email to" className="flex-1">
+          <Input id="test-email-to" type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="you@example.com" />
+        </Field>
+        <Button type="submit" disabled={send.isPending}>
+          {send.isPending ? <Loader2 className="animate-spin" /> : <Send />} Send test email
+        </Button>
+      </form>
+      {result && <p className={`mt-3 text-sm break-words ${result.ok ? "text-success" : "text-destructive"}`} role="status">{result.text}</p>}
     </Panel>
   );
 }

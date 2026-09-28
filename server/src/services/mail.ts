@@ -61,6 +61,28 @@ export async function sendMail(message: MailMessage): Promise<void> {
   }
 }
 
+/** Outgoing email settings without the password, for the admin console. */
+export function mailConfig() {
+  return { host: env.smtp.host, port: env.smtp.port, user: env.smtp.user, from: env.smtp.from, replyTo: env.smtp.replyTo, hasPassword: env.smtp.pass !== "" };
+}
+
+/**
+ * Signs in to the SMTP server and sends a test message, throwing the server's error on failure.
+ * Unlike sendMail this never falls back to the console, so the admin sees exactly what went wrong.
+ */
+export async function sendTestMail(to: string): Promise<{ response: string }> {
+  if (!env.smtp.host) throw new Error("SMTP_HOST is not set, so emails are only printed to the server log");
+  const message: MailMessage = {
+    to,
+    subject: "DialNFind test email",
+    lines: ["This is a test email from the DialNFind admin console.", "If you can read this, sign-up codes and password reset emails are being delivered."],
+  };
+  const { text, html } = render(message);
+  await transport().verify();
+  const info = await transport().sendMail({ from: env.smtp.from, replyTo: env.smtp.replyTo, to, subject: message.subject, text, html });
+  return { response: String(info.response ?? "accepted") };
+}
+
 /** Emails an account holder, skipping deleted accounts. Used next to in-app notifications for important events. */
 export async function mailUser(userId: bigint | null | undefined, message: Omit<MailMessage, "to">): Promise<void> {
   if (!userId) return;
