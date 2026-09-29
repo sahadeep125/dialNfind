@@ -21,6 +21,11 @@ describe("notificationHref", () => {
   it("opens the provider's reviews for a reply", () => {
     expect(notificationHref("review_reply", { providerSlug: "sharma-tv", reviewId: 3 })).toBe("/providers/sharma-tv#reviews");
   });
+  it("opens the review form from a reminder, and the profile once a held review is decided", () => {
+    expect(notificationHref("review_prompt", { providerSlug: "sharma-tv", leadId: 4 })).toBe("/providers/sharma-tv?review=1#reviews");
+    expect(notificationHref("review", { providerSlug: "sharma-tv", reviewId: 3 })).toBe("/providers/sharma-tv#reviews");
+    expect(notificationHref("review", { reviewId: 3 })).toBeNull();
+  });
   it("falls back to my reviews, or nothing", () => {
     expect(notificationHref("review_reply", null)).toBe("/dashboard/reviews");
     expect(notificationHref("system", {})).toBeNull();

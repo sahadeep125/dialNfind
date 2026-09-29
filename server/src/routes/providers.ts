@@ -7,7 +7,8 @@ import { notFound } from "../lib/errors.js";
 import { pageMeta, paginationSchema } from "../lib/pagination.js";
 import { DAY_NAMES, formatHours, localNow } from "../lib/hours.js";
 import { num } from "../lib/serialize.js";
-import { optionalAuth } from "../middleware/auth.js";
+import { optionalAuth, type AuthUser } from "../middleware/auth.js";
+import { ownReview, publicEligibility, reviewEligibility } from "../services/review-trust.js";
 import { cardPlan, providerCardInclude, toProviderCard } from "../services/presenter.js";
 
 /** Portfolio photos a free listing shows publicly. */
@@ -62,15 +63,28 @@ providersRouter.get("/sitemap", async (req, res) => {
 
 /** A live listing, or any listing when `previewToken` was issued for it (see signPreviewToken). */
 async function findActiveBySlug(slug: string, previewToken?: unknown) {
-  const provider = await prisma.provider.findUnique({ where: { slug }, select: { id: true, status: true } });
+  const provider = await prisma.provider.findUnique({ where: { slug }, select: { id: true, status: true, userId: true } });
   const previewing = !!provider && typeof previewToken === "string" && verifyPreviewToken(previewToken) === provider.id;
   if (!provider || (provider.status !== "active" && !previewing)) throw notFound("Provider not found");
   return provider;
 }
 
+/**
+ * The visitor's own review of a business, or whether they may write one. The apps only show
+ * "Write a review" when `reviewEligibility.canReview` is true.
+ */
+async function viewerReview(user: AuthUser | undefined, provider: { id: bigint; userId: bigint | null }) {
+  const review = user
+    ? await prisma.review.findUnique({ where: { providerId_userId: { providerId: provider.id, userId: user.id } }, include: { photos: { select: { photoUrl: true } } } })
+    : null;
+  if (review) return { myReview: ownReview(review), reviewEligibility: null };
+  return { myReview: null, reviewEligibility: publicEligibility(await reviewEligibility(user, provider)) };
+}
+
 /** GET /providers/:slug — full public profile. With ?previewToken=, also a listing that is not live yet. */
 providersRouter.get("/:slug", optionalAuth, async (req, res) => {
-  const { id, status } = await findActiveBySlug(req.params.slug as string, req.query.previewToken);
+  const found = await findActiveBySlug(req.params.slug as string, req.query.previewToken);
+  const { id, status } = found;
   const provider = await prisma.provider.findUniqueOrThrow({
     where: { id },
     include: {
@@ -81,10 +95,10 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
     },
   });
 
-  const [breakdownRows, favorite, myReview] = await Promise.all([
+  const [breakdownRows, favorite, { myReview, reviewEligibility }] = await Promise.all([
     prisma.review.groupBy({ by: ["rating"], where: { providerId: id, status: "published" }, _count: true }),
     req.user ? prisma.favorite.findUnique({ where: { userId_providerId: { userId: req.user.id, providerId: id } } }) : null,
-    req.user ? prisma.review.findUnique({ where: { providerId_userId: { providerId: id, userId: req.user.id } }, include: { photos: { select: { photoUrl: true } } } }) : null,
+    viewerReview(req.user, found),
   ]);
   // The website renders profiles from a shared cache and counts each visit with /visit instead.
   if (req.query.view !== "false") void recordProfileView(id);
@@ -147,7 +161,8 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
       verifications: provider.verifications,
       status,
       ratingBreakdown,
-      myReview: myReview && { ...myReview, photos: myReview.photos.map((p) => p.photoUrl) },
+      myReview,
+      reviewEligibility,
     },
   });
 });
@@ -229,14 +244,12 @@ providersRouter.post("/:slug/report", limits.reviews, optionalAuth, async (req, 
  * (favorite, their review), so the profile itself can be served from a shared cache.
  */
 providersRouter.post("/:slug/visit", optionalAuth, async (req, res) => {
-  const { id } = await findActiveBySlug(req.params.slug as string);
+  const provider = await findActiveBySlug(req.params.slug as string);
+  const { id } = provider;
   void recordProfileView(id);
-  const [favorite, myReview] = await Promise.all([
+  const [favorite, review] = await Promise.all([
     req.user ? prisma.favorite.findUnique({ where: { userId_providerId: { userId: req.user.id, providerId: id } } }) : null,
-    req.user ? prisma.review.findUnique({ where: { providerId_userId: { providerId: id, userId: req.user.id } }, include: { photos: { select: { photoUrl: true } } } }) : null,
+    viewerReview(req.user, provider),
   ]);
-  res.json({
-    isFavorite: !!favorite,
-    myReview: myReview && { id: myReview.id, rating: myReview.rating, reviewText: myReview.reviewText, photos: myReview.photos.map((p) => p.photoUrl) },
-  });
+  res.json({ isFavorite: !!favorite, ...review });
 });

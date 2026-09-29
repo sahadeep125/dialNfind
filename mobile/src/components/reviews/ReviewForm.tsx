@@ -43,6 +43,7 @@ export function ReviewForm({ provider: p, onSaved }: Props) {
     text: null,
   });
   const [formError, setFormError] = useState<string | null>(null);
+  const ratingLocked = p.myReview?.ratingLocked ?? false;
 
   const submit = (): void => {
     const next = {
@@ -55,8 +56,10 @@ export function ReviewForm({ provider: p, onSaved }: Props) {
     save.mutate(
       { providerId: p.id, reviewId: p.myReview?.id, rating, reviewText: text, photos },
       {
-        onSuccess: () => {
-          toast(p.myReview ? "Review updated" : "Thanks for your review", "success");
+        onSuccess: (review) => {
+          if (review.status === "pending" && p.myReview?.status !== "pending")
+            toast("Thanks! Your review will show once our team has checked it", "success");
+          else toast(p.myReview ? "Review updated" : "Thanks for your review", "success");
           onSaved();
         },
         onError: (err: Error) => {
@@ -102,6 +105,7 @@ export function ReviewForm({ provider: p, onSaved }: Props) {
               </AppText>
               <StarPicker
                 value={rating}
+                disabled={ratingLocked}
                 onChange={(r) => (setRating(r), setErrors((e) => ({ ...e, rating: null })))}
               />
               {errors.rating ? (
@@ -112,6 +116,17 @@ export function ReviewForm({ provider: p, onSaved }: Props) {
             </View>
           </View>
         </AppCard>
+
+        {p.myReview?.status === "pending" ? (
+          <AppCallout>
+            Our team is checking this review. It shows on the profile once approved.
+          </AppCallout>
+        ) : ratingLocked ? (
+          <AppCallout>
+            Stars can only be changed in the first week. If you edit the text, our team checks it
+            again before it shows.
+          </AppCallout>
+        ) : null}
 
         {formError ? <AppCallout tone="danger">{formError}</AppCallout> : null}
 

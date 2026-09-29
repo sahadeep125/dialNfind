@@ -122,6 +122,8 @@ enum LeadSource {
 }
 
 enum ReviewStatus {
+  // Held for the admin team: see services/review-trust.ts for what holds a review.
+  pending
   published
   flagged
   removed
@@ -755,6 +757,8 @@ model Lead {
   providerStatus             LeadProviderStatus @default(new) @map("provider_status")
   providerNote               String?            @map("provider_note")
   providerUpdatedAt          DateTime?          @map("provider_updated_at")
+  // Set when the customer was asked to review this contact (jobs/review-prompts.ts), so they are asked once.
+  reviewPromptSentAt         DateTime?          @map("review_prompt_sent_at")
   createdAt                  DateTime           @default(now()) @map("created_at")
 
   user        User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -787,6 +791,11 @@ model Review {
   providerReply   String?      @map("provider_reply")
   providerReplyAt DateTime?    @map("provider_reply_at")
   status          ReviewStatus @default(published)
+  // Why the review was held as pending, e.g. ["new_account", "same_device"]; kept after approval for the record.
+  holdReasons     String[]     @default([]) @map("hold_reasons")
+  // Keyed hashes, never the raw values: enough to spot one person behind several accounts.
+  ipHash          String?      @map("ip_hash")
+  deviceHash      String?      @map("device_hash")
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
 
@@ -794,10 +803,27 @@ model Review {
   provider Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
   user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   photos   ReviewPhoto[]
+  edits    ReviewEdit[]
 
   @@unique([providerId, userId])
   @@index([providerId, status, createdAt])
+  @@index([status, createdAt])
   @@map("reviews")
+}
+
+/** The version of a review before each edit, so the admin team can see what changed. */
+model ReviewEdit {
+  id         BigInt   @id @default(autoincrement())
+  reviewId   BigInt   @map("review_id")
+  rating     Int      @db.SmallInt
+  reviewText String?  @map("review_text")
+  photos     String[] @default([])
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId, createdAt])
+  @@map("review_edits")
 }
 
 model ReviewPhoto {

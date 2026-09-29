@@ -41,6 +41,15 @@ export const SETTING_GROUPS: SettingGroup[] = [
       { key: "default_search_radius_km", label: "Default search radius (km)", type: "number", min: 1, max: 100, default: "15" },
       { key: "auto_approve_listings", label: "Publish new listings without review", type: "boolean", help: "When off, new listings wait in Providers until approved. If never set, listings go live in development and wait for review in production." },
       { key: "min_review_length", label: "Minimum review length", type: "number", min: 0, max: 500, default: "10" },
+      {
+        key: "review_min_contact_hours",
+        label: "Hours before a customer can review",
+        type: "number",
+        min: 0,
+        max: 168,
+        default: "4",
+        help: "Customers can review a business they contacted through DialNFind once they say it responded, or after this many hours.",
+      },
     ],
   },
   {

@@ -60,7 +60,7 @@ export function ContactRow({ item }: { item: ContactHistoryItem }) {
         )}
         {!item.hasReview && (
           <Button asChild size="sm" variant="ghost">
-            <Link href={`/providers/${p.slug}#reviews`}>Write review</Link>
+            <Link href={`/providers/${p.slug}?review=1#reviews`}>Write review</Link>
           </Button>
         )}
       </div>

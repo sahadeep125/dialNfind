@@ -36,6 +36,8 @@ export function useContactProvider(): (
         });
         number = res.contact.number || number;
         void qc.invalidateQueries({ queryKey: queryKeys.contacts });
+        // Contacting a business is what later allows reviewing it; the profile says when.
+        void qc.invalidateQueries({ queryKey: ["provider"] });
       } catch (error: unknown) {
         // Counting the lead should never stop someone from reaching the provider.
         logError("[leads] Could not record lead", error);

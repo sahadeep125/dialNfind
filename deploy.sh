@@ -6,6 +6,21 @@
 
 set -e
 
+# Usage:
+#   ./deploy.sh           Deploy or update. Keeps all data: only new migrations run, and bootstrap only adds
+#                         what is missing (super admin, categories, provider listings not imported before).
+#   ./deploy.sh --fresh   Fresh install. DELETES THE DATABASE first (asks you to type its name), then deploys:
+#                         one super admin from BOOTSTRAP_ADMIN_* in .env, the default categories and every
+#                         provider in server/prisma/data/providers-*.json. Uploaded files in ./uploads are kept.
+FRESH=0
+for arg in "$@"; do
+    case "$arg" in
+        --fresh) FRESH=1 ;;
+        -h|--help) sed -n '9,14p' "$0"; exit 0 ;;
+        *) echo "Unknown option: $arg (use --fresh or --help)"; exit 1 ;;
+    esac
+done
+
 echo "🚀 Starting DialNFind deployment..."
 
 # 1. Check if .env file exists
@@ -40,6 +55,33 @@ fi
 if [ "$URL_ERRORS" = 1 ]; then
     echo "Fix the URLs in .env and run ./deploy.sh again (set ALLOW_DEEP_SUBDOMAINS=1 if you have an Advanced Certificate)."
     exit 1
+fi
+
+# 1c. Fresh install: wipe the database volume after an explicit confirmation.
+if [ "$FRESH" = 1 ]; then
+    admin_email="$(env_value BOOTSTRAP_ADMIN_EMAIL)"
+    admin_password="$(env_value BOOTSTRAP_ADMIN_PASSWORD)"
+    if [ -z "$admin_email" ] || [ "${#admin_password}" -lt 12 ]; then
+        echo "❌ --fresh needs BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD (12+ characters) in .env for the new super admin."
+        exit 1
+    fi
+    db_name="$(env_value POSTGRES_DB)"
+    db_name="${db_name:-dialnfind}"
+    project="$(grep -E '^name:' docker-compose.yml | head -n 1 | awk '{print $2}' || true)"
+    project="${project:-dialnfind}"
+    volume="${project}_postgres_data"
+    echo ""
+    echo "⚠️  FRESH INSTALL: this permanently deletes the database '$db_name' (Docker volume $volume):"
+    echo "   every user, listing, review, lead, payment record and setting. Files in ./uploads are kept."
+    echo "   Afterwards the only account is the super admin $admin_email."
+    read -r -p "   Type the database name ($db_name) to continue: " answer
+    if [ "$answer" != "$db_name" ]; then
+        echo "Cancelled; nothing was changed."
+        exit 1
+    fi
+    echo "🧹 Stopping containers and deleting the database volume..."
+    docker compose down
+    docker volume rm "$volume" 2>/dev/null || echo "   (volume $volume did not exist)"
 fi
 
 # 2. Create uploads directory on host for file storage

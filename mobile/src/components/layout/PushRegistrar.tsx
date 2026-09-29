@@ -20,6 +20,12 @@ export function routeForNotification(data: PushData): Href {
   if (data.type === "review_reply" && data.providerSlug)
     return { pathname: "/provider/[slug]", params: { slug: data.providerSlug } };
   if (data.type === "review_reply") return "/(tabs)/reviews";
+  // "How was X?" a day or two after they said the business responded.
+  if (data.type === "review_prompt" && data.providerSlug)
+    return { pathname: "/review/[slug]", params: { slug: data.providerSlug } };
+  // A held review was published or turned down.
+  if (data.type === "review" && data.providerSlug)
+    return { pathname: "/provider/[slug]", params: { slug: data.providerSlug } };
   return "/notifications";
 }
 
@@ -27,7 +33,7 @@ export function routeForNotification(data: PushData): Href {
 function staleKeys(data: PushData): readonly unknown[][] {
   const keys: unknown[][] = [[...notificationKeys.all]];
   if (data.ticketId || data.type === "support") keys.push([...supportKeys.all]);
-  if (data.type === "review_reply") keys.push([...queryKeys.myReviews]);
+  if (data.type === "review_reply" || data.type === "review") keys.push([...queryKeys.myReviews]);
   if (data.providerSlug) keys.push([...queryKeys.providerReviews(data.providerSlug)]);
   return keys;
 }
@@ -54,18 +60,23 @@ export function PushRegistrar() {
   }, [token]);
 
   useEffect(() => {
-    if (!last || !token || last.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
+    if (!last || !token || last.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER)
+      return;
     const id = last.notification.request.identifier;
     if (handled.current === id) return;
     handled.current = id;
     const data = last.notification.request.content.data as PushData;
-    track("notification_opened", { notification_type: typeof data?.type === "string" ? data.type : null, source: "push" });
+    track("notification_opened", {
+      notification_type: typeof data?.type === "string" ? data.type : null,
+      source: "push",
+    });
     router.push(routeForNotification(last.notification.request.content.data as PushData));
   }, [last, token]);
 
   useEffect(() => {
     const sub = Notifications.addNotificationReceivedListener((n) => {
-      for (const key of staleKeys(n.request.content.data as PushData)) void qc.invalidateQueries({ queryKey: key });
+      for (const key of staleKeys(n.request.content.data as PushData))
+        void qc.invalidateQueries({ queryKey: key });
     });
     return () => sub.remove();
   }, [qc]);

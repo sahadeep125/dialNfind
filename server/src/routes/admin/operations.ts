@@ -48,7 +48,7 @@ async function revenueSeries(since: Date, days: number) {
 adminOpsRouter.get("/overview", async (_req, res) => {
   const since30 = new Date(Date.now() - 30 * DAY);
   const since14 = startOfDay(new Date(Date.now() - 13 * DAY));
-  const [providers, activeProviders, pendingProviders, pendingClaims, pendingVerifications, openFlags, users, customers, leads30, reviews30, revenue30, activeSponsored, openTickets, activeSubs] =
+  const [providers, activeProviders, pendingProviders, pendingClaims, pendingVerifications, openFlags, pendingReviews, users, customers, leads30, reviews30, revenue30, activeSponsored, openTickets, activeSubs] =
     await Promise.all([
       prisma.provider.count(),
       prisma.provider.count({ where: { status: "active" } }),
@@ -56,6 +56,7 @@ adminOpsRouter.get("/overview", async (_req, res) => {
       prisma.providerClaim.count({ where: { status: "pending" } }),
       prisma.verification.count({ where: { status: "pending" } }),
       prisma.reportFlag.count({ where: { status: "open" } }),
+      prisma.review.count({ where: { status: "pending" } }),
       prisma.user.count(),
       prisma.user.count({ where: { role: "customer" } }),
       prisma.lead.count({ where: { createdAt: { gte: since30 } } }),
@@ -73,6 +74,7 @@ adminOpsRouter.get("/overview", async (_req, res) => {
     pendingClaims,
     pendingVerifications,
     openFlags,
+    pendingReviews,
     users,
     customers,
     leads30,

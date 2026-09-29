@@ -44,7 +44,13 @@ export const MyReviewCard = memo(function MyReviewCard({ review, onDelete }: Pro
         </View>
         {review.status !== "published" ? (
           <AppBadge
-            label={review.status === "flagged" ? "Under review" : "Removed"}
+            label={
+              review.status === "pending"
+                ? "Waiting for approval"
+                : review.status === "flagged"
+                  ? "Under review"
+                  : "Removed"
+            }
             tone="warning"
           />
         ) : null}

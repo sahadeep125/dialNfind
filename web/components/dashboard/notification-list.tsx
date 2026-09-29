@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, CheckCheck, LifeBuoy, MessageSquareReply } from "lucide-react";
+import { Bell, CheckCheck, LifeBuoy, MessageSquareReply, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/components/site/session-provider";
@@ -23,7 +23,7 @@ export interface NotificationItem {
   createdAt: string;
 }
 
-const ICONS: Record<string, typeof Bell> = { review_reply: MessageSquareReply, support: LifeBuoy };
+const ICONS: Record<string, typeof Bell> = { review_reply: MessageSquareReply, review_prompt: Star, review: Star, support: LifeBuoy };
 
 /** The notification list: each one opens what it is about and is marked read; "Mark all read" clears the rest. */
 export function NotificationList({ initial }: { initial: NotificationItem[] }) {

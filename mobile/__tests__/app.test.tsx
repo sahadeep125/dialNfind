@@ -126,7 +126,8 @@ describeLive("DialNFind app on Android", () => {
     await find("Edit profile");
     await find("Delete account");
     act(() => router.push(`/review/${provider.slug}`));
-    await find(/Post review|Update review/);
+    // The form, or why this customer cannot review the business yet (they never contacted it).
+    await find(/Post review|Update review|contacted this business on DialNFind|You can review them/);
     act(() => router.push("/profile"));
     await find("Save changes");
     act(() => router.push("/help"));

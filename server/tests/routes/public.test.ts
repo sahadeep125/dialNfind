@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "../../src/lib/prisma.js";
+import { clearSettingsCache } from "../../src/services/settings.js";
 import { env } from "../../src/env.js";
 import { uploadDir } from "../../src/storage/index.js";
 import { PRIVATE_FILES_URL, privateDir, signedLink, signFileUrl } from "../../src/lib/private-files.js";
@@ -322,14 +323,19 @@ describe("provider profiles", () => {
     expect((await (await authed(u)).post("/api/v1/providers/sharma/report").send({ reason: "Closed down" })).status).toBe(201);
     expect((await api().post("/api/v1/providers/sharma/report").send({ reason: "x" })).status).toBe(400);
     expect(await prisma.reportFlag.count()).toBe(2);
-    expect((await api().post("/api/v1/providers/sharma/visit")).body).toEqual({ isFavorite: false, myReview: null });
+    expect((await api().post("/api/v1/providers/sharma/visit")).body).toEqual({
+      isFavorite: false,
+      myReview: null,
+      reviewEligibility: { canReview: false, reason: "sign_in", availableAt: null },
+    });
     const p = await prisma.provider.findUniqueOrThrow({ where: { slug: "sharma" } });
     await prisma.favorite.create({ data: { userId: u.id, providerId: p.id } });
     await createReview(p.id, u.id, { photos: { create: { photoUrl: pub("v.webp") } } });
     const visit = await (await authed(u)).post("/api/v1/providers/sharma/visit");
-    expect(visit.body).toMatchObject({ isFavorite: true, myReview: { rating: 5, photos: [pub("v.webp")] } });
+    expect(visit.body).toMatchObject({ isFavorite: true, myReview: { rating: 5, photos: [pub("v.webp")], status: "published" }, reviewEligibility: null });
+    expect(visit.body.myReview).not.toHaveProperty("ipHash");
     const other = await (await authed(await createUser())).post("/api/v1/providers/sharma/visit");
-    expect(other.body).toEqual({ isFavorite: false, myReview: null });
+    expect(other.body).toEqual({ isFavorite: false, myReview: null, reviewEligibility: { canReview: false, reason: "no_contact", availableAt: null } });
   });
 });
 
@@ -406,24 +412,135 @@ describe("leads", () => {
 });
 
 describe("reviews", () => {
+  const HOUR = 60 * 60 * 1000;
+  const ago = (ms: number) => new Date(Date.now() - ms);
+  /** A customer whose account is old enough that it is not held for being new. */
+  const regular = (over: Parameters<typeof createUser>[0] = {}) => createUser({ createdAt: ago(48 * HOUR), ...over });
+  const post = (c: Awaited<ReturnType<typeof authed>>, providerId: bigint, over: Record<string, unknown> = {}) =>
+    c.post("/api/v1/reviews").send({ providerId: Number(providerId), rating: 5, reviewText: "Very good service indeed", ...over });
+
   it("creates one review per customer, linked to their contact", async () => {
     const { user: owner, provider } = await createOwner();
-    const customer = await createUser();
-    const lead = await createLead(provider.id, { userId: customer.id });
+    const customer = await regular();
+    const lead = await createLead(provider.id, { userId: customer.id, createdAt: ago(5 * HOUR) });
     const c = await authed(customer);
-    expect((await c.post("/api/v1/reviews").send({ providerId: Number(provider.id), rating: 5, reviewText: "short" })).body.error.message).toContain("at least 10");
-    const res = await c.post("/api/v1/reviews").send({ providerId: Number(provider.id), rating: 5, reviewText: "Very good service indeed", photos: [pub("a.webp")] });
+    expect((await post(c, provider.id, { reviewText: "short" })).body.error.message).toContain("at least 10");
+    const res = await post(c, provider.id, { photos: [pub("a.webp")] });
     expect(res.status).toBe(201);
-    expect(res.body.review).toMatchObject({ leadId: Number(lead.id), photos: [expect.objectContaining({ photoUrl: pub("a.webp") })] });
-    expect((await c.post("/api/v1/reviews").send({ providerId: Number(provider.id), rating: 4, reviewText: "Another review text" })).status).toBe(409);
+    expect(res.body.review).toMatchObject({ status: "published", photos: [pub("a.webp")] });
+    expect((await prisma.review.findUniqueOrThrow({ where: { id: BigInt(res.body.review.id) } })).leadId).toBe(lead.id);
+    expect((await post(c, provider.id, { rating: 4 })).status).toBe(409);
     await settle();
     expect(await prisma.notification.count({ where: { userId: owner.id, type: "review" } })).toBe(1);
-    expect((await (await authed(owner)).post("/api/v1/reviews").send({ providerId: Number(provider.id), rating: 5, reviewText: "My own business!!" })).body.error.message).toBe("You cannot review your own business");
-    expect((await c.post("/api/v1/reviews").send({ providerId: 999, rating: 5, reviewText: "Nobody is here at all" })).status).toBe(404);
-    const other = await createProvider();
-    const noLead = await (await authed(await createUser())).post("/api/v1/reviews").send({ providerId: Number(other.id), rating: 3, reviewText: "Decent work overall" });
-    expect(noLead.body.review.leadId).toBeNull();
+    expect((await post(await authed(owner), provider.id)).body.error.message).toBe("You cannot review your own business");
+    expect((await post(c, 999n)).status).toBe(404);
   });
+
+  it("only lets customers who contacted the business review it", async () => {
+    const p = await createProvider();
+    const refuse = async (c: Awaited<ReturnType<typeof authed>>) => {
+      const res = await post(c, p.id);
+      expect(res.status).toBe(403);
+      return res.body.error;
+    };
+    expect((await api().post("/api/v1/reviews").send({ providerId: Number(p.id), rating: 5, reviewText: "Very good service indeed" })).status).toBe(401);
+    expect((await refuse(await authed(await regular()))).details).toEqual({ reason: "no_contact", availableAt: null });
+
+    // Contacted a minute ago: wait for the setting (4 hours by default), unless they say the business responded.
+    const early = await regular();
+    const lead = await createLead(p.id, { userId: early.id, createdAt: ago(60_000) });
+    const c = await authed(early);
+    const error = await refuse(c);
+    expect(error.code).toBe("review_not_allowed");
+    expect(error.details.reason).toBe("too_soon");
+    expect(new Date(error.details.availableAt).getTime()).toBeCloseTo(lead.createdAt.getTime() + 4 * HOUR, -3);
+    const visit = await c.post(`/api/v1/providers/${p.slug}/visit`);
+    expect(visit.body.reviewEligibility).toMatchObject({ canReview: false, reason: "too_soon" });
+    await c.patch(`/api/v1/leads/${lead.id}/response`).send({ responded: true });
+    expect((await c.post(`/api/v1/providers/${p.slug}/visit`)).body.reviewEligibility).toEqual({ canReview: true, reason: null, availableAt: null });
+    expect((await post(c, p.id)).status).toBe(201);
+
+    // The wait is an admin setting; a guest contact does not count for anyone.
+    await prisma.setting.create({ data: { key: "review_min_contact_hours", value: "0" } });
+    clearSettingsCache();
+    const later = await regular();
+    await createLead(p.id, { createdAt: ago(5 * HOUR) });
+    expect((await refuse(await authed(later))).details.reason).toBe("no_contact");
+    await createLead(p.id, { userId: later.id });
+    expect((await post(await authed(later), p.id)).status).toBe(201);
+  });
+
+  it("holds suspicious reviews for the admin team", async () => {
+    const reviewAs = async (user: Awaited<ReturnType<typeof createUser>>, providerId: bigint, over: Record<string, unknown> = {}, ip = "1.1.1.1") => {
+      await createLead(providerId, { userId: user.id, customerReportedResponse: true });
+      const res = await post(await authed(user), providerId, over).set("X-Forwarded-For", ip);
+      expect(res.status).toBe(201);
+      return prisma.review.findUniqueOrThrow({ where: { id: BigInt(res.body.review.id) } });
+    };
+    const { user: owner, provider } = await createOwner();
+    const first = await reviewAs(await createUser(), provider.id);
+    expect(first).toMatchObject({ status: "pending", holdReasons: ["new_account"] });
+    await settle();
+    expect(await prisma.notification.count({ where: { userId: owner.id, type: "review" } })).toBe(0);
+    // Same IP as the first review of this business; the same device used by another account on any business.
+    const second = await reviewAs(await regular(), provider.id, { deviceId: "device-abc-123" }, "1.1.1.1");
+    expect(second.holdReasons).toEqual(["shared_ip"]);
+    expect(second.deviceHash).toMatch(/^[0-9a-f]{40}$/);
+    expect(second.ipHash).not.toContain("1.1.1.1");
+    const elsewhere = await createProvider();
+    const third = await reviewAs(await regular(), elsewhere.id, { deviceId: "device-abc-123" }, "2.2.2.2");
+    expect(third.holdReasons).toEqual(["shared_device"]);
+    // Two other reviews of this business in the last few minutes make a burst.
+    const burst = await reviewAs(await regular(), provider.id, {}, "3.3.3.3");
+    expect(burst.holdReasons).toEqual(["burst"]);
+    // One star on a listing nobody has claimed.
+    const unclaimed = await createProvider();
+    expect((await reviewAs(await regular(), unclaimed.id, { rating: 1 }, "4.4.4.4")).holdReasons).toEqual(["one_star_unclaimed"]);
+    expect((await reviewAs(await regular(), unclaimed.id, { rating: 2 }, "5.5.5.5")).status).toBe("published");
+
+    // Held reviews are not public and do not count until published.
+    expect((await api().get(`/api/v1/providers/${provider.slug}/reviews`)).body.total).toBe(0);
+    const admin = await authed(await createStaff());
+    expect((await admin.get("/api/v1/admin/reviews").query({ status: "pending" })).body.total).toBe(5);
+    expect((await admin.get("/api/v1/admin/overview")).body.pendingReviews).toBe(5);
+    await admin.patch(`/api/v1/admin/reviews/${first.id}`).send({ status: "published" });
+    await admin.patch(`/api/v1/admin/reviews/${second.id}`).send({ status: "removed" });
+    await settle();
+    expect((await api().get(`/api/v1/providers/${provider.slug}/reviews`)).body.total).toBe(1);
+    expect(await prisma.notification.count({ where: { userId: owner.id, type: "review" } })).toBe(1);
+    expect((await prisma.notification.findFirstOrThrow({ where: { userId: first.userId } })).title).toBe("Your review is live");
+    expect((await prisma.notification.findFirstOrThrow({ where: { userId: second.userId } })).title).toBe("Your review was not published");
+  });
+
+  it("locks the rating after a week and keeps every earlier version", async () => {
+    const p = await createProvider();
+    const customer = await regular();
+    const review = await createReview(p.id, customer.id, { rating: 4, createdAt: ago(8 * 24 * HOUR) });
+    const c = await authed(customer);
+    const locked = await c.patch(`/api/v1/reviews/${review.id}`).send({ rating: 1 });
+    expect(locked.status).toBe(400);
+    expect(locked.body.error.details[0].path).toBe("rating");
+    // Same rating plus new text is fine, but the review goes back to the admin team.
+    const edit = await c.patch(`/api/v1/reviews/${review.id}`).send({ rating: 4, reviewText: "Changed my mind about this one" });
+    expect(edit.body.review).toMatchObject({ rating: 4, status: "pending" });
+    const saved = await prisma.review.findUniqueOrThrow({ where: { id: review.id }, include: { edits: true } });
+    expect(saved.holdReasons).toEqual(["edited_after_lock"]);
+    expect(saved.edits).toMatchObject([{ rating: 4, reviewText: "Great work, very quick", photos: [] }]);
+    // Nothing changed: no new version.
+    await c.patch(`/api/v1/reviews/${review.id}`).send({ rating: 4 });
+    expect(await prisma.reviewEdit.count()).toBe(1);
+    const admin = await authed(await createStaff());
+    const listed = (await admin.get("/api/v1/admin/reviews").query({ status: "pending" })).body.reviews[0];
+    expect(listed.edits).toHaveLength(1);
+    expect(listed).not.toHaveProperty("ipHash");
+
+    // Within the first week the rating can still change and stays live.
+    const fresh = await createReview(p.id, (await regular()).id, { rating: 2 });
+    const owner = await prisma.user.findUniqueOrThrow({ where: { id: fresh.userId } });
+    const changed = await (await authed(owner)).patch(`/api/v1/reviews/${fresh.id}`).send({ rating: 3 });
+    expect(changed.body.review).toMatchObject({ rating: 3, status: "published" });
+  });
+
   it("edits and deletes reviews, releasing removed photos", async () => {
     for (const f of ["a.webp", "b.webp"]) await writeFile(path.join(uploadDir, f), "x");
     const p = await createProvider();
@@ -431,7 +548,7 @@ describe("reviews", () => {
     const review = await createReview(p.id, customer.id, { photos: { create: [{ photoUrl: pub("a.webp") }, { photoUrl: pub("b.webp") }] } });
     const c = await authed(customer);
     const edit = await c.patch(`/api/v1/reviews/${review.id}`).send({ rating: 3, photos: [pub("b.webp")] });
-    expect(edit.body.review).toMatchObject({ rating: 3, photos: [expect.objectContaining({ photoUrl: pub("b.webp") })] });
+    expect(edit.body.review).toMatchObject({ rating: 3, photos: [pub("b.webp")] });
     await settle();
     const fs = await import("node:fs/promises");
     await expect(fs.stat(path.join(uploadDir, "a.webp"))).rejects.toThrow();

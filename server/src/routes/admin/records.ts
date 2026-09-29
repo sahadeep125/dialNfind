@@ -113,7 +113,7 @@ adminRecordsRouter.patch("/leads/:id/dispute", async (req, res) => {
 // Reviews ----------------------------------------------------------------------------------------
 
 export const reviewsQuery = paginationSchema.extend({
-  status: z.enum(["published", "flagged", "removed"]).optional(),
+  status: z.enum(["pending", "published", "flagged", "removed"]).optional(),
   rating: z.coerce.number().int().min(1).max(5).optional(),
   q: z.string().trim().max(100).optional(),
 });
@@ -139,7 +139,9 @@ adminRecordsRouter.get("/reviews", async (req, res) => {
         user: { select: { id: true, name: true, email: true } },
         provider: { select: { id: true, businessName: true, slug: true } },
         photos: { select: { photoUrl: true } },
+        edits: { orderBy: { createdAt: "desc" }, take: 10, select: { rating: true, reviewText: true, createdAt: true } },
       },
+      omit: { ipHash: true, deviceHash: true },
     }),
     prisma.review.count({ where }),
   ]);
@@ -153,9 +155,22 @@ adminRecordsRouter.get("/reviews", async (req, res) => {
 
 const reviewStatus = z.enum(["published", "flagged", "removed"]);
 
-/** Sets a review's status, closes its open reports and updates the provider's rating. */
+/**
+ * Sets a review's status, closes its open reports and updates the provider's rating. Deciding on a held
+ * (pending) review tells its author, and publishing one tells the business as a new review would have.
+ */
 async function moderateReview(adminId: bigint, id: bigint, status: z.infer<typeof reviewStatus>) {
-  const review = await prisma.review.update({ where: { id }, data: { status } });
+  const before = await prisma.review.findUniqueOrThrow({ where: { id }, select: { status: true } });
+  const review = await prisma.review.update({ where: { id }, data: { status }, include: { provider: { select: { userId: true, slug: true, businessName: true } } } });
+  if (before.status === "pending") {
+    const data = { reviewId: Number(id), providerSlug: review.provider.slug };
+    if (status === "published") {
+      void notify(review.userId, "review", "Your review is live", `Thanks for reviewing ${review.provider.businessName}.`, data);
+      void notify(review.provider.userId, "review", `New ${review.rating}-star review`, (review.reviewText ?? "").slice(0, 120), { reviewId: Number(id) });
+    } else if (status === "removed") {
+      void notify(review.userId, "review", "Your review was not published", `Your review of ${review.provider.businessName} does not meet our review guidelines.`, data);
+    }
+  }
   await prisma.reportFlag.updateMany({ where: { targetType: "review", targetId: id, status: "open" }, data: { status: "resolved", resolvedBy: adminId } });
   await recalculateProvider(review.providerId);
   refreshShared("reviews");

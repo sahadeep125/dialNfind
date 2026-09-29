@@ -45,6 +45,11 @@ export function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso));
 }
 
+/** "29 Sept, 4:30 pm": a moment later today or in the next few days. */
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+}
+
 export function initials(name: string): string {
   return name
     .split(/\s+/)

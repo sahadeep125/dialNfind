@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { mailUser } from "./mail.js";
 import { sendPush } from "./push.js";
 
-export type NotificationType = "lead" | "review" | "review_reply" | "claim" | "verification" | "listing" | "subscription" | "sponsored" | "support" | "system";
+export type NotificationType = "lead" | "review" | "review_reply" | "review_prompt" | "claim" | "verification" | "listing" | "subscription" | "sponsored" | "support" | "system";
 
 const MINUTE = 60 * 1000;
 /** A burst of leads becomes one push: after a lead push, the next one waits this long. */
@@ -12,7 +12,7 @@ const LEAD_BUNDLE_MS = 5 * MINUTE;
 /** Pushes a person can get in a day apart from leads; the rest stay in the in-app list. */
 const DAILY_PUSH_CAP = 10;
 /** Nothing here needs someone's attention at night; it waits in the in-app list instead. */
-const QUIET_TYPES = new Set<NotificationType>(["review", "review_reply", "sponsored", "subscription"]);
+const QUIET_TYPES = new Set<NotificationType>(["review", "review_reply", "review_prompt", "sponsored", "subscription"]);
 const QUIET_FROM_HOUR = 22;
 const QUIET_UNTIL_HOUR = 8;
 

@@ -1,9 +1,9 @@
 import { View } from "react-native";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 
-import { AppSkeleton } from "@/components/design-system";
+import { AppCallout, AppSkeleton } from "@/components/design-system";
 import { ErrorState, Screen, ScreenHeader } from "@/components/layout";
-import { ReviewForm } from "@/components/reviews";
+import { ReviewForm, reviewBlockedMessage } from "@/components/reviews";
 import { useProvider } from "@/hooks/useProvider";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -31,6 +31,13 @@ export default function WriteReviewScreen() {
         </View>
       ) : isError || !p ? (
         <ErrorState error={error} onRetry={() => void refetch()} />
+      ) : !p.myReview && p.reviewEligibility && !p.reviewEligibility.canReview ? (
+        // Opened from a link or an old notification by someone who may not review this business yet.
+        <View style={{ padding: theme.spacing[4] }}>
+          <AppCallout>
+            {reviewBlockedMessage(p.reviewEligibility) ?? "You cannot review this business."}
+          </AppCallout>
+        </View>
       ) : (
         <ReviewForm key={p.myReview?.id ?? "new"} provider={p} onSaved={done} />
       )}

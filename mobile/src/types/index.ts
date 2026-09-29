@@ -104,7 +104,32 @@ export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
   }[];
   verifications: { type: string; verifiedAt: string | null }[];
   ratingBreakdown: { rating: number; count: number }[];
-  myReview: { id: number; rating: number; reviewText: string | null; photos: string[] } | null;
+  myReview: OwnReview | null;
+  /** Null when the person already reviewed this business (see myReview). */
+  reviewEligibility: ReviewEligibility | null;
+}
+
+/** The signed-in person's review of the business on a profile. */
+export interface OwnReview {
+  id: number;
+  rating: number;
+  reviewText: string | null;
+  photos: string[];
+  /** pending: held for the DialNFind team; flagged or removed: taken down after a report. */
+  status: ReviewStatus;
+  createdAt: string;
+  /** After a week only the text can change, and a change is checked again before it shows. */
+  ratingLocked: boolean;
+}
+
+export type ReviewStatus = "pending" | "published" | "flagged" | "removed";
+
+/** Whether the person may review a business: only after contacting it through DialNFind. */
+export interface ReviewEligibility {
+  canReview: boolean;
+  reason: "sign_in" | "verify_email" | "own_business" | "no_contact" | "too_soon" | null;
+  /** For too_soon: when the review opens, unless they say the business responded first. */
+  availableAt: string | null;
 }
 
 export interface Review {
@@ -187,7 +212,7 @@ export interface MyReview {
   reviewText: string | null;
   providerReply: string | null;
   providerReplyAt: string | null;
-  status: "published" | "flagged" | "removed";
+  status: ReviewStatus;
   createdAt: string;
   provider: {
     id: number;

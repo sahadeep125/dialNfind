@@ -39,7 +39,7 @@ export default async function MyReviewsPage() {
                 </Link>
                 <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                   <RatingStars value={r.rating} /> {formatDate(r.createdAt)} · {r.provider.locality ?? r.provider.city}
-                  {r.status !== "published" && <Badge variant="secondary">{r.status === "flagged" ? "Under review" : "Removed"}</Badge>}
+                  {r.status !== "published" && <Badge variant="secondary">{r.status === "pending" ? "Waiting for approval" : r.status === "flagged" ? "Under review" : "Removed"}</Badge>}
                 </div>
               </div>
               <div className="flex gap-1">

@@ -54,5 +54,7 @@ export function useAnswerContact(): UseMutationResult<
       );
     },
     onError: () => void qc.invalidateQueries({ queryKey: queryKeys.contacts }),
+    // "Yes, they responded" allows reviewing the business straight away.
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["provider"] }),
   });
 }

@@ -141,6 +141,7 @@ meRouter.get("/reviews", async (req, res) => {
     where: { userId: currentUser(req).id },
     orderBy: { createdAt: "desc" },
     include: { provider: { select: { id: true, slug: true, businessName: true, city: true, locality: true, logoUrl: true } } },
+    omit: { ipHash: true, deviceHash: true, holdReasons: true },
   });
   res.json({ reviews });
 });

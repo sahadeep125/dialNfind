@@ -18,14 +18,28 @@ interface ReviewRow {
   rating: number;
   reviewText: string | null;
   providerReply: string | null;
-  status: "published" | "flagged" | "removed";
+  status: "pending" | "published" | "flagged" | "removed";
+  holdReasons: string[];
   leadId: number | null;
   createdAt: string;
+  /** Earlier versions, newest first. */
+  edits: { rating: number; reviewText: string | null; createdAt: string }[];
   user: { id: number; name: string; email: string };
   provider: { id: number; businessName: string; slug: string };
   photos: string[];
   openReports: number;
 }
+
+/** Why a review was held for approval (server/src/services/review-trust.ts). */
+const HOLD_REASONS: Record<string, string> = {
+  new_account: "Account less than a day old",
+  no_contact: "No contact through DialNFind",
+  burst: "Several reviews of this business within minutes",
+  shared_ip: "Same network as another reviewer of this business",
+  shared_device: "Same phone as another reviewer account",
+  one_star_unclaimed: "1 star on an unclaimed listing",
+  edited_after_lock: "Edited after the first week",
+};
 
 interface FlagRow {
   id: number;
@@ -66,6 +80,7 @@ function useModerate() {
     mutationFn: ({ id, status }: { id: number; status: ReviewRow["status"] }) => api(`/admin/reviews/${id}`, { method: "PATCH", json: { status } }),
     onSuccess: (_r, v) => {
       toast.success(v.status === "removed" ? "Review hidden" : v.status === "published" ? "Review published" : "Review flagged");
+      void qc.invalidateQueries({ queryKey: ["overview"] });
       void qc.invalidateQueries({ queryKey: ["admin-reviews"] });
       void qc.invalidateQueries({ queryKey: ["admin-flags"] });
       void qc.invalidateQueries({ queryKey: ["overview"] });
@@ -109,6 +124,7 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
           value={f.status}
           onChange={(status) => setF({ status, page: "1" })}
           options={[
+            { value: "pending", label: "Waiting for approval" },
             { value: "published", label: "Published" },
             { value: "flagged", label: "Flagged" },
             { value: "removed", label: "Hidden" },
@@ -143,7 +159,7 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
                   <div className="flex flex-wrap items-center gap-2">
                     <SelectRowBox selection={selection} id={r.id} label={`Select review by ${r.user.name}`} />
                     <Stars rating={r.rating} />
-                    <StatusBadge status={r.status} label={r.status === "removed" ? "Hidden" : undefined} />
+                    <StatusBadge status={r.status} label={r.status === "removed" ? "Hidden" : r.status === "pending" ? "Waiting for approval" : undefined} />
                     {r.leadId && <span className="text-xs font-medium text-primary">Verified contact</span>}
                     {r.openReports > 0 && (
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">
@@ -165,7 +181,7 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
                 <div className="flex gap-2">
                   {r.status !== "published" && (
                     <Button size="sm" variant="outline" disabled={moderate.isPending} onClick={() => moderate.mutate({ id: r.id, status: "published" })}>
-                      <RotateCcw /> Publish
+                      {r.status === "pending" ? <Check /> : <RotateCcw />} {r.status === "pending" ? "Approve" : "Publish"}
                     </Button>
                   )}
                   {r.status !== "removed" && (
@@ -175,6 +191,12 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
                   )}
                 </div>
               </div>
+              {r.holdReasons.length > 0 && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  <span className="font-semibold">{r.status === "pending" ? "Held because: " : "Was held because: "}</span>
+                  {r.holdReasons.map((h) => HOLD_REASONS[h] ?? h).join(" · ")}
+                </p>
+              )}
               {r.reviewText ? <p className="mt-3 whitespace-pre-line text-sm">{r.reviewText}</p> : <p className="mt-3 text-sm italic text-muted-foreground">Rating only, no text</p>}
               {r.photos.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -184,6 +206,23 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
                     </a>
                   ))}
                 </div>
+              )}
+              {r.edits.length > 0 && (
+                <details className="mt-3 text-sm">
+                  <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                    Edited {r.edits.length} time{r.edits.length > 1 ? "s" : ""}: earlier versions
+                  </summary>
+                  <ol className="mt-2 space-y-2">
+                    {r.edits.map((e) => (
+                      <li key={e.createdAt} className="rounded-xl border p-3">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Stars rating={e.rating} /> replaced {formatRelative(e.createdAt)}
+                        </div>
+                        <p className="mt-1 whitespace-pre-line">{e.reviewText ?? "Rating only"}</p>
+                      </li>
+                    ))}
+                  </ol>
+                </details>
               )}
               {r.providerReply && (
                 <div className="mt-3 rounded-xl bg-muted/60 p-3 text-sm">

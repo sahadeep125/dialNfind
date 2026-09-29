@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
-import { badRequest, forbidden, notFound } from "../lib/errors.js";
+import { badRequest, conflict, forbidden, HttpError, notFound } from "../lib/errors.js";
 import { currentUser, optionalAuth, requireAuth } from "../middleware/auth.js";
 import { notify } from "../services/notify.js";
 import { recalculateProvider } from "../services/ranking.js";
@@ -10,6 +10,7 @@ import { getNumberSetting } from "../services/settings.js";
 import { releaseFile, uploadedImageUrl } from "../storage/references.js";
 import { limits } from "../lib/rate-limit.js";
 import { captureServer } from "../services/analytics.js";
+import { holdReasons, ownReview, ratingLockedAt, RATING_LOCK_DAYS, reviewEligibility, trustHash } from "../services/review-trust.js";
 
 export const reviewsRouter = Router();
 
@@ -18,6 +19,8 @@ const createSchema = z.object({
   rating: z.number().int().min(1).max(5),
   reviewText: z.string().trim().min(1, "Write a few words about your experience").max(2000),
   photos: z.array(uploadedImageUrl).max(6).optional(),
+  /** The app's install id (Android ID or iOS vendor id); only stored as a hash to spot shared devices. */
+  deviceId: z.string().trim().min(8).max(100).optional(),
 });
 
 /** The minimum length is an admin setting, so it is checked here rather than in the schema. */
@@ -78,7 +81,10 @@ reviewsRouter.get("/highlights", async (req, res) => {
   });
 });
 
-/** POST /reviews — one review per customer per provider; linked to their latest lead if any. */
+/**
+ * POST /reviews — one review per customer per business, only after contacting it through DialNFind
+ * (see reviewEligibility). Suspicious reviews are held as pending for the admin team (see holdReasons).
+ */
 reviewsRouter.post("/", limits.reviews, requireAuth, async (req, res) => {
   const body = parse(createSchema, req.body);
   await checkReviewLength(body.reviewText);
@@ -86,13 +92,36 @@ reviewsRouter.post("/", limits.reviews, requireAuth, async (req, res) => {
   const providerId = BigInt(body.providerId);
   const provider = await prisma.provider.findFirst({ where: { id: providerId, status: "active" }, select: { id: true, userId: true } });
   if (!provider) throw notFound("Provider not found");
-  if (provider.userId === user.id) throw badRequest("You cannot review your own business");
+  if (await prisma.review.findUnique({ where: { providerId_userId: { providerId, userId: user.id } }, select: { id: true } })) {
+    throw conflict("You already reviewed this business. Edit your review instead.");
+  }
 
-  const lead = await prisma.lead.findFirst({
-    where: { providerId, userId: user.id, review: null },
-    orderBy: { createdAt: "desc" },
-    select: { id: true },
+  const eligibility = await reviewEligibility(user, provider);
+  if (!eligibility.canReview) {
+    const message = {
+      sign_in: "Sign in to write a review",
+      verify_email: "Confirm your email address to write a review",
+      own_business: "You cannot review your own business",
+      no_contact: "Contact this business through DialNFind before reviewing it",
+      too_soon: "You can review this business a little later, once you have had time to use their service",
+    }[eligibility.reason];
+    throw new HttpError(403, message, "review_not_allowed", { reason: eligibility.reason, availableAt: eligibility.availableAt });
+  }
+
+  const author = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { createdAt: true } });
+  const ipHash = trustHash("ip", req.ip);
+  const deviceHash = trustHash("device", body.deviceId);
+  const reasons = await holdReasons({
+    userId: user.id,
+    userCreatedAt: author.createdAt,
+    providerId,
+    providerClaimed: provider.userId !== null,
+    rating: body.rating,
+    leadId: eligibility.leadId,
+    ipHash,
+    deviceHash,
   });
+  const status = reasons.length ? "pending" : "published";
 
   const review = await prisma.review.create({
     data: {
@@ -100,16 +129,21 @@ reviewsRouter.post("/", limits.reviews, requireAuth, async (req, res) => {
       userId: user.id,
       rating: body.rating,
       reviewText: body.reviewText,
-      leadId: lead?.id ?? null,
+      leadId: eligibility.leadId,
+      status,
+      holdReasons: reasons,
+      ipHash,
+      deviceHash,
       photos: body.photos ? { create: body.photos.map((photoUrl) => ({ photoUrl })) } : undefined,
     },
     include: { photos: true },
   });
-  await recalculateProvider(providerId);
+  if (status === "published") await recalculateProvider(providerId);
 
-  captureServer(user.id, "review_created", { review_id: Number(review.id), provider_id: Number(providerId), rating: body.rating, photo_count: body.photos?.length ?? 0 });
-  void notify(provider.userId, "review", `New ${body.rating}-star review`, body.reviewText.slice(0, 120), { reviewId: Number(review.id) });
-  res.status(201).json({ review });
+  captureServer(user.id, "review_created", { review_id: Number(review.id), provider_id: Number(providerId), rating: body.rating, photo_count: body.photos?.length ?? 0, held: status === "pending" });
+  // A held review reaches the business once the admin team publishes it (admin/records.ts).
+  if (status === "published") void notify(provider.userId, "review", `New ${body.rating}-star review`, body.reviewText.slice(0, 120), { reviewId: Number(review.id) });
+  res.status(201).json({ review: ownReview(review) });
 });
 
 const updateSchema = z.object({
@@ -118,25 +152,53 @@ const updateSchema = z.object({
   photos: z.array(uploadedImageUrl).max(6).optional(),
 });
 
+/**
+ * PATCH /reviews/:id — the author edits their review. The rating is fixed after RATING_LOCK_DAYS; later text
+ * or photo changes go back to the admin team. The version before each edit is kept in review_edits.
+ */
 reviewsRouter.patch("/:id", requireAuth, async (req, res) => {
   const body = parse(updateSchema, req.body);
   await checkReviewLength(body.reviewText);
-  const review = await prisma.review.findUnique({ where: { id: idParam(req.params.id as string) } });
+  const review = await prisma.review.findUnique({ where: { id: idParam(req.params.id as string) }, include: { photos: { select: { photoUrl: true } } } });
   if (!review) throw notFound("Review not found");
   if (review.userId !== currentUser(req).id) throw forbidden();
   const { photos, ...fields } = body;
-  const old = photos ? await prisma.reviewPhoto.findMany({ where: { reviewId: review.id }, select: { photoUrl: true } }) : [];
+  const oldPhotos = review.photos.map((p) => p.photoUrl);
+  const ratingChanged = fields.rating !== undefined && fields.rating !== review.rating;
+  const textChanged = fields.reviewText !== undefined && fields.reviewText !== review.reviewText;
+  const photosChanged = photos !== undefined && (photos.length !== oldPhotos.length || photos.some((p, i) => p !== oldPhotos[i]));
+  if (!ratingChanged && !textChanged && !photosChanged) {
+    res.json({ review: ownReview(review) });
+    return;
+  }
+
+  const locked = ratingLockedAt(review.createdAt).getTime() <= Date.now();
+  if (locked && ratingChanged) {
+    const message = `The star rating can only be changed in the first ${RATING_LOCK_DAYS} days. You can still update what you wrote.`;
+    throw badRequest(message, [{ path: "rating", message }]);
+  }
+  // A late edit can turn an old review into something new, so a live one is checked again first.
+  const recheck = locked && review.status === "published";
+
   const updated = await prisma.$transaction(async (tx) => {
-    if (photos) {
+    await tx.reviewEdit.create({ data: { reviewId: review.id, rating: review.rating, reviewText: review.reviewText, photos: oldPhotos } });
+    if (photosChanged) {
       await tx.reviewPhoto.deleteMany({ where: { reviewId: review.id } });
       if (photos.length) await tx.reviewPhoto.createMany({ data: photos.map((photoUrl) => ({ reviewId: review.id, photoUrl })) });
     }
-    return tx.review.update({ where: { id: review.id }, data: fields, include: { photos: true } });
+    return tx.review.update({
+      where: { id: review.id },
+      data: {
+        ...fields,
+        ...(recheck ? { status: "pending" as const, holdReasons: [...new Set([...review.holdReasons, "edited_after_lock"])] } : {}),
+      },
+      include: { photos: true },
+    });
   });
   // Files the customer took out of the review are no longer referenced anywhere.
-  for (const o of old) if (!photos!.includes(o.photoUrl)) void releaseFile(o.photoUrl);
+  if (photosChanged) for (const url of oldPhotos) if (!photos.includes(url)) void releaseFile(url);
   await recalculateProvider(review.providerId);
-  res.json({ review: updated });
+  res.json({ review: ownReview(updated) });
 });
 
 reviewsRouter.delete("/:id", requireAuth, async (req, res) => {

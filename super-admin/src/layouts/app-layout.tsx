@@ -41,6 +41,7 @@ export interface Overview {
   pendingClaims: number;
   pendingVerifications: number;
   openFlags: number;
+  pendingReviews: number;
   users: number;
   customers: number;
   leads30: number;
@@ -75,7 +76,7 @@ const NAV: { title: string; items: Item[] }[] = [
       { to: "/verifications", label: "Verification", icon: BadgeCheck, module: "verifications", count: (o) => o.pendingVerifications },
       { to: "/categories", label: "Categories", icon: FolderTree, module: "categories" },
       { to: "/badges", label: "Badges", icon: Award, module: "categories" },
-      { to: "/reviews", label: "Reviews and reports", icon: MessageSquareWarning, module: "reviews", count: (o) => o.openFlags },
+      { to: "/reviews", label: "Reviews and reports", icon: MessageSquareWarning, module: "reviews", count: (o) => o.openFlags + o.pendingReviews },
       { to: "/leads", label: "Leads", icon: PhoneIncoming, module: "leads" },
     ],
   },

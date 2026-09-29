@@ -17,6 +17,7 @@ export function DashboardPage() {
     { label: "Listings to approve", count: data.pendingProviders, to: "/providers?status=pending", module: "providers", icon: Store, text: "New businesses waiting to go live" },
     { label: "Documents to check", count: data.pendingVerifications, to: "/verifications", module: "verifications", icon: BadgeCheck, text: "Verification uploads from providers" },
     { label: "Claims to review", count: data.pendingClaims, to: "/claims", module: "providers", icon: KeyRound, text: "Owners asking to take over a listing" },
+    { label: "Reviews to approve", count: data.pendingReviews, to: "/reviews?status=pending", module: "reviews", icon: Star, text: "Held reviews from new accounts or with warning signs" },
     { label: "Open reports", count: data.openFlags, to: "/reviews?tab=reports", module: "reviews", icon: MessageSquareWarning, text: "Reviews and listings flagged by users" },
     { label: "Active tickets", count: data.openTickets, to: "/support", module: "support", icon: LifeBuoy, text: "Support requests waiting on the team" },
   ];

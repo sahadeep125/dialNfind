@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, PenLine, Star } from "lucide-react";
+import { Info, Loader2, PenLine, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -15,6 +16,8 @@ import { PhotoListUpload } from "@/components/file-upload";
 import { clientApi, ClientApiError } from "@/lib/client";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+import { formatDateTime } from "@/lib/format";
+import type { MyReview, ReviewEligibility } from "@/lib/types";
 import { refreshProvider } from "@/app/providers/[slug]/actions";
 
 const LABELS = ["", "Poor", "Below average", "Good", "Very good", "Excellent"];
@@ -39,6 +42,7 @@ export function ReviewForm({
   slug,
   signedIn,
   existing,
+  eligibility = null,
   minLength,
 }: {
   providerId: number;
@@ -47,11 +51,15 @@ export function ReviewForm({
   slug?: string;
   signedIn: boolean;
   minLength: number;
-  existing: { id: number; rating: number; reviewText: string | null; photos?: string[] } | null;
+  existing: (Pick<MyReview, "id" | "rating" | "reviewText"> & Partial<Pick<MyReview, "photos" | "status" | "ratingLocked">>) | null;
+  /** From the profile visit; when it says no, there is no form, only a note on how to become able to review. */
+  eligibility?: ReviewEligibility | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const canWrite = signedIn && (!!existing || eligibility?.canReview !== false);
+  // A "How was it?" notification links here with ?review=1 to open the form straight away.
+  const [open, setOpen] = useState(() => canWrite && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("review") === "1");
   const [hover, setHover] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +68,7 @@ export function ReviewForm({
   const { errors, isSubmitting } = formState;
   const rating = useWatch({ control, name: "rating" });
   const textLength = useWatch({ control, name: "reviewText" }).length;
+  const ratingLocked = !!existing?.ratingLocked;
 
   // Each time the dialog opens it starts from the saved review.
   const onOpenChange = (next: boolean) => {
@@ -70,7 +79,7 @@ export function ReviewForm({
     setOpen(next);
   };
 
-  if (!signedIn) {
+  if (!signedIn || eligibility?.reason === "sign_in") {
     return (
       <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/5 hover:text-primary" onClick={() => router.push(`/login?next=${encodeURIComponent(pathname)}`)}>
         <PenLine /> Write a Review
@@ -78,13 +87,17 @@ export function ReviewForm({
     );
   }
 
+  if (!existing && eligibility && !eligibility.canReview) return <ReviewNotAllowed eligibility={eligibility} pathname={pathname} />;
+
   const onSubmit = handleSubmit(async (v) => {
     setError(null);
     const body = { rating: v.rating, reviewText: v.reviewText.trim(), photos: v.photos };
     try {
-      if (existing) await clientApi(`/reviews/${existing.id}`, { method: "PATCH", body: JSON.stringify(body) });
-      else await clientApi("/reviews", { method: "POST", body: JSON.stringify({ providerId, ...body }) });
-      toast.success(existing ? "Review updated" : "Thanks for sharing your experience");
+      const { review } = existing
+        ? await clientApi<{ review: MyReview }>(`/reviews/${existing.id}`, { method: "PATCH", body: JSON.stringify(body) })
+        : await clientApi<{ review: MyReview }>("/reviews", { method: "POST", body: JSON.stringify({ providerId, ...body }) });
+      if (review?.status === "pending" && existing?.status !== "pending") toast.success("Thanks! Your review will show once our team has checked it");
+      else toast.success(existing ? "Review updated" : "Thanks for sharing your experience");
       track(existing ? "review_updated" : "review_submitted", { provider_id: providerId, rating: v.rating, photo_count: v.photos.length });
       setOpen(false);
       if (slug) await refreshProvider(slug);
@@ -108,6 +121,8 @@ export function ReviewForm({
           <DialogTitle>{existing ? "Edit your review" : `Review ${providerName}`}</DialogTitle>
           <DialogDescription>Honest reviews help your neighbours pick the right professional.</DialogDescription>
         </DialogHeader>
+        {existing?.status === "pending" && <ReviewNote>Our team is checking this review. It shows on the profile once approved.</ReviewNote>}
+        {ratingLocked && existing?.status !== "pending" && <ReviewNote>Stars can only be changed in the first week. If you edit the text, our team checks it again before it shows.</ReviewNote>}
         <form onSubmit={onSubmit} noValidate className="space-y-5">
           <FormAlert message={error} />
           <Field id="rating" label="Your rating" error={errors.rating} required>
@@ -122,9 +137,10 @@ export function ReviewForm({
                       type="button"
                       role="radio"
                       aria-checked={field.value === i}
-                      onMouseEnter={() => setHover(i)}
+                      disabled={ratingLocked}
+                      onMouseEnter={() => !ratingLocked && setHover(i)}
                       onClick={() => field.onChange(i)}
-                      className="cursor-pointer p-0.5"
+                      className="cursor-pointer p-0.5 disabled:cursor-not-allowed"
                       aria-label={`${i} star${i > 1 ? "s" : ""}, ${LABELS[i]}`}
                     >
                       <Star className={cn("size-8 transition-colors", i <= shown ? "fill-star text-star" : "text-border")} strokeWidth={1.5} />
@@ -159,4 +175,43 @@ export function ReviewForm({
       </DialogContent>
     </Dialog>
   );
+}
+
+function ReviewNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex gap-2 rounded-xl bg-muted/70 p-3 text-sm text-muted-foreground">
+      <Info className="mt-0.5 size-4 shrink-0 text-primary" /> <span>{children}</span>
+    </p>
+  );
+}
+
+/** In place of "Write a Review" when the visitor may not review yet, saying what would change that. */
+function ReviewNotAllowed({ eligibility, pathname }: { eligibility: ReviewEligibility; pathname: string }) {
+  const link = "font-medium text-primary hover:underline";
+  let text: React.ReactNode;
+  if (eligibility.reason === "verify_email") {
+    text = (
+      <>
+        <Link href={`/verify-email?next=${encodeURIComponent(pathname)}`} className={link}>
+          Confirm your email
+        </Link>{" "}
+        to write a review.
+      </>
+    );
+  } else if (eligibility.reason === "too_soon") {
+    text = (
+      <>
+        You can review them {eligibility.availableAt ? `from ${formatDateTime(eligibility.availableAt)}` : "soon"}. Already heard back?{" "}
+        <Link href="/dashboard/contacts" className={link}>
+          Tell us they responded
+        </Link>
+        .
+      </>
+    );
+  } else if (eligibility.reason === "no_contact") {
+    text = "Reviews come from customers who contacted this business on DialNFind. Call or WhatsApp them from this page to review them later.";
+  } else {
+    return null;
+  }
+  return <p className="max-w-xs text-right text-xs text-muted-foreground">{text}</p>;
 }

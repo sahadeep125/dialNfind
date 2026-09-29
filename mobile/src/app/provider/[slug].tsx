@@ -40,6 +40,7 @@ import {
   ReportSheet,
   ReviewItem,
 } from "@/components/providers";
+import { ReviewNotAllowed } from "@/components/reviews";
 import { useLayout } from "@/hooks/useLayout";
 import { useProvider } from "@/hooks/useProvider";
 import { useProviderReviews } from "@/hooks/useProviderReviews";
@@ -265,11 +266,17 @@ export default function ProviderScreen() {
       title="Reviews"
       icon={Star}
       action={
-        <AppButton size="sm" variant="soft" icon={PenLine} onPress={writeReview}>
-          {p.myReview ? "Edit review" : "Write a review"}
-        </AppButton>
+        // Signed-in people only get the button once they may review (they contacted the business).
+        !signedIn || p.myReview || p.reviewEligibility?.canReview ? (
+          <AppButton size="sm" variant="soft" icon={PenLine} onPress={writeReview}>
+            {p.myReview ? "Edit review" : "Write a review"}
+          </AppButton>
+        ) : undefined
       }
     >
+      {signedIn && !p.myReview && p.reviewEligibility && !p.reviewEligibility.canReview ? (
+        <ReviewNotAllowed eligibility={p.reviewEligibility} />
+      ) : null}
       <RatingBreakdown rating={p.avgRating} total={p.totalReviews} breakdown={p.ratingBreakdown} />
       {reviewList.map((r) => (
         <View key={r.id} style={{ gap: theme.spacing[4] }}>

@@ -328,7 +328,8 @@ insightsRouter.get("/reviews", async (req, res) => {
   const q = parse(reviewsQuery, req.query);
   const where = {
     providerId: provider.id,
-    status: { not: "removed" as const },
+    // Held reviews stay with the admin team until they are published.
+    status: { in: ["published" as const, "flagged" as const] },
     ...(q.filter === "unreplied" ? { providerReply: null } : {}),
   };
   const [reviews, total, breakdown] = await Promise.all([

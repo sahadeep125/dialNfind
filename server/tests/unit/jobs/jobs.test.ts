@@ -7,11 +7,12 @@ import { completeCampaigns } from "../../../src/jobs/campaigns.js";
 import { cleanup } from "../../../src/jobs/cleanup.js";
 import { sweepOrphanFiles } from "../../../src/jobs/orphan-files.js";
 import { sendStaffDigests } from "../../../src/jobs/staff-digest.js";
+import { sendReviewPrompts } from "../../../src/jobs/review-prompts.js";
 import { expireSubscriptions, remindExpiringSubscriptions } from "../../../src/jobs/subscriptions.js";
 import { JOBS, runJob } from "../../../src/jobs/index.js";
 import { uploadDir } from "../../../src/storage/index.js";
 import { privateDir, PRIVATE_FILES_URL } from "../../../src/lib/private-files.js";
-import { createCategory, createLead, createOwner, createProvider, createStaff, createUser, seedPlans, subscribe } from "../../helpers/factories.js";
+import { createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser, seedPlans, subscribe } from "../../helpers/factories.js";
 import { json, mockFetch, sentMails, settle } from "../../helpers/app.js";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -99,6 +100,31 @@ describe("staff digest", () => {
   });
 });
 
+describe("review prompts", () => {
+  it("asks customers who said the business responded, once, 1 to 3 days later", async () => {
+    const p = await createProvider({ businessName: "Sharma TV" });
+    const at = (days: number) => new Date(Date.now() - days * DAY);
+    const asked = await createUser();
+    await createLead(p.id, { userId: asked.id, customerReportedResponse: true, createdAt: at(2) });
+    // A second contact with the same business does not ask twice.
+    await createLead(p.id, { userId: asked.id, customerReportedResponse: true, createdAt: at(1.5) });
+    const tooNew = await createUser();
+    await createLead(p.id, { userId: tooNew.id, customerReportedResponse: true, createdAt: at(0.5) });
+    const saidNo = await createUser();
+    await createLead(p.id, { userId: saidNo.id, customerReportedResponse: false, createdAt: at(2) });
+    const reviewed = await createUser();
+    await createLead(p.id, { userId: reviewed.id, customerReportedResponse: true, createdAt: at(2) });
+    await createReview(p.id, reviewed.id);
+    const suspended = await createUser({ status: "suspended" });
+    await createLead(p.id, { userId: suspended.id, customerReportedResponse: true, createdAt: at(2) });
+
+    expect(await sendReviewPrompts()).toBe("1 review prompts sent, 3 contacts skipped");
+    const prompts = await prisma.notification.findMany({ where: { type: "review_prompt" } });
+    expect(prompts).toMatchObject([{ userId: asked.id, title: "How was Sharma TV?", dataJson: expect.objectContaining({ providerSlug: p.slug }) }]);
+    expect(await sendReviewPrompts()).toBe("no contacts to follow up");
+  });
+});
+
 describe("orphan files", () => {
   it("removes old unreferenced uploads and keeps the rest", async () => {
     const used = await agedFile(uploadDir, "keep/used.webp");
@@ -144,7 +170,7 @@ describe("cleanup job", () => {
 
 describe("job runner", () => {
   it("runs jobs by name and never throws", async () => {
-    expect(Object.keys(JOBS)).toEqual(["expire-subscriptions", "complete-campaigns", "remind-subscriptions", "staff-digest", "recalculate-rankings", "cleanup"]);
+    expect(Object.keys(JOBS)).toEqual(["expire-subscriptions", "complete-campaigns", "remind-subscriptions", "staff-digest", "review-prompts", "recalculate-rankings", "cleanup"]);
     expect(await runJob("recalculate-rankings")).toBe(true);
     expect(console.info).toHaveBeenCalledWith(expect.stringMatching(/^\[job\] recalculate-rankings: 0 providers \(\d+ ms\)$/));
     await expect(runJob("nope")).rejects.toThrow("Unknown job nope");

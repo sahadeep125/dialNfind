@@ -64,7 +64,15 @@ reset links sent over SMTP.
   - `GET /providers/sitemap?page=` lists every active listing's slug and last change for the website's sitemap
   - profile views: `GET /providers/:slug?view=false` skips counting (the website renders profiles from a shared cache) and `POST /providers/:slug/visit` counts one view per visit and returns the visitor's favorite and review
 - **leads**: create call/WhatsApp lead (guest or user) with optional answers to the category's lead questions, "did they respond?" follow-up; a contact in a promoted category counts as a sponsored click
-- **reviews**: create, edit own, delete own; provider reply; report
+- **reviews**: create, edit own, delete own; provider reply; report. Only signed-in customers with a
+  confirmed email who contacted the business through DialNFind can review it, once they said it responded or
+  after `review_min_contact_hours` (default 4); the profile's `reviewEligibility` says whether to show "Write a
+  review". New reviews are held as `pending` for the admin team when the account is under a day old, several
+  reviews of the business arrive within minutes, another reviewer of the business shares the IP (or another
+  account used the same phone), or it is 1 star on an unclaimed listing. The rating is fixed after 7 days; later
+  text edits go back to `pending`, and every earlier version is kept in `review_edits`. A job asks "How was X?"
+  1 to 3 days after a contact the customer said was answered (`server/src/services/review-trust.ts`,
+  `server/src/jobs/review-prompts.ts`)
 - **me**: overview, favorites (all, or paged with `page`), addresses, my reviews, recent contacts (paged), notifications (with unread count, mark some or all read), push tokens
 - **provider (role=provider, own rows only)**: onboarding (create listing), claim search + claim with an ownership document, profile, hours, service areas, services, portfolio, verification submissions, service details (category attribute values, asked once per category), leads, reviews + reply, dashboard stats, plans, plan and campaign requests (they open billing tickets; there is no online payment), campaigns (pause, resume), lead reports
 - **support (signed in)**: my tickets, open a ticket, reply, close

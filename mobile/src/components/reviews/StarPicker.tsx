@@ -7,12 +7,14 @@ import { useTheme } from "@/hooks/useTheme";
 interface Props {
   value: number;
   onChange: (rating: number) => void;
+  /** Shows the rating without letting it change. */
+  disabled?: boolean;
 }
 
 const LABELS = ["", "Poor", "Fair", "Good", "Very good", "Excellent"];
 
 /** Five large stars for choosing a rating, each a full touch target. */
-export function StarPicker({ value, onChange }: Props) {
+export function StarPicker({ value, onChange, disabled = false }: Props) {
   const theme = useTheme();
   return (
     <View style={styles.wrap}>
@@ -28,6 +30,8 @@ export function StarPicker({ value, onChange }: Props) {
             haptic
             accessibilityRole="button"
             accessibilityLabel={`${i} star${i > 1 ? "s" : ""}`}
+            accessibilityState={{ disabled }}
+            disabled={disabled}
             onPress={() => onChange(i)}
             style={styles.star}
           >

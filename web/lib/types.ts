@@ -72,6 +72,28 @@ export interface ProviderCard {
   planTier: "pro" | "business" | null;
 }
 
+/** The visitor's own review of a business. */
+export interface MyReview {
+  id: number;
+  rating: number;
+  reviewText: string | null;
+  photos: string[];
+  /** pending: held for the team; flagged or removed: taken down after a report. */
+  status: "pending" | "published" | "flagged" | "removed";
+  createdAt: string;
+  /** After this only the text can change, and a change is checked again before it shows. */
+  ratingLockedAt: string;
+  ratingLocked: boolean;
+}
+
+/** Whether the visitor may review a business: only after contacting it through DialNFind (server/src/services/review-trust.ts). */
+export interface ReviewEligibility {
+  canReview: boolean;
+  reason: "sign_in" | "verify_email" | "own_business" | "no_contact" | "too_soon" | null;
+  /** For too_soon: when the review opens, unless they say the business responded first. */
+  availableAt: string | null;
+}
+
 export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
   /** Listing status; only a preview (?previewToken=) ever sees one that is not "active". */
   status?: "pending" | "active" | "rejected" | "suspended";
@@ -98,7 +120,9 @@ export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
   portfolio: { id: number; title: string; description: string | null; imageUrl: string; category: string | null }[];
   verifications: { type: string; verifiedAt: string | null }[];
   ratingBreakdown: { rating: number; count: number }[];
-  myReview: { id: number; rating: number; reviewText: string | null; photos: string[] } | null;
+  myReview: MyReview | null;
+  /** Null when the visitor already reviewed this business (see myReview). */
+  reviewEligibility: ReviewEligibility | null;
 }
 
 export interface Review {

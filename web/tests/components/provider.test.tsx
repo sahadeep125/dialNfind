@@ -505,6 +505,39 @@ describe("ReviewForm", () => {
     await waitFor(() => expect(nav.router.refresh).toHaveBeenCalled());
     expect(JSON.parse(String(fetch.mock.calls[0]![1]!.body))).toEqual({ providerId: 1, rating: 4, reviewText: "Great fast service indeed", photos: [] });
   });
+  it("explains why a signed-in visitor cannot review yet, instead of a button", () => {
+    nav.pathname = "/providers/shop";
+    const props = { providerId: 1, providerName: "Shop", signedIn: true, existing: null, minLength: 1 } as const;
+    const { rerender } = render(<ReviewForm {...props} eligibility={{ canReview: false, reason: "no_contact", availableAt: null }} />);
+    expect(screen.queryByRole("button", { name: /Write a Review/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Call or WhatsApp them from this page/)).toBeInTheDocument();
+    rerender(<ReviewForm {...props} eligibility={{ canReview: false, reason: "too_soon", availableAt: "2026-09-29T10:00:00Z" }} />);
+    expect(screen.getByText(/You can review them from/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Tell us they responded" })).toHaveAttribute("href", "/dashboard/contacts");
+    rerender(<ReviewForm {...props} eligibility={{ canReview: false, reason: "verify_email", availableAt: null }} />);
+    expect(screen.getByRole("link", { name: "Confirm your email" })).toHaveAttribute("href", "/verify-email?next=%2Fproviders%2Fshop");
+    const { container } = render(<ReviewForm {...props} eligibility={{ canReview: false, reason: "own_business", availableAt: null }} />);
+    expect(container).toBeEmptyDOMElement();
+    rerender(<ReviewForm {...props} eligibility={{ canReview: true, reason: null, availableAt: null }} />);
+    expect(screen.getByRole("button", { name: /Write a Review/ })).toBeInTheDocument();
+  });
+  it("says when a review waits for the team, and locks old ratings", async () => {
+    const u = userEvent.setup();
+    const { unmount } = render(<ReviewForm providerId={1} providerName="Shop" signedIn existing={{ id: 5, rating: 3, reviewText: "Okay work", status: "pending" }} minLength={1} />);
+    await u.click(screen.getByRole("button", { name: /Edit your review/ }));
+    expect(screen.getByText(/Our team is checking this review/)).toBeInTheDocument();
+    unmount();
+    render(<ReviewForm providerId={1} providerName="Shop" signedIn existing={{ id: 6, rating: 3, reviewText: "Okay work", status: "published", ratingLocked: true }} minLength={1} />);
+    await u.click(screen.getByRole("button", { name: /Edit your review/ }));
+    expect(screen.getByText(/Stars can only be changed in the first week/)).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /5 stars/ })).toBeDisabled();
+  });
+  it("opens straight away from a review reminder", () => {
+    window.history.replaceState(null, "", "/providers/shop?review=1");
+    render(<ReviewForm providerId={1} providerName="Shop" signedIn existing={null} eligibility={{ canReview: true, reason: null, availableAt: null }} minLength={1} />);
+    expect(screen.getByRole("dialog", { name: "Review Shop" })).toBeInTheDocument();
+    window.history.replaceState(null, "", "/");
+  });
   it("edits an existing review, and cancels", async () => {
     const u = userEvent.setup();
     render(<ReviewForm providerId={1} providerName="Shop" signedIn existing={{ id: 5, rating: 3, reviewText: "Okay work" }} minLength={1} />);
