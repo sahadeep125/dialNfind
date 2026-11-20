@@ -23,7 +23,7 @@ test("home page loads with a heading and a working skip link", async ({ page }) 
 
 test("provider page has a canonical URL and business structured data", async ({ page }) => {
   await page.goto(`/providers/${providerSlug}`);
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://dialnfind.com/providers/${providerSlug}`);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://kaajva.in/providers/${providerSlug}`);
   const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
   const types = blocks.flatMap((b) => [JSON.parse(b)].flat().map((x: { "@type": string }) => x["@type"]));
   expect(types).toEqual(expect.arrayContaining(["Organization", "WebSite", "BreadcrumbList"]));
@@ -32,7 +32,7 @@ test("provider page has a canonical URL and business structured data", async ({ 
 
 test("robots.txt and the sitemap index are served", async ({ request }) => {
   const robots = await request.get("/robots.txt");
-  expect(await robots.text()).toContain("Sitemap: https://dialnfind.com/sitemap.xml");
+  expect(await robots.text()).toContain("Sitemap: https://kaajva.in/sitemap.xml");
   const index = await request.get("/sitemap.xml");
   expect(index.headers()["content-type"]).toContain("xml");
   expect(await index.text()).toContain("/sitemaps/sitemap/0.xml");

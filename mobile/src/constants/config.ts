@@ -6,7 +6,7 @@ export const API_URL: string = process.env.EXPO_PUBLIC_API_URL ?? "http://localh
 export const WEB_URL: string = process.env.EXPO_PUBLIC_WEB_URL ?? "http://localhost:3000";
 
 // The localhost defaults are for development only. Release builds get these from the EAS environment
-// named in eas.json; a missing one means the build cannot reach DialNFind.
+// named in eas.json; a missing one means the build cannot reach KaajVa.
 if (!__DEV__ && (!process.env.EXPO_PUBLIC_API_URL || !process.env.EXPO_PUBLIC_WEB_URL)) {
   logError("[config] EXPO_PUBLIC_API_URL or EXPO_PUBLIC_WEB_URL is not set for this build; using localhost.");
 }

@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
 import { isValid, validateEmail } from "@/utils/validation";
 
-/** Sign in to a DialNFind business account. */
+/** Sign in to a KaajVa business account. */
 export default function LoginScreen() {
   const theme = useTheme();
   const toast = useToast();
@@ -54,7 +54,7 @@ export default function LoginScreen() {
     isNewUser: boolean;
   }): void => {
     const first = user.name.split(" ")[0];
-    toast(isNewUser ? `Welcome to DialNFind, ${first}` : `Welcome back, ${first}`, "success");
+    toast(isNewUser ? `Welcome to KaajVa, ${first}` : `Welcome back, ${first}`, "success");
     router.replace("/");
   };
 
@@ -65,7 +65,7 @@ export default function LoginScreen() {
       footer={
         <View style={styles.switchRow}>
           <AppText variant="meta" tone="secondary">
-            New to DialNFind?
+            New to KaajVa?
           </AppText>
           <AppPressable
             accessibilityRole="link"

@@ -149,7 +149,7 @@ export default function ProviderScreen() {
           {p.description || p.shortDescription}
         </AppText>
         <AppText variant="caption" tone="tertiary">
-          On DialNFind since {formatDate(p.memberSince)}
+          On KaajVa since {formatDate(p.memberSince)}
         </AppText>
       </DetailSection>
     ) : null;
@@ -246,7 +246,7 @@ export default function ProviderScreen() {
               inset={theme.spacing[5]}
               title={p.email}
               leading={<Mail size={18} color={theme.colors.brand.primary} />}
-              onPress={() => void open(() => openEmail(p.email ?? "", "Enquiry from DialNFind"))}
+              onPress={() => void open(() => openEmail(p.email ?? "", "Enquiry from KaajVa"))}
             />
           ) : null}
           {p.website ? (

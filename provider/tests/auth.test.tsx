@@ -44,7 +44,7 @@ describe("login", () => {
     mockApi(loginRoutes());
     await renderApp("/login");
     expect(screen.getByRole("link", { name: "Create a business account" })).toHaveAttribute("href", "/register");
-    expect(screen.queryByText("provider@dialnfind.com")).not.toBeInTheDocument();
+    expect(screen.queryByText("provider@kaajva.in")).not.toBeInTheDocument();
   });
 
   it("keeps next on the register link", async () => {

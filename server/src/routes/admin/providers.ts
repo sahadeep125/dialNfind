@@ -98,7 +98,7 @@ adminProvidersRouter.get("/provider-signups", async (req, res) => {
 // Status ----------------------------------------------------------------------------------------
 
 const STATUS_COPY: Record<ProviderStatus, [string, string]> = {
-  active: ["Your listing is live", "Customers can now find and contact you on DialNFind."],
+  active: ["Your listing is live", "Customers can now find and contact you on KaajVa."],
   suspended: ["Your listing is suspended", "Your listing is hidden from search. Contact support to resolve this."],
   rejected: ["Your listing was not approved", "Please review your details and contact support if you need help."],
   pending: ["Your listing is under review", "We will let you know once it is approved."],
@@ -232,7 +232,7 @@ adminProvidersRouter.post("/providers/:id/owner", async (req, res) => {
   ]);
   await logAdmin(currentUser(req).id, "provider.owner", "provider", provider.id, { from: provider.userId ? Number(provider.userId) : null, to: Number(user.id), email });
   refreshProviderSlugs([provider.slug]);
-  void notifyAndEmail(user.id, "claim", `${provider.businessName} is now yours`, "The DialNFind team gave you access to this listing. Sign in to the provider app to manage it.", { providerId: Number(provider.id) }, { label: "Open the provider app", url: env.providerUrl });
+  void notifyAndEmail(user.id, "claim", `${provider.businessName} is now yours`, "The KaajVa team gave you access to this listing. Sign in to the provider app to manage it.", { providerId: Number(provider.id) }, { label: "Open the provider app", url: env.providerUrl });
   res.json({ ok: true });
 });
 

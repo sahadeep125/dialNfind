@@ -118,7 +118,7 @@ adminBillingRouter.post("/plans/sync-razorpay", async (req, res) => {
   for (const price of missing) {
     const rzp = await razorpay.createPlan({
       period: price.billingCycle,
-      name: `DialNFind ${price.plan.name} (${price.billingCycle})`,
+      name: `KaajVa ${price.plan.name} (${price.billingCycle})`,
       amountPaise: toPaise(num(price.amount) ?? 0),
       notes: { planCode: price.plan.code, billingCycle: price.billingCycle },
     });

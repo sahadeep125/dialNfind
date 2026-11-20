@@ -314,7 +314,7 @@ authRouter.post("/forgot-password", limits.auth, async (req, res) => {
       subject: "Reset your password",
       lines: [
         `Hi ${user.name.split(" ")[0]},`,
-        "Someone asked to reset the password for your DialNFind account. If it was you, choose a new password with the button below. The link works for one hour.",
+        "Someone asked to reset the password for your KaajVa account. If it was you, choose a new password with the button below. The link works for one hour.",
         "If you did not ask for this, you can ignore this email; your password stays the same.",
       ],
       action: { label: "Choose a new password", url: `${env.webUrl}/reset-password?token=${token}` },

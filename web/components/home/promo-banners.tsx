@@ -48,7 +48,7 @@ export function PromoBanners() {
       {hasApp && (
         <div className="flex flex-col items-start justify-between gap-5 rounded-xl border bg-card p-6 sm:flex-row sm:items-center sm:p-8">
           <div>
-            <h2 className="text-xl font-bold">Get the DialNFind app</h2>
+            <h2 className="text-xl font-bold">Get the KaajVa app</h2>
             <p className="mt-1 text-[15px] text-muted-foreground">Find and call local professionals on the go, and keep your saved pros in one place.</p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-3">

@@ -38,7 +38,7 @@ afterEach(() => {
   act(() => useAuthStore.getState().signOut());
 });
 
-describeLive("DialNFind app on Android", () => {
+describeLive("KaajVa app on Android", () => {
   const featured = apiGet<{ results: { slug: string; businessName: string }[] }>(
     "/providers/featured?lat=26.7338&lng=88.4325&limit=10",
   ).results;
@@ -127,11 +127,11 @@ describeLive("DialNFind app on Android", () => {
     await find("Delete account");
     act(() => router.push(`/review/${provider.slug}`));
     // The form, or why this customer cannot review the business yet (they never contacted it).
-    await find(/Post review|Update review|contacted this business on DialNFind|You can review them/);
+    await find(/Post review|Update review|contacted this business on KaajVa|You can review them/);
     act(() => router.push("/profile"));
     await find("Save changes");
     act(() => router.push("/help"));
-    await find("Is DialNFind free to use?");
+    await find("Is KaajVa free to use?");
   });
 
   test("create account screen", async () => {

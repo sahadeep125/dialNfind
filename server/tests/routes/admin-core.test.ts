@@ -204,7 +204,7 @@ describe("team and roles", () => {
     expect((await c.post("/api/v1/admin/roles").send({ name: "Bad", permissions: ["team"] })).status).toBe(400);
     const invite = await c.post("/api/v1/admin/team").send({ name: "Asha Rao", email: "asha@example.com", roleId: role.id });
     expect(invite.status).toBe(201);
-    expect(sentMails()[0]!.text).toContain("Boss Person added you to the DialNFind admin team as Finance");
+    expect(sentMails()[0]!.text).toContain("Boss Person added you to the KaajVa admin team as Finance");
     const customer = await createUser({ email: "cust@example.com" });
     expect((await c.post("/api/v1/admin/team").send({ name: "Cust Omer", email: "cust@example.com", roleId: role.id })).body.member.role).toBe("admin");
     expect((await c.post("/api/v1/admin/team").send({ name: "Asha Rao", email: "asha@example.com", roleId: role.id })).status).toBe(409);
@@ -259,8 +259,8 @@ describe("settings", () => {
     const got = await boss.get("/api/v1/admin/settings");
     const fields = got.body.groups.flatMap((g: { fields: { key: string; isSet: boolean; value: string }[] }) => g.fields);
     expect(fields.find((f: { key: string }) => f.key === "support_email")).toMatchObject({ isSet: true, value: "help@x.co" });
-    expect(fields.find((f: { key: string }) => f.key === "site_name")).toMatchObject({ isSet: false, value: "DialNFind" });
-    expect(fields.find((f: { key: string }) => f.key === "support_phone")).toMatchObject({ isSet: false, value: "" });
+    expect(fields.find((f: { key: string }) => f.key === "site_name")).toMatchObject({ isSet: false, value: "KaajVa" });
+    expect(fields.find((f: { key: string }) => f.key === "support_phone")).toMatchObject({ isSet: false, value: "+918906609532" });
     expect(got.body.other).toEqual([expect.objectContaining({ key: "legacy_key", value: "old" })]);
 
     const save = (values: Record<string, unknown>) => boss.put("/api/v1/admin/settings").send({ values });
@@ -269,7 +269,7 @@ describe("settings", () => {
     expect(await getSetting("default_search_radius_km")).toBe("20");
     expect(await prisma.setting.findUnique({ where: { key: "support_phone" } })).toBeNull();
     await save({ site_name: "" });
-    expect(await getSetting("site_name")).toBe("DialNFind");
+    expect(await getSetting("site_name")).toBe("KaajVa");
     const bad = async (values: Record<string, unknown>) => (await save(values)).body.error.message;
     expect(await bad({ nope: "1" })).toBe("Unknown setting nope");
     expect(await bad({ default_search_radius_km: "x" })).toMatch(/must be a number/);

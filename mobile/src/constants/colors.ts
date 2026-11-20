@@ -1,4 +1,4 @@
-// Brand palette, matched to the DialNFind website. Leaf file: no imports, so tailwind.config.ts can read it.
+// Brand palette, matched to the KaajVa website. Leaf file: no imports, so tailwind.config.ts can read it.
 //
 // Design language: a cool grey canvas with white surfaces on top, one confident indigo for actions,
 // deep "ink" indigo for brand moments (splash, hero, onboarding), teal as a quiet secondary accent.

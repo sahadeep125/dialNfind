@@ -14,7 +14,7 @@ export const revalidate = 600;
 
 export const metadata: Metadata = pageMetadata({
   title: "List or claim your business",
-  description: "List your business on DialNFind for free or claim your existing listing. Get calls from customers nearby, reply to reviews and track leads.",
+  description: "List your business on KaajVa for free or claim your existing listing. Get calls from customers nearby, reply to reviews and track leads.",
   path: "/claim",
 });
 
@@ -38,7 +38,7 @@ export default async function ClaimPage() {
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight text-brand-deep md:text-5xl">Get more calls from customers nearby</h1>
             <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-              Thousands of people search DialNFind when something breaks. List your business for free, or claim your existing listing to take control of it.
+              Thousands of people search KaajVa when something breaks. List your business for free, or claim your existing listing to take control of it.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" variant="cta">

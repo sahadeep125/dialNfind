@@ -108,10 +108,10 @@ leadsRouter.post("/", limits.leads, optionalAuth, async (req, res) => {
   void notify(
     provider.userId,
     "lead",
-    body.channel === "call" ? "New call from DialNFind" : "New WhatsApp enquiry",
+    body.channel === "call" ? "New call from KaajVa" : "New WhatsApp enquiry",
     overLimit
       ? `You have used the ${plan!.leadAccessLimit} leads in your ${plan!.name} plan this month. Upgrade to see who contacted you.`
-      : "A customer just tapped to contact you from your DialNFind profile.",
+      : "A customer just tapped to contact you from your KaajVa profile.",
     { leadId: Number(lead.id), locked: overLimit },
   );
 

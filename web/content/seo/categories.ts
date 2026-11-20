@@ -13,16 +13,16 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Find TV repair, mobile repair, laptop repair and CCTV technicians near you in ${CITY}. Compare ratings and prices, then call the technician directly.`,
     h1: `Electronics repair near you in ${CITY}`,
     intro: [
-      `Looking for a TV repair shop or a mobile repair technician near you? DialNFind lists local electronics repair experts across ${CITY}, from LED and smart TV repair to phone screen replacement, laptop and computer repair, home theatre repair and CCTV installation. Every listing shows distance, ratings from real customers, opening hours and whether the business is verified.`,
+      `Looking for a TV repair shop or a mobile repair technician near you? KaajVa lists local electronics repair experts across ${CITY}, from LED and smart TV repair to phone screen replacement, laptop and computer repair, home theatre repair and CCTV installation. Every listing shows distance, ratings from real customers, opening hours and whether the business is verified.`,
       "Most repairs start with a diagnosis. Many technicians charge a small inspection fee, often adjusted against the final bill, and quote once they know the fault. A power board or software issue is usually quick and inexpensive; a cracked panel or a failed motherboard can cost a large share of the device price, so ask for the quote in writing and ask whether the replacement part is original or compatible.",
-      "Call two or three nearby technicians, describe the brand, model and fault, and compare. You deal with the technician directly; DialNFind does not add booking fees or commission.",
+      "Call two or three nearby technicians, describe the brand, model and fault, and compare. You deal with the technician directly; KaajVa does not add booking fees or commission.",
     ],
     faqs: [
-      { q: `How do I find a good TV repair technician near me in ${CITY}?`, a: "Search TV repair on DialNFind, sort by rating or distance, and read recent reviews. Prefer verified businesses that give a written quote and a warranty on replaced parts." },
+      { q: `How do I find a good TV repair technician near me in ${CITY}?`, a: "Search TV repair on KaajVa, sort by rating or distance, and read recent reviews. Prefer verified businesses that give a written quote and a warranty on replaced parts." },
       { q: "Is home service available for TV repair?", a: "Most TV technicians visit your home for diagnosis and small repairs. Panel or board work may be done at their workshop; ask how long it will take and whether pickup and drop are included." },
       { q: "How much does mobile screen replacement cost?", a: "It depends on the phone model and whether the screen is original or compatible. Budget phones often cost a few thousand rupees; flagship screens cost much more. Ask the shop for both options." },
       { q: "Will a local repair void my warranty?", a: "If your device is still under the manufacturer's warranty, use the authorised service centre first. Local repair is usually the better value once the warranty has ended." },
-      { q: "Can I get CCTV cameras installed for my home or shop?", a: "Yes. CCTV installers on DialNFind supply and fit cameras, DVR or NVR recorders and mobile viewing. Ask how many cameras you need, the storage days and the warranty." },
+      { q: "Can I get CCTV cameras installed for my home or shop?", a: "Yes. CCTV installers on KaajVa supply and fit cameras, DVR or NVR recorders and mobile viewing. Ask how many cameras you need, the storage days and the warranty." },
     ],
   },
   "home-appliances": {
@@ -30,7 +30,7 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `AC repair and service, refrigerator, washing machine, RO purifier and geyser repair near you in ${CITY}. Compare local technicians and call directly.`,
     h1: `Home appliance repair near you in ${CITY}`,
     intro: [
-      `When the AC stops cooling or the fridge stops working, you want an appliance repair technician nearby, fast. DialNFind lists local experts in ${CITY} for AC repair and servicing, refrigerator repair, washing machine repair, microwave repair, water purifier (RO) service and geyser repair, with ratings, distance and who is open right now.`,
+      `When the AC stops cooling or the fridge stops working, you want an appliance repair technician nearby, fast. KaajVa lists local experts in ${CITY} for AC repair and servicing, refrigerator repair, washing machine repair, microwave repair, water purifier (RO) service and geyser repair, with ratings, distance and who is open right now.`,
       "Routine AC servicing is usually a fixed-price job, while repairs depend on the part: a capacitor or sensor is inexpensive, a compressor or gas top-up costs more. For a split AC, a standard service commonly costs a few hundred to around a thousand rupees, and gas refilling costs more. Ask what is included, whether gas is charged by pressure check, and how long the warranty on the repair lasts.",
       `Humidity and dust in ${CITY} are hard on ACs and RO filters, so servicing before summer and after the monsoon keeps bills and breakdowns down.`,
     ],
@@ -47,12 +47,12 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Find a verified electrician near you in ${CITY} for wiring, fan and light fitting, inverters, switchboards and safety checks. Compare and call directly.`,
     h1: `Electricians near you in ${CITY}`,
     intro: [
-      `Need an electrician near you today? DialNFind lists local electricians in ${CITY} for house wiring and rewiring, fan and light installation, inverter and battery work, switchboard and MCB repair, and electrical safety inspections. See ratings, distance, verification and who is open now, then call the electrician directly.`,
+      `Need an electrician near you today? KaajVa lists local electricians in ${CITY} for house wiring and rewiring, fan and light installation, inverter and battery work, switchboard and MCB repair, and electrical safety inspections. See ratings, distance, verification and who is open now, then call the electrician directly.`,
       "Small jobs such as fixing a switch, installing a ceiling fan or changing a socket are usually charged per job, with a visiting charge for the first visit. Wiring, rewiring and new points are quoted after an inspection. Ask whether wire, switches and MCBs are included, which brand will be used, and whether the electrician will test earthing.",
       "For anything beyond a simple swap, hire a trained electrician rather than doing it yourself. Old wiring, tripping MCBs, sparks or a burning smell are signs to call a professional straight away.",
     ],
     faqs: [
-      { q: `How do I find a reliable electrician near me in ${CITY}?`, a: "Search Electricians on DialNFind, check ratings and recent reviews, and prefer verified listings. Describe the job on the call and ask for the visiting charge and an estimate before work starts." },
+      { q: `How do I find a reliable electrician near me in ${CITY}?`, a: "Search Electricians on KaajVa, check ratings and recent reviews, and prefer verified listings. Describe the job on the call and ask for the visiting charge and an estimate before work starts." },
       { q: "How much does an electrician charge for small jobs?", a: "Small jobs like fixing a switch or installing a fan are usually a few hundred rupees plus parts. The visiting charge is often adjusted if you go ahead with the work." },
       { q: "When should I rewire my house?", a: "If the wiring is more than 20 to 25 years old, MCBs trip often, sockets feel warm, or you are adding ACs and heavy appliances, ask an electrician to inspect and advise on rewiring." },
       { q: "Can an electrician install an inverter and battery?", a: "Yes. Electricians who list Inverter & Battery can size, install and wire an inverter for the loads you want to run during power cuts." },
@@ -64,12 +64,12 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Find a plumber near you in ${CITY} for leak repair, bathroom fitting, drain unblocking, water tank cleaning and motor repair. Call local plumbers directly.`,
     h1: `Plumbers near you in ${CITY}`,
     intro: [
-      `A leaking tap, blocked drain or overflowing tank needs a plumber nearby. DialNFind lists local plumbers in ${CITY} for leak repair, bathroom fitting, drain unblocking, water tank cleaning and motor and pump repair. Compare ratings, distance and opening hours, then call directly.`,
+      `A leaking tap, blocked drain or overflowing tank needs a plumber nearby. KaajVa lists local plumbers in ${CITY} for leak repair, bathroom fitting, drain unblocking, water tank cleaning and motor and pump repair. Compare ratings, distance and opening hours, then call directly.`,
       "Most plumbers charge a small visiting fee plus a per-job price. Tap, washer and flush repairs are usually inexpensive; concealed pipe leaks, bathroom fitting and motor repair are quoted after inspection. Ask for labour and materials to be priced separately so you can compare quotes fairly.",
       "Shut the main valve before the plumber arrives if water is leaking, and keep a photo of the problem ready to share on WhatsApp so the plumber can bring the right parts.",
     ],
     faqs: [
-      { q: `How do I find a plumber near me in ${CITY}?`, a: "Search Plumbing on DialNFind and sort by distance or rating. Use the Open now filter for urgent leaks, and call two plumbers to compare visiting charges." },
+      { q: `How do I find a plumber near me in ${CITY}?`, a: "Search Plumbing on KaajVa and sort by distance or rating. Use the Open now filter for urgent leaks, and call two plumbers to compare visiting charges." },
       { q: "How much does a plumber charge to fix a leaking tap?", a: "A tap or washer repair is usually a small per-job charge plus the part. Replacing the tap or fixing a concealed leak costs more; ask for an estimate before work starts." },
       { q: "How often should a water tank be cleaned?", a: "Clean overhead and underground tanks every three to six months, and after the monsoon. Professional cleaning includes draining, scrubbing, disinfecting and rinsing." },
       { q: "What should I do while waiting for a plumber?", a: "Turn off the main valve or the isolation valve under the sink, switch off the pump motor, and move valuables away from the water." },
@@ -81,12 +81,12 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Find a carpenter near you in ${CITY} for furniture repair, modular kitchens, doors, windows and custom furniture. Compare local carpenters and call directly.`,
     h1: `Carpenters near you in ${CITY}`,
     intro: [
-      `From a wobbly chair to a full modular kitchen, DialNFind helps you find a carpenter near you in ${CITY}. Local carpenters list furniture repair, modular kitchen work, door and window repair and custom furniture, with ratings, distance and photos of past work where available.`,
+      `From a wobbly chair to a full modular kitchen, KaajVa helps you find a carpenter near you in ${CITY}. Local carpenters list furniture repair, modular kitchen work, door and window repair and custom furniture, with ratings, distance and photos of past work where available.`,
       "Repairs and small fittings are usually charged per job or per day. New furniture and kitchens are quoted per running foot or per square foot, and the material matters as much as the labour: ask which ply or board grade, which laminate and which hardware brand is included.",
       "Share photos and rough measurements on WhatsApp first; a good carpenter will visit to measure before giving a final quote.",
     ],
     faqs: [
-      { q: `How do I find a good carpenter near me in ${CITY}?`, a: "Search Carpentry on DialNFind, check photos of previous work and reviews, and ask for a written quote that lists the materials and hardware." },
+      { q: `How do I find a good carpenter near me in ${CITY}?`, a: "Search Carpentry on KaajVa, check photos of previous work and reviews, and ask for a written quote that lists the materials and hardware." },
       { q: "How do carpenters charge?", a: "Small repairs are per job, larger work is often per day, and new furniture or kitchens are per running foot or square foot including materials. Always compare like for like." },
       { q: "Which ply is best for kitchen cabinets?", a: "Boiling water proof (BWP) plywood is the usual choice under sinks and near water; moisture resistant (MR) ply is fine for dry areas. Ask your carpenter which grade they quote." },
       { q: "Can a carpenter fix a door that does not close?", a: "Yes. Sagging hinges, swollen wood after the monsoon and misaligned locks are common, quick fixes." },
@@ -98,7 +98,7 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Book home deep cleaning, sofa and carpet cleaning, bathroom and kitchen cleaning or office cleaning near you in ${CITY}. Compare cleaners, call directly.`,
     h1: `Cleaning services near you in ${CITY}`,
     intro: [
-      `Moving in, moving out, before a festival or just overdue? DialNFind lists cleaning services near you in ${CITY} for full home deep cleaning, sofa and carpet shampooing, bathroom and kitchen deep cleaning and office cleaning. Compare ratings, prices and availability.`,
+      `Moving in, moving out, before a festival or just overdue? KaajVa lists cleaning services near you in ${CITY} for full home deep cleaning, sofa and carpet shampooing, bathroom and kitchen deep cleaning and office cleaning. Compare ratings, prices and availability.`,
       "Deep cleaning is usually priced by home size (1, 2 or 3 BHK) or by room, and a 2 BHK often takes a team of two or three cleaners most of a day. Ask what is included: fans and lights, cabinets inside and out, windows and grills, balcony, and whether they bring their own machines and chemicals.",
       "Empty the kitchen shelves and wardrobes you want cleaned inside, and agree on the checklist before the team starts.",
     ],
@@ -115,7 +115,7 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Find pest control services near you in ${CITY} for cockroaches, termites, bed bugs, mosquitoes and rodents. Compare certified providers and call directly.`,
     h1: `Pest control services near you in ${CITY}`,
     intro: [
-      `Warm, humid weather in ${CITY} and North Bengal means cockroaches, termites, mosquitoes and bed bugs are a year-round problem, and worse around the monsoon. DialNFind lists pest control services near you for cockroach control, termite treatment, bed bug treatment, mosquito control and rodent control.`,
+      `Warm, humid weather in ${CITY} and North Bengal means cockroaches, termites, mosquitoes and bed bugs are a year-round problem, and worse around the monsoon. KaajVa lists pest control services near you for cockroach control, termite treatment, bed bug treatment, mosquito control and rodent control.`,
       "General pest control for a flat is usually a per-visit price, often with a follow-up visit included. Termite treatment is priced by area and method (drill-fill-seal for existing homes, soil treatment before construction) and should come with a written warranty. Ask which chemical is used, whether it is government approved, and how long to stay out of the home.",
       "Choose providers who inspect first and explain the treatment, rather than those who quote blind over the phone.",
     ],
@@ -132,7 +132,7 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Find house painters near you in ${CITY} for interior and exterior painting, waterproofing, textures and wallpaper. Compare quotes and call painters directly.`,
     h1: `House painters near you in ${CITY}`,
     intro: [
-      `Planning to repaint before a festival or fix damp walls after the monsoon? DialNFind lists house painters near you in ${CITY} for interior painting, exterior painting, waterproofing and texture or wallpaper work.`,
+      `Planning to repaint before a festival or fix damp walls after the monsoon? KaajVa lists house painters near you in ${CITY} for interior painting, exterior painting, waterproofing and texture or wallpaper work.`,
       "Painting is usually quoted per square foot of wall area, and the price depends on the paint brand and finish, how much putty and repair work the walls need, and whether it is a repaint or fresh painting. Labour is only part of the price; ask for the brand, product name and number of coats in writing.",
       `Damp patches and peeling paint are common in ${CITY}'s wet season, so fix leaks and waterproof first, then paint.`,
     ],
@@ -149,7 +149,7 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Compare packers and movers near you in ${CITY} for local house shifting, intercity relocation, bike and car transport and office moves. Call movers directly.`,
     h1: `Packers and movers near you in ${CITY}`,
     intro: [
-      `Shifting within ${CITY} or moving to another city? DialNFind lists local packers and movers for local house shifting, intercity relocation, vehicle transport and office relocation, with ratings and reviews from past customers.`,
+      `Shifting within ${CITY} or moving to another city? KaajVa lists local packers and movers for local house shifting, intercity relocation, vehicle transport and office relocation, with ratings and reviews from past customers.`,
       "Moving charges depend on how much you are moving, the distance, the floor and lift access, and the packing material. Local 1 or 2 BHK shifts are usually priced as a package; intercity moves add transport and toll costs. Insist on an in-person or video survey, a written quote with GST, and transit insurance for valuables.",
       "Be careful of quotes that are far lower than others; that is the most common sign of a moving scam. Check reviews and confirm the company's address before paying an advance.",
     ],
@@ -166,12 +166,12 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Find home tutors near you in ${CITY} for maths, science and English, music lessons and competitive exam coaching. Compare tutors and call directly.`,
     h1: `Home tutors near you in ${CITY}`,
     intro: [
-      `Looking for a home tutor near you? DialNFind lists tutors in ${CITY} for maths, science and English at every school level, music teachers, and coaching for competitive exams. See subjects, experience and ratings from parents and students.`,
+      `Looking for a home tutor near you? KaajVa lists tutors in ${CITY} for maths, science and English at every school level, music teachers, and coaching for competitive exams. See subjects, experience and ratings from parents and students.`,
       "Home tuition fees depend on the class, the subject, the board (CBSE, ICSE or state board), the tutor's experience, and how many days a week they come. Fees are usually charged per month; senior classes and exam coaching cost more. Ask for a trial class before committing.",
       "Agree on goals and a schedule at the start, and ask the tutor how they will share progress with you.",
     ],
     faqs: [
-      { q: `How do I find a good home tutor near me in ${CITY}?`, a: "Search Tutors on DialNFind by subject, check experience and reviews, and ask for a trial class. A good tutor asks about your child's goals and current marks first." },
+      { q: `How do I find a good home tutor near me in ${CITY}?`, a: "Search Tutors on KaajVa by subject, check experience and reviews, and ask for a trial class. A good tutor asks about your child's goals and current marks first." },
       { q: "How much does home tuition cost per month?", a: "Fees vary by class, subject, board and how many days a week. Primary classes cost less; classes 9 to 12 and exam coaching cost more. Compare two or three tutors." },
       { q: "Home tutor or coaching centre: which is better?", a: "A home tutor gives one-to-one attention and a flexible schedule; a coaching centre offers structure and peer competition. Many students use a tutor for weak subjects." },
       { q: "Do tutors offer online classes?", a: "Many do. Ask the tutor whether they teach online, and whether the fee differs." },
@@ -183,7 +183,7 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Find salon at home services, men's grooming, bridal makeup artists and spa services near you in ${CITY}. Compare ratings and call beauticians directly.`,
     h1: `Beauty and salon services near you in ${CITY}`,
     intro: [
-      `DialNFind lists beauty and salon professionals near you in ${CITY}: salon at home services for women, men's grooming, bridal makeup artists and spa and massage. Compare ratings, services and prices, then call or WhatsApp directly.`,
+      `KaajVa lists beauty and salon professionals near you in ${CITY}: salon at home services for women, men's grooming, bridal makeup artists and spa and massage. Compare ratings, services and prices, then call or WhatsApp directly.`,
       "At-home services are usually priced per service or as a package; bridal makeup is priced per look and depends on the artist's experience, the products used, and whether hair styling and draping are included. Ask to see a portfolio and which brands they use.",
       "For a wedding, book a trial session and confirm the date early; popular makeup artists are booked months ahead in the wedding season.",
     ],
@@ -200,7 +200,7 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     description: `Find car service, bike service, car wash and detailing, tyre and puncture repair and car AC repair near you in ${CITY}. Compare garages and call directly.`,
     h1: `Car and bike repair near you in ${CITY}`,
     intro: [
-      `Need a car service or a bike mechanic near you? DialNFind lists local garages and mechanics in ${CITY} for car servicing, bike servicing, car wash and detailing, tyre and puncture repair, and car AC repair.`,
+      `Need a car service or a bike mechanic near you? KaajVa lists local garages and mechanics in ${CITY} for car servicing, bike servicing, car wash and detailing, tyre and puncture repair, and car AC repair.`,
       "A periodic service usually includes an engine oil and filter change, inspection of brakes, fluids and battery, and a wash. Multi-brand garages are usually cheaper than authorised service centres for the same work. Ask for an itemised estimate, keep the old parts, and approve any extra work before it is done.",
       "Pothole-heavy monsoon roads are hard on tyres, suspension and alignment, so a check-up after the rains is worth it.",
     ],

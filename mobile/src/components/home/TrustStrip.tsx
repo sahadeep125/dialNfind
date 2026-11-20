@@ -47,7 +47,7 @@ export function TrustStrip() {
         accessibilityRole="header"
         style={styles.overline}
       >
-        Why DialNFind
+        Why KaajVa
       </AppText>
       <AppCard variant="outlined" padding={0}>
         {POINTS.map((p, i) => (

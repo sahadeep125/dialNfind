@@ -82,7 +82,7 @@ reviewsRouter.get("/highlights", async (req, res) => {
 });
 
 /**
- * POST /reviews — one review per customer per business, only after contacting it through DialNFind
+ * POST /reviews — one review per customer per business, only after contacting it through KaajVa
  * (see reviewEligibility). Suspicious reviews are held as pending for the admin team (see holdReasons).
  */
 reviewsRouter.post("/", limits.reviews, requireAuth, async (req, res) => {
@@ -102,7 +102,7 @@ reviewsRouter.post("/", limits.reviews, requireAuth, async (req, res) => {
       sign_in: "Sign in to write a review",
       verify_email: "Confirm your email address to write a review",
       own_business: "You cannot review your own business",
-      no_contact: "Contact this business through DialNFind before reviewing it",
+      no_contact: "Contact this business through KaajVa before reviewing it",
       too_soon: "You can review this business a little later, once you have had time to use their service",
     }[eligibility.reason];
     throw new HttpError(403, message, "review_not_allowed", { reason: eligibility.reason, availableAt: eligibility.availableAt });

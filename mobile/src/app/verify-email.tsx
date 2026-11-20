@@ -27,7 +27,7 @@ export default function VerifyEmailScreen() {
   const done = (next: SessionUser): void => {
     setUser(next);
     void qc.invalidateQueries();
-    toast(`Welcome to DialNFind, ${next.name.split(" ")[0]}`, "success");
+    toast(`Welcome to KaajVa, ${next.name.split(" ")[0]}`, "success");
     router.replace("/");
   };
 

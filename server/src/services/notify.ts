@@ -36,7 +36,7 @@ async function pushPolicy(userId: bigint, notificationId: bigint, type: Notifica
     const waiting = await prisma.notification.count({
       where: { userId, type, id: { not: notificationId }, createdAt: { gt: lastPush?.createdAt ?? new Date(now - LEAD_BUNDLE_MS) } },
     });
-    return waiting ? { title: `${waiting + 1} new enquiries`, body: "Customers contacted you in the last few minutes. Open DialNFind to see them." } : { title, body };
+    return waiting ? { title: `${waiting + 1} new enquiries`, body: "Customers contacted you in the last few minutes. Open KaajVa to see them." } : { title, body };
   }
   if (QUIET_TYPES.has(type) && inQuietHours()) return null;
   const today = await prisma.notification.count({

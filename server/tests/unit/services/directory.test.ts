@@ -213,7 +213,7 @@ describe("social auth", () => {
     expect(link).toMatchObject({ email: "new@example.com", clientId: "google-web" });
 
     const fallback = await signInWithIdentity({ provider: "apple", identity: identity({ sub: "a-9", email: "x@y.co", name: null, audience: "" }), role: "customer" });
-    expect(fallback.user.name).toBe("DialNFind user");
+    expect(fallback.user.name).toBe("KaajVa user");
 
     const existing = await createUser({ email: "old@example.com", verified: false });
     const linked = await signInWithIdentity({ provider: "apple", identity: identity({ sub: "a-1", email: "old@example.com" }), role: "customer", name: "Given" });

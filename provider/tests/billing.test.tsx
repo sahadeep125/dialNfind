@@ -72,7 +72,7 @@ const billing = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-const checkoutSession = { subscriptionId: "sub_1", keyId: "rzp_test", name: "DialNFind", description: "Pro", prefill: {}, notes: {} };
+const checkoutSession = { subscriptionId: "sub_1", keyId: "rzp_test", name: "KaajVa", description: "Pro", prefill: {}, notes: {} };
 
 describe("subscription page", () => {
   it("buys a plan with Razorpay, and handles closing, failures and API errors", async () => {
@@ -251,7 +251,7 @@ describe("subscription page", () => {
     });
     await renderApp("/subscription");
     expect(await screen.findByText("Waiting for payment")).toBeInTheDocument();
-    expect(screen.getByText(/Set up by the DialNFind team · billed monthly · ends on/)).toBeInTheDocument();
+    expect(screen.getByText(/Set up by the KaajVa team · billed monthly · ends on/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Contact support" })).toHaveAttribute("href", "/support");
     expect(screen.getByText(/Online payments are being set up/)).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Contact us to upgrade" })).toHaveLength(1);
@@ -356,7 +356,7 @@ const promote = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-const orderSession = { orderId: "order_1", keyId: "rzp_test", amount: 1770, currency: "INR", name: "DialNFind", description: "Campaign", prefill: {} };
+const orderSession = { orderId: "order_1", keyId: "rzp_test", amount: 1770, currency: "INR", name: "KaajVa", description: "Campaign", prefill: {} };
 
 describe("promote page", () => {
   it("validates the budget and pays online", async () => {

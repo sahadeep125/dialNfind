@@ -4,7 +4,7 @@ import { api } from "@/services/api";
 import type { AppConfig } from "@/types";
 import { queryKeys } from "./queryKeys";
 
-/** Support contacts and legal links, edited by the DialNFind team in the admin console. */
+/** Support contacts and legal links, edited by the KaajVa team in the admin console. */
 export function useAppConfig(): UseQueryResult<AppConfig> {
   return useQuery({
     queryKey: queryKeys.appConfig,

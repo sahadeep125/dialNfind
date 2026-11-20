@@ -22,20 +22,20 @@ Each button stays hidden until its IDs are configured, and the API answers `501`
 
 **Apple on Android:** the app opens `appleid.apple.com` in a browser tab. Apple posts the result to `POST /api/v1/auth/apple/callback`. The API redirects to `<app scheme>://auth/apple`, and only schemes listed in `APPLE_APP_REDIRECT_SCHEMES` are allowed. The app then sends the token to `/auth/apple` in the usual way.
 
-**Account deletion:** deleting an account removes its Google/Apple links and revokes our Apple access. The App Store requires the revocation, which uses the refresh token saved from the first Apple sign-in and needs the Sign in with Apple key below. Apple's server-to-server notifications (`POST /api/v1/auth/apple/notifications`) remove a link when someone stops using Sign in with Apple with DialNFind.
+**Account deletion:** deleting an account removes its Google/Apple links and revokes our Apple access. The App Store requires the revocation, which uses the refresh token saved from the first Apple sign-in and needs the Sign in with Apple key below. Apple's server-to-server notifications (`POST /api/v1/auth/apple/notifications`) remove a link when someone stops using Sign in with Apple with KaajVa.
 
 ## 1. Google Cloud Console
 
 Use one project, under **APIs & Services → Credentials**.
 
 1. **OAuth consent screen:**
-   - App name DialNFind, with support email, logo, privacy policy and terms URLs.
+   - App name KaajVa, with support email, logo, privacy policy and terms URLs.
    - Scopes `openid`, `email`, `profile`.
    - Publish it; while in "Testing", only listed test users can sign in.
 2. **Web application client:**
    - Authorised JavaScript origins:
-     - `https://dialnfind.com`
-     - `https://business.dialnfind.com`
+     - `https://kaajva.in`
+     - `https://business.kaajva.in`
      - `http://localhost:3000`
      - `http://localhost:5173`
    - No redirect URIs needed.
@@ -60,10 +60,10 @@ Server: set `GOOGLE_CLIENT_IDS` to every client ID above (web and both iOS clien
    - Group them, with `com.dialnfind.app` as the primary, so a person gets the same Apple user ID in both apps.
 2. **Identifiers → Services IDs:** create one, e.g. `com.dialnfind.signin`, enable *Sign in with Apple*, and configure it:
    - Primary App ID: `com.dialnfind.app`.
-   - Domains: `dialnfind.com`, `business.dialnfind.com`, and the API's domain.
+   - Domains: `kaajva.in`, `business.kaajva.in`, and the API's domain.
    - Return URLs:
-     - `https://dialnfind.com/login`
-     - `https://business.dialnfind.com/login`
+     - `https://kaajva.in/login`
+     - `https://business.kaajva.in/login`
      - `https://<api-domain>/api/v1/auth/apple/callback`
    - Server-to-server notification endpoint: `https://<api-domain>/api/v1/auth/apple/notifications`.
 3. **Keys:** create a key with *Sign in with Apple* enabled (linked to the primary App ID) and download the `.p8` file.
@@ -87,14 +87,14 @@ APPLE_APP_REDIRECT_SCHEMES="dialnfind,dialnfind-business"
 ```
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=<web client id>
 NEXT_PUBLIC_APPLE_SERVICES_ID=com.dialnfind.signin
-NEXT_PUBLIC_APPLE_REDIRECT_URI=https://dialnfind.com/login
+NEXT_PUBLIC_APPLE_REDIRECT_URI=https://kaajva.in/login
 ```
 
 **provider/.env**
 ```
 VITE_GOOGLE_CLIENT_ID=<web client id>
 VITE_APPLE_SERVICES_ID=com.dialnfind.signin
-VITE_APPLE_REDIRECT_URI=https://business.dialnfind.com/login
+VITE_APPLE_REDIRECT_URI=https://business.kaajva.in/login
 ```
 
 **mobile/.env** and **provider-mobile/.env** (and the EAS environment for builds)

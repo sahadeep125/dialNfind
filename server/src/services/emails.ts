@@ -27,10 +27,10 @@ export async function sendVerificationEmail(user: Recipient) {
   const [code, token] = await Promise.all([issueVerifyCode(user.id), issueUserToken(user.id, "verify_email")]);
   return sendMail({
     to: user.email,
-    subject: `${code} is your DialNFind code`,
+    subject: `${code} is your KaajVa code`,
     lines: [
       `Hi ${firstName(user.name)},`,
-      "Enter this code in DialNFind to confirm your email address. It works for 30 minutes.",
+      "Enter this code in KaajVa to confirm your email address. It works for 30 minutes.",
     ],
     code,
     action: { label: "Or confirm with one tap", url: `${appUrl(user.role)}/verify-email?token=${token}` },
@@ -42,13 +42,13 @@ export function sendProviderWelcome(user: Recipient) {
   if (user.role !== "provider") return Promise.resolve();
   return sendMail({
     to: user.email,
-    subject: "Welcome to DialNFind for business",
+    subject: "Welcome to KaajVa for business",
     lines: [
       `Hi ${firstName(user.name)},`,
       "Your account is ready. Three steps get customers calling:",
       "1. Finish your listing: services, areas, hours and photos.",
       "2. Upload a business or ID document to earn the Verified badge, which ranks you higher.",
-      "3. Install the DialNFind Business app to get an alert the moment a customer contacts you.",
+      "3. Install the KaajVa Business app to get an alert the moment a customer contacts you.",
     ],
     action: { label: "Open your dashboard", url: env.providerUrl },
   });
@@ -57,7 +57,7 @@ export function sendProviderWelcome(user: Recipient) {
 export function sendPasswordChanged(user: Recipient) {
   return sendMail({
     to: user.email,
-    subject: "Your DialNFind password was changed",
+    subject: "Your KaajVa password was changed",
     lines: [
       `Hi ${firstName(user.name)},`,
       `The password for your account was changed on ${when()}. Other devices were signed out.`,
@@ -74,7 +74,7 @@ export function sendSignInMethodAdded(user: Recipient, provider: "google" | "app
     subject: `Sign in with ${label} was added to your account`,
     lines: [
       `Hi ${firstName(user.name)},`,
-      `On ${when()} someone signed in to your DialNFind account with ${label} for the first time. You can now sign in either way.`,
+      `On ${when()} someone signed in to your KaajVa account with ${label} for the first time. You can now sign in either way.`,
       "If this was not you, contact support straight away.",
     ],
   });
@@ -85,11 +85,11 @@ export function sendAccountDeleted(user: Recipient, storeSubscription: "app_stor
   const store = storeSubscription === "app_store" ? "the App Store" : storeSubscription === "play_store" ? "Google Play" : null;
   return sendMail({
     to: user.email,
-    subject: "Your DialNFind account was deleted",
+    subject: "Your KaajVa account was deleted",
     lines: [
       `Hi ${firstName(user.name)},`,
       "Your account and personal details have been removed, as you asked.",
-      ...(user.role === "provider" ? ["Your business listing stays on DialNFind as an unclaimed listing, and its plan will not renew."] : []),
+      ...(user.role === "provider" ? ["Your business listing stays on KaajVa as an unclaimed listing, and its plan will not renew."] : []),
       ...(store ? [`Your subscription was bought through ${store}. Cancel it there so you are not charged again.`] : []),
       "If you did not ask for this, reply to this email.",
     ],
@@ -98,9 +98,9 @@ export function sendAccountDeleted(user: Recipient, storeSubscription: "app_stor
 
 export function sendAccountSuspended(userId: bigint) {
   return mailUser(userId, {
-    subject: "Your DialNFind account has been suspended",
+    subject: "Your KaajVa account has been suspended",
     lines: [
-      "Your account was suspended by the DialNFind team and you have been signed out.",
+      "Your account was suspended by the KaajVa team and you have been signed out.",
       "If you think this is a mistake, reply to this email and tell us what happened.",
     ],
   });
@@ -126,7 +126,7 @@ export function sendTicketReceived(to: string, name: string, reference: string, 
     subject: `We got your request [${reference}]`,
     lines: [
       `Hi ${firstName(name)},`,
-      `Thanks for writing to DialNFind about "${subject}". Your reference is ${reference}.`,
+      `Thanks for writing to KaajVa about "${subject}". Your reference is ${reference}.`,
       "Our team usually replies within one working day.",
       signedIn ? "You can follow the conversation under Help and support in your account." : "Reply to this email if you want to add anything.",
     ],
@@ -138,10 +138,10 @@ export async function sendStaffInvite(member: { id: bigint; email: string; name:
   const token = await issueUserToken(member.id, "reset_password", 48 * 60 * 60 * 1000);
   await sendMail({
     to: member.email,
-    subject: "You have been added to the DialNFind team",
+    subject: "You have been added to the KaajVa team",
     lines: [
       `Hi ${firstName(member.name)},`,
-      `${invitedBy} added you to the DialNFind admin team as ${roleName}.`,
+      `${invitedBy} added you to the KaajVa admin team as ${roleName}.`,
       "Choose a password to sign in. The link works for 48 hours.",
     ],
     action: { label: "Set your password", url: `${env.webUrl}/reset-password?token=${token}` },
@@ -151,7 +151,7 @@ export async function sendStaffInvite(member: { id: bigint; email: string; name:
 export function sendStaffDigest(to: { email: string; name: string }, items: string[], adminUrl: string) {
   return sendMail({
     to: to.email,
-    subject: "Today's DialNFind review queue",
+    subject: "Today's KaajVa review queue",
     lines: [`Hi ${firstName(to.name)}, these are waiting for the team:`, ...items],
     action: { label: "Open the admin panel", url: adminUrl },
   });

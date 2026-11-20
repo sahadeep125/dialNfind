@@ -411,10 +411,10 @@ describe("invoices", () => {
     expect(Number(inv.cgst)).toBe(90);
     expect(Number(inv.igst)).toBe(0);
     expect(inv.billedTo).toMatchObject({ address: "1 Road, Mumbai, 400001", stateCode: "27", state: "Maharashtra" });
-    expect((inv.lines as { description: string; period: string }[])[0]).toMatchObject({ description: "DialNFind Pro subscription (yearly)", period: expect.stringContaining("Until") });
+    expect((inv.lines as { description: string; period: string }[])[0]).toMatchObject({ description: "KaajVa Pro subscription (yearly)", period: expect.stringContaining("Until") });
     expect(await issueInvoice(txn.id)).toMatchObject({ id: inv.id });
     await settle();
-    expect(sentMails().map((m) => m.subject)).toContain(`Invoice ${inv.number} from DialNFind`);
+    expect(sentMails().map((m) => m.subject)).toContain(`Invoice ${inv.number} from KaajVa`);
 
     const other = await createProvider({ state: "Karnataka", billingName: "Acme", billingAddress: "Blr", billingStateCode: "29", gstin: "29ABCDE1234F1Z5" });
     const ad = await prisma.transaction.create({ data: { providerId: other.id, type: "sponsored_ad", gateway: "manual", amount: 590, status: "success" } });
@@ -423,9 +423,9 @@ describe("invoices", () => {
     expect(Number(adInv.igst)).toBe(90);
     expect(adInv.billedTo).toMatchObject({ name: "Acme", address: "Blr", gstin: "29ABCDE1234F1Z5" });
     const fee = await prisma.transaction.create({ data: { providerId: other.id, type: "lead_fee", amount: 10, status: "success" } });
-    expect(((await issueInvoice(fee.id))!.lines as { description: string }[])[0]!.description).toBe("DialNFind lead fee");
+    expect(((await issueInvoice(fee.id))!.lines as { description: string }[])[0]!.description).toBe("KaajVa lead fee");
     const planless = await prisma.transaction.create({ data: { providerId: other.id, type: "subscription", amount: 10, status: "success" } });
-    expect(((await issueInvoice(planless.id))!.lines as { description: string; period: null }[])[0]).toMatchObject({ description: "DialNFind plan subscription", period: null });
+    expect(((await issueInvoice(planless.id))!.lines as { description: string; period: null }[])[0]).toMatchObject({ description: "KaajVa plan subscription", period: null });
     const unknownState = await createProvider({ state: "Atlantis" });
     const u = await prisma.transaction.create({ data: { providerId: unknownState.id, type: "lead_fee", amount: 10, status: "success" } });
     expect((await issueInvoice(u.id))!.placeOfSupply).toBe("Atlantis");
@@ -441,7 +441,7 @@ describe("invoices", () => {
     const ok = await prisma.transaction.create({ data: { providerId: p.id, type: "lead_fee", amount: 10, status: "success" } });
     const inv = (await issueInvoice(ok.id))!;
     expect(inv.number).toMatch(/^DNF\//);
-    expect(inv.seller).toMatchObject({ name: "DialNFind", stateCode: null, state: null });
+    expect(inv.seller).toMatchObject({ name: "KaajVa", stateCode: null, state: null });
     expect((inv.lines as { sac: string }[])[0]!.sac).toBe("998365");
   });
   it("presents and renders invoices", async () => {

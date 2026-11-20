@@ -53,7 +53,7 @@ export async function askIfPending(now = Date.now()): Promise<void> {
 }
 
 /**
- * "Rate DialNFind" in Settings: the in-app prompt when the OS allows it, otherwise the store listing
+ * "Rate KaajVa" in Settings: the in-app prompt when the OS allows it, otherwise the store listing
  * (`ios.appStoreUrl` / `android.playStoreUrl` in app.json), otherwise a store search.
  */
 export async function rateApp(): Promise<void> {
@@ -65,7 +65,7 @@ export async function rateApp(): Promise<void> {
   await openUrl(
     url ??
       (Platform.OS === "ios"
-        ? "https://apps.apple.com/search?term=DialNFind"
+        ? "https://apps.apple.com/search?term=KaajVa"
         : "https://play.google.com/store/apps/details?id=com.dialnfind.app"),
   );
 }

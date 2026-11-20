@@ -61,7 +61,7 @@ afterEach(() => {
   act(() => useAuthStore.getState().signOut());
 });
 
-describeLive("DialNFind Business on Android", () => {
+describeLive("KaajVa Business on Android", () => {
   const owner = login(OWNER);
   const business = (
     JSON.parse(

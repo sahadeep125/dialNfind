@@ -267,7 +267,7 @@ describe("reviews", () => {
       "PUT /provider/reviews/2/reply": { ok: true },
     });
     await renderApp("/reviews");
-    expect(await screen.findByText("Contacted via DialNFind")).toBeInTheDocument();
+    expect(await screen.findByText("Contacted via KaajVa")).toBeInTheDocument();
     expect(screen.getByText("Reported to our team")).toBeInTheDocument();
     expect(screen.getByText("4.5")).toBeInTheDocument();
 

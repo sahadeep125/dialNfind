@@ -12,7 +12,7 @@ export function reviewBlockedMessage(eligibility: ReviewEligibility): string | n
     case "too_soon":
       return `You can review them ${eligibility.availableAt ? `from ${formatDateTime(eligibility.availableAt)}` : "soon"}. Already heard back? Tell us they responded in Recent contacts.`;
     case "no_contact":
-      return "Reviews come from customers who contacted this business on DialNFind. Call or WhatsApp them from this page to review them later.";
+      return "Reviews come from customers who contacted this business on KaajVa. Call or WhatsApp them from this page to review them later.";
     default:
       return null;
   }

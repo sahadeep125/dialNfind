@@ -38,7 +38,7 @@ export function useLeads(filters: LeadFilters): UseInfiniteQueryResult<InfiniteD
   });
 }
 
-/** Reports a contact as spam, fake or a wrong number. The DialNFind team decides; accepted reports stop counting. */
+/** Reports a contact as spam, fake or a wrong number. The KaajVa team decides; accepted reports stop counting. */
 export function useReportLead(): UseMutationResult<unknown, Error, { leadId: number; reason: string }> {
   const qc = useQueryClient();
   return useMutation({

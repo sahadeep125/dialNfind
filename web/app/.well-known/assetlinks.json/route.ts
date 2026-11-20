@@ -2,7 +2,7 @@ import { ANDROID_FINGERPRINTS, ANDROID_PACKAGE } from "@/lib/app-links";
 
 export const dynamic = "force-static";
 
-/** Android app links: proves the DialNFind app may open links to this site. */
+/** Android app links: proves the KaajVa app may open links to this site. */
 export function GET() {
   return Response.json(
     ANDROID_FINGERPRINTS.length

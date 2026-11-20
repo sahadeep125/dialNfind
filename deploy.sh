@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =======================================================
-# DialNFind Automated Deployment Script for Mac Host
+# KaajVa Automated Deployment Script for Mac Host
 # =======================================================
 
 set -e
@@ -21,7 +21,7 @@ for arg in "$@"; do
     esac
 done
 
-echo "🚀 Starting DialNFind deployment..."
+echo "🚀 Starting KaajVa deployment..."
 
 # 1. Check if .env file exists
 if [ ! -f .env ]; then
@@ -125,7 +125,7 @@ fi
 # 7. Print Container Status
 echo ""
 echo "======================================================="
-echo "🎉 DialNFind services are running successfully!"
+echo "🎉 KaajVa services are running successfully!"
 echo "======================================================="
 echo "Local endpoints ready for Cloudflare Tunnel:"
 echo "  🌐 Website (Next.js):        http://localhost:3000"

@@ -80,7 +80,7 @@ export const PLUMBING_GUIDES: Guide[] = [
       {
         heading: "Finding a reliable plumber near you",
         paragraphs: [
-          "Look for plumbers with recent reviews that mention the type of job you need, and prefer those who give a clear estimate before starting. DialNFind lists plumbers across Siliguri and other cities with ratings, distance and opening hours, so you can compare and call directly without a booking fee.",
+          "Look for plumbers with recent reviews that mention the type of job you need, and prefer those who give a clear estimate before starting. KaajVa lists plumbers across Siliguri and other cities with ratings, distance and opening hours, so you can compare and call directly without a booking fee.",
         ],
       },
       {

@@ -36,7 +36,7 @@ function Unreachable() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
       <CloudOff className="size-10 text-muted-foreground" />
-      <h1 className="mt-5 text-2xl font-bold">We could not reach DialNFind</h1>
+      <h1 className="mt-5 text-2xl font-bold">We could not reach KaajVa</h1>
       <p className="mt-2 max-w-md text-muted-foreground">Check your connection. If it keeps happening, the service may be down for a moment.</p>
       <Button className="mt-6" onClick={() => void refresh()}>
         Try again

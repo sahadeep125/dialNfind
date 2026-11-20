@@ -6,11 +6,11 @@ interface Props {
   tone?: "brand" | "inverse";
 }
 
-/** The DialNFind mark, the same drawing as the website logo: a location pin holding a phone handset. */
+/** The KaajVa mark, the same drawing as the website logo: a location pin holding a phone handset. */
 export function BrandMark({ size = 40, tone = "brand" }: Props) {
   const inverse = tone === "inverse";
   return (
-    <Svg width={size} height={size} viewBox="0 0 40 40" accessibilityLabel="DialNFind">
+    <Svg width={size} height={size} viewBox="0 0 40 40" accessibilityLabel="KaajVa">
       <Defs>
         <LinearGradient id="dnf-mark" x1="0" y1="0" x2="1" y2="1">
           <Stop offset="0" stopColor="#5A78F2" />

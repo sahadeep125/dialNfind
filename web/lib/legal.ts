@@ -1,5 +1,5 @@
 // Terms and privacy for customers, written as a plain-language summary. DRAFT: have it reviewed by
-// counsel before launch. The DialNFind team can link the authoritative versions from the admin
+// counsel before launch. The KaajVa team can link the authoritative versions from the admin
 // console (terms_url / privacy_url); the pages then point to them.
 
 export type LegalDocKey = "terms" | "privacy";
@@ -20,14 +20,14 @@ export interface LegalDoc {
 export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
   terms: {
     title: "Terms of use",
-    description: "The terms that apply when you search for and contact local service providers on DialNFind.",
+    description: "The terms that apply when you search for and contact local service providers on KaajVa.",
     updated: "September 2026",
     intro:
-      "These terms apply when you use the DialNFind website and app to find and contact local service providers. They are a general summary; the version published by DialNFind is the one that applies.",
+      "These terms apply when you use the KaajVa website and app to find and contact local service providers. They are a general summary; the version published by KaajVa is the one that applies.",
     sections: [
       {
-        heading: "What DialNFind is",
-        body: "DialNFind is a directory that helps you find local service providers and contact them directly. We do not provide the services listed, take bookings or handle payments for the work. Any agreement about price, timing and scope is between you and the provider.",
+        heading: "What KaajVa is",
+        body: "KaajVa is a directory that helps you find local service providers and contact them directly. We do not provide the services listed, take bookings or handle payments for the work. Any agreement about price, timing and scope is between you and the provider.",
       },
       {
         heading: "Listings and verification",
@@ -39,7 +39,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
       },
       {
         heading: "Your account",
-        body: "You can use DialNFind as a guest. With an account you can save favorites, write reviews and contact our support team. Keep your password private; you are responsible for activity on your account.",
+        body: "You can use KaajVa as a guest. With an account you can save favorites, write reviews and contact our support team. Keep your password private; you are responsible for activity on your account.",
       },
       {
         heading: "Reviews",
@@ -51,11 +51,11 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
       },
       {
         heading: "Liability",
-        body: "To the extent the law allows, DialNFind is not responsible for the work providers carry out, the prices they charge or disputes between you and a provider.",
+        body: "To the extent the law allows, KaajVa is not responsible for the work providers carry out, the prices they charge or disputes between you and a provider.",
       },
       {
         heading: "Closing your account",
-        body: "You can delete your account at any time from your account settings. We may suspend accounts that misuse DialNFind, for example by posting fake reviews.",
+        body: "You can delete your account at any time from your account settings. We may suspend accounts that misuse KaajVa, for example by posting fake reviews.",
       },
       {
         heading: "Changes",
@@ -65,14 +65,14 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
   },
   privacy: {
     title: "Privacy policy",
-    description: "What DialNFind collects when you search for and contact local service providers, and how it is used.",
+    description: "What KaajVa collects when you search for and contact local service providers, and how it is used.",
     updated: "September 2026",
     intro:
-      "This explains what DialNFind collects when you use the website and app, and how it is used. It is a general summary; the version published by DialNFind is the one that applies.",
+      "This explains what KaajVa collects when you use the website and app, and how it is used. It is a general summary; the version published by KaajVa is the one that applies.",
     sections: [
       {
         heading: "What we collect",
-        body: "If you create an account: your name, email address, optional phone number and password, or your Google or Apple sign-in. As you use DialNFind: your searches and the location you search near, providers you contact, favorites, saved addresses, reviews and photos you post, and support requests. We also collect basic device and usage information to keep the service secure and working.",
+        body: "If you create an account: your name, email address, optional phone number and password, or your Google or Apple sign-in. As you use KaajVa: your searches and the location you search near, providers you contact, favorites, saved addresses, reviews and photos you post, and support requests. We also collect basic device and usage information to keep the service secure and working.",
       },
       {
         heading: "Location",
@@ -84,7 +84,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
       },
       {
         heading: "How we use it",
-        body: "To show relevant providers, save your favorites and reviews, send you notifications you asked for (such as replies to your reviews and support requests), answer support requests, prevent fraud and spam, and improve DialNFind.",
+        body: "To show relevant providers, save your favorites and reviews, send you notifications you asked for (such as replies to your reviews and support requests), answer support requests, prevent fraud and spam, and improve KaajVa.",
       },
       {
         heading: "Who we share it with",
@@ -96,7 +96,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
       },
       {
         heading: "Your choices",
-        body: "You can edit your profile, remove saved addresses and delete reviews at any time. You can turn off push notifications in your device settings. You can delete your account from your account settings, which removes your profile, reviews, favorites and saved addresses. To get a copy of your data, contact DialNFind support.",
+        body: "You can edit your profile, remove saved addresses and delete reviews at any time. You can turn off push notifications in your device settings. You can delete your account from your account settings, which removes your profile, reviews, favorites and saved addresses. To get a copy of your data, contact KaajVa support.",
       },
     ],
   },

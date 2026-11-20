@@ -98,7 +98,7 @@ function DetailsSection({ user }: { user: SessionUser }) {
   };
 
   return (
-    <AppSection title="Your details" subtitle="Private to you and the DialNFind team" kind="plain">
+    <AppSection title="Your details" subtitle="Private to you and the KaajVa team" kind="plain">
       <AppCard>
         <View style={{ gap: 14 }}>
           {save.isError ? <AppCallout tone="danger" title={errorMessage(save.error)} /> : null}

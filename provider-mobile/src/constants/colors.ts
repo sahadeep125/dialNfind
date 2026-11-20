@@ -1,4 +1,4 @@
-// Brand palette, matched to the DialNFind website. Leaf file: no imports, so tailwind.config.ts can read it.
+// Brand palette, matched to the KaajVa website. Leaf file: no imports, so tailwind.config.ts can read it.
 
 export const palette = {
   indigo50: "#EEF3FF",
