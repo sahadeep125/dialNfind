@@ -39,10 +39,14 @@ afterEach(() => {
 });
 
 describeLive("KaajVa app on Android", () => {
-  const featured = apiGet<{ results: { slug: string; businessName: string }[] }>(
-    "/providers/featured?lat=26.7338&lng=88.4325&limit=10",
-  ).results;
-  const provider = featured[0];
+  // Fetched here, not in the describe body: Jest runs a skipped describe's body too, and with no API
+  // running the call would throw before the walkthrough could skip.
+  let provider = { slug: "", businessName: "" };
+  beforeAll(() => {
+    provider = apiGet<{ results: { slug: string; businessName: string }[] }>(
+      "/providers/featured?lat=26.7338&lng=88.4325&limit=10",
+    ).results[0];
+  });
 
   test("opens on the splash, then Home with categories and providers", async () => {
     renderRouter("./src/app", { initialUrl: "/" });

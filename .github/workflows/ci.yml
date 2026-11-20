@@ -60,6 +60,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile --filter server...
+      - run: pnpm --filter server exec prisma generate
       - run: pnpm --filter server db:deploy
       - run: pnpm --filter server db:bootstrap
       - run: pnpm --filter server exec tsx scripts/smoke-fixtures.ts

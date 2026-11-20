@@ -62,12 +62,17 @@ afterEach(() => {
 });
 
 describeLive("KaajVa Business on Android", () => {
-  const owner = login(OWNER);
-  const business = (
-    JSON.parse(
-      curl(`${API}/provider/me`, { headers: { authorization: `Bearer ${owner.token}` } }).body,
-    ) as { provider: { businessName: string } }
-  ).provider.businessName;
+  // Signed in here, not in the describe body: Jest runs a skipped describe's body too, and with no API
+  // running the call would throw before the walkthrough could skip.
+  let business = "";
+  beforeAll(() => {
+    const owner = login(OWNER);
+    business = (
+      JSON.parse(
+        curl(`${API}/provider/me`, { headers: { authorization: `Bearer ${owner.token}` } }).body,
+      ) as { provider: { businessName: string } }
+    ).provider.businessName;
+  });
 
   test("signed-out launch shows log in, and logging in opens the dashboard", async () => {
     await launch();
