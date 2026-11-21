@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import { num } from "../lib/serialize.js";
 import { refreshProviderSlugs, refreshShared } from "./web-cache.js";
+import { analyzeSeo, loadSeoInput } from "./seo.js";
 
 /** Minimum customer follow-ups before the response signal is trusted. */
 const MIN_RESPONSE_SAMPLES = 5;
@@ -68,7 +69,7 @@ export function computeRankingScore(input: {
 }
 
 /**
- * Recomputes denormalized rating, response signal, completeness and ranking for one provider, then refreshes
+ * Recomputes denormalized rating, response signal, completeness, ranking and SEO score for one provider, then refreshes
  * its cached page on the website. Bulk runs pass `refreshWeb: false` and refresh everything once instead.
  */
 export async function recalculateProvider(providerId: bigint, { refreshWeb = true }: { refreshWeb?: boolean } = {}): Promise<void> {
@@ -108,14 +109,19 @@ export async function recalculateProvider(providerId: bigint, { refreshWeb = tru
     isAvailable: provider.isAvailable,
   });
 
+  const rounded = Math.round(avgRating * 10) / 10;
+  // The SEO score reads the same profile, with the rating just worked out.
+  const seo = analyzeSeo(await loadSeoInput(prisma, providerId, { avgRating: rounded, totalReviews }));
+
   await prisma.provider.update({
     where: { id: providerId },
     data: {
-      avgRating: Math.round(avgRating * 10) / 10,
+      avgRating: rounded,
       totalReviews,
       responseSignal,
       profileCompletenessPct: pct,
       rankingScore,
+      seoScore: seo.score,
     },
   });
   // Every profile edit, review and lead ends here, so this one call keeps the cached public profile current.

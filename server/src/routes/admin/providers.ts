@@ -11,11 +11,12 @@ import { env } from "../../env.js";
 import { logAdmin } from "../../services/audit.js";
 import { notifyAndEmail } from "../../services/notify.js";
 import { recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
-import { createListing, listingProfileSchema, newListingSchema, updateListingProfile, type NewListing } from "../../services/listings.js";
+import { adminListingProfileSchema, createListing, newListingSchema, updateListingProfile, type NewListing } from "../../services/listings.js";
 import { searchPlaces } from "../../services/geocode.js";
 import { releaseFile } from "../../storage/references.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "../provider/shared.js";
 import { loadProfile } from "../provider/profile.js";
+import { checkSeoDraft, seoDraftSchema } from "../../services/seo.js";
 import { previewUrl, refreshProviderSlugs, refreshShared } from "../../services/web-cache.js";
 
 /** Listing management in the admin console: list, status, edit, create, import, ownership and delete. */
@@ -27,7 +28,23 @@ export const providerQuery = paginationSchema.extend({
   claimed: z.enum(["yes", "no"]).optional(),
   city: z.string().trim().max(60).optional(),
   q: z.string().trim().max(100).optional(),
+  /** SEO score band: good 80+, fair 50-79, poor under 50; "noindex" lists pages hidden from search. */
+  seo: z.enum(["good", "fair", "poor", "noindex"]).optional(),
+  sort: z.enum(["newest", "seo_asc", "seo_desc"]).default("newest"),
 });
+
+const SEO_BANDS = {
+  good: { seoScore: { gte: 80 } },
+  fair: { seoScore: { gte: 50, lt: 80 } },
+  poor: { seoScore: { lt: 50 } },
+  noindex: { seoNoIndex: true },
+} satisfies Record<string, Prisma.ProviderWhereInput>;
+
+const PROVIDER_SORT = {
+  newest: [{ createdAt: "desc" }],
+  seo_asc: [{ seoScore: "asc" }, { id: "desc" }],
+  seo_desc: [{ seoScore: "desc" }, { id: "desc" }],
+} satisfies Record<string, Prisma.ProviderOrderByWithRelationInput[]>;
 
 /** The list filters, shared with the CSV export. */
 export function providerWhere(q: z.infer<typeof providerQuery>): Prisma.ProviderWhereInput {
@@ -37,6 +54,7 @@ export function providerWhere(q: z.infer<typeof providerQuery>): Prisma.Provider
     ...(q.claimed ? { userId: q.claimed === "yes" ? { not: null } : null } : {}),
     ...(q.city ? { city: { equals: q.city, mode: "insensitive" as const } } : {}),
     ...(q.q ? { OR: [{ businessName: { contains: q.q, mode: "insensitive" as const } }, { phone: { contains: q.q } }] } : {}),
+    ...(q.seo ? SEO_BANDS[q.seo] : {}),
   };
 }
 
@@ -46,7 +64,7 @@ adminProvidersRouter.get("/providers", async (req, res) => {
   const [providers, total] = await Promise.all([
     prisma.provider.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: PROVIDER_SORT[q.sort],
       skip: (q.page - 1) * q.pageSize,
       take: q.pageSize,
       select: {
@@ -63,6 +81,8 @@ adminProvidersRouter.get("/providers", async (req, res) => {
         avgRating: true,
         totalReviews: true,
         profileCompletenessPct: true,
+        seoScore: true,
+        seoNoIndex: true,
         createdAt: true,
         user: { select: { name: true, email: true } },
         services: { where: { isPrimary: true }, take: 1, select: { category: { select: { name: true } } } },
@@ -138,12 +158,29 @@ const BULK_ACTIONS = {
   reject: { status: "rejected" },
   verify: { verificationStatus: "verified" },
 } as const;
+/** Bulk actions that only change whether search engines may show the page. */
+const BULK_NOINDEX = { hide_from_search: true, show_in_search: false } as const;
 
 /** POST /admin/providers/bulk — the same change for up to 100 listings. */
 adminProvidersRouter.post("/providers/bulk", async (req, res) => {
-  const body = parse(z.object({ ids: z.array(z.number().int().positive()).min(1).max(100), action: z.enum(["approve", "suspend", "reject", "verify"]) }), req.body);
+  const body = parse(
+    z.object({ ids: z.array(z.number().int().positive()).min(1).max(100), action: z.enum(["approve", "suspend", "reject", "verify", "hide_from_search", "show_in_search"]) }),
+    req.body,
+  );
   const adminId = currentUser(req).id;
   let updated = 0;
+  if (body.action === "hide_from_search" || body.action === "show_in_search") {
+    const seoNoIndex = BULK_NOINDEX[body.action];
+    const rows = await prisma.provider.findMany({ where: { id: { in: [...new Set(body.ids)].map(BigInt) }, seoNoIndex: !seoNoIndex }, select: { id: true, slug: true } });
+    for (const { id } of rows) {
+      await prisma.provider.update({ where: { id }, data: { seoNoIndex } });
+      await logAdmin(adminId, "provider.edit", "provider", id, { fields: ["seoNoIndex"], seoNoIndex, bulk: true });
+    }
+    // The sitemap and each page's robots tag change.
+    refreshProviderSlugs(rows.map((r) => r.slug), ["providers"]);
+    res.json({ updated: rows.length });
+    return;
+  }
   for (const id of new Set(body.ids)) {
     await setProviderStatus(adminId, BigInt(id), BULK_ACTIONS[body.action]).then(() => updated++, () => undefined);
   }
@@ -182,10 +219,16 @@ adminProvidersRouter.get("/providers/:id/preview-link", async (req, res) => {
 
 adminProvidersRouter.patch("/providers/:id/profile", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
-  const body = parse(listingProfileSchema.partial(), req.body);
+  const body = parse(adminListingProfileSchema.partial(), req.body);
   await updateListingProfile(provider, body);
   await logAdmin(currentUser(req).id, "provider.edit", "provider", provider.id, { fields: Object.keys(body) });
   res.json({ provider: await loadProfile(provider.id) });
+});
+
+/** POST /admin/providers/:id/seo/check — the SEO score for unsaved edits in the admin editor. Saves nothing. */
+adminProvidersRouter.post("/providers/:id/seo/check", async (req, res) => {
+  const provider = await findProvider(req.params.id as string);
+  res.json({ seo: await checkSeoDraft(provider.id, parse(seoDraftSchema, req.body ?? {})) });
 });
 
 adminProvidersRouter.put("/providers/:id/hours", async (req, res) => {

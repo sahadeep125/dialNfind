@@ -308,6 +308,29 @@ describe("provider profile page", () => {
     expect(String(bare.description)).toMatch(/^Local services in Mumbai\. Call/);
     mockApi(routes({ description: null, shortDescription: "Short text" }));
     expect(String((await page.generateMetadata({ params: sp({ slug: "shop" }) })).description)).toContain("Short text");
+    // The API's SEO text wins: the title is used whole (it already ends in the brand) and carries the keywords.
+    const seo = { title: "Sharma TV Repair: TV Repair in Mumbai | KaajVa", description: "Sharma TV Repair: TV Repair in Mumbai (Andheri).", keywords: ["tv repair in Mumbai", "tv repair near me"], focusKeyword: "tv repair in Mumbai", service: "TV Repair", noIndex: false };
+    mockApi(routes({ seo }));
+    const tuned = await page.generateMetadata({ params: sp({ slug: "shop" }) });
+    expect(tuned).toMatchObject({ title: { absolute: seo.title }, description: seo.description, keywords: seo.keywords, alternates: { canonical: "/providers/shop" }, openGraph: { title: seo.title } });
+    expect(tuned).not.toHaveProperty("robots");
+    mockApi(routes({ seo: { ...seo, noIndex: true } }));
+    expect((await page.generateMetadata({ params: sp({ slug: "shop" }) })).robots).toEqual({ index: false, follow: true });
+  });
+  it("describes photos for image search", async () => {
+    const { default: Page } = await import("@/app/providers/[slug]/page");
+    const seo = { title: "T | KaajVa", description: "D", keywords: [], focusKeyword: "tv repair in Mumbai", service: "TV Repair", noIndex: false };
+    mockApi(routes({ seo, coverUrl: "https://img.test/cover.webp", portfolio: [{ id: 1, title: "Panel swap", altText: "Panel swap by Sharma TV Repair, Mumbai", description: null, imageUrl: "https://img.test/1.webp", category: null }] }));
+    const a = await renderAsync(await Page({ params: sp({ slug: "shop" }) }));
+    await act(async () => undefined);
+    expect(screen.getAllByAltText("Sharma TV Repair, TV Repair in Andheri, Mumbai").length).toBeGreaterThan(0);
+    expect(screen.getAllByAltText("Panel swap by Sharma TV Repair, Mumbai").length).toBeGreaterThan(0);
+    a.unmount();
+    // Without a category or SEO text the cover still says what it is and where.
+    mockApi(routes({ coverUrl: "https://img.test/cover.webp", locality: null, primaryCategory: null, subcategories: [], services: [{ id: 2, category: { id: 1, name: "X", slug: "x" }, subcategory: null, startingPrice: null, priceUnit: "fixed", isPrimary: true }] }));
+    await renderAsync(await Page({ params: sp({ slug: "shop" }) }));
+    await act(async () => undefined);
+    expect(screen.getAllByAltText("Sharma TV Repair, local services in Mumbai").length).toBeGreaterThan(0);
   });
   it("renders a full profile", async () => {
     const { default: Page } = await import("@/app/providers/[slug]/page");

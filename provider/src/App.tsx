@@ -16,6 +16,7 @@ import { ReviewsPage } from "@/pages/reviews";
 import { ProfilePage } from "@/pages/profile";
 import { AreasPage, HoursPage, ServicesPage } from "@/pages/editors";
 import { PortfolioPage } from "@/pages/portfolio";
+import { SeoPage } from "@/pages/seo";
 import { VerificationPage } from "@/pages/verification";
 import { SubscriptionPage } from "@/pages/subscription";
 import { PromotePage } from "@/pages/promote";
@@ -110,6 +111,7 @@ export function App() {
             <Route path="/hours" element={<HoursPage />} />
             <Route path="/areas" element={<AreasPage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route path="/seo" element={<SeoPage />} />
             <Route path="/verification" element={<VerificationPage />} />
             <Route path="/promote" element={<PromotePage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />

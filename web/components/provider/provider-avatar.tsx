@@ -24,7 +24,7 @@ export function ProviderAvatar({
   if (logoUrl) {
     return (
       <span className={cn("relative block shrink-0 overflow-hidden bg-muted", dims, className)}>
-        <Image src={logoUrl} alt={name} fill className="object-cover" sizes="96px" unoptimized={!isOptimizableImage(logoUrl)} />
+        <Image src={logoUrl} alt={`${name} logo`} fill className="object-cover" sizes="96px" unoptimized={!isOptimizableImage(logoUrl)} />
       </span>
     );
   }

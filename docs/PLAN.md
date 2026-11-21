@@ -85,6 +85,16 @@ Ranking: `ranking_score` = Bayesian-smoothed rating + review volume + profile co
 verification + response signal + a small plan boost. `self_reported_completed_jobs` is excluded,
 as the brief says. Recalculated on review/profile changes and by `pnpm --filter server rank`.
 
+SEO: each provider page has a 0-100 `seo_score` with 23 checks (title, meta description, focus keyword,
+description, business name, logo, cover, photos and their alt text, prices, areas, address, hours),
+worked out in `server/src/services/seo.ts` and cached by the same recalculation. The page targets
+"<service> in <city>" ("electrician in Siliguri") unless the provider picks a focus keyword. The API
+writes the page title, meta description, keywords and photo alt text, so the website, the provider's
+"Search and Google" page and the admin console show the same text. Providers edit `seo_title`,
+`seo_description`, `focus_keyword` and `seo_keywords`; only the team sets `seo_no_index`, which keeps a
+page out of search engines and the sitemap. Live checks: `POST /provider/seo/check` and
+`POST /admin/providers/:id/seo/check` (unsaved edits, nothing saved).
+
 ## 3. Starting data
 
 No demo data. `pnpm --filter server db:bootstrap` (run by `pnpm release` on every deploy) adds one
@@ -138,8 +148,8 @@ tests against a running site and API). Errors go to Sentry when `NEXT_PUBLIC_SEN
 Pages: Login/Register, Get started (claim existing vs create new), Claim flow (find your business,
 upload an ownership document for the admin team to review), Onboarding
 wizard (business, services, location + areas, hours, contact preferences), Dashboard (leads,
-views, rating, completeness, ranking tips, chart), Leads, Reviews (reply), Services, Profile,
-Hours, Service areas, Portfolio, Verification, Promote (sponsored campaigns), Subscription, and a
+views, rating, completeness, ranking tips, Google visibility, chart), Leads, Reviews (reply), Services, Profile,
+Hours, Service areas, Portfolio, Search and Google (SEO score, checklist and search text), Verification, Promote (sponsored campaigns), Subscription, and a
 notifications bell.
 
 ## 6. Super admin (React + Vite)

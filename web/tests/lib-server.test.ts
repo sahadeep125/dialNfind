@@ -216,7 +216,7 @@ describe("small helpers", () => {
     const base = {
       slug: "s", businessName: "B", description: null, shortDescription: "", phone: "1", email: null, coverUrl: null, logoUrl: null, portfolio: [],
       addressLine: null, locality: null, city: "C", state: "S", pincode: null, latitude: 1, longitude: 2, serviceAreas: [], serviceRadiusKm: 5,
-      website: null, services: [{ startingPrice: 100 }, { startingPrice: 0 }], is24x7: false, hours: [{ dayOfWeek: 1, openTime: null, closeTime: null }],
+      website: null, services: [{ startingPrice: 100, category: { name: "Cat" }, subcategory: null }, { startingPrice: 0, category: { name: "Cat" }, subcategory: null }], is24x7: false, hours: [{ dayOfWeek: 1, openTime: null, closeTime: null }],
       totalReviews: 0, avgRating: 0, primaryCategory: null,
     };
     const ld = providerJsonLd(base as never, [{ author: { name: "A" }, createdAt: "2026-01-02T00:00:00Z", rating: 5, reviewText: null }] as never);
@@ -225,6 +225,8 @@ describe("small helpers", () => {
     expect(ld).not.toHaveProperty("openingHoursSpecification");
     expect((ld.review as { reviewBody?: string }[])[0]).not.toHaveProperty("reviewBody");
     expect(providerJsonLd({ ...base, services: [] } as never, [])).not.toHaveProperty("priceRange");
+    expect(providerJsonLd({ ...base, services: [] } as never, [])).not.toHaveProperty("hasOfferCatalog");
+    expect((ld.hasOfferCatalog as { itemListElement: object[] }).itemListElement[1]).not.toHaveProperty("priceSpecification");
   });
   it("format edge cases", () => {
     expect(formatPhone("+91 98765 43210")).toBe("+91 98765 43210");

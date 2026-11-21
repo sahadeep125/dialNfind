@@ -19,6 +19,8 @@ export interface ProviderRow {
   avgRating: number;
   totalReviews: number;
   profileCompletenessPct: number;
+  seoScore: number;
+  seoNoIndex: boolean;
   createdAt: string;
   user: { name: string; email: string } | null;
   services: { category: { name: string } }[];

@@ -14,6 +14,7 @@ import { applySubscriptionChange, getPlanState, liveSubscription } from "../../s
 import { presentInvoice } from "../../services/invoices.js";
 import { razorpay } from "../../services/razorpay.js";
 import type { PlanCode } from "../../lib/plans.js";
+import { providerSeo } from "../../services/seo.js";
 
 /** Dashboard, analytics, leads, reviews, provider detail, subscriptions and announcements. */
 export const adminOpsRouter = Router();
@@ -66,7 +67,16 @@ adminOpsRouter.get("/overview", async (_req, res) => {
       prisma.supportTicket.count({ where: { status: { in: ["open", "pending"] } } }),
       prisma.providerSubscription.count({ where: { status: { in: ["active", "past_due"] } } }),
     ]);
-  const [leadSeries, signupSeries] = await Promise.all([dailySeries("leads", since14, 14), dailySeries("users", since14, 14)]);
+  const live = { status: "active" as const };
+  const [leadSeries, signupSeries, seoAvg, seoGood, seoFair, seoPoor, seoHidden] = await Promise.all([
+    dailySeries("leads", since14, 14),
+    dailySeries("users", since14, 14),
+    prisma.provider.aggregate({ where: live, _avg: { seoScore: true } }),
+    prisma.provider.count({ where: { ...live, seoScore: { gte: 80 } } }),
+    prisma.provider.count({ where: { ...live, seoScore: { gte: 50, lt: 80 } } }),
+    prisma.provider.count({ where: { ...live, seoScore: { lt: 50 } } }),
+    prisma.provider.count({ where: { ...live, seoNoIndex: true } }),
+  ]);
   res.json({
     providers,
     activeProviders,
@@ -85,6 +95,8 @@ adminOpsRouter.get("/overview", async (_req, res) => {
     activeSubscriptions: activeSubs,
     leadSeries,
     signupSeries,
+    // Live listings only: the pages search engines can see.
+    seo: { average: Math.round(seoAvg._avg.seoScore ?? 0), good: seoGood, fair: seoFair, poor: seoPoor, hidden: seoHidden },
   });
 });
 
@@ -145,11 +157,12 @@ adminOpsRouter.get("/providers/:id", async (req, res) => {
   });
   if (!provider) throw notFound("Provider not found");
   const since30 = new Date(Date.now() - 30 * DAY);
-  const [leads30, leadsAll, openTickets, recentReviews] = await Promise.all([
+  const [leads30, leadsAll, openTickets, recentReviews, seo] = await Promise.all([
     prisma.lead.count({ where: { providerId: id, createdAt: { gte: since30 } } }),
     prisma.lead.count({ where: { providerId: id } }),
     prisma.supportTicket.count({ where: { providerId: id, status: { in: ["open", "pending"] } } }),
     prisma.review.findMany({ where: { providerId: id }, orderBy: { createdAt: "desc" }, take: 5, include: { user: { select: { name: true } } } }),
+    providerSeo(id),
   ]);
   const { location: _location, invoices, subscriptions, ...rest } = provider as typeof provider & { location?: unknown };
   res.json({
@@ -161,6 +174,7 @@ adminOpsRouter.get("/providers/:id", async (req, res) => {
     plan: await getPlanState(id),
     stats: { leads30, leadsAll, openTickets },
     recentReviews,
+    seo,
   });
 });
 

@@ -19,6 +19,7 @@ async function freePhotoLimit() {
 import { recordProfileView, searchProviders } from "../services/search.js";
 import { limits } from "../lib/rate-limit.js";
 import { verifyPreviewToken } from "../lib/jwt.js";
+import { photoAltText, providerSeo } from "../services/seo.js";
 
 export const providersRouter = Router();
 
@@ -50,10 +51,10 @@ const sitemapSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(50000).default(45000),
 });
 
-/** GET /providers/sitemap — every active listing's slug and last change, for the website's sitemap. */
+/** GET /providers/sitemap — every live listing search engines may show (not hidden by the team), for the website's sitemap. */
 providersRouter.get("/sitemap", async (req, res) => {
   const q = parse(sitemapSchema, req.query);
-  const where = { status: "active" as const };
+  const where = { status: "active" as const, seoNoIndex: false };
   const [rows, total] = await Promise.all([
     prisma.provider.findMany({ where, orderBy: { id: "asc" }, skip: (q.page - 1) * q.pageSize, take: q.pageSize, select: { slug: true, updatedAt: true } }),
     prisma.provider.count({ where }),
@@ -103,7 +104,8 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
   // The website renders profiles from a shared cache and counts each visit with /visit instead.
   if (req.query.view !== "false") void recordProfileView(id);
 
-  const serviceValues = await loadAttributeValues(prisma, "provider_service", provider.services.map((s) => s.id));
+  const [serviceValues, seo] = await Promise.all([loadAttributeValues(prisma, "provider_service", provider.services.map((s) => s.id)), providerSeo(id)]);
+  const { service } = seo;
   const { day } = localNow();
   const hours = DAY_NAMES.map((name, dayOfWeek) => {
     const row = provider.businessHours.find((h) => h.dayOfWeek === dayOfWeek);
@@ -151,6 +153,8 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
         title: p.title,
         description: p.description,
         imageUrl: p.imageUrl,
+        // The title plus the business and city when it lacks them, so image search knows what and where.
+        altText: photoAltText(p.title, { name: provider.businessName, service, city: provider.city }),
         category: p.category?.name ?? null,
       })),
       // Answers to the category's provider questions, one line per question.
@@ -159,6 +163,15 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
         .filter((v, i, all) => all.findIndex((x) => x.attribute.id === v.attribute.id) === i)
         .map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
       verifications: provider.verifications,
+      // What the website puts in <head>: the same title and description the provider sees in their SEO page.
+      seo: {
+        title: seo.title,
+        description: seo.description,
+        keywords: seo.keywords,
+        focusKeyword: seo.focusKeyword,
+        service,
+        noIndex: provider.seoNoIndex,
+      },
       status,
       ratingBreakdown,
       myReview,
