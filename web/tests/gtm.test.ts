@@ -29,13 +29,14 @@ describe("gtm", () => {
     expect((window as W).dataLayer?.[0]).toMatchObject({ event: "gtm.js" });
   });
 
-  it("maps contact taps and number reveals to contact_provider", async () => {
+  it("maps a contact tap to one contact_provider", async () => {
     const g = await freshGtm();
     expect(g.toGtmEvent("contact_clicked", { provider_id: 7, channel: "whatsapp", source: "profile", category: "plumber" })).toEqual({
       event: "contact_provider",
       params: { channel: "whatsapp", provider_id: 7, category: "plumber", contact_source: "profile" },
     });
-    expect(g.toGtmEvent("phone_number_revealed", { provider_id: 7, source: "search" })?.params.channel).toBe("reveal");
+    // The desktop number reveal follows the same tap's contact_clicked, so it is not sent again.
+    expect(g.toGtmEvent("phone_number_revealed", { provider_id: 7, source: "search" })).toBeNull();
     expect(g.toGtmEvent("signed_up", { role: "customer", method: "google" })?.event).toBe("sign_up");
     expect(g.toGtmEvent("favorite_toggled", {})).toBeNull();
   });

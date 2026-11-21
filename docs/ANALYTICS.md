@@ -44,7 +44,7 @@ The website and the provider portal also load one **Google Tag Manager** contain
 | `search` | `search_submitted` | `search_term`, `city` | |
 | `view_category` | `category_viewed` | `category`, `subcategory` | |
 | `view_provider` | `provider_viewed` | `provider_id`, `category`, `is_claimed` | |
-| `contact_provider` | `contact_clicked`, `phone_number_revealed` | `channel` (`call`, `whatsapp`, `reveal`), `provider_id`, `category`, `contact_source` | yes, the main ads conversion |
+| `contact_provider` | `contact_clicked` (one per Call or WhatsApp tap; the desktop number reveal is not sent again) | `channel` (`call`, `whatsapp`), `provider_id`, `category`, `contact_source` | yes, the main ads conversion |
 | `sign_up` | `signed_up` (customer) | `method` | yes (secondary) |
 | `submit_review` | `review_submitted` | `provider_id`, `rating` | |
 | `provider_sign_up` | `signed_up` (provider) | `method` | yes (secondary) |
