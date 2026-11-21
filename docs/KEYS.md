@@ -184,9 +184,9 @@ After the API is live, go to Admin console → Plans and billing → **Sync to R
 Full steps are in [billing.md](billing.md), "RevenueCat (business app)". Do sections 6 and 7 first: RevenueCat needs both store accounts.
 
 1. **Create the subscription products in both stores.** Use these product ids:
-   - Pro: `dnf_pro_monthly`, `dnf_pro_yearly`
-   - Business: `dnf_business_monthly`, `dnf_business_yearly`
-   - On Android, the format is `dnf_pro:monthly`, and so on.
+   - Pro: `kjv_pro_monthly`, `kjv_pro_yearly`
+   - Business: `kjv_business_monthly`, `kjv_business_yearly`
+   - On Android, the format is `kjv_pro:monthly`, and so on.
 2. **Create a RevenueCat project** at [revenuecat.com](https://www.revenuecat.com) and add both apps.
 3. **Give RevenueCat store access:**
    - App Store: an **In-App Purchase key**. In App Store Connect → Users and Access → Integrations → In-App Purchase, create it and upload the `.p8` to RevenueCat.

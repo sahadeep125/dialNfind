@@ -47,7 +47,7 @@ const categories = [
 ];
 const searchResponse = (over: Record<string, unknown> = {}) => ({ results: [provider()], total: 1, page: 1, pageSize: 12, totalPages: 1, radiusKm: 15, resolved: { category: null, subcategory: null }, ...over });
 const signIn = (u = user()) => {
-  request.cookies.set("dnf_token", "t");
+  request.cookies.set("kjv_token", "t");
   return { "/auth/me": { user: u } };
 };
 
@@ -405,7 +405,7 @@ describe("dashboard pages", () => {
     expect(screen.getByText(/Top rated near/)).toBeInTheDocument();
     a.unmount();
     let calls = 0;
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     mockApi({ "/auth/me": () => (calls++ ? json({}, 401) : json({ user: user() })), "/me/overview": { stats: { favorites: 0, reviews: 0, contacts: 0, unreadNotifications: 0 }, recentContacts: [] }, "/providers/featured": { results: [] } });
     await renderAsync(await Overview());
     expect(screen.getByRole("heading", { name: "Hello, there" })).toBeInTheDocument();
@@ -471,7 +471,7 @@ describe("dashboard pages", () => {
   });
   it("support list and ticket", async () => {
     const list = (await import("@/app/dashboard/support/page")).default;
-    mockApi({ ...signIn(), "/support/tickets": { tickets: [{ id: 1, reference: "DNF-000001", subject: "Help", status: "pending", lastActivityAt: new Date().toISOString() }] } });
+    mockApi({ ...signIn(), "/support/tickets": { tickets: [{ id: 1, reference: "KJV-000001", subject: "Help", status: "pending", lastActivityAt: new Date().toISOString() }] } });
     const a = await renderAsync(await list());
     expect(screen.getByText("Awaiting your reply")).toBeInTheDocument();
     a.unmount();
@@ -482,7 +482,7 @@ describe("dashboard pages", () => {
 
     const ticket = (await import("@/app/dashboard/support/[id]/page")).default;
     const detailBody = (status: string) => ({
-      ticket: { id: 1, reference: "DNF-000001", subject: "Help", status, createdAt: "2026-01-01T00:00:00Z" },
+      ticket: { id: 1, reference: "KJV-000001", subject: "Help", status, createdAt: "2026-01-01T00:00:00Z" },
       messages: [
         { id: 1, body: "Hi", attachments: ["https://u/a.pdf"], fromStaff: false, createdAt: new Date().toISOString(), authorName: "Asha" },
         { id: 2, body: "Hello", attachments: [], fromStaff: true, createdAt: new Date().toISOString(), authorName: "Support" },

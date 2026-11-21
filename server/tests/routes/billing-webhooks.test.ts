@@ -26,7 +26,7 @@ describe("provider billing", () => {
     expect(res.body.plans.map((p: { code: string }) => p.code)).toEqual(["free", "pro", "business"]);
     expect(res.body.plans[1].prices[0]).toMatchObject({ billingCycle: "monthly", availableOnWeb: true });
     expect(res.body.plans[2].prices[1]).toMatchObject({ billingCycle: "yearly", availableOnWeb: false });
-    expect(res.body.transactions[0].invoiceNumber).toMatch(/^DNF\//);
+    expect(res.body.transactions[0].invoiceNumber).toMatch(/^KJV\//);
     expect(res.body.invoices).toHaveLength(1);
 
     for (const [source, managedIn] of [["app_store", "app_store"], ["play_store", "play_store"], ["razorpay", "web"], ["admin", "support"]] as const) {
@@ -261,16 +261,16 @@ describe("RevenueCat webhook", () => {
   it("syncs providers and records paid store purchases", async () => {
     await seedPlans();
     const { provider } = await createOwner();
-    mockFetch(subscriber({ provider_pro: "dnf_pro_monthly" }));
+    mockFetch(subscriber({ provider_pro: "kjv_pro_monthly" }));
     expect((await send({ id: "t", type: "TEST", app_user_id: "x" })).body).toEqual({ ok: true });
     expect((await send({ id: "a1", type: "INITIAL_PURCHASE", app_user_id: "$RCAnonymousID:1" })).body).toEqual({ ok: true });
     const res = await send({
       id: "p1", type: "INITIAL_PURCHASE", app_user_id: `provider_${provider.id}`, aliases: ["$RCAnonymousID:1"], transferred_from: ["provider_999"], store: "APP_STORE",
-      environment: "PRODUCTION", transaction_id: "tx1", price_in_purchased_currency: 599, currency: "INR", product_id: "dnf_pro_monthly",
+      environment: "PRODUCTION", transaction_id: "tx1", price_in_purchased_currency: 599, currency: "INR", product_id: "kjv_pro_monthly",
     });
     expect(res.body).toEqual({ ok: true });
     const txn = await prisma.transaction.findFirstOrThrow();
-    expect(txn).toMatchObject({ gateway: "app_store", gatewayPaymentId: "app_store:tx1", gatewayTxnId: "dnf_pro_monthly" });
+    expect(txn).toMatchObject({ gateway: "app_store", gatewayPaymentId: "app_store:tx1", gatewayTxnId: "kjv_pro_monthly" });
     expect(txn.subscriptionId).not.toBeNull();
     // Sandbox, free and unknown-store events do not record payments.
     await send({ id: "p2", type: "RENEWAL", app_user_id: `provider_${provider.id}`, store: "PLAY_STORE", environment: "SANDBOX", transaction_id: "tx2", price_in_purchased_currency: 599 });

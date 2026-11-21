@@ -59,8 +59,8 @@ const PLANS = [
     badge: "Pro Partner",
     featuresJson: ["Unlimited leads", "Profile analytics and ranking", "WhatsApp button", "30 portfolio photos", "Pro Partner badge"],
     prices: [
-      { billingCycle: "monthly", amount: 599, iosProductId: "dnf_pro_monthly", androidProductId: "dnf_pro:monthly" },
-      { billingCycle: "yearly", amount: 5990, iosProductId: "dnf_pro_yearly", androidProductId: "dnf_pro:yearly" },
+      { billingCycle: "monthly", amount: 599, iosProductId: "kjv_pro_monthly", androidProductId: "kjv_pro:monthly" },
+      { billingCycle: "yearly", amount: 5990, iosProductId: "kjv_pro_yearly", androidProductId: "kjv_pro:yearly" },
     ],
   },
   {
@@ -74,8 +74,8 @@ const PLANS = [
     badge: "Business Partner",
     featuresJson: ["Everything in Pro", "Sponsored campaigns", "Priority support", "Unlimited portfolio photos", "Business Partner badge"],
     prices: [
-      { billingCycle: "monthly", amount: 999, iosProductId: "dnf_business_monthly", androidProductId: "dnf_business:monthly" },
-      { billingCycle: "yearly", amount: 9990, iosProductId: "dnf_business_yearly", androidProductId: "dnf_business:yearly" },
+      { billingCycle: "monthly", amount: 999, iosProductId: "kjv_business_monthly", androidProductId: "kjv_business:monthly" },
+      { billingCycle: "yearly", amount: 9990, iosProductId: "kjv_business_yearly", androidProductId: "kjv_business:yearly" },
     ],
   },
 ] as const;

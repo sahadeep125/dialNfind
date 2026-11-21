@@ -206,7 +206,7 @@ describe("admin records", () => {
     const failed = await prisma.transaction.create({ data: { providerId: p.id, type: "subscription", amount: 5, status: "failed" } });
     const list = await c.get("/api/v1/admin/transactions");
     expect(list.body).toMatchObject({ total: 4, revenue: 1203 });
-    expect(list.body.transactions.find((t: { id: number }) => t.id === Number(created.body.transaction.id)).invoice.number).toMatch(/^DNF/);
+    expect(list.body.transactions.find((t: { id: number }) => t.id === Number(created.body.transaction.id)).invoice.number).toMatch(/^KJV/);
     expect((await c.get("/api/v1/admin/transactions").query({ status: "success", type: "subscription", gateway: "manual", providerId: Number(p.id) })).body.total).toBe(1);
     // Revenue always sums successful payments, whatever the status filter.
     expect((await c.get("/api/v1/admin/transactions").query({ status: "refunded" })).body).toMatchObject({ total: 0, revenue: 1203 });
@@ -409,7 +409,7 @@ describe("admin exports", () => {
     expect((await csv("reviews"))[1]).toContain("'=HYPERLINK()");
     expect(await csv("transactions", { status: "success" })).toHaveLength(2);
     expect(await csv("subscriptions")).toHaveLength(2);
-    expect((await csv("invoices"))[1]).toMatch(/^DNF\//);
+    expect((await csv("invoices"))[1]).toMatch(/^KJV\//);
     expect(await prisma.adminActivityLog.count({ where: { action: "export" } })).toBe(8);
 
     expect((await c.get("/api/v1/admin/export/nothing")).status).toBe(404);

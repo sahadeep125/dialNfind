@@ -109,7 +109,7 @@ In development, emails (sign-up confirmation, password reset, decisions on listi
 
 **Team and permissions.** `super_admin` can open everything. Everyone else has the `admin` role plus an admin role (Operations, Support agent, Finance, or any role the super admin creates) that lists the sections they can open. The API enforces this on every `/admin` path (`server/src/lib/permissions.ts`); the console hides what a member cannot open. Only the super admin can manage Team, so no one can widen their own access. Adding a member returns a temporary password once; the member can change it, or use "Forgot password" on the website.
 
-**Support tickets.** Customers raise tickets from the website (Dashboard, Help and support, or the contact form) and providers from the provider portal. Staff reply from the console; customers see replies as "KaajVa Support", and internal notes are never shown to them. References look like `DNF-000123`.
+**Support tickets.** Customers raise tickets from the website (Dashboard, Help and support, or the contact form) and providers from the provider portal. Staff reply from the console; customers see replies as "KaajVa Support", and internal notes are never shown to them. References look like `KJV-000123`.
 
 **Plans and promotions.** Providers pay for plans online: Razorpay on the provider website and the App Store or Google Play (through RevenueCat) in the business app; see [docs/billing.md](docs/billing.md). Promotions can be paid online on the website, or requested with "Request campaign", which opens a billing ticket. The team can also grant a plan after an offline payment with Change plan on the provider page, or start a promotion with New promotion, ticking "The provider paid" to record the amount and reference.
 

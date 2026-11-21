@@ -177,8 +177,8 @@ describe("emails", () => {
     await emails.sendAccountSuspended(customer.id);
     await emails.sendPaymentFailed(provider.id, "Pro", new Date("2026-10-01T00:00:00Z"));
     await emails.sendPaymentFailed(provider.id, "Pro", null);
-    await emails.sendTicketReceived("g@x.co", "Guest", "DNF-000001", "Help", false);
-    await emails.sendTicketReceived("g@x.co", "Guest", "DNF-000001", "Help", true);
+    await emails.sendTicketReceived("g@x.co", "Guest", "KJV-000001", "Help", false);
+    await emails.sendTicketReceived("g@x.co", "Guest", "KJV-000001", "Help", true);
     await emails.sendStaffInvite(provider, "Finance", "Boss");
     await emails.sendStaffDigest({ email: "s@x.co", name: "Staff" }, ["• 1 thing"], "https://admin");
     const subjects = sentMails().map((m) => m.subject);
@@ -193,8 +193,8 @@ describe("emails", () => {
       "Your KaajVa account has been suspended",
       "Payment for your Pro plan failed",
       "Payment for your Pro plan failed",
-      "We got your request [DNF-000001]",
-      "We got your request [DNF-000001]",
+      "We got your request [KJV-000001]",
+      "We got your request [KJV-000001]",
       "You have been added to the KaajVa team",
       "Today's KaajVa review queue",
     ]);

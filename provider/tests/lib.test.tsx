@@ -34,7 +34,7 @@ describe("api client", () => {
     tokenStore.set("tok");
     const logout = vi.fn();
     const upgrade = vi.fn();
-    window.addEventListener("dnf:logout", logout);
+    window.addEventListener("kjv:logout", logout);
     window.addEventListener(UPGRADE_EVENT, upgrade);
     const assign = vi.fn();
     vi.stubGlobal("location", { ...window.location, pathname: "/leads", assign });
@@ -365,7 +365,7 @@ describe("auth provider and plan hooks", () => {
     act(() => result.current.auth.signOut());
     expect(result.current.auth.user).toBeNull();
     expect(result.current.plan.plan.code).toBe("free");
-    expect(localStorage.getItem("dnf_provider_token")).toBeNull();
+    expect(localStorage.getItem("kjv_provider_token")).toBeNull();
     expect(fetch).toHaveBeenCalled();
     mockApi(signedIn({ emailVerifiedAt: null }));
     await act(async () => result.current.auth.signIn("tok2"));
@@ -374,7 +374,7 @@ describe("auth provider and plan hooks", () => {
     await act(async () => result.current.auth.refresh());
   });
   it("separates an outage from being signed out, and reacts to a 401 anywhere", async () => {
-    localStorage.setItem("dnf_provider_token", "tok");
+    localStorage.setItem("kjv_provider_token", "tok");
     mockApi({ "/auth/me": json({}, 500) });
     const { result } = renderHook(useBoth, { wrapper });
     await waitFor(() => expect(result.current.auth.unreachable).toBe(true));
@@ -382,7 +382,7 @@ describe("auth provider and plan hooks", () => {
     await act(async () => result.current.auth.refresh());
     await waitFor(() => expect(result.current.auth.user).toBeNull());
     expect(result.current.auth.unreachable).toBe(false);
-    act(() => void window.dispatchEvent(new Event("dnf:logout")));
+    act(() => void window.dispatchEvent(new Event("kjv:logout")));
   });
   it("identifies with analytics once per account change and resets on sign-out", async () => {
     vi.resetModules();

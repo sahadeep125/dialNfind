@@ -42,7 +42,7 @@ async function writeBundle(name: string, providers: unknown[], format = "kaajva-
 }
 
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(os.tmpdir(), "dnf-bundle-"));
+  dir = await mkdtemp(path.join(os.tmpdir(), "kjv-bundle-"));
   lines.length = 0;
   await prisma.category.create({
     data: {

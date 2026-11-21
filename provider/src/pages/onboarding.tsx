@@ -60,7 +60,7 @@ interface Draft {
 export function OnboardingPage() {
   const { user, providerState, signIn, refresh } = useAuth();
   const navigate = useNavigate();
-  const draftKey = `dnf_onboarding_${user?.id ?? "anon"}`;
+  const draftKey = `kjv_onboarding_${user?.id ?? "anon"}`;
   // Picks up where the person left off if they refreshed or came back later.
   const [draft] = useState(() => loadDraft<Draft>(draftKey));
   const [step, setStep] = useState(draft?.step ?? 0);

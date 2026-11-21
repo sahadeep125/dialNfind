@@ -208,7 +208,7 @@ describe("misc routes", () => {
     await createStaff();
     const res = await api().post("/api/v1/contact").send({ name: "Guest", email: "g@example.com", phone: "", subject: "Listing my business", message: "Please add my shop" });
     expect(res.status).toBe(201);
-    expect(res.body.reference).toMatch(/^DNF-/);
+    expect(res.body.reference).toMatch(/^KJV-/);
     const { user } = await createOwner();
     await (await authed(user)).post("/api/v1/contact").send({ name: "Owner", email: "o@example.com", message: "Something else here" });
     const customer = await createUser();
@@ -656,7 +656,7 @@ describe("support tickets", () => {
     const id = created.body.ticket.id;
     expect((await c.post("/api/v1/support/tickets").send({ subject: "x", message: "y" })).status).toBe(400);
     const list = await c.get("/api/v1/support/tickets");
-    expect(list.body.tickets[0]).toMatchObject({ reference: expect.stringMatching(/^DNF-/) });
+    expect(list.body.tickets[0]).toMatchObject({ reference: expect.stringMatching(/^KJV-/) });
     expect(list.body.tickets[0]).not.toHaveProperty("assignedTo");
     await prisma.ticketMessage.createMany({
       data: [

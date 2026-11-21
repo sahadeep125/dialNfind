@@ -311,13 +311,13 @@ describe("billing sync: RevenueCat", () => {
     mockFetch(subscriber({}));
     expect(await syncRevenueCatProvider(provider.id)).toBeNull();
 
-    mockFetch(subscriber({ provider_pro: { product: "dnf_pro_yearly" } }, { dnf_pro_yearly: { store: "app_store", unsubscribe_detected_at: "x", billing_issues_detected_at: null } }));
+    mockFetch(subscriber({ provider_pro: { product: "kjv_pro_yearly" } }, { kjv_pro_yearly: { store: "app_store", unsubscribe_detected_at: "x", billing_issues_detected_at: null } }));
     const ios = await syncRevenueCatProvider(provider.id);
     expect(ios).toMatchObject({ source: "app_store", billingCycle: "yearly", autoRenew: false, status: "active", externalId: `provider_${provider.id}` });
 
     mockFetch(subscriber(
-      { provider_pro: { product: "dnf_business:monthly" }, provider_business: { product: "dnf_business:monthly", grace: new Date(Date.now() + DAY).toISOString() } },
-      { "dnf_business:monthly": { store: "play_store", unsubscribe_detected_at: null, billing_issues_detected_at: "x", grace_period_expires_date: new Date(Date.now() + DAY).toISOString() } },
+      { provider_pro: { product: "kjv_business:monthly" }, provider_business: { product: "kjv_business:monthly", grace: new Date(Date.now() + DAY).toISOString() } },
+      { "kjv_business:monthly": { store: "play_store", unsubscribe_detected_at: null, billing_issues_detected_at: "x", grace_period_expires_date: new Date(Date.now() + DAY).toISOString() } },
     ));
     const play = await syncRevenueCatProvider(provider.id);
     expect(play).toMatchObject({ source: "play_store", status: "past_due" });
@@ -328,7 +328,7 @@ describe("billing sync: RevenueCat", () => {
 
     const web = await createOwner();
     await subscribe(web.provider.id, plans.pro.id, { source: "razorpay", externalId: "sub_w" });
-    mockFetch(subscriber({ provider_pro: { product: "dnf_pro_monthly" } }));
+    mockFetch(subscriber({ provider_pro: { product: "kjv_pro_monthly" } }));
     expect(await syncRevenueCatProvider(web.provider.id)).toMatchObject({ source: "razorpay" });
     expect(console.warn).toHaveBeenCalled();
     mockFetch(subscriber({}));
@@ -369,7 +369,7 @@ describe("reconcileSubscription", () => {
 
     const other = await createOwner();
     const store = await subscribe(other.provider.id, plans.pro.id, { source: "play_store", externalId: `provider_${other.provider.id}` });
-    mockFetch(json({ subscriber: { entitlements: { provider_pro: { product_identifier: "dnf_pro:monthly", expires_date: null, purchase_date: "" } }, subscriptions: { "dnf_pro:monthly": { store: "play_store" } } } }));
+    mockFetch(json({ subscriber: { entitlements: { provider_pro: { product_identifier: "kjv_pro:monthly", expires_date: null, purchase_date: "" } }, subscriptions: { "kjv_pro:monthly": { store: "play_store" } } } }));
     expect(await reconcileSubscription(store)).toBe(true);
     const ios = await subscribe(other.provider.id, plans.pro.id, { source: "app_store" });
     mockFetch(json({ subscriber: { entitlements: {}, subscriptions: {} } }));
@@ -407,7 +407,7 @@ describe("invoices", () => {
     const sub = await subscribe(provider.id, plans.pro.id, { billingCycle: "yearly" });
     const txn = await prisma.transaction.create({ data: { providerId: provider.id, subscriptionId: sub.id, type: "subscription", gateway: "razorpay", amount: 1180, status: "success" } });
     const inv = (await issueInvoice(txn.id))!;
-    expect(inv.number).toMatch(/^DNF\/\d{4}-\d{2}\/00001$/);
+    expect(inv.number).toMatch(/^KJV\/\d{4}-\d{2}\/00001$/);
     expect(Number(inv.cgst)).toBe(90);
     expect(Number(inv.igst)).toBe(0);
     expect(inv.billedTo).toMatchObject({ address: "1 Road, Mumbai, 400001", stateCode: "27", state: "Maharashtra" });
@@ -440,7 +440,7 @@ describe("invoices", () => {
     await prisma.setting.createMany({ data: ["invoice_legal_name", "invoice_state_code", "invoice_sac", "invoice_prefix"].map((key) => ({ key, value: "" })) });
     const ok = await prisma.transaction.create({ data: { providerId: p.id, type: "lead_fee", amount: 10, status: "success" } });
     const inv = (await issueInvoice(ok.id))!;
-    expect(inv.number).toMatch(/^DNF\//);
+    expect(inv.number).toMatch(/^KJV\//);
     expect(inv.seller).toMatchObject({ name: "KaajVa", stateCode: null, state: null });
     expect((inv.lines as { sac: string }[])[0]!.sac).toBe("998365");
   });

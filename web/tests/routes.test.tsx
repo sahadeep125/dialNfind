@@ -34,7 +34,7 @@ describe("auth routes", () => {
     const fetch = mockApi({ "POST /auth/login": { token: "t1", user: { id: 1 } }, "POST /auth/register": { token: "t2", user: { id: 2 } } });
     const a = await login(post("/api/auth/login", { email: "a@b.co", password: "x" }));
     expect(await a.json()).toEqual({ user: { id: 1 } });
-    expect(a.headers.get("set-cookie")).toContain("dnf_token=t1");
+    expect(a.headers.get("set-cookie")).toContain("kjv_token=t1");
     const b = await register(post("/api/auth/register", { name: "A" }));
     expect(await b.json()).toEqual({ user: { id: 2 } });
     expect(fetch.mock.calls[0]![1]!.body).toBe(JSON.stringify({ email: "a@b.co", password: "x" }));
@@ -50,11 +50,11 @@ describe("auth routes", () => {
     expect((await social(post("/api/auth/social", "not json"))).status).toBe(400);
   });
   it("logs out on the API and clears the cookie, even when the API is down", async () => {
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     const fetch = mockApi({ "POST /auth/logout": { ok: true } });
     const res = await logout(post("/api/auth/logout", {}));
     expect(await res.json()).toEqual({ ok: true });
-    expect(res.headers.get("set-cookie")).toContain("dnf_token=;");
+    expect(res.headers.get("set-cookie")).toContain("kjv_token=;");
     expect((fetch.mock.calls[0]![1]!.headers as Headers).get("authorization")).toBe("Bearer t");
     mockApi({ "POST /auth/logout": () => Promise.reject(new Error("down")) as never });
     expect((await logout(post("/api/auth/logout", {}))).status).toBe(200);
@@ -62,7 +62,7 @@ describe("auth routes", () => {
   });
   it("reports the session with the unread count", async () => {
     expect(await (await session()).json()).toEqual({ user: null, unread: 0 });
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     mockApi({ "/auth/me": { user: user() }, "/me/notifications": { unread: 3 } });
     const res = await session();
     expect(res.headers.get("cache-control")).toBe("private, no-store");
@@ -78,7 +78,7 @@ describe("API proxy", () => {
   const ctx = (...path: string[]) => ({ params: Promise.resolve({ path }) });
 
   it("forwards the request with the session token and passes headers back", async () => {
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     const fetch = mockApi({
       "POST /uploads": new Response('{"url":"u"}', { status: 201, headers: { "content-type": "application/json", "retry-after": "5", "x-internal": "no" } }),
     });
@@ -178,7 +178,7 @@ describe("refreshProvider action", () => {
     await refreshProvider("Bad Slug!");
     await refreshProvider("sharma-tv");
     expect(updateTag).not.toHaveBeenCalled();
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     mockApi({ "/auth/me": { user: user() } });
     await refreshProvider("sharma-tv");
     expect(updateTag).toHaveBeenCalledWith("provider:sharma-tv");

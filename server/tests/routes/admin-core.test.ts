@@ -317,7 +317,7 @@ describe("admin help desk", () => {
     expect(await q({ assignee: "me" })).toBe(1);
     expect(await q({ assignee: "none" })).toBe(1);
     expect(await q({ assignee: Number(other.id) })).toBe(1);
-    expect(await q({ q: `DNF-${String(t1.id).padStart(6, "0")}` })).toBe(1);
+    expect(await q({ q: `KJV-${String(t1.id).padStart(6, "0")}` })).toBe(1);
     expect(await q({ q: "billing" })).toBe(1);
     expect((await c.get("/api/v1/admin/tickets/assignees")).body.assignees.map((a: { name: string }) => a.name)).toContain("Agent Smith");
 
@@ -382,7 +382,7 @@ describe("admin users", () => {
     expect((await c.get("/api/v1/admin/users").query({ q: "9000" })).body.total).toBe(1);
     expect((await c.get("/api/v1/admin/users").query({ role: "provider", status: "active" })).body.users[0].id).toBe(Number(owner.id));
     const detail = await c.get(`/api/v1/admin/users/${u.id}`);
-    expect(detail.body).toMatchObject({ favorites: [{ id: Number(provider.id) }], tickets: [{ reference: expect.stringMatching(/^DNF-/) }], sessions: [expect.any(Object)] });
+    expect(detail.body).toMatchObject({ favorites: [{ id: Number(provider.id) }], tickets: [{ reference: expect.stringMatching(/^KJV-/) }], sessions: [expect.any(Object)] });
     expect(detail.body.reviews).toHaveLength(1);
     expect(detail.body.leads).toHaveLength(1);
     expect((await c.get("/api/v1/admin/users/999")).status).toBe(404);

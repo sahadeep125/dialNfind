@@ -1,7 +1,7 @@
 export const API_URL = process.env.API_URL ?? "http://localhost:4000/api/v1";
 export const PROVIDER_APP_URL = process.env.NEXT_PUBLIC_PROVIDER_APP_URL ?? "http://localhost:5173";
-export const TOKEN_COOKIE = "dnf_token";
-export const LOCATION_COOKIE = "dnf_location";
+export const TOKEN_COOKIE = "kjv_token";
+export const LOCATION_COOKIE = "kjv_location";
 export const SITE_NAME = "KaajVa";
 /** Public address of this website: canonical links, the sitemap and social previews use it. */
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://kaajva.in").replace(/\/$/, "");

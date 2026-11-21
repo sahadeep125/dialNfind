@@ -887,7 +887,7 @@ model PlanPrice {
   amount           Decimal      @db.Decimal(10, 2)
   razorpayPlanId   String?      @unique @map("razorpay_plan_id")
   iosProductId     String?      @unique @map("ios_product_id")
-  // Play subscription id and base plan, e.g. dnf_pro:monthly
+  // Play subscription id and base plan, e.g. kjv_pro:monthly
   androidProductId String?      @unique @map("android_product_id")
   isActive         Boolean      @default(true) @map("is_active")
 
@@ -956,7 +956,7 @@ model Transaction {
 // none: Apple and Google are the seller and send their own receipts.
 model Invoice {
   id            BigInt        @id @default(autoincrement())
-  // e.g. DNF/2026-27/00001, sequential per financial year.
+  // e.g. KJV/2026-27/00001, sequential per financial year.
   number        String        @unique
   providerId    BigInt        @map("provider_id")
   transactionId BigInt        @unique @map("transaction_id")

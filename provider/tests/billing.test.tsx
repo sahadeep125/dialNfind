@@ -196,11 +196,11 @@ describe("subscription page", () => {
         managedIn: "app_store",
         manageUrl: "https://apps.apple.com/account/subscriptions",
         invoices: [
-          { id: 1, number: "DNF-1", total: 590, taxable: 500, tax: 90, status: "issued", issuedAt: "2026-09-01T00:00:00.000Z", pdfUrl: "http://api.test/i/1.pdf" },
-          { id: 2, number: "DNF-2", total: 590, taxable: 500, tax: 90, status: "void", issuedAt: "2026-09-02T00:00:00.000Z", pdfUrl: "http://api.test/i/2.pdf" },
+          { id: 1, number: "KJV-1", total: 590, taxable: 500, tax: 90, status: "issued", issuedAt: "2026-09-01T00:00:00.000Z", pdfUrl: "http://api.test/i/1.pdf" },
+          { id: 2, number: "KJV-2", total: 590, taxable: 500, tax: 90, status: "void", issuedAt: "2026-09-02T00:00:00.000Z", pdfUrl: "http://api.test/i/2.pdf" },
         ],
         transactions: [
-          { id: 1, type: "subscription", gateway: "razorpay", amount: 590, currency: "INR", status: "success", gatewayTxnId: null, invoiceNumber: "DNF-1", createdAt: "2026-09-01T00:00:00.000Z" },
+          { id: 1, type: "subscription", gateway: "razorpay", amount: 590, currency: "INR", status: "success", gatewayTxnId: null, invoiceNumber: "KJV-1", createdAt: "2026-09-01T00:00:00.000Z" },
           { id: 2, type: "sponsored_ad", gateway: "manual", amount: 1000, currency: "INR", status: "refunded", gatewayTxnId: null, invoiceNumber: null, createdAt: "2026-09-01T00:00:00.000Z" },
           { id: 3, type: "lead_fee", gateway: "app_store", amount: 4.99, currency: "USD", status: "failed", gatewayTxnId: null, invoiceNumber: null, createdAt: "2026-09-01T00:00:00.000Z" },
           { id: 4, type: "subscription", gateway: "play_store", amount: 499, currency: "INR", status: "success", gatewayTxnId: null, invoiceNumber: null, createdAt: "2026-09-01T00:00:00.000Z" },

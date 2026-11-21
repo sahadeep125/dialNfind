@@ -81,7 +81,7 @@ export function TicketsPage() {
       ) : (
         <>
       <Toolbar>
-        <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search subject, email or DNF-000123" />
+        <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search subject, email or KJV-000123" />
         <FilterSelect label="Priority" allLabel="Any priority" value={f.priority} onChange={(priority) => setF({ priority, page: "1" })} options={PRIORITIES.map((p) => ({ value: p, label: humanize(p) }))} />
         <FilterSelect
           label="Assignee"

@@ -101,7 +101,7 @@ describe("SearchBar", () => {
     expect(lastPush()).toContain("q=plain+words");
   });
   it("follows new props and the saved location, in split and compact looks", async () => {
-    document.cookie = `dnf_location=${encodeURIComponent(JSON.stringify(loc("Saved Place")))}; path=/`;
+    document.cookie = `kjv_location=${encodeURIComponent(JSON.stringify(loc("Saved Place")))}; path=/`;
     const { rerender } = render(<SearchBar initialQuery="a" size="md" />);
     expect(screen.getByText("Saved Place")).toBeInTheDocument();
     rerender(<SearchBar initialQuery="b" size="md" initialLocation={loc("Other")} />);

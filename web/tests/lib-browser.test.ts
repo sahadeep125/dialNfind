@@ -7,7 +7,7 @@ import { DEFAULT_LOCATION } from "@/lib/default-location";
 
 const loc = (label: string, city = "Pune") => ({ ...DEFAULT_LOCATION, label, city });
 const setLocationCookie = (value: unknown) => {
-  document.cookie = `dnf_location=${encodeURIComponent(typeof value === "string" ? value : JSON.stringify(value))}; path=/`;
+  document.cookie = `kjv_location=${encodeURIComponent(typeof value === "string" ? value : JSON.stringify(value))}; path=/`;
 };
 
 async function freshAnalytics(key = "phc_key") {
@@ -95,7 +95,7 @@ describe("clientApi", () => {
   it("saves the location cookie", async () => {
     const { saveLocationCookie } = await import("@/lib/client");
     saveLocationCookie(loc("Here"));
-    expect(document.cookie).toContain("dnf_location=");
+    expect(document.cookie).toContain("kjv_location=");
   });
 });
 

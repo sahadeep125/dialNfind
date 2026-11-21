@@ -1,6 +1,6 @@
 import { API_URL } from "./config";
 
-const TOKEN_KEY = "dnf_provider_token";
+const TOKEN_KEY = "kjv_provider_token";
 
 export const tokenStore = {
   get: () => {
@@ -26,7 +26,7 @@ export class ApiError extends Error {
 }
 
 /** Fired when the server says the plan does not include a feature; the layout opens the upgrade dialog. */
-export const UPGRADE_EVENT = "dnf:upgrade";
+export const UPGRADE_EVENT = "kjv:upgrade";
 export type UpgradeDetail = { entitlement: string; feature: string; message: string };
 
 export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
@@ -41,7 +41,7 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
   if (!res.ok) {
     if (res.status === 401 && token) {
       tokenStore.clear();
-      window.dispatchEvent(new Event("dnf:logout"));
+      window.dispatchEvent(new Event("kjv:logout"));
     }
     if (res.status === 403 && body?.error?.code === "email_unverified" && window.location.pathname !== "/verify-email") {
       window.location.assign("/verify-email");

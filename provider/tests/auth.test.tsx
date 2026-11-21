@@ -20,7 +20,7 @@ describe("login", () => {
       ...routes,
       "POST /auth/login": () => {
         if (fail) return json({ error: { message: "Wrong email or password" } }, 401);
-        localStorage.setItem("dnf_provider_token", "tok");
+        localStorage.setItem("kjv_provider_token", "tok");
         return json({ token: "tok", user: user() });
       },
     });
@@ -57,7 +57,7 @@ describe("login", () => {
     mockApi({
       ...loginRoutes(),
       "POST /auth/login": () => {
-        localStorage.setItem("dnf_provider_token", "tok");
+        localStorage.setItem("kjv_provider_token", "tok");
         return json({ token: "tok", user: user() });
       },
     });
@@ -93,7 +93,7 @@ describe("register", () => {
       ...loginRoutes({ emailVerifiedAt: null }),
       "POST /auth/register": () => {
         if (fail) return json({ error: { message: "Email already registered" } }, 409);
-        localStorage.setItem("dnf_provider_token", "tok");
+        localStorage.setItem("kjv_provider_token", "tok");
         return json({ token: "tok" });
       },
     });
@@ -116,7 +116,7 @@ describe("register", () => {
     const fetch = mockApi({
       ...loginRoutes({ emailVerifiedAt: null }),
       "POST /auth/register": () => {
-        localStorage.setItem("dnf_provider_token", "tok");
+        localStorage.setItem("kjv_provider_token", "tok");
         return json({ token: "tok" });
       },
     });

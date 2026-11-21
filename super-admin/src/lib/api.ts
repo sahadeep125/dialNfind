@@ -1,6 +1,6 @@
 import { API_URL } from "./config";
 
-const TOKEN_KEY = "dnf_admin_token";
+const TOKEN_KEY = "kjv_admin_token";
 
 export const tokenStore = {
   get: () => {
@@ -38,7 +38,7 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
   if (!res.ok) {
     if (res.status === 401 && token) {
       tokenStore.clear();
-      window.dispatchEvent(new Event("dnf:logout"));
+      window.dispatchEvent(new Event("kjv:logout"));
     }
     throw new ApiError(res.status, body?.error?.message ?? "Something went wrong", body?.error?.code, body?.error?.details);
   }

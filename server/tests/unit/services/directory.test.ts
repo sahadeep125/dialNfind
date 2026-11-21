@@ -256,7 +256,7 @@ describe("social auth", () => {
 
 describe("tickets", () => {
   it("formats references and finds support staff", async () => {
-    expect(ticketRef(12)).toBe("DNF-000012");
+    expect(ticketRef(12)).toBe("KJV-000012");
     expect(await supportStaffIds(5n)).toEqual([5n]);
     const boss = await createStaff();
     const agent = await createStaff(["support"]);

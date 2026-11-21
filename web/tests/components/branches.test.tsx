@@ -121,7 +121,7 @@ describe("dialogs and forms", () => {
 
 describe("hydration: the saved location is not known on the first render", () => {
   it("NearbyProviders and SearchBar hydrate from server markup", async () => {
-    document.cookie = `dnf_location=${encodeURIComponent(JSON.stringify({ ...DEFAULT_LOCATION, label: "Kothrud, Pune", city: "Pune" }))}; path=/`;
+    document.cookie = `kjv_location=${encodeURIComponent(JSON.stringify({ ...DEFAULT_LOCATION, label: "Kothrud, Pune", city: "Pune" }))}; path=/`;
     mockApi({ "/providers/featured": { results: [provider()] } });
     const container = document.createElement("div");
     const ui = (

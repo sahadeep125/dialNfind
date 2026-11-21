@@ -106,7 +106,7 @@ export async function issueInvoice(transactionId: bigint, opts: { email?: boolea
     const n = seq.next - 1;
     return tx.invoice.create({
       data: {
-        number: `${prefix || "DNF"}/${fy}/${String(n).padStart(5, "0")}`,
+        number: `${prefix || "KJV"}/${fy}/${String(n).padStart(5, "0")}`,
         providerId: p.id,
         transactionId: txn.id,
         billedTo: billedTo as unknown as Prisma.InputJsonValue,

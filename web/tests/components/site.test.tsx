@@ -223,7 +223,7 @@ describe("ClaimSearch", () => {
 
   it("finds listings and links to claim them", async () => {
     const u = userEvent.setup();
-    document.cookie = `dnf_location=${encodeURIComponent(JSON.stringify({ label: "M", city: "Mumbai", latitude: 1, longitude: 1 }))}; path=/`;
+    document.cookie = `kjv_location=${encodeURIComponent(JSON.stringify({ label: "M", city: "Mumbai", latitude: 1, longitude: 1 }))}; path=/`;
     const fetch = mockApi({
       "/locations": locations,
       "/search/providers": (url: URL) => json({ results: url.searchParams.get("q") === "none" ? [] : [provider(), provider({ id: 2, isClaimed: false, slug: "b" })] }),
@@ -299,9 +299,9 @@ describe("ContactForm", () => {
     mockApi({ "POST /contact": () => Promise.reject(new TypeError("x")) as never });
     await u.click(screen.getByRole("button", { name: /send message/i }));
     expect(await screen.findByText("Could not send your message")).toBeInTheDocument();
-    const fetch = mockApi({ "POST /contact": { id: 5, reference: "DNF-000005" } });
+    const fetch = mockApi({ "POST /contact": { id: 5, reference: "KJV-000005" } });
     await u.click(screen.getByRole("button", { name: /send message/i }));
-    expect(await screen.findByText("DNF-000005")).toBeInTheDocument();
+    expect(await screen.findByText("KJV-000005")).toBeInTheDocument();
     expect(JSON.parse(String(fetch.mock.calls[0]![1]!.body))).toMatchObject({ phone: "+919876543210", subject: "Partnerships" });
     expect(screen.getByText(/by email\./)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Follow the conversation" })).toBeNull();
@@ -310,7 +310,7 @@ describe("ContactForm", () => {
   });
   it("fills in the signed-in person and links to the ticket", async () => {
     const u = userEvent.setup();
-    await withSession(<ContactForm />, { user: user() }, { "POST /contact": { id: 9, reference: "DNF-000009" } });
+    await withSession(<ContactForm />, { user: user() }, { "POST /contact": { id: 9, reference: "KJV-000009" } });
     await waitFor(() => expect(screen.getByLabelText(/Full name/)).toHaveValue("Asha Rao"));
     expect(screen.getByLabelText(/Email/)).toHaveValue("asha@example.com");
     await u.type(screen.getByLabelText(/Message/), "Something is wrong here");

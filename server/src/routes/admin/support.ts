@@ -25,7 +25,7 @@ const listQuery = paginationSchema.extend({
 adminSupportRouter.get("/tickets", async (req, res) => {
   const q = parse(listQuery, req.query);
   const me = currentUser(req).id;
-  const ref = q.q?.match(/^(?:DNF-)?0*(\d+)$/i);
+  const ref = q.q?.match(/^(?:KJV-)?0*(\d+)$/i);
   const where: Prisma.SupportTicketWhereInput = {
     ...(q.status === "active" ? { status: { in: ["open", "pending"] } } : q.status ? { status: q.status } : {}),
     ...(q.priority ? { priority: q.priority } : {}),

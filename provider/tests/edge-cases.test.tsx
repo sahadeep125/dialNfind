@@ -260,7 +260,7 @@ describe("remaining branches", () => {
 
   it("names an unnamed business in the onboarding summary", async () => {
     localStorage.setItem(
-      "dnf_onboarding_7",
+      "kjv_onboarding_7",
       JSON.stringify({
         step: 4,
         business: { businessName: "", businessType: "individual", yearsExperience: "", description: "" },

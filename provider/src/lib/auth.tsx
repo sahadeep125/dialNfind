@@ -42,8 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const onLogout = () => setToken(null);
-    window.addEventListener("dnf:logout", onLogout);
-    return () => window.removeEventListener("dnf:logout", onLogout);
+    window.addEventListener("kjv:logout", onLogout);
+    return () => window.removeEventListener("kjv:logout", onLogout);
   }, []);
 
   // Analytics follows the session: identify once the account loads (again when the role or plan changes),

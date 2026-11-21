@@ -283,16 +283,16 @@ function PlanDialog({ plan, onClose }: { plan: Plan | null; onClose: () => void 
             <Input {...fieldA11y("plan-yearly", errors.yearly)} inputMode="numeric" maxLength={7} {...register("yearly")} />
           </Field>
           <Field id="plan-ios-m" label="iOS product, monthly" error={errors.iosMonthly} optional>
-            <Input {...fieldA11y("plan-ios-m", errors.iosMonthly)} className="font-mono" placeholder="dnf_pro_monthly" {...register("iosMonthly")} />
+            <Input {...fieldA11y("plan-ios-m", errors.iosMonthly)} className="font-mono" placeholder="kjv_pro_monthly" {...register("iosMonthly")} />
           </Field>
           <Field id="plan-ios-y" label="iOS product, yearly" error={errors.iosYearly} optional>
-            <Input {...fieldA11y("plan-ios-y", errors.iosYearly)} className="font-mono" placeholder="dnf_pro_yearly" {...register("iosYearly")} />
+            <Input {...fieldA11y("plan-ios-y", errors.iosYearly)} className="font-mono" placeholder="kjv_pro_yearly" {...register("iosYearly")} />
           </Field>
           <Field id="plan-and-m" label="Android product, monthly" error={errors.androidMonthly} optional>
-            <Input {...fieldA11y("plan-and-m", errors.androidMonthly)} className="font-mono" placeholder="dnf_pro:monthly" {...register("androidMonthly")} />
+            <Input {...fieldA11y("plan-and-m", errors.androidMonthly)} className="font-mono" placeholder="kjv_pro:monthly" {...register("androidMonthly")} />
           </Field>
           <Field id="plan-and-y" label="Android product, yearly" error={errors.androidYearly} optional>
-            <Input {...fieldA11y("plan-and-y", errors.androidYearly)} className="font-mono" placeholder="dnf_pro:yearly" {...register("androidYearly")} />
+            <Input {...fieldA11y("plan-and-y", errors.androidYearly)} className="font-mono" placeholder="kjv_pro:yearly" {...register("androidYearly")} />
           </Field>
           <Field id="plan-photos" label="Photo limit" error={errors.photoLimit} hint="Empty means no limit" optional>
             <Input {...fieldA11y("plan-photos", errors.photoLimit, true)} inputMode="numeric" maxLength={4} {...register("photoLimit")} />

@@ -189,7 +189,7 @@ describe("sponsored campaigns", () => {
     expect((await send({ categoryId: Number(other.id) })).body.error.message).toBe("You can only promote a category you offer");
     const ok = await send({ note: "Please start Monday" });
     expect(ok.status).toBe(201);
-    expect(ok.body.ticket.reference).toMatch(/^DNF-/);
+    expect(ok.body.ticket.reference).toMatch(/^KJV-/);
     const msg = await prisma.ticketMessage.findFirstOrThrow();
     expect(msg.body).toContain("Note from the provider: Please start Monday");
     await send({});
