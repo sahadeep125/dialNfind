@@ -1,4 +1,4 @@
-# Product analytics (PostHog)
+# Analytics (PostHog, Google Analytics 4, Google Tag Manager)
 
 Every KaajVa surface sends events to **one PostHog project** (US cloud):
 - customer website (`web/`)
@@ -25,6 +25,33 @@ The code lives in:
 - `server/src/services/analytics.ts`
 
 The four client modules have the same shape: `track`, `identifyUser` and `resetUser`.
+
+## Google Analytics 4 and ad conversions (GTM)
+
+The website and the provider portal also load one **Google Tag Manager** container (`GTM-T44QX69N`, account "KaajVa"), which sends to the GA4 property "Kaajva" (`G-8D1RD9D1E0`). PostHog stays the place for product questions; GA4 is there for Google Ads and Search Console.
+
+| App | Key |
+|---|---|
+| Website | `NEXT_PUBLIC_GTM_ID` (`web/lib/gtm.ts`) |
+| Provider portal | `VITE_GTM_ID` (`provider/src/lib/gtm.ts`) |
+
+`docker-compose.yml` defaults `GTM_ID` and `POSTHOG_KEY` to the production IDs; set either to empty in `.env` to turn it off.
+
+`track()` passes each event to `pushGtmEvent`, which maps the few that GA4 needs onto GA4 names and pushes them to `window.dataLayer`. In GTM one trigger (`CE - KaajVa GA4 events`) catches all of them and one GA4 event tag forwards them with their parameters. Page views come from the Google tag itself.
+
+| GA4 event | From | Parameters | Key event |
+|---|---|---|---|
+| `search` | `search_submitted` | `search_term`, `city` | |
+| `view_category` | `category_viewed` | `category`, `subcategory` | |
+| `view_provider` | `provider_viewed` | `provider_id`, `category`, `is_claimed` | |
+| `contact_provider` | `contact_clicked`, `phone_number_revealed` | `channel` (`call`, `whatsapp`, `reveal`), `provider_id`, `category`, `contact_source` | yes, the main ads conversion |
+| `sign_up` | `signed_up` (customer) | `method` | yes (secondary) |
+| `submit_review` | `review_submitted` | `provider_id`, `rating` | |
+| `provider_sign_up` | `signed_up` (provider) | `method` | yes (secondary) |
+| `listing_complete` | `onboarding_completed`, `claim_submitted` | `listing_type` (`new`, `claim`) | yes |
+| `purchase` | `subscription_purchased`, `promotion_purchased` | `value`, `currency` (INR), `item_category` (`plan`, `promotion`), `item_name` | yes |
+
+To send another event to GA4: add a case to `toGtmEvent` in both `gtm.ts` files, add its name to the trigger's regex in GTM, and add any new parameter as a Data Layer Variable plus a row on the GA4 event tag. Each push clears every known parameter first, so values never carry over from one event to the next. Never map phone numbers, names or emails.
 
 ## Identity
 

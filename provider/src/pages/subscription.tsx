@@ -69,7 +69,8 @@ export function SubscriptionPage() {
         return null;
       }
       await api("/provider/billing/razorpay/verify", { method: "POST", json: result });
-      track("subscription_purchased", props);
+      const amount = plan.prices.find((p) => p.billingCycle === cycle)?.amount ?? plan.price;
+      track("subscription_purchased", { ...props, amount });
       return plan;
     },
     onSuccess: async (plan) => {
