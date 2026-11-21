@@ -18,7 +18,7 @@ export function idToken(claims: JWTPayload & { iss: string; aud: string | string
 }
 
 export const googleToken = (claims: JWTPayload = {}) => idToken({ iss: "https://accounts.google.com", aud: "google-web", sub: "g-1", email: "Person@Example.com", email_verified: true, name: "Asha Rao", picture: "https://pic", ...claims } as never);
-export const appleToken = (claims: JWTPayload = {}) => idToken({ iss: "https://appleid.apple.com", aud: "com.dialnfind.app", sub: "a-1", email: "relay@privaterelay.appleid.com", ...claims } as never);
+export const appleToken = (claims: JWTPayload = {}) => idToken({ iss: "https://appleid.apple.com", aud: "com.kaajva.app", sub: "a-1", email: "relay@privaterelay.appleid.com", ...claims } as never);
 
 /**
  * Stubs fetch: key set requests get the test JWKS, Apple token endpoints get `apple` (or 200 {}), and

@@ -8,7 +8,7 @@ import { PrismaClient } from "@prisma/client";
  * (the local Homebrew superuser by default); migrations then run as the app user like in production.
  */
 export default async function setup() {
-  const url = new URL(process.env.TEST_DATABASE_URL ?? "postgresql://dialnfind:dialnfind@localhost:5432/dialnfind_test?schema=public");
+  const url = new URL(process.env.TEST_DATABASE_URL ?? "postgresql://kaajva:kaajva@localhost:5432/kaajva_test?schema=public");
   const dbName = url.pathname.slice(1);
   const owner = decodeURIComponent(url.username);
   const adminUrl = process.env.TEST_ADMIN_DATABASE_URL ?? `postgresql://${os.userInfo().username}@localhost:5432/postgres`;

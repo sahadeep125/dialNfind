@@ -20,7 +20,7 @@ export const billingRouter = Router();
 /** Where a store subscription is managed; the web cannot change it. */
 export const STORE_MANAGE_URLS = {
   app_store: "https://apps.apple.com/account/subscriptions",
-  play_store: "https://play.google.com/store/account/subscriptions?package=com.dialnfind.business",
+  play_store: "https://play.google.com/store/account/subscriptions?package=com.kaajva.business",
 } as const;
 
 /** Paid plans on sale, with their prices per billing cycle. */

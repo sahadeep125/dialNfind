@@ -29,7 +29,7 @@ Suggested addresses: `kaajva.in` (website), `business.kaajva.in` (provider porta
 Run this once per release, before the new API version starts:
 
 ```bash
-docker run --rm --env-file api.env dialnfind-api pnpm release
+docker run --rm --env-file api.env kaajva-api pnpm release
 # = prisma migrate deploy && tsx prisma/bootstrap.ts
 ```
 

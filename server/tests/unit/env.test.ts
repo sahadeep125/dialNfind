@@ -42,7 +42,7 @@ describe("env", () => {
       publicUrl: "http://localhost:4000",
       smtp: { host: "", port: 587, from: "KaajVa <no-reply@kaajva.in>", replyTo: "support@kaajva.in" },
       geocoder: { enabled: true, country: "in" },
-      oauth: { googleClientIds: [], appRedirectSchemes: ["dialnfind", "dialnfind-business"], applePrivateKey: "" },
+      oauth: { googleClientIds: [], appRedirectSchemes: ["kaajva", "kaajva-business"], applePrivateKey: "" },
       posthog: { key: "", host: "https://us.i.posthog.com", environment: "development" },
     });
     expect(env.uploadDir).toMatch(/uploads\/public$/);

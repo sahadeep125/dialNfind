@@ -89,7 +89,7 @@ export const env = {
     appleKeyId: process.env.APPLE_KEY_ID ?? "",
     applePrivateKey: (process.env.APPLE_PRIVATE_KEY ?? "").replace(/\\n/g, "\n"),
     /** App URL schemes the Android Apple sign-in callback may send people back to. */
-    appRedirectSchemes: list(process.env.APPLE_APP_REDIRECT_SCHEMES ?? "dialnfind,dialnfind-business"),
+    appRedirectSchemes: list(process.env.APPLE_APP_REDIRECT_SCHEMES ?? "kaajva,kaajva-business"),
   },
   /**
    * Web payments (Razorpay Subscriptions). Checkout answers 501 until the keys are set. The webhook

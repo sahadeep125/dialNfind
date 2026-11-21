@@ -15,7 +15,7 @@ if (monitoringEnabled) {
   Sentry.init({
     dsn: DSN,
     environment: __DEV__ ? "development" : (process.env.EXPO_PUBLIC_APP_ENV ?? "production"),
-    release: `dialnfind-business@${Constants.expoConfig?.version ?? "0.0.0"}`,
+    release: `kaajva-business@${Constants.expoConfig?.version ?? "0.0.0"}`,
     // No names, emails or IP addresses; the user is identified by account id only.
     sendDefaultPii: false,
     tracesSampleRate: __DEV__ ? 1 : 0.1,

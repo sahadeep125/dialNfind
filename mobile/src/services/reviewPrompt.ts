@@ -66,6 +66,6 @@ export async function rateApp(): Promise<void> {
     url ??
       (Platform.OS === "ios"
         ? "https://apps.apple.com/search?term=KaajVa"
-        : "https://play.google.com/store/apps/details?id=com.dialnfind.app"),
+        : "https://play.google.com/store/apps/details?id=com.kaajva.app"),
   );
 }

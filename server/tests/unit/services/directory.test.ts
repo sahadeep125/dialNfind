@@ -172,7 +172,7 @@ describe("accounts", () => {
     const review = await createReview(reviewed.id, user.id, { photos: { create: { photoUrl: reviewPhoto } } });
     await prisma.userOAuthAccount.createMany({
       data: [
-        { userId: user.id, provider: "apple", providerUserId: "a1", refreshToken: "rt", clientId: "com.dialnfind.app" },
+        { userId: user.id, provider: "apple", providerUserId: "a1", refreshToken: "rt", clientId: "com.kaajva.app" },
         { userId: user.id, provider: "apple", providerUserId: "a2", refreshToken: "rt2", clientId: null },
       ],
     });

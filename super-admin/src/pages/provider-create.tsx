@@ -176,7 +176,7 @@ export function ImportListingsDialog({ open, onOpenChange }: { open: boolean; on
 
   function template() {
     const url = URL.createObjectURL(new Blob([`${TEMPLATE_HEADER}\r\n${TEMPLATE_ROW}\r\n`], { type: "text/csv" }));
-    const a = Object.assign(document.createElement("a"), { href: url, download: "dialnfind-import-template.csv" });
+    const a = Object.assign(document.createElement("a"), { href: url, download: "kaajva-import-template.csv" });
     a.click();
     URL.revokeObjectURL(url);
   }

@@ -183,7 +183,7 @@ adminExportRouter.get("/export/:entity", async (req, res) => {
   if (!req.permissions?.has(e.module)) throw forbidden("Your role does not include this section");
   const q = parse(e.query, req.query);
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
-  res.setHeader("Content-Disposition", `attachment; filename="dialnfind-${entity}-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.setHeader("Content-Disposition", `attachment; filename="kaajva-${entity}-${new Date().toISOString().slice(0, 10)}.csv"`);
   res.setHeader("Cache-Control", "no-store");
   const rows = await stream(res, e, q);
   res.end();

@@ -1,4 +1,4 @@
-/* Imports the real provider listings bundled in prisma/data/providers-*.json (built by dialnfind-provider-discovery,
+/* Imports the real provider listings bundled in prisma/data/providers-*.json (built by kaajva-provider-discovery,
  * see its README). Runs at the end of bootstrap.ts on every deploy, and on its own with `pnpm db:import-providers`.
  *
  * Every listing is created unclaimed, unverified and live, like the admin CSV import. The listing's email is often
@@ -17,7 +17,7 @@ import { createListing, newListingSchema } from "../src/services/listings.js";
 import { recalculateCategoryCounts } from "../src/services/ranking.js";
 
 export const DATA_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "data");
-const BUNDLE_FORMAT = "dialnfind-providers/1";
+const BUNDLE_FORMAT = "kaajva-providers/1";
 
 const bundleSchema = z.object({ format: z.literal(BUNDLE_FORMAT), providers: z.array(z.unknown()) });
 

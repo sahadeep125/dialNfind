@@ -66,9 +66,9 @@ if [ "$FRESH" = 1 ]; then
         exit 1
     fi
     db_name="$(env_value POSTGRES_DB)"
-    db_name="${db_name:-dialnfind}"
+    db_name="${db_name:-kaajva}"
     project="$(grep -E '^name:' docker-compose.yml | head -n 1 | awk '{print $2}' || true)"
-    project="${project:-dialnfind}"
+    project="${project:-kaajva}"
     volume="${project}_postgres_data"
     echo ""
     echo "⚠️  FRESH INSTALL: this permanently deletes the database '$db_name' (Docker volume $volume):"
@@ -119,7 +119,7 @@ docker compose up -d db
 
 # 4. Wait for Database health check
 echo "⏳ Waiting for database to be ready..."
-until [ "$(docker inspect -f '{{.State.Health.Status}}' dialnfind-db 2>/dev/null)" == "healthy" ]; do
+until [ "$(docker inspect -f '{{.State.Health.Status}}' kaajva-db 2>/dev/null)" == "healthy" ]; do
     sleep 2
     echo -n "."
 done
@@ -138,7 +138,7 @@ docker compose up --build -d
 
 # 6b. Confirm the provider portal was built against the API URL in .env.
 EXPECTED_API="$(env_value PUBLIC_URL)/api/v1"
-if docker exec dialnfind-provider sh -c "grep -rqF '$EXPECTED_API' /usr/share/nginx/html/assets"; then
+if docker exec kaajva-provider sh -c "grep -rqF '$EXPECTED_API' /usr/share/nginx/html/assets"; then
     echo "✅ Provider portal calls $EXPECTED_API"
 else
     echo "⚠️  Provider portal bundle does not contain $EXPECTED_API; rebuilding frontends without cache..."

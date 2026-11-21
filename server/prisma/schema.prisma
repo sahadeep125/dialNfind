@@ -562,7 +562,7 @@ model ProviderClaim {
   @@map("provider_claims")
 }
 
-// Where an imported listing came from (prisma/data/providers-*.json, built by dialnfind-provider-discovery).
+// Where an imported listing came from (prisma/data/providers-*.json, built by kaajva-provider-discovery).
 // One row per source record ("osm:node/123", "overture:…"). The row outlives its listing (providerId is set
 // to null when the listing is deleted), so re-running the import never brings a deleted listing back.
 model ProviderSource {

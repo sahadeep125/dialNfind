@@ -5,7 +5,7 @@ providers, call the one you prefer. This repository holds four independent apps 
 PostgreSQL + PostGIS database through the API server.
 
 ```
-dialNfind/
+kaajva/
   server/     Node + Express + TypeScript + Prisma + PostgreSQL/PostGIS   (port 4000)
   web/        Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui (port 3000)
   provider/   React (Vite) + TypeScript + Tailwind CSS + shadcn/ui         (port 5173)
@@ -90,7 +90,7 @@ as the brief says. Recalculated on review/profile changes and by `pnpm --filter 
 No demo data. `pnpm --filter server db:bootstrap` (run by `pnpm release` on every deploy) adds one
 super admin, plans, settings, 12 categories with 57 subcategories and attributes
 (`server/prisma/data/categories.json`), and the real Siliguri listings found by
-`dialnfind-provider-discovery` (`server/prisma/data/providers-siliguri.json`), all unclaimed.
+`kaajva-provider-discovery` (`server/prisma/data/providers-siliguri.json`), all unclaimed.
 
 ## 4. Web (Next.js)
 

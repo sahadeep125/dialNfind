@@ -45,7 +45,7 @@ describe("oauth", () => {
   it("verifies Apple tokens and server notifications", async () => {
     stubIdentityFetch();
     expect(appleEnabled()).toBe(true);
-    expect(await verifyAppleIdToken(await appleToken())).toMatchObject({ sub: "a-1", email: "relay@privaterelay.appleid.com", emailVerified: true, name: null, audience: "com.dialnfind.app" });
+    expect(await verifyAppleIdToken(await appleToken())).toMatchObject({ sub: "a-1", email: "relay@privaterelay.appleid.com", emailVerified: true, name: null, audience: "com.kaajva.app" });
     expect((await verifyAppleIdToken(await appleToken({ email_verified: false }))).emailVerified).toBe(false);
     expect((await verifyAppleIdToken(await appleToken({ email: undefined }))).emailVerified).toBe(false);
     await expect(verifyAppleIdToken(await appleToken({ sub: undefined }))).rejects.toMatchObject({ status: 401 });
@@ -55,7 +55,7 @@ describe("oauth", () => {
     env.oauth.appleClientIds = saved;
 
     const events = { type: "account-delete", sub: "a-1" };
-    const signed = (e: unknown) => idToken({ iss: "https://appleid.apple.com", aud: "com.dialnfind.web", events: e } as never);
+    const signed = (e: unknown) => idToken({ iss: "https://appleid.apple.com", aud: "com.kaajva.web", events: e } as never);
     expect(await verifyAppleNotification(await signed(JSON.stringify(events)))).toEqual(events);
     expect(await verifyAppleNotification(await signed(events))).toEqual(events);
     await expect(verifyAppleNotification(await signed({ type: 1 }))).rejects.toThrow("malformed events");
@@ -63,8 +63,8 @@ describe("oauth", () => {
     await expect(verifyAppleNotification(await signed({ type: "x" }))).rejects.toThrow("malformed events");
   });
   it("exchanges Apple codes and revokes tokens only with a key", async () => {
-    expect(await exchangeAppleCode("c", "com.dialnfind.app")).toBeNull();
-    expect(await revokeAppleToken("rt", "com.dialnfind.app")).toBe(false);
+    expect(await exchangeAppleCode("c", "com.kaajva.app")).toBeNull();
+    expect(await revokeAppleToken("rt", "com.kaajva.app")).toBe(false);
     await withAppleKey(async () => {
       const calls: [string, URLSearchParams][] = [];
       const answers = [
@@ -79,12 +79,12 @@ describe("oauth", () => {
         calls.push([url, body]);
         return answers.shift()!;
       });
-      expect(await exchangeAppleCode("c1", "com.dialnfind.app", "https://back")).toBe("rt-1");
-      expect(await exchangeAppleCode("c2", "com.dialnfind.app")).toBe("rt-2");
-      expect(await exchangeAppleCode("c3", "com.dialnfind.web")).toBeNull();
-      expect(await exchangeAppleCode("c4", "com.dialnfind.web")).toBeNull();
-      expect(await revokeAppleToken("rt", "com.dialnfind.web")).toBe(true);
-      expect(await revokeAppleToken("rt", "com.dialnfind.web")).toBe(false);
+      expect(await exchangeAppleCode("c1", "com.kaajva.app", "https://back")).toBe("rt-1");
+      expect(await exchangeAppleCode("c2", "com.kaajva.app")).toBe("rt-2");
+      expect(await exchangeAppleCode("c3", "com.kaajva.web")).toBeNull();
+      expect(await exchangeAppleCode("c4", "com.kaajva.web")).toBeNull();
+      expect(await revokeAppleToken("rt", "com.kaajva.web")).toBe(true);
+      expect(await revokeAppleToken("rt", "com.kaajva.web")).toBe(false);
       expect(calls[0]![1].get("redirect_uri")).toBe("https://back");
       expect(calls[1]![1].get("redirect_uri")).toBeNull();
       // The client secret is cached per client id.
@@ -92,8 +92,8 @@ describe("oauth", () => {
       expect(calls[4]![1].get("token_type_hint")).toBe("refresh_token");
 
       vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
-      expect(await exchangeAppleCode("c", "com.dialnfind.app")).toBeNull();
-      expect(await revokeAppleToken("rt", "com.dialnfind.app")).toBe(false);
+      expect(await exchangeAppleCode("c", "com.kaajva.app")).toBeNull();
+      expect(await revokeAppleToken("rt", "com.kaajva.app")).toBe(false);
     });
   });
 });

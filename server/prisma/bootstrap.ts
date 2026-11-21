@@ -23,7 +23,7 @@ interface CategoryData {
   attributes: { label: string; appliesTo: "lead" | "provider"; fieldType: "text" | "number" | "select" | "multiselect" | "boolean"; options?: string[] }[];
 }
 
-// The default directory, shared with dialnfind-provider-discovery (which maps what it finds onto these slugs).
+// The default directory, shared with kaajva-provider-discovery (which maps what it finds onto these slugs).
 const CATEGORIES: CategoryData[] = JSON.parse(readFileSync(`${DATA_DIR}/categories.json`, "utf8"));
 
 const BADGES = [

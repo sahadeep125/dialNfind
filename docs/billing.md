@@ -71,7 +71,7 @@ To test, use test cards or UPI id `success@razorpay`. For webhooks on localhost,
 
 ## RevenueCat (business app)
 
-1. In RevenueCat, create a project with an App Store app (`com.dialnfind.business`) and a Play Store app (`com.dialnfind.business`).
+1. In RevenueCat, create a project with an App Store app (`com.kaajva.business`) and a Play Store app (`com.kaajva.business`).
 2. Create the store products and add them in RevenueCat:
 
    | Plan | iOS product | Android subscription:base plan |

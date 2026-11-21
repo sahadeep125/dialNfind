@@ -7,7 +7,7 @@ import logging
 import sys
 from typing import Any
 
-LOGGER_NAME = "dialnfind"
+LOGGER_NAME = "kaajva"
 
 
 class TagFormatter(logging.Formatter):

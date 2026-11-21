@@ -1,7 +1,7 @@
 # KaajVa website. Build from the repository root (the pnpm lockfile lives there). NEXT_PUBLIC_* values
 # are compiled into the pages, so they are build arguments; everything else (API_URL, CLIENT_IP_HEADER,
 # ANDROID_SHA256_CERT_FINGERPRINTS, ...) is read at runtime from the container environment.
-#   docker build -f web/Dockerfile -t dialnfind-web \
+#   docker build -f web/Dockerfile -t kaajva-web \
 #     --build-arg NEXT_PUBLIC_SITE_URL=https://kaajva.in \
 #     --build-arg NEXT_PUBLIC_IMAGE_ORIGINS=https://api.kaajva.in \
 #     --build-arg NEXT_PUBLIC_PROVIDER_APP_URL=https://business.kaajva.in .

@@ -2,10 +2,10 @@
 # APP picks the app, and VITE_* values are compiled into the bundle, so they are build arguments.
 #   docker build -f deploy/spa.Dockerfile --build-arg APP=provider \
 #     --build-arg VITE_API_URL=https://api.kaajva.in/api/v1 --build-arg VITE_WEB_URL=https://kaajva.in \
-#     -t dialnfind-provider .
+#     -t kaajva-provider .
 #   docker build -f deploy/spa.Dockerfile --build-arg APP=super-admin \
 #     --build-arg VITE_API_URL=https://api.kaajva.in/api/v1 --build-arg VITE_WEB_URL=https://kaajva.in \
-#     -t dialnfind-admin .
+#     -t kaajva-admin .
 
 FROM node:22-bookworm-slim AS build
 RUN npm install -g pnpm@10.33.0

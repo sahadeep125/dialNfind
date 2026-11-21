@@ -1,8 +1,8 @@
 {
- "format": "dialnfind-providers/1",
- "tool": "dialnfindProviderDiscovery/1.0.0",
+ "format": "kaajva-providers/1",
+ "tool": "kaajvaProviderDiscovery/1.0.0",
  "generatedAt": "2026-09-28T16:36:07+00:00",
- "disclaimer": "Discovered from public sources. These businesses have NOT joined dialnfind; records are unclaimed and unverified until the business claims its profile.",
+ "disclaimer": "Discovered from public sources. These businesses have NOT joined kaajva; records are unclaimed and unverified until the business claims its profile.",
  "attribution": [
   "© OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright)",
   "Overture Maps Foundation places, CDLA-Permissive-2.0 / Apache-2.0 (https://overturemaps.org)"

@@ -1,4 +1,4 @@
-# dialnfind provider discovery configuration.
+# kaajva provider discovery configuration.
 # Precedence: built-in defaults < this file < environment (.env) < CLI flags.
 
 city: Siliguri
@@ -13,8 +13,8 @@ output_dir: output
 state_db: output/discovery.db
 max_results: 20000             # cap on discovered candidates across all sources
 
-# Category slugs of the dialnfind server; every category rule below must map onto them.
-dialnfind_categories: ../server/prisma/data/categories.json
+# Category slugs of the kaajva server; every category rule below must map onto them.
+kaajva_categories: ../server/prisma/data/categories.json
 
 crawler:
   request_delay: 2            # seconds between requests to the same domain (minimum 1)
@@ -193,9 +193,9 @@ locations:
       - Mallaguri
       - Sukna
 
-# Category rules. There is one rule per dialnfind subcategory, plus one category-level rule per
+# Category rules. There is one rule per kaajva subcategory, plus one category-level rule per
 # category that catches businesses whose evidence doesn't name a specific service.
-# Rule names are listed in categories.txt, and `dialnfind:` maps each rule onto the slugs in
+# Rule names are listed in categories.txt, and `kaajva:` maps each rule onto the slugs in
 # ../server/prisma/data/categories.json. The CLI refuses to run if any mapping is unknown.
 #
 # Evidence per rule:
@@ -212,7 +212,7 @@ locations:
 category_rules:
   # --- Electronics Repair ----------------------------------------------------------------------
   Electronics Repair:
-    dialnfind: {category: electronics-repair}
+    kaajva: {category: electronics-repair}
     keywords: [electronics repair, electronic repair, electronics service, electronic service centre,
                electronics service center, electronic works]
     queries: [electronics repair, electronic repair shop]
@@ -222,7 +222,7 @@ category_rules:
     fsq: [electronics repair shop]
     osm_name_regex: "electronic.*(repair|service|care|works)"
   TV Repair:
-    dialnfind: {category: electronics-repair, subcategory: tv-repair}
+    kaajva: {category: electronics-repair, subcategory: tv-repair}
     keywords: [tv repair, television repair, led tv repair, lcd tv repair, smart tv repair, tv service,
                tv servicing, tv repairing, tv mechanic, led repair]
     queries: [TV repair, LED TV repair, smart TV repair]
@@ -230,7 +230,7 @@ category_rules:
     overture_weak: [electronics_repair_shop, electronics_store]
     osm_name_regex: "\\btv\\b|television|led repair"
   Mobile Phone Repair:
-    dialnfind: {category: electronics-repair, subcategory: mobile-phone-repair}
+    kaajva: {category: electronics-repair, subcategory: mobile-phone-repair}
     keywords: [mobile repair, mobile repairing, mobile phone repair, phone repair, smartphone repair,
                cell phone repair, mobile service, mobile service centre, mobile service center,
                mobile screen replacement, iphone repair, mobile care]
@@ -242,7 +242,7 @@ category_rules:
     fsq_weak: [mobile phone store]
     osm_name_regex: "mobile.*(repair|service|care|clinic|point|solution)|phone repair|cell ?care|i ?care"
   Laptop & Computer Repair:
-    dialnfind: {category: electronics-repair, subcategory: laptop-and-computer-repair}
+    kaajva: {category: electronics-repair, subcategory: laptop-and-computer-repair}
     keywords: [laptop repair, computer repair, pc repair, desktop repair, computer service, laptop service,
                computer servicing, laptop servicing, computer hardware repair, motherboard repair,
                laptop screen replacement, data recovery, printer repair]
@@ -255,7 +255,7 @@ category_rules:
     fsq_weak: [computer store]
     osm_name_regex: "laptop|computer.*(repair|service|care|solution|clinic)|\\bpc\\b.*(repair|care)|infotech|computers?$"
   Home Theatre & Audio Repair:
-    dialnfind: {category: electronics-repair, subcategory: home-theatre-and-audio-repair}
+    kaajva: {category: electronics-repair, subcategory: home-theatre-and-audio-repair}
     keywords: [home theatre repair, home theater repair, speaker repair, amplifier repair, audio repair,
                music system repair, sound system repair, car stereo installation]
     queries: [home theatre repair, speaker repair]
@@ -264,7 +264,7 @@ category_rules:
     overture_weak: [electronics_repair_shop, car_stereo_store]
     osm_name_regex: "sound|audio|speaker|amplifier|home theat"
   CCTV Installation:
-    dialnfind: {category: electronics-repair, subcategory: cctv-installation}
+    kaajva: {category: electronics-repair, subcategory: cctv-installation}
     keywords: [cctv installation, cctv camera installation, cctv service, cctv repair, cctv camera, cctv dealer,
                security camera installation, surveillance system, access control, biometric attendance,
                video door phone, fire alarm system]
@@ -277,7 +277,7 @@ category_rules:
 
   # --- Home Appliances -------------------------------------------------------------------------
   Home Appliances:
-    dialnfind: {category: home-appliances}
+    kaajva: {category: home-appliances}
     keywords: [home appliance repair, appliance repair, appliances repair, home appliances service,
                appliance service, appliance service centre, appliance service center, appliance care]
     queries: [home appliance repair, appliance repair service]
@@ -287,7 +287,7 @@ category_rules:
     osm_weak_tags: [shop=appliance, craft=electronics_repair]
     osm_name_regex: "appliance.*(repair|service|care)|service cent(er|re)"
   AC Repair & Service:
-    dialnfind: {category: home-appliances, subcategory: ac-repair-and-service}
+    kaajva: {category: home-appliances, subcategory: ac-repair-and-service}
     keywords: [ac repair, ac service, ac services, ac servicing, ac maintenance, ac mechanic, ac installation,
                air conditioner repair, air conditioner service, air conditioning repair, air conditioning service,
                split ac, window ac, hvac, gas refilling, ac gas filling, refrigeration and air conditioning]
@@ -299,7 +299,7 @@ category_rules:
     fsq: [hvac contractor]
     osm_name_regex: "\\bac\\b|a\\.c\\.|air ?condition|hvac|cooling|refrigeration"
   Refrigerator Repair:
-    dialnfind: {category: home-appliances, subcategory: refrigerator-repair}
+    kaajva: {category: home-appliances, subcategory: refrigerator-repair}
     keywords: [refrigerator repair, fridge repair, refrigerator service, fridge service, refrigeration service,
                refrigerator servicing, deep freezer repair, visi cooler repair]
     queries: [refrigerator repair, fridge repair]
@@ -308,7 +308,7 @@ category_rules:
     osm_weak_tags: [craft=electronics_repair, shop=appliance]
     osm_name_regex: "fridge|refrigerat"
   Washing Machine Repair:
-    dialnfind: {category: home-appliances, subcategory: washing-machine-repair}
+    kaajva: {category: home-appliances, subcategory: washing-machine-repair}
     keywords: [washing machine repair, washing machine service, washing machine servicing,
                front load washing machine, top load washing machine]
     queries: [washing machine repair, washing machine service]
@@ -316,14 +316,14 @@ category_rules:
     osm_weak_tags: [craft=electronics_repair, shop=appliance]
     osm_name_regex: "washing machine"
   Microwave Repair:
-    dialnfind: {category: home-appliances, subcategory: microwave-repair}
+    kaajva: {category: home-appliances, subcategory: microwave-repair}
     keywords: [microwave repair, microwave oven repair, microwave service, oven repair, otg repair]
     queries: [microwave repair]
     overture_weak: [appliance_repair_service, appliance_store]
     osm_weak_tags: [craft=electronics_repair, shop=appliance]
     osm_name_regex: "microwave"
   Water Purifier Service:
-    dialnfind: {category: home-appliances, subcategory: water-purifier-service}
+    kaajva: {category: home-appliances, subcategory: water-purifier-service}
     keywords: [ro service, ro repair, ro water purifier, water purifier service, water purifier repair,
                ro installation, aquaguard service, kent ro service, water filter service, ro amc]
     queries: [RO service, water purifier service, RO repair]
@@ -333,7 +333,7 @@ category_rules:
     fsq: [water treatment service]
     osm_name_regex: "water purifier|aquaguard|kent ro|\\bro\\b|aqua|purifier"
   Geyser Repair:
-    dialnfind: {category: home-appliances, subcategory: geyser-repair}
+    kaajva: {category: home-appliances, subcategory: geyser-repair}
     keywords: [geyser repair, water heater repair, geyser service, geyser installation, chimney repair,
                chimney service, chimney cleaning]
     queries: [geyser repair, chimney service]
@@ -343,7 +343,7 @@ category_rules:
 
   # --- Electricians ----------------------------------------------------------------------------
   Electricians:
-    dialnfind: {category: electricians}
+    kaajva: {category: electricians}
     keywords: [electrician, electricians, electrical repair, electrical service, electrical services,
                electrical work, electrical works, electrical contractor, electric works]
     queries: [electrician, electrician service, electrical contractor]
@@ -354,14 +354,14 @@ category_rules:
     osm_weak_tags: [shop=electrical]
     osm_name_regex: "electric(al|ian)s?.*(works|service|contractor|solution)|electrician"
   Wiring & Rewiring:
-    dialnfind: {category: electricians, subcategory: wiring-and-rewiring}
+    kaajva: {category: electricians, subcategory: wiring-and-rewiring}
     keywords: [house wiring, wiring work, rewiring, concealed wiring, electrical wiring, internal wiring]
     queries: [house wiring electrician]
     osm_weak_tags: [craft=electrician]
     overture_weak: [electrician]
     osm_name_regex: "wiring"
   Fan & Light Installation:
-    dialnfind: {category: electricians, subcategory: fan-and-light-installation}
+    kaajva: {category: electricians, subcategory: fan-and-light-installation}
     keywords: [fan repair, fan installation, light installation, light fitting, fan fitting, ceiling fan,
                lighting installation, decorative lighting]
     queries: [fan repair, light fitting electrician]
@@ -369,7 +369,7 @@ category_rules:
     overture_weak: [electrician, lighting_store]
     osm_name_regex: "\\bfans?\\b|light(ing)? (fitting|installation)"
   Inverter & Battery:
-    dialnfind: {category: electricians, subcategory: inverter-and-battery}
+    kaajva: {category: electricians, subcategory: inverter-and-battery}
     keywords: [inverter installation, inverter repair, inverter service, battery service, ups repair,
                ups service, battery replacement, solar installation, solar panel installation]
     queries: [inverter repair, inverter battery service]
@@ -378,7 +378,7 @@ category_rules:
     osm_weak_tags: [craft=electrician, shop=batteries]
     osm_name_regex: "inverter|\\bups\\b|battery|batteries|solar"
   Switchboard Repair:
-    dialnfind: {category: electricians, subcategory: switchboard-repair}
+    kaajva: {category: electricians, subcategory: switchboard-repair}
     keywords: [switchboard repair, switch board repair, mcb installation, db box, distribution board,
                socket repair, short circuit repair]
     queries: [switchboard repair electrician]
@@ -386,7 +386,7 @@ category_rules:
     overture_weak: [electrician]
     osm_name_regex: "switch ?board|\\bmcb\\b"
   Electrical Safety Inspection:
-    dialnfind: {category: electricians, subcategory: electrical-safety-inspection}
+    kaajva: {category: electricians, subcategory: electrical-safety-inspection}
     keywords: [electrical safety inspection, electrical audit, electrical safety audit, earthing,
                earthing work, lightning arrester, electrical testing]
     queries: [electrical safety audit, earthing work]
@@ -396,7 +396,7 @@ category_rules:
 
   # --- Plumbing --------------------------------------------------------------------------------
   Plumbing:
-    dialnfind: {category: plumbing}
+    kaajva: {category: plumbing}
     keywords: [plumber, plumbers, plumbing, plumbing service, plumbing services, plumbing works,
                plumbing contractor, sanitary fitting, sanitary works, pipe fitting]
     queries: [plumber, plumbing service]
@@ -407,7 +407,7 @@ category_rules:
     osm_weak_tags: [shop=bathroom_furnishing]
     osm_name_regex: "plumb|sanitary"
   Leak Repair:
-    dialnfind: {category: plumbing, subcategory: leak-repair}
+    kaajva: {category: plumbing, subcategory: leak-repair}
     keywords: [leak repair, leakage repair, pipe repair, pipe leakage, tap repair, faucet repair,
                water leakage, seepage repair]
     queries: [leakage repair plumber]
@@ -415,7 +415,7 @@ category_rules:
     overture_weak: [plumbing]
     osm_name_regex: "leak"
   Bathroom Fitting:
-    dialnfind: {category: plumbing, subcategory: bathroom-fitting}
+    kaajva: {category: plumbing, subcategory: bathroom-fitting}
     keywords: [bathroom fitting, bathroom fittings, sanitary fitting, sanitaryware installation, shower installation,
                bathroom renovation, cp fitting, commode installation]
     queries: [bathroom fitting plumber]
@@ -423,7 +423,7 @@ category_rules:
     overture_weak: [plumbing, kitchen_and_bath_store]
     osm_name_regex: "bath"
   Water Tank Cleaning:
-    dialnfind: {category: plumbing, subcategory: water-tank-cleaning}
+    kaajva: {category: plumbing, subcategory: water-tank-cleaning}
     keywords: [water tank cleaning, tank cleaning, overhead tank cleaning, underground tank cleaning,
                sump cleaning]
     queries: [water tank cleaning]
@@ -431,7 +431,7 @@ category_rules:
     overture_weak: [plumbing, home_cleaning]
     osm_name_regex: "tank clean"
   Drain Unblocking:
-    dialnfind: {category: plumbing, subcategory: drain-unblocking}
+    kaajva: {category: plumbing, subcategory: drain-unblocking}
     keywords: [drain cleaning, drain blockage, drain unblocking, sewer cleaning, septic tank cleaning,
                blockage removal, choke removal]
     queries: [drain cleaning, septic tank cleaning]
@@ -440,7 +440,7 @@ category_rules:
     overture_weak: [plumbing]
     osm_name_regex: "drain|septic|sewer"
   Motor & Pump Repair:
-    dialnfind: {category: plumbing, subcategory: motor-and-pump-repair}
+    kaajva: {category: plumbing, subcategory: motor-and-pump-repair}
     keywords: [motor repair, pump repair, water pump repair, submersible pump, motor rewinding,
                pump installation, borewell]
     queries: [water pump repair, motor rewinding]
@@ -450,7 +450,7 @@ category_rules:
 
   # --- Carpentry -------------------------------------------------------------------------------
   Carpentry:
-    dialnfind: {category: carpentry}
+    kaajva: {category: carpentry}
     keywords: [carpenter, carpenters, carpentry, carpentry work, carpentry works, wood work, woodwork,
                wooden work, furniture work]
     queries: [carpenter, carpentry service]
@@ -460,7 +460,7 @@ category_rules:
     fsq: [carpenter]
     osm_name_regex: "carpent|wood ?work|timber"
   Furniture Repair:
-    dialnfind: {category: carpentry, subcategory: furniture-repair}
+    kaajva: {category: carpentry, subcategory: furniture-repair}
     keywords: [furniture repair, sofa repair, chair repair, bed repair, furniture polish, sofa making]
     queries: [furniture repair]
     overture: [furniture_repair]
@@ -468,7 +468,7 @@ category_rules:
     osm_weak_tags: [craft=carpenter, craft=upholsterer, shop=furniture]
     osm_name_regex: "furniture (repair|polish|works)|sofa (repair|making)"
   Modular Kitchen:
-    dialnfind: {category: carpentry, subcategory: modular-kitchen}
+    kaajva: {category: carpentry, subcategory: modular-kitchen}
     keywords: [modular kitchen, modular kitchens, kitchen cabinet, kitchen cabinets, modular wardrobe,
                kitchen interior]
     queries: [modular kitchen]
@@ -476,7 +476,7 @@ category_rules:
     osm_weak_tags: [shop=kitchen, craft=carpenter, shop=interior_decoration]
     osm_name_regex: "modular|kitchen"
   Door & Window Work:
-    dialnfind: {category: carpentry, subcategory: door-and-window-work}
+    kaajva: {category: carpentry, subcategory: door-and-window-work}
     keywords: [door repair, door fitting, door installation, window installation, window repair,
                upvc windows, aluminium windows, aluminium partition, sliding window, wooden doors]
     queries: [door and window work, aluminium window fitting]
@@ -485,7 +485,7 @@ category_rules:
     osm_weak_tags: [craft=carpenter, craft=window_construction, shop=doors]
     osm_name_regex: "\\bdoors?\\b|windows?|upvc|alumin"
   Custom Furniture:
-    dialnfind: {category: carpentry, subcategory: custom-furniture}
+    kaajva: {category: carpentry, subcategory: custom-furniture}
     keywords: [custom furniture, furniture making, furniture manufacturer, wardrobe making, made to order furniture,
                furniture assembly]
     queries: [custom furniture maker]
@@ -496,7 +496,7 @@ category_rules:
 
   # --- Cleaning Services -----------------------------------------------------------------------
   Cleaning Services:
-    dialnfind: {category: cleaning}
+    kaajva: {category: cleaning}
     keywords: [cleaning service, cleaning services, house cleaning, home cleaning, housekeeping service,
                housekeeping services, facility management, cleaning company]
     queries: [cleaning service, home cleaning service]
@@ -506,14 +506,14 @@ category_rules:
     osm_name_regex: "cleaning|housekeeping|facility"
     negative_keywords: [dry cleaning, dry cleaner, laundry]
   Home Deep Cleaning:
-    dialnfind: {category: cleaning, subcategory: home-deep-cleaning}
+    kaajva: {category: cleaning, subcategory: home-deep-cleaning}
     keywords: [deep cleaning, home deep cleaning, full home cleaning, move in cleaning, move out cleaning]
     queries: [home deep cleaning]
     overture_weak: [home_cleaning]
     osm_weak_tags: [craft=cleaning]
     osm_name_regex: "deep clean"
   Sofa & Carpet Cleaning:
-    dialnfind: {category: cleaning, subcategory: sofa-and-carpet-cleaning}
+    kaajva: {category: cleaning, subcategory: sofa-and-carpet-cleaning}
     keywords: [sofa cleaning, carpet cleaning, upholstery cleaning, mattress cleaning, sofa shampooing,
                carpet shampooing]
     queries: [sofa cleaning, carpet cleaning]
@@ -522,21 +522,21 @@ category_rules:
     osm_weak_tags: [craft=cleaning]
     osm_name_regex: "sofa|carpet|upholster"
   Bathroom Cleaning:
-    dialnfind: {category: cleaning, subcategory: bathroom-cleaning}
+    kaajva: {category: cleaning, subcategory: bathroom-cleaning}
     keywords: [bathroom cleaning, toilet cleaning, washroom cleaning, tile cleaning]
     queries: [bathroom cleaning service]
     overture_weak: [home_cleaning]
     osm_weak_tags: [craft=cleaning]
     osm_name_regex: "bathroom clean|washroom"
   Kitchen Cleaning:
-    dialnfind: {category: cleaning, subcategory: kitchen-cleaning}
+    kaajva: {category: cleaning, subcategory: kitchen-cleaning}
     keywords: [kitchen cleaning, kitchen deep cleaning, chimney cleaning, kitchen degreasing]
     queries: [kitchen cleaning service]
     overture_weak: [home_cleaning]
     osm_weak_tags: [craft=cleaning]
     osm_name_regex: "kitchen clean"
   Office Cleaning:
-    dialnfind: {category: cleaning, subcategory: office-cleaning}
+    kaajva: {category: cleaning, subcategory: office-cleaning}
     keywords: [office cleaning, commercial cleaning, facility management, housekeeping services,
                manpower and housekeeping]
     queries: [office cleaning service, facility management]
@@ -547,7 +547,7 @@ category_rules:
 
   # --- Pest Control ----------------------------------------------------------------------------
   Pest Control:
-    dialnfind: {category: pest-control}
+    kaajva: {category: pest-control}
     keywords: [pest control, pest control service, pest control services, pest management, fumigation,
                disinfection service, sanitization service]
     queries: [pest control, pest control service]
@@ -556,31 +556,31 @@ category_rules:
     osm_tags: [craft=pest_control, shop=pest_control]
     osm_name_regex: "pest|fumigat"
   Cockroach Control:
-    dialnfind: {category: pest-control, subcategory: cockroach-control}
+    kaajva: {category: pest-control, subcategory: cockroach-control}
     keywords: [cockroach control, cockroach treatment, gel treatment]
     queries: [cockroach control]
     overture_weak: [pest_control_service]
     osm_name_regex: "cockroach"
   Termite Treatment:
-    dialnfind: {category: pest-control, subcategory: termite-treatment}
+    kaajva: {category: pest-control, subcategory: termite-treatment}
     keywords: [termite control, termite treatment, anti termite, anti-termite treatment, white ant control]
     queries: [termite treatment, anti termite treatment]
     overture_weak: [pest_control_service]
     osm_name_regex: "termite"
   Bed Bug Treatment:
-    dialnfind: {category: pest-control, subcategory: bed-bug-treatment}
+    kaajva: {category: pest-control, subcategory: bed-bug-treatment}
     keywords: [bed bug treatment, bed bug control, bedbug control]
     queries: [bed bug treatment]
     overture_weak: [pest_control_service]
     osm_name_regex: "bed ?bug"
   Mosquito Control:
-    dialnfind: {category: pest-control, subcategory: mosquito-control}
+    kaajva: {category: pest-control, subcategory: mosquito-control}
     keywords: [mosquito control, mosquito fogging, fogging service, mosquito treatment]
     queries: [mosquito control, fogging service]
     overture_weak: [pest_control_service]
     osm_name_regex: "mosquito|fogging"
   Rodent Control:
-    dialnfind: {category: pest-control, subcategory: rodent-control}
+    kaajva: {category: pest-control, subcategory: rodent-control}
     keywords: [rodent control, rat control, rat treatment, rodent treatment]
     queries: [rat control, rodent control]
     overture_weak: [pest_control_service]
@@ -588,7 +588,7 @@ category_rules:
 
   # --- Painting --------------------------------------------------------------------------------
   Painting:
-    dialnfind: {category: painting}
+    kaajva: {category: painting}
     keywords: [painter, painters, painting service, painting services, painting contractor, painting contractors,
                house painting, wall painting, home painting, painting work, painting works]
     queries: [painter, house painting service, painting contractor]
@@ -599,21 +599,21 @@ category_rules:
     osm_weak_tags: [shop=paint]
     osm_name_regex: "painter|painting"
   Interior Painting:
-    dialnfind: {category: painting, subcategory: interior-painting}
+    kaajva: {category: painting, subcategory: interior-painting}
     keywords: [interior painting, interior wall painting, room painting, putty work, pop work, false ceiling]
     queries: [interior painting]
     osm_weak_tags: [craft=painter]
     overture_weak: [painting]
     osm_name_regex: "interior paint|putty|\\bpop\\b"
   Exterior Painting:
-    dialnfind: {category: painting, subcategory: exterior-painting}
+    kaajva: {category: painting, subcategory: exterior-painting}
     keywords: [exterior painting, exterior wall painting, building painting, outer wall painting]
     queries: [exterior painting]
     osm_weak_tags: [craft=painter]
     overture_weak: [painting]
     osm_name_regex: "exterior"
   Waterproofing:
-    dialnfind: {category: painting, subcategory: waterproofing}
+    kaajva: {category: painting, subcategory: waterproofing}
     keywords: [waterproofing, water proofing, roof waterproofing, terrace waterproofing, damp proofing,
                seepage treatment]
     queries: [waterproofing service]
@@ -622,7 +622,7 @@ category_rules:
     osm_weak_tags: [craft=painter, craft=roofer]
     osm_name_regex: "water ?proof|damp"
   Texture & Wallpaper:
-    dialnfind: {category: painting, subcategory: texture-and-wallpaper}
+    kaajva: {category: painting, subcategory: texture-and-wallpaper}
     keywords: [texture painting, texture paint, wallpaper, wall paper, stencil painting, wall art, 3d wallpaper]
     queries: [wallpaper installation, texture painting]
     overture_weak: [painting, interior_design]
@@ -631,7 +631,7 @@ category_rules:
 
   # --- Packers & Movers ------------------------------------------------------------------------
   Packers & Movers:
-    dialnfind: {category: packers-movers}
+    kaajva: {category: packers-movers}
     keywords: [packers and movers, packers & movers, packers movers, movers and packers, relocation service,
                shifting service, household shifting, home shifting]
     queries: [packers and movers, relocation service]
@@ -641,26 +641,26 @@ category_rules:
     osm_weak_tags: [office=moving_company, shop=storage_rental]
     osm_name_regex: "packers|movers|relocation|shifting"
   Local Shifting:
-    dialnfind: {category: packers-movers, subcategory: local-shifting}
+    kaajva: {category: packers-movers, subcategory: local-shifting}
     keywords: [local shifting, house shifting, home shifting, household shifting, local relocation, tempo service]
     queries: [local house shifting]
     overture_weak: [mover]
     osm_name_regex: "house shifting|local shifting|tempo"
   Intercity Relocation:
-    dialnfind: {category: packers-movers, subcategory: intercity-relocation}
+    kaajva: {category: packers-movers, subcategory: intercity-relocation}
     keywords: [intercity relocation, domestic relocation, all india relocation, long distance moving,
                intercity shifting]
     queries: [intercity relocation packers]
     overture_weak: [mover, freight_and_cargo_service]
     osm_name_regex: "all india|intercity|domestic relocation"
   Vehicle Transport:
-    dialnfind: {category: packers-movers, subcategory: vehicle-transport}
+    kaajva: {category: packers-movers, subcategory: vehicle-transport}
     keywords: [car transport, bike transport, vehicle transport, car carrier, two wheeler transport]
     queries: [car transport service, bike transport]
     overture_weak: [mover, freight_and_cargo_service]
     osm_name_regex: "car carrier|vehicle transport|bike transport|car transport"
   Office Relocation:
-    dialnfind: {category: packers-movers, subcategory: office-relocation}
+    kaajva: {category: packers-movers, subcategory: office-relocation}
     keywords: [office relocation, office shifting, corporate relocation, commercial relocation]
     queries: [office shifting]
     overture_weak: [mover]
@@ -668,7 +668,7 @@ category_rules:
 
   # --- Tutors ----------------------------------------------------------------------------------
   Tutors:
-    dialnfind: {category: tutors}
+    kaajva: {category: tutors}
     keywords: [tutor, tutors, home tutor, home tuition, private tuition, tuition, tuition classes, tutorial,
                tutorials, coaching classes, coaching centre, coaching center]
     queries: [home tutor, tuition classes]
@@ -677,20 +677,20 @@ category_rules:
     osm_weak_tags: [amenity=prep_school, office=tutoring]
     osm_name_regex: "tutor|tuition|coaching|classes|academy"
   Maths Tutor:
-    dialnfind: {category: tutors, subcategory: maths-tutor}
+    kaajva: {category: tutors, subcategory: maths-tutor}
     keywords: [maths tutor, math tutor, maths tuition, mathematics tuition, maths classes, mathematics classes]
     queries: [maths tutor]
     overture_weak: [tutoring_service]
     osm_name_regex: "math"
   Science Tutor:
-    dialnfind: {category: tutors, subcategory: science-tutor}
+    kaajva: {category: tutors, subcategory: science-tutor}
     keywords: [science tutor, science tuition, physics tuition, chemistry tuition, biology tuition,
                physics classes, chemistry classes]
     queries: [science tuition, physics tuition]
     overture_weak: [tutoring_service]
     osm_name_regex: "science|physics|chemistry|biology"
   English Tutor:
-    dialnfind: {category: tutors, subcategory: english-tutor}
+    kaajva: {category: tutors, subcategory: english-tutor}
     keywords: [english tutor, english tuition, spoken english, english speaking course, english classes,
                ielts coaching]
     queries: [spoken english classes]
@@ -699,7 +699,7 @@ category_rules:
     osm_weak_tags: [amenity=language_school]
     osm_name_regex: "english|ielts"
   Music Teacher:
-    dialnfind: {category: tutors, subcategory: music-teacher}
+    kaajva: {category: tutors, subcategory: music-teacher}
     keywords: [music teacher, music classes, guitar classes, keyboard classes, vocal classes, music academy,
                music school, tabla classes, piano classes]
     queries: [music classes, guitar classes]
@@ -708,7 +708,7 @@ category_rules:
     osm_weak_tags: [amenity=music_school]
     osm_name_regex: "music|guitar|tabla|sangeet|vocal|piano"
   Competitive Exam Coaching:
-    dialnfind: {category: tutors, subcategory: competitive-exam-coaching}
+    kaajva: {category: tutors, subcategory: competitive-exam-coaching}
     keywords: [competitive exam coaching, jee coaching, neet coaching, wbcs coaching, ssc coaching,
                bank coaching, upsc coaching, entrance exam coaching, test preparation]
     queries: [NEET coaching, JEE coaching, competitive exam coaching]
@@ -718,7 +718,7 @@ category_rules:
 
   # --- Beauty & Salon --------------------------------------------------------------------------
   Beauty & Salon:
-    dialnfind: {category: beauty-salon}
+    kaajva: {category: beauty-salon}
     keywords: [beauty parlour, beauty parlor, beauty salon, salon, unisex salon, hair salon, beauty studio,
                beauty care, makeover, nail studio, nail art]
     queries: [beauty parlour, salon]
@@ -729,14 +729,14 @@ category_rules:
     osm_weak_tags: [shop=hairdresser]
     osm_name_regex: "salon|parlou?r|beauty|makeover"
   Salon at Home (Women):
-    dialnfind: {category: beauty-salon, subcategory: salon-at-home-women}
+    kaajva: {category: beauty-salon, subcategory: salon-at-home-women}
     keywords: [salon at home, beauty services at home, home salon, parlour at home, beautician at home,
                home service beautician]
     queries: [salon at home, beautician at home]
     overture_weak: [beauty_salon, makeup_artist]
     osm_name_regex: "at home|home salon|doorstep"
   Men's Grooming:
-    dialnfind: {category: beauty-salon, subcategory: men-s-grooming}
+    kaajva: {category: beauty-salon, subcategory: men-s-grooming}
     keywords: [men's salon, mens salon, gents salon, gents parlour, barber, barber shop, men's grooming,
                hair cutting salon, unisex salon]
     queries: [mens salon, barber shop]
@@ -746,7 +746,7 @@ category_rules:
     fsq: [barbershop]
     osm_name_regex: "gents|\\bmen'?s\\b|barber|unisex|hair ?cut"
   Bridal Makeup:
-    dialnfind: {category: beauty-salon, subcategory: bridal-makeup}
+    kaajva: {category: beauty-salon, subcategory: bridal-makeup}
     keywords: [bridal makeup, bridal make up, makeup artist, make up artist, party makeup, hd makeup,
                airbrush makeup, bridal studio]
     queries: [bridal makeup artist, makeup artist]
@@ -755,7 +755,7 @@ category_rules:
     fsq: [makeup artist]
     osm_name_regex: "bridal|make ?up|mua\\b"
   Spa & Massage:
-    dialnfind: {category: beauty-salon, subcategory: spa-and-massage}
+    kaajva: {category: beauty-salon, subcategory: spa-and-massage}
     keywords: [spa, day spa, massage, body massage, massage therapy, ayurvedic massage, thai spa]
     queries: [spa, massage centre]
     osm_tags: [shop=massage, leisure=spa]
@@ -767,7 +767,7 @@ category_rules:
 
   # --- Vehicle Repair --------------------------------------------------------------------------
   Vehicle Repair:
-    dialnfind: {category: vehicle-repair}
+    kaajva: {category: vehicle-repair}
     keywords: [garage, auto repair, vehicle repair, automobile repair, automobile service, motor works,
                auto works, mechanic, service station, workshop]
     queries: [vehicle repair garage, auto repair]
@@ -779,7 +779,7 @@ category_rules:
     osm_name_regex: "garage|auto ?(works|care|repair|service|mobile)|automobile|motor works|mechanic|service station|workshop"
     negative_keywords: [restaurant, cafe, café, hotel, dhaba, bar, kitchen, bakery, resort]
   Car Service:
-    dialnfind: {category: vehicle-repair, subcategory: car-service}
+    kaajva: {category: vehicle-repair, subcategory: car-service}
     keywords: [car service, car repair, car servicing, car mechanic, car workshop, four wheeler service,
                car garage, denting painting, car denting, car body repair]
     queries: [car service, car repair workshop]
@@ -791,7 +791,7 @@ category_rules:
     osm_name_regex: "\\bcar\\b|four wheeler|4 ?wheeler|dent(ing)?"
     negative_keywords: [restaurant, cafe, hotel, rental, rent a car, travels, tour]
   Bike Service:
-    dialnfind: {category: vehicle-repair, subcategory: bike-service}
+    kaajva: {category: vehicle-repair, subcategory: bike-service}
     keywords: [bike service, bike repair, bike servicing, two wheeler service, two wheeler repair,
                motorcycle repair, scooter repair, bike mechanic, bike garage]
     queries: [bike service center, bike repair]
@@ -802,7 +802,7 @@ category_rules:
     osm_weak_tags: [shop=motorcycle, shop=bicycle]
     osm_name_regex: "\\bbikes?\\b|motorcycle|scooter|two wheeler|2 ?wheeler|honda|hero|bajaj|tvs|yamaha|royal enfield"
   Car Wash & Detailing:
-    dialnfind: {category: vehicle-repair, subcategory: car-wash-and-detailing}
+    kaajva: {category: vehicle-repair, subcategory: car-wash-and-detailing}
     keywords: [car wash, car washing, car detailing, car spa, ceramic coating, car polish, foam wash,
                bike wash, auto detailing]
     queries: [car wash, car detailing]
@@ -812,7 +812,7 @@ category_rules:
     fsq: [car wash]
     osm_name_regex: "car wash|detailing|car spa|ceramic|car care"
   Tyre & Puncture:
-    dialnfind: {category: vehicle-repair, subcategory: tyre-and-puncture}
+    kaajva: {category: vehicle-repair, subcategory: tyre-and-puncture}
     keywords: [tyre repair, tire repair, puncture repair, puncture shop, wheel alignment, wheel balancing,
                tyre shop, tubeless tyre]
     queries: [puncture repair, wheel alignment]
@@ -822,7 +822,7 @@ category_rules:
     fsq: [tire repair shop]
     osm_name_regex: "tyre|tire|puncture|wheel (alignment|balancing)"
   Car AC Repair:
-    dialnfind: {category: vehicle-repair, subcategory: car-ac-repair}
+    kaajva: {category: vehicle-repair, subcategory: car-ac-repair}
     keywords: [car ac repair, car ac service, car air conditioning, car ac gas, auto ac, car ac]
     queries: [car AC repair]
     overture_weak: [automotive_repair, auto_electrical_repair, automotive_service]

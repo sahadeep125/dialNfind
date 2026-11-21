@@ -1,5 +1,5 @@
 # One category rule per line (lines starting with # are ignored).
-# Each name is a rule in config.yaml -> category_rules, mapped to a dialnfind category/subcategory.
+# Each name is a rule in config.yaml -> category_rules, mapped to a kaajva category/subcategory.
 # Category-level rules (e.g. "Electronics Repair") catch businesses without a specific service.
 Electronics Repair
 TV Repair

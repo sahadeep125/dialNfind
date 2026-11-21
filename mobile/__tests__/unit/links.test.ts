@@ -17,6 +17,6 @@ describe("mapWebPath", () => {
 
   it("passes app paths through unchanged", () => {
     expect(mapWebPath("/provider/sharma-tv")).toBe("/provider/sharma-tv");
-    expect(mapWebPath("dialnfind:///review/abc")).toBe("/review/abc");
+    expect(mapWebPath("kaajva:///review/abc")).toBe("/review/abc");
   });
 });

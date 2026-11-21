@@ -2,7 +2,7 @@ import os from "node:os";
 import path from "node:path";
 import { defineConfig } from "vitest/config";
 
-const tmp = path.join(os.tmpdir(), "dialnfind-server-test");
+const tmp = path.join(os.tmpdir(), "kaajva-server-test");
 
 export default defineConfig({
   test: {
@@ -18,7 +18,7 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
       TZ: "UTC",
-      DATABASE_URL: process.env.TEST_DATABASE_URL ?? "postgresql://dialnfind:dialnfind@localhost:5432/dialnfind_test?schema=public",
+      DATABASE_URL: process.env.TEST_DATABASE_URL ?? "postgresql://kaajva:kaajva@localhost:5432/kaajva_test?schema=public",
       JWT_SECRET: "test-secret-that-is-long-enough-for-anything-0123456789",
       PORT: "4000",
       SESSION_DAYS: "30",
@@ -43,12 +43,12 @@ export default defineConfig({
       GEOCODER_COUNTRY: "in",
       GEOCODER_ENABLED: "true",
       GOOGLE_CLIENT_IDS: "google-web,google-ios",
-      APPLE_CLIENT_IDS: "com.dialnfind.app,com.dialnfind.web",
-      APPLE_SERVICES_ID: "com.dialnfind.web",
+      APPLE_CLIENT_IDS: "com.kaajva.app,com.kaajva.web",
+      APPLE_SERVICES_ID: "com.kaajva.web",
       APPLE_TEAM_ID: "",
       APPLE_KEY_ID: "",
       APPLE_PRIVATE_KEY: "",
-      APPLE_APP_REDIRECT_SCHEMES: "dialnfind,dialnfind-business",
+      APPLE_APP_REDIRECT_SCHEMES: "kaajva,kaajva-business",
       RAZORPAY_KEY_ID: "rzp_test_key",
       RAZORPAY_KEY_SECRET: "rzp_test_secret",
       RAZORPAY_WEBHOOK_SECRET: "rzp_webhook_secret",

@@ -61,7 +61,7 @@ export async function downloadCsv(entity: string, filters: Record<string, string
     const body = await res.json().catch(() => null);
     throw new ApiError(res.status, body?.error?.message ?? "Could not download the file", body?.error?.code);
   }
-  const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? `dialnfind-${entity}.csv`;
+  const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? `kaajva-${entity}.csv`;
   const url = URL.createObjectURL(await res.blob());
   const a = Object.assign(document.createElement("a"), { href: url, download: name });
   document.body.append(a);

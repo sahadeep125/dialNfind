@@ -129,7 +129,7 @@ describe("old subcategory links", () => {
 describe("well-known and metadata routes", () => {
   it("serves app link files", async () => {
     const apple = await aasa().json();
-    expect(apple.applinks.details[0].appIDs[0]).toMatch(/com\.dialnfind\.app$/);
+    expect(apple.applinks.details[0].appIDs[0]).toMatch(/com\.kaajva\.app$/);
     expect(await assetlinks().json()).toEqual([]);
     vi.resetModules();
     vi.stubEnv("ANDROID_SHA256_CERT_FINGERPRINTS", "AA:BB");

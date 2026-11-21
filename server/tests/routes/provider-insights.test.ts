@@ -98,7 +98,7 @@ describe("provider leads", () => {
     const { user } = await setup();
     const res = await (await authed(user)).get("/api/v1/provider/leads/export.csv");
     expect(res.headers["content-type"]).toBe("text/csv; charset=utf-8");
-    expect(res.headers["content-disposition"]).toMatch(/dialnfind-leads-\d{4}-\d{2}-\d{2}\.csv/);
+    expect(res.headers["content-disposition"]).toMatch(/kaajva-leads-\d{4}-\d{2}-\d{2}\.csv/);
     const text = res.text;
     expect(text.startsWith("﻿\"Date\"")).toBe(true);
     expect(text).toContain(`"'=cmd TV broken"`);

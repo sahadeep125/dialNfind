@@ -53,7 +53,7 @@ CSV_COLUMNS = [
 REVIEW_COLUMNS = [*CSV_COLUMNS, "review_reasons"]
 
 DISCLAIMER = (
-    "Discovered from public sources. These businesses have NOT joined dialnfind; "
+    "Discovered from public sources. These businesses have NOT joined kaajva; "
     "records are unclaimed and unverified until the business claims its profile."
 )
 

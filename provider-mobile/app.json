@@ -1,15 +1,15 @@
 {
   "expo": {
     "name": "KaajVa Business",
-    "slug": "dialnfind-business",
-    "scheme": "dialnfind-business",
+    "slug": "kaajva-business",
+    "scheme": "kaajva-business",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dialnfind.business",
+      "bundleIdentifier": "com.kaajva.business",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "KaajVa Business uses your location to place your business on the map.",
         "NSPhotoLibraryUsageDescription": "KaajVa Business uses your photos for your logo, cover and past work.",
@@ -22,7 +22,7 @@
       }
     },
     "android": {
-      "package": "com.dialnfind.business",
+      "package": "com.kaajva.business",
       "adaptiveIcon": {
         "backgroundColor": "#355EDD",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -34,7 +34,7 @@
         "ACCESS_FINE_LOCATION"
       ],
       "predictiveBackGestureEnabled": false,
-      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.dialnfind.business",
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.kaajva.business",
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.RECORD_AUDIO"

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from dialnfind.config import ExtractionSettings
-from dialnfind.extraction import (
+from kaajva.config import ExtractionSettings
+from kaajva.extraction import (
     address_from_lines,
     build_website_record,
     hours_from_lines,
@@ -10,7 +10,7 @@ from dialnfind.extraction import (
     phones_from_text,
     select_follow_links,
 )
-from dialnfind.models import Location
+from kaajva.models import Location
 
 FIX = Path(__file__).parent / "fixtures"
 LOC = Location("Siliguri", "West Bengal", "India")

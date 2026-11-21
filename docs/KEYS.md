@@ -106,15 +106,15 @@ Without these, nobody can finish signing up, because the confirmation code is em
 1. Enrol at [developer.apple.com/programs](https://developer.apple.com/programs/). The fee is USD 99 a year. Enrol as an organisation, which needs a D-U-N-S number, so the store shows your company name.
 2. Note the **Team ID** from Membership details: `APPLE_TEAM_ID` (API and Web). The repo currently uses `9HH33XNTUX`; replace it if your team is different.
 3. In **App Store Connect → Apps**, create two apps:
-   - KaajVa, bundle `com.dialnfind.app`
-   - KaajVa Business, bundle `com.dialnfind.business`
+   - KaajVa, bundle `com.kaajva.app`
+   - KaajVa Business, bundle `com.kaajva.business`
 4. For each app, open **App Information** and copy the numeric **Apple ID**. It goes into `submit.production.ios.ascAppId` in that app's `eas.json`.
 5. Accept the **Paid Apps agreement** and add bank and tax details under Agreements. Without them, in-app purchases do not work.
 
 ## 7. Google Play Console account
 
 1. Sign up at [play.google.com/console](https://play.google.com/console). The fee is USD 25, once. It asks for identity verification and, for an organisation, a D-U-N-S number.
-2. Create two apps, with packages `com.dialnfind.app` and `com.dialnfind.business`.
+2. Create two apps, with packages `com.kaajva.app` and `com.kaajva.business`.
 3. Set up a merchant (payments) profile. The business app sells subscriptions, so it needs one.
 4. Create a **service account** for uploading builds:
    1. Google Cloud Console → IAM → Service accounts → create one, then Keys → add a JSON key.
@@ -144,8 +144,8 @@ Full steps are in [social-login.md](social-login.md) § 1. All of this lives in 
 |---|---|
 | OAuth consent screen (published, not in "Testing") | — |
 | **Web client ID** | Web `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, Provider `VITE_GOOGLE_CLIENT_ID`, both apps' `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` |
-| **iOS client ID** for `com.dialnfind.app` | Customer app `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` |
-| **iOS client ID** for `com.dialnfind.business` | Business app `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` |
+| **iOS client ID** for `com.kaajva.app` | Customer app `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` |
+| **iOS client ID** for `com.kaajva.business` | Business app `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` |
 | **Android clients**, one per package and per signing certificate SHA-1 (debug, EAS upload key, Play App Signing) | No value to copy; Google matches on package and SHA-1 |
 | All three client IDs above, comma-separated | API `GOOGLE_CLIENT_IDS` |
 
@@ -156,8 +156,8 @@ Full steps are in [social-login.md](social-login.md) § 2. All of this is done a
 | What | How to get it | Setting |
 |---|---|---|
 | Sign in with Apple on both App IDs | Identifiers → App IDs → enable the capability | — |
-| **Services ID**, e.g. `com.dialnfind.signin` | Identifiers → Services IDs → create one; add your domains and return URLs | API `APPLE_SERVICES_ID`, Web `NEXT_PUBLIC_APPLE_SERVICES_ID`, Provider `VITE_APPLE_SERVICES_ID`, both apps' `EXPO_PUBLIC_APPLE_SERVICES_ID` |
-| Accepted IDs | Both bundle IDs plus the Services ID | API `APPLE_CLIENT_IDS="com.dialnfind.app,com.dialnfind.business,com.dialnfind.signin"` |
+| **Services ID**, e.g. `com.kaajva.signin` | Identifiers → Services IDs → create one; add your domains and return URLs | API `APPLE_SERVICES_ID`, Web `NEXT_PUBLIC_APPLE_SERVICES_ID`, Provider `VITE_APPLE_SERVICES_ID`, both apps' `EXPO_PUBLIC_APPLE_SERVICES_ID` |
+| Accepted IDs | Both bundle IDs plus the Services ID | API `APPLE_CLIENT_IDS="com.kaajva.app,com.kaajva.business,com.kaajva.signin"` |
 | **Key ID** and **.p8 key** | Keys → create a key with Sign in with Apple enabled, then download the `.p8`. You can only download it once. | API `APPLE_KEY_ID`, and API `APPLE_PRIVATE_KEY` (the file contents on one line, with `\n` for each line break) |
 | Return URLs | Web: `https://kaajva.in/login`. Provider: `https://business.kaajva.in/login` | Web `NEXT_PUBLIC_APPLE_REDIRECT_URI`, Provider `VITE_APPLE_REDIRECT_URI` |
 
@@ -210,11 +210,11 @@ Without the two public keys, the business app cannot sell plans.
 
 Optional, but without it you won't hear about crashes. The free tier is enough to start.
 
-1. Create an organisation at [sentry.io](https://sentry.io), with three projects: `dialnfind-web` (Next.js), `dialnfind-app` (React Native) and `dialnfind-business` (React Native).
+1. Create an organisation at [sentry.io](https://sentry.io), with three projects: `kaajva-web` (Next.js), `kaajva-app` (React Native) and `kaajva-business` (React Native).
 2. Copy each project's **DSN** (Project settings → Client Keys):
-   - `dialnfind-web` → Web `NEXT_PUBLIC_SENTRY_DSN`
-   - `dialnfind-app` → customer app `EXPO_PUBLIC_SENTRY_DSN`
-   - `dialnfind-business` → business app `EXPO_PUBLIC_SENTRY_DSN`
+   - `kaajva-web` → Web `NEXT_PUBLIC_SENTRY_DSN`
+   - `kaajva-app` → customer app `EXPO_PUBLIC_SENTRY_DSN`
+   - `kaajva-business` → business app `EXPO_PUBLIC_SENTRY_DSN`
 3. Set these for readable stack traces:
    - `SENTRY_ORG` (the organisation slug) and `SENTRY_PROJECT` (each project's slug) in Web and in each app's EAS environment.
    - An **auth token** (Settings → Auth Tokens, with project write scope) as `SENTRY_AUTH_TOKEN`. In EAS, make it a secret.

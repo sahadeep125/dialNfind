@@ -13,9 +13,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from dialnfind.config import apply_source_selection, load_categories, load_settings  # noqa: E402
-from dialnfind.logging_setup import setup_logging  # noqa: E402
-from dialnfind.pipeline import run_pipeline  # noqa: E402
+from kaajva.config import apply_source_selection, load_categories, load_settings  # noqa: E402
+from kaajva.logging_setup import setup_logging  # noqa: E402
+from kaajva.pipeline import run_pipeline  # noqa: E402
 from tests.fixtures import sites  # noqa: E402
 
 

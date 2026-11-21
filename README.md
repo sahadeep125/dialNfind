@@ -21,8 +21,8 @@ Requirements: Node 22+, pnpm 10, PostgreSQL 16 with the PostGIS extension availa
 
 ```bash
 # 1. Database (any PostgreSQL with PostGIS works)
-createuser -s dialnfind && psql -c "ALTER USER dialnfind PASSWORD 'dialnfind'"
-createdb -O dialnfind dialnfind
+createuser -s kaajva && psql -c "ALTER USER kaajva PASSWORD 'kaajva'"
+createdb -O kaajva kaajva
 
 # 2. Install and configure
 pnpm install
@@ -89,7 +89,7 @@ There is no demo data. A new database (local or production) gets what `pnpm --fi
 - the default categories and subcategories from `server/prisma/data/categories.json`;
 - the real provider listings in `server/prisma/data/providers-*.json`: unclaimed, unverified and live. Many have no email; the business adds one after claiming.
 
-The listings were found by [`dialnfind-provider-discovery/`](dialnfind-provider-discovery/README.md) from open data (OpenStreetMap, Overture Maps and, optionally, Foursquare OS Places, a licensed search API and the businesses' own websites). The bundle is committed, so setting up a database never needs a new scrape. The import is idempotent: every source record is remembered in `provider_sources`, so a listing is imported once, and one the team deleted or edited is left alone. To add a new scrape to a running site, commit the new bundle and deploy, or run `pnpm --filter server db:import-providers`. `BOOTSTRAP_IMPORT_PROVIDERS=false` skips the import.
+The listings were found by [`kaajva-provider-discovery/`](kaajva-provider-discovery/README.md) from open data (OpenStreetMap, Overture Maps and, optionally, Foursquare OS Places, a licensed search API and the businesses' own websites). The bundle is committed, so setting up a database never needs a new scrape. The import is idempotent: every source record is remembered in `provider_sources`, so a listing is imported once, and one the team deleted or edited is left alone. To add a new scrape to a running site, commit the new bundle and deploy, or run `pnpm --filter server db:import-providers`. `BOOTSTRAP_IMPORT_PROVIDERS=false` skips the import.
 
 For the smoke test and the mobile/web walkthroughs, `server/scripts/smoke-fixtures.ts` adds throwaway customer and provider accounts to a test database (never production); they use `SMOKE_PASSWORD`, which the walkthroughs read as `E2E_PASSWORD`.
 

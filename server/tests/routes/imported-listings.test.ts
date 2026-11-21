@@ -35,7 +35,7 @@ const record = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-async function writeBundle(name: string, providers: unknown[], format = "dialnfind-providers/1") {
+async function writeBundle(name: string, providers: unknown[], format = "kaajva-providers/1") {
   const file = path.join(dir, name);
   await writeFile(file, JSON.stringify({ format, providers }));
   return file;
@@ -129,7 +129,7 @@ describe("provider bundle import", () => {
     expect(bundleFiles(path.join(dir, "missing"))).toEqual([]);
     expect(await importProviderBundles([], log)).toEqual({ files: 0, imported: 0, alreadyImported: 0, linkedByPhone: 0, skipped: 0 });
     expect(await importProviderBundles(bundleFiles(dir), log)).toMatchObject({ files: 2, imported: 0 });
-    expect(lines).toContain("Provider import: providers-a.json is not a dialnfind-providers/1 bundle; skipped");
+    expect(lines).toContain("Provider import: providers-a.json is not a kaajva-providers/1 bundle; skipped");
   });
 });
 

@@ -265,11 +265,11 @@ describe("sign in with Google and Apple", () => {
     expect((await api().post("/api/v1/auth/apple").send({ idToken: await appleToken({ sub: "a-4", email: "four@example.com" }) })).status).toBe(201);
   });
   it("bounces the Android web flow back to the app", async () => {
-    const res = await api().post("/api/v1/auth/apple/callback").type("form").send({ state: "dialnfind.abc", id_token: "tok", code: "c", user: "", error: "" });
+    const res = await api().post("/api/v1/auth/apple/callback").type("form").send({ state: "kaajva.abc", id_token: "tok", code: "c", user: "", error: "" });
     expect(res.status).toBe(303);
-    expect(res.headers.location).toBe("dialnfind://auth/apple?state=dialnfind.abc&id_token=tok&code=c");
+    expect(res.headers.location).toBe("kaajva://auth/apple?state=kaajva.abc&id_token=tok&code=c");
     expect((await api().post("/api/v1/auth/apple/callback").type("form").send({ state: "evil.x" })).status).toBe(400);
-    expect((await api().post("/api/v1/auth/apple/callback").type("form").send({ state: "dialnfind" })).status).toBe(400);
+    expect((await api().post("/api/v1/auth/apple/callback").type("form").send({ state: "kaajva" })).status).toBe(400);
     expect((await api().post("/api/v1/auth/apple/callback")).status).toBe(400);
     const saved = env.oauth.appleClientIds;
     env.oauth.appleClientIds = [];
@@ -280,7 +280,7 @@ describe("sign in with Google and Apple", () => {
   it("handles Apple server notifications", async () => {
     stubIdentityFetch();
     const notify = async (events: Record<string, unknown>) =>
-      api().post("/api/v1/auth/apple/notifications").send({ payload: await idToken({ iss: "https://appleid.apple.com", aud: "com.dialnfind.web", events: JSON.stringify(events) } as never) });
+      api().post("/api/v1/auth/apple/notifications").send({ payload: await idToken({ iss: "https://appleid.apple.com", aud: "com.kaajva.web", events: JSON.stringify(events) } as never) });
     const socialOnly = await createUser({ passwordHash: null });
     await prisma.userOAuthAccount.create({ data: { userId: socialOnly.id, provider: "apple", providerUserId: "s1", email: "old@relay" } });
     const session = await tokenFor(socialOnly);

@@ -4,7 +4,7 @@
  * Anything it does not recognise is passed through unchanged.
  */
 export function mapWebPath(input: string): string {
-  // Drop scheme and host: "https://kaajva.in/x", "dialnfind:///x" and "/x" all become "/x".
+  // Drop scheme and host: "https://kaajva.in/x", "kaajva:///x" and "/x" all become "/x".
   const withoutOrigin = input.replace(/^[a-z][a-z0-9+.-]*:\/\/[^/?#]*/i, "");
   const [pathPart = "", query = ""] = withoutOrigin.split("?");
   const path = `/${pathPart.replace(/^\/+/, "").replace(/\/+$/, "")}`;

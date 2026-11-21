@@ -1,11 +1,11 @@
 import httpx
 
-from dialnfind.config import Settings
-from dialnfind.crawler import Crawler
-from dialnfind.models import Location
-from dialnfind.sources.base import SourceContext
-from dialnfind.sources.osm import OSMSource, build_overpass_query, element_matches, element_to_record, pad_bbox
-from dialnfind.state import StateStore
+from kaajva.config import Settings
+from kaajva.crawler import Crawler
+from kaajva.models import Location
+from kaajva.sources.base import SourceContext
+from kaajva.sources.osm import OSMSource, build_overpass_query, element_matches, element_to_record, pad_bbox
+from kaajva.state import StateStore
 
 LOC = Location("Siliguri", "West Bengal", "India")
 PROFILE = {"localities": ["Hakimpara"]}

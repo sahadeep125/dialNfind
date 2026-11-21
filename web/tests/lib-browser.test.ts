@@ -151,7 +151,7 @@ describe("image hosts", () => {
     vi.stubEnv("ANDROID_PACKAGE", "");
     vi.stubEnv("ANDROID_SHA256_CERT_FINGERPRINTS", undefined as never);
     const defaults = await import("@/lib/app-links");
-    expect(defaults.IOS_APP_ID).toBe("9HH33XNTUX.com.dialnfind.app");
+    expect(defaults.IOS_APP_ID).toBe("9HH33XNTUX.com.kaajva.app");
     expect(defaults.ANDROID_FINGERPRINTS).toEqual([]);
   });
   it("config reads its settings from the environment", async () => {

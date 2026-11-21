@@ -70,7 +70,7 @@ class RunStats:
             lines.append("Outputs NOT written (discovery failed); previous files kept. Rerun with --resume.")
         if self.bundle_records or self.bundle_skipped:
             skipped = ", ".join(f"{k}={v}" for k, v in sorted(self.bundle_skipped.items()))
-            lines.append(f"dialnfind bundle: {self.bundle_records} providers" + (f" (left out: {skipped})" if skipped else ""))
+            lines.append(f"kaajva bundle: {self.bundle_records} providers" + (f" (left out: {skipped})" if skipped else ""))
         if self.reject_reasons:
             lines.append("Reject reasons: " + ", ".join(f"{k}={v}" for k, v in sorted(self.reject_reasons.items())))
         return "\n".join(lines)
@@ -328,7 +328,7 @@ def run_pipeline(
             stats.bundle_records, stats.bundle_skipped = write_bundle(
                 main, rules, bundle_path, location, attributions(main)
             )
-            event(log, "EXPORT", "dialnfind bundle (%d providers) -> %s", stats.bundle_records, bundle_path)
+            event(log, "EXPORT", "kaajva bundle (%d providers) -> %s", stats.bundle_records, bundle_path)
         return stats
     finally:
         crawler.close()
