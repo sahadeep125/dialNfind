@@ -23,10 +23,10 @@ export function toGtmEvent(event: string, p: Record<string, unknown> = {}): { ev
       return { event: "view_category", params: { category: p.category, subcategory: p.subcategory } };
     case "provider_viewed":
       return { event: "view_provider", params: { provider_id: p.provider_id, category: p.category, is_claimed: p.is_claimed } };
+    // One per Call or WhatsApp tap. On desktop the same tap also sends phone_number_revealed, which is
+    // left out so a contact is never counted twice.
     case "contact_clicked":
       return { event: "contact_provider", params: { channel: p.channel, provider_id: p.provider_id, category: p.category, contact_source: p.source } };
-    case "phone_number_revealed":
-      return { event: "contact_provider", params: { channel: "reveal", provider_id: p.provider_id, contact_source: p.source } };
     case "signed_up":
       return { event: p.role === "provider" ? "provider_sign_up" : "sign_up", params: { method: p.method } };
     case "review_submitted":
