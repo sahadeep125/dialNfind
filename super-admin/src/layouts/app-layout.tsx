@@ -52,6 +52,8 @@ export interface Overview {
   activeSubscriptions: number;
   leadSeries: { date: string; value: number }[];
   signupSeries: { date: string; value: number }[];
+  /** Live listings by SEO score band; `hidden` are kept out of search engines by the team. */
+  seo: { average: number; good: number; fair: number; poor: number; hidden: number };
 }
 
 export function useOverview() {
@@ -128,7 +130,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                     className={({ isActive }) =>
                       cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                        isActive ? "bg-white/12 text-white" : "text-white/65 hover:bg-white/6 hover:text-white",
+                        isActive ? "bg-white/12 text-white shadow-[inset_3px_0_0_var(--brand-accent)]" : "text-white/65 hover:bg-white/6 hover:text-white",
                       )
                     }
                   >

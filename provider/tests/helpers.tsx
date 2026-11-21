@@ -79,6 +79,35 @@ export const signedIn = (u: Record<string, unknown> = {}, me: Record<string, unk
   return { "/auth/me": { user: user(u) }, "/provider/me": providerMe(me), "/app-config": { config: { support_email: "help@x.co", support_phone: null, terms_url: null, privacy_url: null } } };
 };
 
+/** An SEO report as the API sends it (server/src/services/seo.ts analyzeSeo). */
+export const seoAnalysis = (over: Record<string, unknown> = {}) => ({
+  score: 62,
+  grade: "fair",
+  title: "Sharma TV Repair: TV Repair in Mumbai | KaajVa",
+  description: "Sharma TV Repair: TV Repair in Mumbai (Andheri). We fix TVs and more across the city, quickly and well. Call directly on KaajVa, no booking fee.",
+  titleSource: "automatic",
+  descriptionSource: "automatic",
+  service: "TV Repair",
+  focusKeyword: "tv repair in Mumbai",
+  focusKeywordSource: "automatic",
+  keywords: ["tv repair in Mumbai", "tv repair near me", "Sharma TV Repair Mumbai"],
+  indexable: true,
+  notIndexedReason: null,
+  checks: [
+    { key: "title_length", category: "search", label: "Page title length", status: "pass", weight: 8, earned: 8, message: "47 characters (automatic title)", suggestion: null },
+    { key: "description_length", category: "content", label: "Business description", status: "fail", weight: 10, earned: 2, message: "10 words", suggestion: "Write at least 80 words." },
+    { key: "logo", category: "media", label: "Logo or profile photo", status: "fail", weight: 4, earned: 0, message: "Missing", suggestion: "Upload your logo." },
+    { key: "service_areas", category: "details", label: "Service areas", status: "warn", weight: 3, earned: 2, message: "1 area", suggestion: "List the areas you serve." },
+  ],
+  suggestions: [
+    { key: "description_length", text: "Write at least 80 words.", points: 8 },
+    { key: "logo", text: "Upload your logo.", points: 4 },
+    { key: "service_areas", text: "List the areas you serve.", points: 1 },
+  ],
+  counts: { titleLength: 47, descriptionLength: 140, descriptionWords: 10, keywordDensity: 0, photos: 0, photosWithAltText: 0 },
+  ...over,
+});
+
 export const profile = (over: Record<string, unknown> = {}) => ({
   id: 3,
   slug: "sharma-tv",
@@ -118,6 +147,12 @@ export const profile = (over: Record<string, unknown> = {}) => ({
     { key: "logo", label: "Upload a logo", done: false },
     { key: "hours", label: "Set your working hours", done: true },
   ],
+  seoTitle: null,
+  seoDescription: null,
+  focusKeyword: null,
+  seoKeywords: [],
+  updatedAt: "2026-11-01T00:00:00.000Z",
+  seo: seoAnalysis(),
   ...over,
 });
 

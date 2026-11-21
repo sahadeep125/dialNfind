@@ -32,14 +32,14 @@ export function Shell({ title, subtitle, children }: { title: string; subtitle: 
         <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
         <BusinessIllustration className="relative mx-auto w-96" />
         <h2 className="relative mt-10 max-w-md text-3xl font-bold leading-tight">Grow your local business with KaajVa</h2>
-        <div className="relative mt-6 space-y-3 text-[oklch(0.88_0.03_266)]">
+        <div className="relative mt-6 space-y-3 text-[oklch(0.88_0.03_262.5)]">
           {[
             { icon: PhoneCall, t: "Customers call you directly, no commission" },
             { icon: BadgeCheck, t: "Get verified and rank higher in search" },
             { icon: BarChart3, t: "Track calls, WhatsApp enquiries and reviews" },
           ].map((f) => (
             <div key={f.t} className="flex items-center gap-3">
-              <f.icon className="size-5 text-[oklch(0.8_0.1_200)]" /> {f.t}
+              <f.icon className="size-5 text-brand-accent" /> {f.t}
             </div>
           ))}
         </div>

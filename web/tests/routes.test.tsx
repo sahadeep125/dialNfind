@@ -16,7 +16,6 @@ import { GET as sitemapIndex } from "@/app/sitemap.xml/route";
 import manifest from "@/app/manifest";
 import OgImage from "@/app/opengraph-image";
 import TwitterImage from "@/app/twitter-image";
-import AppleIcon from "@/app/apple-icon";
 import ProviderOg from "@/app/providers/[slug]/opengraph-image";
 import ProviderTwitter from "@/app/providers/[slug]/twitter-image";
 import GuideOg, { generateStaticParams as guideOgParams } from "@/app/guides/[slug]/opengraph-image";
@@ -144,11 +143,11 @@ describe("well-known and metadata routes", () => {
     expect((await sitemap({ id: Promise.resolve("0") })).length).toBeGreaterThan(9);
     expect(await sitemap({ id: Promise.resolve("1") })).toEqual([expect.objectContaining({ url: "https://kaajva.in/providers/a" })]);
     expect(manifest().short_name).toBe("KaajVa");
+    expect(manifest().icons).toContainEqual(expect.objectContaining({ src: "/brand/icon-512-maskable.png", purpose: "maskable" }));
   });
   it("draws the social images", async () => {
     expect((OgImage() as unknown as { markup: string }).markup).toContain("Find trusted local pros");
     expect((TwitterImage() as unknown as { markup: string }).markup).toContain("Find trusted local pros");
-    expect((AppleIcon() as unknown as { markup: string }).markup).toContain("<svg");
     const guide = GUIDES[0]!;
     expect(guideOgParams()).toContainEqual({ slug: guide.slug });
     expect(guideTwitterParams()).toHaveLength(GUIDES.length);

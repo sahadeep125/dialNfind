@@ -1,4 +1,5 @@
 import posthog from "posthog-js";
+import { loadGtm, pushGtmEvent } from "./gtm";
 import type { User } from "./types";
 
 /**
@@ -32,7 +33,12 @@ if (analyticsEnabled) {
   posthog.register({ ...BASE, user_type: "anonymous" });
 }
 
+// Google Tag Manager (GA4 and ad conversions); off unless VITE_GTM_ID is set.
+loadGtm();
+
 export function track(event: string, properties?: Record<string, unknown>): void {
+  // GA4 (through GTM) gets its own short list; it runs even when PostHog is off.
+  pushGtmEvent(event, properties);
   if (!analyticsEnabled) return;
   posthog.capture(event, properties);
 }

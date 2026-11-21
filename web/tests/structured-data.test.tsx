@@ -37,8 +37,8 @@ const provider = {
     { dayOfWeek: 0, day: "Sunday", label: "Closed", openTime: null, closeTime: null, isToday: false },
   ],
   services: [
-    { startingPrice: 249, priceUnit: "per_visit" },
-    { startingPrice: 399, priceUnit: "per_visit" },
+    { startingPrice: 249, priceUnit: "per_visit", category: { id: 1, name: "Electricians", slug: "electricians" }, subcategory: { id: 2, name: "Wiring", slug: "wiring" } },
+    { startingPrice: 399, priceUnit: "per_visit", category: { id: 1, name: "Electricians", slug: "electricians" }, subcategory: null },
   ],
   primaryCategory: { id: 1, name: "Electricians", slug: "electricians" },
 } as unknown as ProviderDetail;
@@ -59,6 +59,16 @@ describe("providerJsonLd", () => {
     expect(ld.priceRange).toBe("₹249-₹399");
     expect(ld.openingHoursSpecification).toEqual([{ "@type": "OpeningHoursSpecification", dayOfWeek: "Monday", opens: "09:00", closes: "19:00" }]);
     expect(ld.review).toHaveLength(1);
+  });
+  it("lists the services with prices and the searches the page targets", () => {
+    expect(ld.hasOfferCatalog.itemListElement[0]).toMatchObject({
+      itemOffered: { "@type": "Service", name: "Wiring", serviceType: "Electricians", areaServed: { "@type": "City", name: "Siliguri" } },
+      priceSpecification: { price: 249, priceCurrency: "INR" },
+    });
+    expect(ld.hasOfferCatalog.itemListElement[1].itemOffered.name).toBe("Electricians");
+    expect(ld).not.toHaveProperty("keywords");
+    const withSeo = providerJsonLd({ ...provider, description: null, shortDescription: "", seo: { title: "T", description: "Electrician in Siliguri.", keywords: ["electrician in Siliguri", "electrician near me"], focusKeyword: "electrician in Siliguri", service: "Electrician", noIndex: false } }, []) as Ld;
+    expect(withSeo).toMatchObject({ keywords: "electrician in Siliguri, electrician near me", knowsAbout: "Electrician", description: "Electrician in Siliguri." });
   });
   it("leaves out the rating when there are no reviews", () => {
     const empty = providerJsonLd({ ...provider, totalReviews: 0 }, []) as Record<string, unknown>;

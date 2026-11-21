@@ -1,4 +1,4 @@
-export { BrandMark } from "./BrandMark";
+export { BrandLogo, BrandMark } from "./BrandMark";
 export { BrandSplash } from "./BrandSplash";
 export { EmptyState } from "./EmptyState";
 export { ErrorState } from "./ErrorState";

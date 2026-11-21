@@ -7,6 +7,7 @@ import {
   CreditCard,
   ExternalLink,
   Images,
+  Search,
   Lock,
   LayoutDashboard,
   LifeBuoy,
@@ -62,6 +63,7 @@ const NAV = [
       { to: "/hours", label: "Working hours", icon: Clock },
       { to: "/areas", label: "Service areas", icon: MapPinned },
       { to: "/portfolio", label: "Photos", icon: Images },
+      { to: "/seo", label: "Search and Google", icon: Search },
       { to: "/verification", label: "Verification", icon: BadgeCheck },
     ],
   },
@@ -99,7 +101,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    isActive ? "bg-white/12 text-white" : "text-white/65 hover:bg-white/6 hover:text-white",
+                    isActive ? "bg-white/12 text-white shadow-[inset_3px_0_0_var(--brand-accent)]" : "text-white/65 hover:bg-white/6 hover:text-white",
                   )
                 }
               >

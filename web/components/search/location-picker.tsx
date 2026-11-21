@@ -84,7 +84,7 @@ export function LocationPicker({
             triggerClassName,
           )}
         >
-          <MapPin className="size-5 shrink-0 text-cta" />
+          <MapPin className="size-5 shrink-0 text-cta-strong" />
           <span className="min-w-0 flex-1">
             <span className={cn("block text-xs font-bold uppercase tracking-wide text-foreground/70", hideLabel && "sr-only")}>Location</span>
             <span className={cn("block truncate", hideLabel ? "text-[15px]" : "mt-0.5 text-base")}>{value.label}</span>

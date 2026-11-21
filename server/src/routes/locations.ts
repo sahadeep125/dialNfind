@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { parse } from "../lib/validate.js";
 import { reversePlace, searchPlaces } from "../services/geocode.js";
+import { slugify } from "../lib/slug.js";
 
 export const locationsRouter = Router();
 
@@ -64,4 +65,41 @@ locationsRouter.get("/reverse", async (req, res) => {
       ? { label: place.label, name: place.name, city: place.city, state: place.state, kind: "current", latitude: lat, longitude: lng }
       : { label: "Current location", name: "Current location", city: "", state: "", kind: "current", latitude: lat, longitude: lng },
   });
+});
+
+/**
+ * GET /locations/category-areas?min=3 — every (category, locality) pair with at least `min` active
+ * listings, for the website's "<service> in <area>" pages and their sitemap. Only localities inside a
+ * city count (a locality equal to the city name adds nothing over the category page). Spellings of the
+ * same locality are merged by their slug and shown with the most common spelling.
+ */
+locationsRouter.get("/category-areas", async (req, res) => {
+  const { min } = parse(z.object({ min: z.coerce.number().int().min(1).max(50).default(3) }), req.query);
+  const rows = await prisma.$queryRaw<{ category: string; category_name: string; area: string; city: string; providers: bigint }[]>`
+    SELECT c.slug AS category, c.name AS category_name, TRIM(p.locality) AS area, p.city, COUNT(DISTINCT p.id) AS providers
+    FROM providers p
+    JOIN provider_services ps ON ps.provider_id = p.id
+    JOIN categories c ON c.id = ps.category_id AND c.is_active
+    WHERE p.status = 'active' AND p.locality IS NOT NULL AND TRIM(p.locality) <> ''
+      AND LOWER(TRIM(p.locality)) <> LOWER(TRIM(p.city))
+    GROUP BY c.slug, c.name, TRIM(p.locality), p.city`;
+
+  const merged = new Map<string, { category: string; categoryName: string; area: string; slug: string; city: string; providers: number; top: number }>();
+  for (const r of rows) {
+    const slug = slugify(r.area);
+    if (!slug) continue;
+    const key = `${r.category}/${slug}`;
+    const count = Number(r.providers);
+    const entry = merged.get(key);
+    if (!entry) merged.set(key, { category: r.category, categoryName: r.category_name, area: r.area, slug, city: r.city, providers: count, top: count });
+    else {
+      entry.providers += count;
+      if (count > entry.top) Object.assign(entry, { area: r.area, city: r.city, top: count });
+    }
+  }
+  const areas = [...merged.values()]
+    .filter((a) => a.providers >= min)
+    .sort((a, b) => b.providers - a.providers || a.category.localeCompare(b.category) || a.slug.localeCompare(b.slug))
+    .map(({ top: _top, ...a }) => a);
+  res.json({ areas });
 });

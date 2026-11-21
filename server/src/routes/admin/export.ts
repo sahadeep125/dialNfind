@@ -34,7 +34,7 @@ const EXPORTS = {
   providers: exporter({
     module: "providers",
     query: providerQuery,
-    header: ["id", "business_name", "phone", "email", "city", "locality", "state", "status", "verification", "claimed_by", "rating", "reviews", "completeness_pct", "created"],
+    header: ["id", "business_name", "phone", "email", "city", "locality", "state", "status", "verification", "claimed_by", "rating", "reviews", "completeness_pct", "seo_score", "hidden_from_search", "created"],
     batch: async (q, afterId, take) =>
       (
         await prisma.provider.findMany({
@@ -45,7 +45,7 @@ const EXPORTS = {
         })
       ).map((p) => ({
         id: p.id,
-        values: [p.id, p.businessName, p.phone, p.email, p.city, p.locality, p.state, p.status, p.verificationStatus, p.user?.email, num(p.avgRating), p.totalReviews, p.profileCompletenessPct, date(p.createdAt)],
+        values: [p.id, p.businessName, p.phone, p.email, p.city, p.locality, p.state, p.status, p.verificationStatus, p.user?.email, num(p.avgRating), p.totalReviews, p.profileCompletenessPct, p.seoScore, p.seoNoIndex ? "yes" : "no", date(p.createdAt)],
       })),
   }),
   users: exporter({

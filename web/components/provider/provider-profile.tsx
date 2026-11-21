@@ -94,8 +94,11 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
   const visibleChips = otherChips.slice(0, 4);
   const extraChips = otherChips.length - visibleChips.length;
 
-  // Cover first, then the portfolio: one list for the banner and the photo viewer.
-  const photos: LightboxPhoto[] = [...(p.coverUrl ? [{ id: "cover", title: p.businessName, imageUrl: p.coverUrl }] : []), ...p.portfolio];
+  // Cover first, then the portfolio: one list for the banner and the photo viewer. The cover's alt text names
+  // the business, its service and the place, as image search reads it.
+  const place = p.locality ? `${p.locality}, ${p.city}` : p.city;
+  const coverAlt = `${p.businessName}, ${p.seo?.service ?? leadChip ?? "local services"} in ${place}`;
+  const photos: LightboxPhoto[] = [...(p.coverUrl ? [{ id: "cover", title: p.businessName, imageUrl: p.coverUrl, altText: coverAlt }] : []), ...p.portfolio];
   const portfolioOffset = p.coverUrl ? 1 : 0;
   const portfolioShown = p.portfolio.slice(0, 8);
   const portfolioMore = p.portfolio.length - portfolioShown.length;
@@ -196,7 +199,7 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
               </div>
 
               <ProfileSection title={`About ${p.businessName}`} className="border-t-0">
-                <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground/80">{p.description ?? "This provider has not added a description yet."}</p>
+                <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground/80">{p.description || fallbackDescription(p)}</p>
               </ProfileSection>
 
               <ProfileSection id="services">
@@ -225,7 +228,7 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
                         >
                           <Image
                             src={item.imageUrl}
-                            alt={item.title || p.businessName}
+                            alt={item.altText || item.title || p.businessName}
                             fill
                             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                             sizes="(min-width: 640px) 16vw, 45vw"
@@ -359,7 +362,7 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
               {!p.isClaimed && (
                 <div className="rounded-lg border border-dashed bg-card p-5">
                   <div className="flex items-center gap-2 font-semibold">
-                    <Store className="size-4 text-cta" /> Is this your business?
+                    <Store className="size-4 text-cta-strong" /> Is this your business?
                   </div>
                   <p className="mt-1.5 text-sm text-muted-foreground">Claim it for free to update details, reply to reviews and see who is calling.</p>
                   <Button asChild size="sm" variant="outline" className="mt-3">
@@ -382,4 +385,17 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
       </div>
     </ProviderViewerState>
   );
+}
+
+/**
+ * A plain summary for listings whose owner has not written one yet, built from facts on the listing, so the
+ * page is not a near-empty template to visitors and search engines.
+ */
+export function fallbackDescription(p: ProviderDetail): string {
+  const place = p.locality ? `${p.locality}, ${p.city}` : p.city;
+  const category = p.primaryCategory?.name.toLowerCase() ?? "local services";
+  const names = Array.from(new Set(p.services.map((s) => s.subcategory?.name ?? s.category.name))).slice(0, 4);
+  const offers = names.length ? ` Services listed include ${names.join(", ").toLowerCase()}.` : "";
+  const where = p.addressLine ? ` You can find them at ${p.addressLine}.` : "";
+  return `${p.businessName} is a ${category} business in ${place}.${offers}${where} Call or WhatsApp ${p.businessName} directly from this page to ask about prices and availability; KaajVa adds no booking fee.`;
 }

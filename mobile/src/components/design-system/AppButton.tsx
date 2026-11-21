@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
-  raised: { boxShadow: "0 4px 12px rgba(53, 94, 221, 0.22)" },
+  raised: { boxShadow: "0 4px 12px rgba(4, 33, 97, 0.24)" },
   raisedSuccess: { boxShadow: "0 4px 12px rgba(0, 152, 108, 0.22)" },
   lgLabel: { fontSize: 16 },
 });

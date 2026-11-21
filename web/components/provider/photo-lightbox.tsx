@@ -11,6 +11,8 @@ export interface LightboxPhoto {
   id: number | string;
   title: string;
   imageUrl: string;
+  /** Alt text that says what the photo shows, who did the work and where; the title when missing. */
+  altText?: string;
 }
 
 const LightboxContext = createContext<(index: number) => void>(() => undefined);
@@ -47,7 +49,7 @@ export function PhotoLightbox({ photos, businessName, children }: { photos: Ligh
                 Photo {index! + 1} of {count}
               </DialogDescription>
               <div className="relative h-[70dvh] overflow-hidden rounded-xl bg-black">
-                <Image src={photo.imageUrl} alt={photo.title || businessName} fill className="object-contain" sizes="(min-width: 1024px) 64rem, 100vw" unoptimized={!isOptimizableImage(photo.imageUrl)} />
+                <Image src={photo.imageUrl} alt={photo.altText || photo.title || businessName} fill className="object-contain" sizes="(min-width: 1024px) 64rem, 100vw" unoptimized={!isOptimizableImage(photo.imageUrl)} />
                 {count > 1 && (
                   <>
                     <NavButton side="left" onClick={() => step(-1)} />

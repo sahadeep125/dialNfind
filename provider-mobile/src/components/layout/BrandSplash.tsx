@@ -15,7 +15,7 @@ import Animated, {
 
 import { AppText } from "@/components/design-system";
 import { palette } from "@/constants/colors";
-import { BrandMark } from "./BrandMark";
+import { BrandLogo, BrandMark } from "./BrandMark";
 
 interface Props {
   onFinish: () => void;
@@ -23,18 +23,18 @@ interface Props {
 
 const SPLASH_MS = 1200;
 
-/** Deep indigo backdrop with a soft light behind the mark. Starts on the native splash color, so the handover is seamless. */
+/** Deep navy backdrop with a soft light behind the mark. Starts on the native splash color, so the handover is seamless. */
 function Backdrop() {
   return (
     <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
       <Defs>
         <LinearGradient id="splash-bg" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={palette.indigo900} />
-          <Stop offset="1" stopColor="#0C1638" />
+          <Stop offset="0" stopColor={palette.navy500} />
+          <Stop offset="1" stopColor={palette.navy900} />
         </LinearGradient>
         <RadialGradient id="splash-glow" cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor={palette.indigo500} stopOpacity="0.55" />
-          <Stop offset="1" stopColor={palette.indigo500} stopOpacity="0" />
+          <Stop offset="0" stopColor={palette.navy400} stopOpacity="0.45" />
+          <Stop offset="1" stopColor={palette.navy400} stopOpacity="0" />
         </RadialGradient>
       </Defs>
       <Rect width="100%" height="100%" fill="url(#splash-bg)" />
@@ -70,9 +70,7 @@ export function BrandSplash({ onFinish }: Props) {
           <BrandMark size={76} tone="inverse" />
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(160).duration(420)} style={styles.copy}>
-          <AppText variant="display" tone="white" align="center">
-            KaajVa
-          </AppText>
+          <BrandLogo tone="white" height={40} />
           <View style={styles.pill}>
             <AppText variant="overline" style={styles.pillText}>
               FOR BUSINESS
@@ -98,7 +96,7 @@ export function BrandSplash({ onFinish }: Props) {
 }
 
 const styles = StyleSheet.create({
-  fill: { backgroundColor: palette.indigo900, flex: 1 },
+  fill: { backgroundColor: palette.navy500, flex: 1 },
   center: { alignItems: "center", flex: 1, gap: 18, justifyContent: "center", padding: 24 },
   copy: { alignItems: "center", gap: 10 },
   pill: {
@@ -109,7 +107,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
-  pillText: { color: "#C9D7FC", letterSpacing: 1.6 },
+  pillText: { color: "#FFB066", letterSpacing: 1.6 },
   tagline: { color: "rgba(255,255,255,0.7)" },
   footer: { alignItems: "center", gap: 12, paddingHorizontal: 64 },
   track: {

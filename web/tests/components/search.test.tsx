@@ -446,7 +446,8 @@ describe("CategoryListing", () => {
     const fetch = mockApi({ "/search/providers": response({ total: 1, results: [provider()] }) });
     render(await CategoryListing({ category: cat(), searchParams: { radius: "10", lat: "1", lng: "2", loc: "Andheri", view: "list", page: "1" } }));
     expect(screen.getByText(/1 pro/)).toBeInTheDocument();
-    expect(new URL(String(fetch.mock.calls[0]![0])).searchParams.get("radiusKm")).toBe("10");
+    const search = fetch.mock.calls.map(([u]) => new URL(String(u))).find((u) => u.pathname.endsWith("/search/providers"))!;
+    expect(search.searchParams.get("radiusKm")).toBe("10");
     expect(screen.getByRole("link", { name: "TV Repair" })).toHaveAttribute("href", "/services/electronics-repair/tv-repair?lat=1&lng=2&loc=Andheri&view=list");
     expect(screen.getByText(/5 electronics repair professionals listed/)).toBeInTheDocument();
   });

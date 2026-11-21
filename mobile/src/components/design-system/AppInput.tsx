@@ -140,7 +140,7 @@ export const AppInput = forwardRef<TextInput, Props>(function AppInput(
 const styles = StyleSheet.create({
   wrapper: { gap: 6 },
   field: { borderCurve: "continuous", flexDirection: "row", gap: 10 },
-  focusRing: { boxShadow: "0 0 0 4px rgba(53, 94, 221, 0.12)" },
+  focusRing: { boxShadow: "0 0 0 4px rgba(4, 33, 97, 0.14)" },
   topIcon: { paddingTop: 2 },
   input: {
     flex: 1,

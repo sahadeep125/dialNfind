@@ -101,17 +101,19 @@ describe("root layout and error pages", () => {
 });
 
 describe("home and content pages", () => {
-  it("home page with popular searches, or the defaults", async () => {
+  it("home page links its shortcuts to service pages and hides an empty review count", async () => {
     const { default: Home, metadata } = await import("@/app/page");
     expect(metadata.title).toEqual({ absolute: expect.stringContaining("Siliguri") });
-    mockApi({ "/categories": { categories }, "/stats": { providers: 10, categories: 2, cities: 1, reviews: 3 }, "/search/popular": { terms: [{ term: "Fan repair" }] }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
+    mockApi({ "/categories": { categories }, "/stats": { providers: 10, categories: 2, cities: 1, reviews: 3 }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
     const { unmount } = await renderAsync(await Home());
-    expect(screen.getByRole("link", { name: "Fan repair" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Bike service" })).toHaveAttribute("href", "/services/vehicle-repair/bike-service");
     expect(screen.getByRole("link", { name: "TV Repair near me" })).toBeInTheDocument();
+    expect(screen.getByText("3+ customer reviews")).toBeInTheDocument();
     unmount();
-    mockApi({ "/categories": { categories: [] }, "/stats": { providers: 0, categories: 0, cities: 0, reviews: 0 }, "/search/popular": { terms: [] }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
+    mockApi({ "/categories": { categories: [] }, "/stats": { providers: 0, categories: 0, cities: 0, reviews: 0 }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
     await renderAsync(await Home());
-    expect(screen.getByRole("link", { name: "RO service" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Beauty parlour" })).toHaveAttribute("href", "/services/beauty-salon");
+    expect(screen.queryByText("0+ customer reviews")).not.toBeInTheDocument();
   });
   it("promo banners show store badges when configured", async () => {
     vi.resetModules();
@@ -282,6 +284,36 @@ describe("search and service pages", () => {
     await renderAsync(await sub.default({ params: sp({ category: "electronics-repair", sub: "tv%2Drepair" }), searchParams: sp({}) }));
     expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toHaveTextContent("TV Repair");
   });
+  it("area pages and the area links on category pages", async () => {
+    const cat = await import("@/app/services/[category]/page");
+    const page = await import("@/app/services/[category]/in/[area]/page");
+    const areas = [
+      { category: "electronics-repair", categoryName: "Electronics Repair", area: "Hakimpara", slug: "hakimpara", city: "Siliguri", providers: 4 },
+      { category: "electronics-repair", categoryName: "Electronics Repair", area: "Sevoke Road", slug: "sevoke-road", city: "Siliguri", providers: 3 },
+    ];
+    const fetch = mockApi({
+      "/categories/electronics-repair": { category: categories[0] },
+      "/locations/category-areas": { areas },
+      "/search/providers": searchResponse(),
+    });
+    const meta = await page.generateMetadata({ params: sp({ category: "electronics-repair", area: "hakimpara" }) });
+    expect(meta.title).toBe("Mobile & TV Repair in Hakimpara, Siliguri");
+    expect(meta.alternates).toEqual({ canonical: "/services/electronics-repair/in/hakimpara" });
+    expect((await page.generateMetadata({ params: sp({ category: "electronics-repair", area: "nowhere" }) })).robots).toEqual({ index: false, follow: true });
+    await expect(page.default({ params: sp({ category: "electronics-repair", area: "nowhere" }), searchParams: sp({}) })).rejects.toBeInstanceOf(NotFoundError);
+    const a = await renderAsync(await page.default({ params: sp({ category: "electronics-repair", area: "hakimpara" }), searchParams: sp({}) }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Mobile & TV Repair in Hakimpara, Siliguri");
+    expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toHaveTextContent("Hakimpara");
+    expect(screen.getByRole("link", { name: "Mobile & TV Repair in Sevoke Road" })).toHaveAttribute("href", "/services/electronics-repair/in/sevoke-road");
+    // Listings come from the locality, not from a radius around the visitor.
+    const search = fetch.mock.calls.map(([u]) => new URL(String(u), "http://x")).find((u) => u.pathname.endsWith("/search/providers"))!;
+    expect(search.searchParams.get("area")).toBe("Hakimpara");
+    expect(search.searchParams.get("lat")).toBeNull();
+    a.unmount();
+    await renderAsync(await cat.default({ params: sp({ category: "electronics-repair" }), searchParams: sp({}) }));
+    expect(screen.getByRole("heading", { name: "Mobile & TV Repair by area" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Mobile & TV Repair in Hakimpara" })).toHaveAttribute("href", "/services/electronics-repair/in/hakimpara");
+  });
 });
 
 describe("provider profile page", () => {
@@ -308,6 +340,29 @@ describe("provider profile page", () => {
     expect(String(bare.description)).toMatch(/^Local services in Mumbai\. Call/);
     mockApi(routes({ description: null, shortDescription: "Short text" }));
     expect(String((await page.generateMetadata({ params: sp({ slug: "shop" }) })).description)).toContain("Short text");
+    // The API's SEO text wins: the title is used whole (it already ends in the brand) and carries the keywords.
+    const seo = { title: "Sharma TV Repair: TV Repair in Mumbai | KaajVa", description: "Sharma TV Repair: TV Repair in Mumbai (Andheri).", keywords: ["tv repair in Mumbai", "tv repair near me"], focusKeyword: "tv repair in Mumbai", service: "TV Repair", noIndex: false };
+    mockApi(routes({ seo }));
+    const tuned = await page.generateMetadata({ params: sp({ slug: "shop" }) });
+    expect(tuned).toMatchObject({ title: { absolute: seo.title }, description: seo.description, keywords: seo.keywords, alternates: { canonical: "/providers/shop" }, openGraph: { title: seo.title } });
+    expect(tuned).not.toHaveProperty("robots");
+    mockApi(routes({ seo: { ...seo, noIndex: true } }));
+    expect((await page.generateMetadata({ params: sp({ slug: "shop" }) })).robots).toEqual({ index: false, follow: true });
+  });
+  it("describes photos for image search", async () => {
+    const { default: Page } = await import("@/app/providers/[slug]/page");
+    const seo = { title: "T | KaajVa", description: "D", keywords: [], focusKeyword: "tv repair in Mumbai", service: "TV Repair", noIndex: false };
+    mockApi(routes({ seo, coverUrl: "https://img.test/cover.webp", portfolio: [{ id: 1, title: "Panel swap", altText: "Panel swap by Sharma TV Repair, Mumbai", description: null, imageUrl: "https://img.test/1.webp", category: null }] }));
+    const a = await renderAsync(await Page({ params: sp({ slug: "shop" }) }));
+    await act(async () => undefined);
+    expect(screen.getAllByAltText("Sharma TV Repair, TV Repair in Andheri, Mumbai").length).toBeGreaterThan(0);
+    expect(screen.getAllByAltText("Panel swap by Sharma TV Repair, Mumbai").length).toBeGreaterThan(0);
+    a.unmount();
+    // Without a category or SEO text the cover still says what it is and where.
+    mockApi(routes({ coverUrl: "https://img.test/cover.webp", locality: null, primaryCategory: null, subcategories: [], services: [{ id: 2, category: { id: 1, name: "X", slug: "x" }, subcategory: null, startingPrice: null, priceUnit: "fixed", isPrimary: true }] }));
+    await renderAsync(await Page({ params: sp({ slug: "shop" }) }));
+    await act(async () => undefined);
+    expect(screen.getAllByAltText("Sharma TV Repair, local services in Mumbai").length).toBeGreaterThan(0);
   });
   it("renders a full profile", async () => {
     const { default: Page } = await import("@/app/providers/[slug]/page");
@@ -343,7 +398,7 @@ describe("provider profile page", () => {
     );
     await renderAsync(await Page({ params: sp({ slug: "shop" }) }));
     await act(async () => undefined);
-    expect(screen.getByText("This provider has not added a description yet.")).toBeInTheDocument();
+    expect(screen.getByText(/is a local services business in .* Services listed include x\./)).toBeInTheDocument();
     expect(screen.getByText("No reviews yet", { selector: "p" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Similar pros nearby" })).toBeNull();
     mockApi(routes(null));

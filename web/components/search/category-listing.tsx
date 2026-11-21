@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { api, publicApiOrNull } from "@/lib/api";
+import { areaHref, getCategoryAreas, type CategoryArea } from "@/lib/category-areas";
 import type { Category, SearchResponse, Subcategory } from "@/lib/types";
 import { CategoryIcon } from "@/components/site/category-icon";
 import { LocationSwitcher } from "@/components/search/location-switcher";
@@ -20,6 +21,48 @@ import { breadcrumbJsonLd, faqJsonLd, itemListJsonLd } from "@/lib/structured-da
 
 export const getCategory = (slug: string) =>
   publicApiOrNull<{ category: Category }>(`/categories/${encodeURIComponent(slug)}`, { revalidate: 600, tags: ["categories"] });
+
+/** How people search for each category with a place name ("beauty parlours in Hakimpara"). */
+const AREA_NOUN: Record<string, string> = {
+  "beauty-salon": "Beauty Parlours & Salons",
+  "vehicle-repair": "Bike & Car Service",
+  tutors: "Home Tutors",
+  "electronics-repair": "Mobile & TV Repair",
+  "home-appliances": "AC & Appliance Repair",
+  electricians: "Electricians",
+  plumbing: "Plumbers",
+  carpentry: "Carpenters",
+  cleaning: "Cleaning Services",
+  "pest-control": "Pest Control",
+  painting: "Painters",
+  "packers-movers": "Packers & Movers",
+};
+const areaNoun = (category: Category) => AREA_NOUN[category.slug] ?? category.name;
+
+/** Title, description, H1 and intro for a "<service> in <area>" page; written from the area's own listings. */
+function areaCopy(category: Category, area: CategoryArea, names: string[] = [], total = area.providers) {
+  const noun = areaNoun(category);
+  const place = `${area.area}, ${area.city}`;
+  const count = total.toLocaleString("en-IN");
+  const including = names.length ? `, including ${names.slice(0, 3).join(", ")}` : "";
+  return {
+    title: `${noun} in ${place}`,
+    description: clip(
+      `Find ${count} ${noun.toLowerCase()} in ${place} on KaajVa. See addresses, services, hours and reviews, then call or WhatsApp directly. No booking fee.`,
+    ),
+    h1: `${noun} in ${place}`,
+    intro: [
+      `${area.area} has ${count} ${noun.toLowerCase()} listed on KaajVa${including}. Each listing shows the address, the services offered, opening hours and customer reviews where people have left them, so you can choose one close by and call directly.`,
+      `Not the right fit? See all ${noun.toLowerCase()} across ${area.city}, or try one of the nearby areas listed on this page.`,
+    ],
+    faqs: [],
+  };
+}
+
+export function areaMetadata(category: Category, area: CategoryArea): Metadata {
+  const copy = areaCopy(category, area);
+  return pageMetadata({ title: copy.title, description: copy.description, path: areaHref(category.slug, area.slug) });
+}
 
 /** Editorial copy for the page, or text generated from the category when none is written yet. */
 function pageCopy(category: Category, sub: Subcategory | undefined) {
@@ -43,19 +86,30 @@ export function listingMetadata(category: Category, sub: Subcategory | undefined
 }
 
 /** A category page, or one of its subcategories: hero, results near the visitor, then the written guide. */
-export async function CategoryListing({ category, sub, searchParams: sp }: { category: Category; sub?: Subcategory; searchParams: SearchParamsRecord }) {
-  const location = await resolveLocation(sp);
+export async function CategoryListing({
+  category,
+  sub,
+  area,
+  searchParams: sp,
+}: {
+  category: Category;
+  sub?: Subcategory;
+  /** A "<service> in <area>" page: listings in that locality, wherever the visitor is. */
+  area?: CategoryArea;
+  searchParams: SearchParamsRecord;
+}) {
+  const [location, allAreas] = await Promise.all([resolveLocation(sp), sub ? Promise.resolve([] as CategoryArea[]) : getCategoryAreas()]);
+  const areas = allAreas.filter((a) => a.category === category.slug && a.slug !== area?.slug);
   const radiusParam = Number(one(sp.radius));
-  const copy = pageCopy(category, sub);
-  const basePath = serviceHref(category.slug, sub?.slug);
+  const basePath = area ? areaHref(category.slug, area.slug) : serviceHref(category.slug, sub?.slug);
 
   const data = await api<SearchResponse>("/search/providers", {
     query: {
       category: sub ? undefined : category.slug,
       subcategory: sub?.slug,
-      lat: location.latitude,
-      lng: location.longitude,
-      radiusKm: radiusParam > 0 ? radiusParam : undefined,
+      ...(area
+        ? { area: area.area, city: area.city }
+        : { lat: location.latitude, lng: location.longitude, radiusKm: radiusParam > 0 ? radiusParam : undefined }),
       minRating: one(sp.minRating),
       openNow: one(sp.openNow),
       verified: one(sp.verified),
@@ -64,15 +118,21 @@ export async function CategoryListing({ category, sub, searchParams: sp }: { cat
       pageSize: 12,
     },
   });
+  const copy = area ? areaCopy(category, area, data.results.map((r) => r.businessName), data.total) : pageCopy(category, sub);
 
   const crumbs = [
     { name: "Home", path: "/" },
     { name: "Services", path: "/services" },
     { name: category.name, path: serviceHref(category.slug) },
     ...(sub ? [{ name: sub.name, path: basePath }] : []),
+    ...(area ? [{ name: area.area, path: basePath }] : []),
   ];
   const guides = (sub ? guidesForSubcategory(category.slug, sub.slug) : guidesForCategory(category.slug)).slice(0, 4);
-  const related = sub
+  const noun = areaNoun(category).toLowerCase();
+  const areaLinks = areas.slice(0, 20).map((a) => ({ href: areaHref(category.slug, a.slug), label: `${areaNoun(category)} in ${a.area}` }));
+  const related = area
+    ? [{ href: serviceHref(category.slug), label: `All ${noun} in ${area.city}` }, ...areaLinks]
+    : sub
     ? [
         { href: serviceHref(category.slug), label: `All ${category.name.toLowerCase()}` },
         ...category.subcategories.filter((s) => s.slug !== sub.slug).map((s) => ({ href: serviceHref(category.slug, s.slug), label: s.name })),
@@ -95,11 +155,11 @@ export async function CategoryListing({ category, sub, searchParams: sp }: { cat
             <ChevronRight className="size-3.5" aria-hidden />
             <Link href="/services" className="hover:text-foreground">Services</Link>
             <ChevronRight className="size-3.5" aria-hidden />
-            {sub ? (
+            {sub || area ? (
               <>
                 <Link href={serviceHref(category.slug)} className="hover:text-foreground">{category.name}</Link>
                 <ChevronRight className="size-3.5" aria-hidden />
-                <span aria-current="page" className="font-medium text-foreground">{sub.name}</span>
+                <span aria-current="page" className="font-medium text-foreground">{sub?.name ?? area?.area}</span>
               </>
             ) : (
               <span aria-current="page" className="font-medium text-foreground">{category.name}</span>
@@ -111,9 +171,11 @@ export async function CategoryListing({ category, sub, searchParams: sp }: { cat
         image={categoryImage(category.slug)}
       >
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="[&>div]:h-12">
-            <LocationSwitcher location={location} />
-          </div>
+          {!area && (
+            <div className="[&>div]:h-12">
+              <LocationSwitcher location={location} />
+            </div>
+          )}
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <CategoryIcon slug={category.slug} className="size-8 rounded-md" iconClassName="size-4" />
             {category.providerCount.toLocaleString("en-IN")} {category.name.toLowerCase()} {category.providerCount === 1 ? "professional" : "professionals"} listed
@@ -139,11 +201,18 @@ export async function CategoryListing({ category, sub, searchParams: sp }: { cat
             <span className="font-bold text-foreground">
               {data.total.toLocaleString("en-IN")} {data.total === 1 ? "pro" : "pros"}
             </span>{" "}
-            for {(sub ? sub.name : category.name).toLowerCase()}{" "}
-            within {data.radiusKm} km of {location.label}
+            {area ? (
+              <>
+                for {noun} in {area.area}, {area.city}
+              </>
+            ) : (
+              <>
+                for {(sub ? sub.name : category.name).toLowerCase()} within {data.radiusKm} km of {location.label}
+              </>
+            )}
           </h2>
         }
-        origin={{ lat: location.latitude, lng: location.longitude }}
+        origin={area ? null : { lat: location.latitude, lng: location.longitude }}
         radiusKm={data.radiusKm}
         lockedCategory={category}
         lockedSub={sub?.slug}
@@ -151,12 +220,15 @@ export async function CategoryListing({ category, sub, searchParams: sp }: { cat
       />
       {(copy.intro.length > 0 || copy.faqs.length > 0 || guides.length > 0) && (
         <ServiceContent
-          heading={sub ? `About ${sub.name.toLowerCase()} in ${SEO_CITY}` : `About ${category.name.toLowerCase()} in ${SEO_CITY}`}
+          heading={
+            area ? `About ${noun} in ${area.area}` : sub ? `About ${sub.name.toLowerCase()} in ${SEO_CITY}` : `About ${category.name.toLowerCase()} in ${SEO_CITY}`
+          }
           intro={copy.intro}
           faqs={copy.faqs}
           guides={guides}
           related={related}
-          relatedHeading={sub ? `More ${category.name.toLowerCase()} services` : `Popular ${category.name.toLowerCase()} services`}
+          relatedHeading={area ? `More ${noun} nearby` : sub ? `More ${category.name.toLowerCase()} services` : `Popular ${category.name.toLowerCase()} services`}
+          areas={!area && !sub && areaLinks.length ? { heading: `${areaNoun(category)} by area`, links: areaLinks } : undefined}
         />
       )}
     </div>

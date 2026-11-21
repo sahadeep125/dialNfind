@@ -75,14 +75,14 @@ export function LoginPage() {
       <div className="relative hidden overflow-hidden bg-brand-deep p-12 text-white lg:flex lg:flex-col lg:justify-center">
         <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
         <h2 className="relative max-w-md text-3xl font-bold leading-tight">Run the KaajVa marketplace from one place</h2>
-        <div className="relative mt-8 space-y-4 text-[oklch(0.88_0.03_266)]">
+        <div className="relative mt-8 space-y-4 text-[oklch(0.88_0.03_262.5)]">
           {[
             { icon: Store, t: "Approve listings, check documents and manage categories" },
             { icon: LifeBuoy, t: "Answer support tickets from customers and providers" },
             { icon: ShieldCheck, t: "Give each team member only the sections they need" },
           ].map((f) => (
             <div key={f.t} className="flex items-center gap-3">
-              <f.icon className="size-5 shrink-0 text-[oklch(0.8_0.1_200)]" /> {f.t}
+              <f.icon className="size-5 shrink-0 text-brand-accent" /> {f.t}
             </div>
           ))}
         </div>

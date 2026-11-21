@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { ArrowRight, BadgeCheck, CreditCard, KeyRound, LifeBuoy, Megaphone, MessageSquareWarning, PhoneIncoming, Star, Store, Users } from "lucide-react";
+import { ArrowRight, BadgeCheck, CreditCard, KeyRound, LifeBuoy, Megaphone, MessageSquareWarning, PhoneIncoming, Search, Star, Store, Users } from "lucide-react";
 import { useAuth, type Module } from "@/lib/auth";
 import { formatPrice } from "@/lib/format";
 import { useOverview } from "@/layouts/app-layout";
@@ -55,6 +55,14 @@ export function DashboardPage() {
         <StatCard label="Active plans" value={data.activeSubscriptions} icon={CreditCard} to={can("plans") ? "/plans?tab=subscribers" : undefined} />
         <StatCard label="Running promotions" value={data.activeSponsored} icon={Megaphone} to={can("promotions") ? "/promotions" : undefined} />
         <StatCard label="Active tickets" value={data.openTickets} icon={LifeBuoy} tone={data.openTickets ? "warning" : "default"} to={can("support") ? "/support" : undefined} />
+        <StatCard
+          label="Average SEO score"
+          value={`${data.seo.average}/100`}
+          hint={`${data.seo.good} good · ${data.seo.fair} need work · ${data.seo.poor} poor${data.seo.hidden ? ` · ${data.seo.hidden} hidden` : ""}`}
+          icon={Search}
+          tone={data.seo.average >= 80 ? "success" : data.seo.average >= 50 ? "default" : "warning"}
+          to={can("providers") ? "/providers?status=active&sort=seo_asc" : undefined}
+        />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

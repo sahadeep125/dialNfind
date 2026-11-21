@@ -20,6 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SeoEditor, type SeoFields } from "@/components/seo-editor";
+import type { SeoAnalysis } from "@/lib/seo";
 
 // Ownership --------------------------------------------------------------------------------------
 
@@ -151,6 +153,8 @@ export function DeleteListingPanel({ providerId, businessName }: { providerId: n
 
 interface Profile {
   id: number;
+  slug: string;
+  updatedAt: string;
   businessName: string;
   description: string | null;
   businessType: "individual" | "company";
@@ -173,6 +177,12 @@ interface Profile {
   businessHours: { dayOfWeek: number; openTime: string | null; closeTime: string | null; is24x7: boolean }[];
   serviceAreas: { areaName: string; pincode: string | null }[];
   services: { categoryId: number; subcategoryId: number | null; startingPrice: number | null; priceUnit: string; isPrimary: boolean }[];
+  seoTitle: string | null;
+  seoDescription: string | null;
+  focusKeyword: string | null;
+  seoKeywords: string[];
+  seoNoIndex: boolean;
+  seo: SeoAnalysis;
 }
 
 type Details = Pick<Profile, "businessName" | "description" | "businessType" | "yearsExperience" | "phone" | "whatsappNumber" | "email" | "website" | "acceptsCalls" | "acceptsWhatsapp" | "isAvailable">;
@@ -198,6 +208,11 @@ export function ProviderEditPage() {
     void qc.invalidateQueries({ queryKey: ["admin-providers"] });
     toast.success("Saved");
   };
+  // Links to "#seo" (the SEO score in the list) land on that section once the profile has loaded.
+  const loaded = !!data;
+  useEffect(() => {
+    if (loaded && window.location.hash) document.getElementById(window.location.hash.slice(1))?.scrollIntoView();
+  }, [loaded]);
   if (!data) return <PageSkeleton />;
   return (
     <>
@@ -211,12 +226,61 @@ export function ProviderEditPage() {
         <ServicesSection id={id!} profile={data} onSaved={onSaved} />
         <HoursSection id={id!} profile={data} onSaved={onSaved} />
         <AreasSection id={id!} profile={data} onSaved={onSaved} />
+        <SeoSection id={id!} profile={data} onSaved={onSaved} />
       </div>
     </>
   );
 }
 
 type SectionProps = { id: string; profile: Profile; onSaved: (p: { provider: Profile }) => void };
+
+/** Which section of this page fixes each SEO check (server/src/services/seo.ts check keys). */
+const SEO_FIX_SECTION: Record<string, string> = {
+  description_length: "Business details",
+  keyword_intro: "Business details",
+  keyword_density: "Business details",
+  readability: "Business details",
+  business_name: "Business details",
+  contact: "Business details",
+  address: "Location",
+  service_prices: "Services",
+  hours: "Working hours",
+  service_areas: "Service areas",
+  logo: "the provider app (photos)",
+  cover: "the provider app (photos)",
+  photos: "the provider app (photos)",
+  alt_text: "the provider app (photos)",
+};
+
+/** SEO: the search text, the live score and whether search engines may show the page. */
+function SeoSection({ id, profile, onSaved }: SectionProps) {
+  const fields = useMemo<SeoFields>(
+    () => ({ seoTitle: profile.seoTitle, seoDescription: profile.seoDescription, focusKeyword: profile.focusKeyword, seoKeywords: profile.seoKeywords, seoNoIndex: profile.seoNoIndex }),
+    [profile],
+  );
+  const save = useMutation({
+    mutationFn: (body: SeoFields) => api<{ provider: Profile }>(`/admin/providers/${id}/profile`, { method: "PATCH", json: body }),
+    onSuccess: onSaved,
+  });
+  return (
+    <section id="seo" className="scroll-mt-20">
+      <h2 className="mb-1 text-lg font-semibold">Search and Google</h2>
+      <p className="mb-4 text-sm text-muted-foreground">What Google shows for this business, and the SEO score with every check. Aim for 80 or more so the page ranks for “service in Siliguri” searches.</p>
+      <SeoEditor
+        seo={profile.seo}
+        fields={fields}
+        slug={profile.slug}
+        checkPath={`/admin/providers/${id}/seo/check`}
+        onSave={(body) => save.mutate(body)}
+        saving={save.isPending}
+        saveError={save.error ? errorMessage(save.error) : null}
+        allowNoIndex
+        version={profile.updatedAt}
+        action={(key) => (SEO_FIX_SECTION[key] ? <span className="text-xs text-muted-foreground">Fix it in {SEO_FIX_SECTION[key]}.</span> : null)}
+      />
+    </section>
+  );
+}
 
 function DetailsSection({ id, profile, onSaved }: SectionProps) {
   const pick = (p: Profile): Details => ({

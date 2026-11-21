@@ -1,3 +1,4 @@
+import type { SeoAnalysis } from "@/lib/seo";
 export interface User {
   id: number;
   role: "super_admin" | "provider" | "customer";
@@ -96,6 +97,13 @@ export interface ProviderProfile {
   portfolio: PortfolioItem[];
   badges: { badge: { id: number; name: string } }[];
   checklist: ChecklistItem[];
+  seoTitle: string | null;
+  seoDescription: string | null;
+  focusKeyword: string | null;
+  seoKeywords: string[];
+  updatedAt: string;
+  /** The SEO score, checks and Google preview (server/src/services/seo.ts). */
+  seo: SeoAnalysis;
 }
 
 export interface PortfolioItem {

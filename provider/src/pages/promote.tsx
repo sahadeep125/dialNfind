@@ -59,7 +59,7 @@ export function PromotePage() {
         name: order.name,
         description: order.description,
         prefill: order.prefill,
-        theme: { color: "#355EDD" },
+        theme: { color: "#042161" },
       });
       if (!result) {
         track("promotion_checkout_dismissed", props);

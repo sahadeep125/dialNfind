@@ -7,6 +7,7 @@ import { financialYear, splitGst, stateCodeFor, stateName } from "../lib/gst.js"
 import { getNumberSetting, getSetting } from "./settings.js";
 import { mailUser } from "./mail.js";
 import { signedLink } from "../lib/private-files.js";
+import { BRAND_LOGO_PNG, BRAND_LOGO_RATIO } from "../lib/brand-logo.js";
 
 /** Public route for invoice PDFs; links are signed and expire after an hour. */
 export const INVOICE_PDF_ROUTE = "/api/v1/invoice-files";
@@ -145,12 +146,12 @@ export function renderInvoicePdf(invoice: Invoice): Promise<Buffer> {
   doc.on("data", (c: Buffer) => chunks.push(c));
   const done = new Promise<Buffer>((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
 
-  const ink = "#1f2340";
-  const muted = "#6b7090";
+  const ink = "#0f1a3a";
+  const muted = "#5b6478";
   const left = 48;
   const right = doc.page.width - 48;
 
-  doc.fillColor("#2a2f7a").font("Helvetica-Bold").fontSize(20).text("KaajVa", left, 48);
+  doc.image(BRAND_LOGO_PNG, left, 44, { height: 30, width: 30 * BRAND_LOGO_RATIO });
   doc.fillColor(ink).fontSize(14).text(invoice.status === "void" ? "TAX INVOICE (VOID)" : "TAX INVOICE", left, 48, { align: "right" });
   doc.font("Helvetica").fontSize(9).fillColor(muted);
   doc.text(`Invoice no. ${invoice.number}`, { align: "right" });
@@ -168,7 +169,7 @@ export function renderInvoicePdf(invoice: Invoice): Promise<Buffer> {
   party("BILL TO", billedTo, 310, 120);
 
   let y = 230;
-  doc.moveTo(left, y).lineTo(right, y).strokeColor("#e6e8f2").stroke();
+  doc.moveTo(left, y).lineTo(right, y).strokeColor("#e2e8f5").stroke();
   y += 8;
   doc.fillColor(muted).fontSize(8).font("Helvetica-Bold");
   doc.text("DESCRIPTION", left, y);
@@ -183,7 +184,7 @@ export function renderInvoicePdf(invoice: Invoice): Promise<Buffer> {
     doc.text(money(l.taxable), 400, y, { width: right - 400, align: "right" });
     y = Math.max(doc.y, y + 14) + 8;
   }
-  doc.moveTo(left, y).lineTo(right, y).strokeColor("#e6e8f2").stroke();
+  doc.moveTo(left, y).lineTo(right, y).strokeColor("#e2e8f5").stroke();
   y += 10;
 
   const row = (label: string, value: string, bold = false) => {

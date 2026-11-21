@@ -117,12 +117,27 @@ export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
     isPrimary: boolean;
   }[];
   serviceDetails: { label: string; value: string }[];
-  portfolio: { id: number; title: string; description: string | null; imageUrl: string; category: string | null }[];
+  /** altText: the title plus the business and city when it lacks them (server/src/services/seo.ts photoAltText). */
+  portfolio: { id: number; title: string; description: string | null; imageUrl: string; altText?: string; category: string | null }[];
   verifications: { type: string; verifiedAt: string | null }[];
   ratingBreakdown: { rating: number; count: number }[];
   myReview: MyReview | null;
   /** Null when the visitor already reviewed this business (see myReview). */
   reviewEligibility: ReviewEligibility | null;
+  /** Search engine text from the API (server/src/services/seo.ts). Missing only in responses cached before it existed. */
+  seo?: ProviderSeo;
+}
+
+export interface ProviderSeo {
+  /** The full <title>, brand included. */
+  title: string;
+  description: string;
+  keywords: string[];
+  focusKeyword: string;
+  /** "Electrician", "TV Repair": what the page is found for. */
+  service: string;
+  /** Hidden from search engines by the KaajVa team. */
+  noIndex: boolean;
 }
 
 export interface Review {

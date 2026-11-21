@@ -226,7 +226,7 @@ function PhotoForm({ draft, saving, onCancel, onSubmit }: { draft: Draft; saving
           )}
         />
       </Field>
-      <Field id="title" label="Title" error={errors.title} required>
+      <Field id="title" label="Title" error={errors.title} required hint="Say what the photo shows and where, e.g. “Split AC installation in Pradhan Nagar”. Google reads it as the photo's alt text.">
         <Input placeholder="e.g. 55 inch LED panel replacement" {...fieldA11y("title", errors.title)} {...register("title")} />
       </Field>
       <Field id="desc" label="Description" error={errors.description} optional>

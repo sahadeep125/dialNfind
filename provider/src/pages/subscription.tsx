@@ -62,14 +62,15 @@ export function SubscriptionPage() {
         description: session.description,
         prefill: session.prefill,
         notes: session.notes,
-        theme: { color: "#3d4bd6" },
+        theme: { color: "#042161" },
       });
       if (!result) {
         track("checkout_dismissed", props);
         return null;
       }
       await api("/provider/billing/razorpay/verify", { method: "POST", json: result });
-      track("subscription_purchased", props);
+      const amount = plan.prices.find((p) => p.billingCycle === cycle)?.amount ?? plan.price;
+      track("subscription_purchased", { ...props, amount });
       return plan;
     },
     onSuccess: async (plan) => {

@@ -22,8 +22,8 @@ export function organizationJsonLd(contact: { email: string | null; phone: strin
     url: SITE_URL,
     description:
       "KaajVa is a local services directory for Siliguri and North Bengal: find verified electricians, plumbers, AC and TV repair, packers and movers, tutors and more, and call them directly.",
-    // Google wants a raster logo (at least 112px), so the 180px PNG app icon rather than icon.svg.
-    logo: absoluteUrl("/apple-icon"),
+    // Google wants a square raster logo (at least 112px), so the 512px app icon.
+    logo: absoluteUrl("/brand/icon-512.png"),
     image: absoluteUrl("/opengraph-image"),
     email: BUSINESS.infoEmail,
     telephone: phone,
@@ -109,16 +109,33 @@ function priceRange(p: ProviderDetail): string | undefined {
   return lo === hi ? `₹${lo}` : `₹${lo}-₹${hi}`;
 }
 
+/** The services with their starting prices, so search engines can match "<service> in <city>" and show prices. */
+function offerCatalog(p: ProviderDetail): Thing | undefined {
+  if (!p.services.length) return undefined;
+  return {
+    "@type": "OfferCatalog",
+    name: `Services by ${p.businessName}`,
+    itemListElement: p.services.map((s) => ({
+      "@type": "Offer",
+      itemOffered: { "@type": "Service", name: s.subcategory?.name ?? s.category.name, serviceType: s.category.name, areaServed: { "@type": "City", name: p.city } },
+      ...(s.startingPrice ? { priceSpecification: { "@type": "PriceSpecification", price: s.startingPrice, priceCurrency: "INR", minPrice: s.startingPrice } } : {}),
+    })),
+  };
+}
+
 export function providerJsonLd(p: ProviderDetail, reviews: Review[]): Thing {
   const url = absoluteUrl(`/providers/${p.slug}`);
   const images = [p.coverUrl, p.logoUrl, ...p.portfolio.map((i) => i.imageUrl)].filter(Boolean) as string[];
+  const description = p.description || p.shortDescription || p.seo?.description;
+  const catalog = offerCatalog(p);
   return {
     "@context": "https://schema.org",
     "@type": BUSINESS_TYPES[p.primaryCategory?.slug ?? ""] ?? "LocalBusiness",
     "@id": `${url}#business`,
     name: p.businessName,
     url,
-    ...(p.description || p.shortDescription ? { description: p.description || p.shortDescription } : {}),
+    ...(description ? { description } : {}),
+    ...(p.seo ? { keywords: p.seo.keywords.join(", "), knowsAbout: p.seo.service } : {}),
     telephone: p.phone,
     ...(p.email ? { email: p.email } : {}),
     ...(images.length ? { image: images.slice(0, 5) } : {}),
@@ -136,6 +153,7 @@ export function providerJsonLd(p: ProviderDetail, reviews: Review[]): Thing {
       ? p.serviceAreas.map((a) => ({ "@type": "Place", name: a.areaName }))
       : { "@type": "GeoCircle", geoMidpoint: { "@type": "GeoCoordinates", latitude: p.latitude, longitude: p.longitude }, geoRadius: p.serviceRadiusKm * 1000 },
     ...(p.website ? { sameAs: [p.website] } : {}),
+    ...(catalog ? { hasOfferCatalog: catalog } : {}),
     ...(priceRange(p) ? { priceRange: priceRange(p) } : {}),
     ...(openingHours(p) ? { openingHoursSpecification: openingHours(p) } : {}),
     ...(p.totalReviews > 0

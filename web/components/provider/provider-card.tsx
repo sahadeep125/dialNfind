@@ -67,7 +67,7 @@ export function ProviderCard({
             <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-white/95 px-2 py-1 text-xs font-semibold text-foreground shadow-sm">
               {topMatch ? (
                 <>
-                  <Trophy className="size-3.5 text-cta" /> Top match
+                  <Trophy className="size-3.5 text-cta-strong" /> Top match
                 </>
               ) : (
                 <>
@@ -105,7 +105,7 @@ export function ProviderCard({
           {tags.length > 0 && (
             <ul className="mt-2.5 flex flex-wrap gap-1.5" aria-label="Services">
               {tags.slice(0, 3).map((s, i) => (
-                <li key={s} className={cn("rounded-md px-2 py-0.5 text-xs", i === 0 && highlight ? "bg-cta-soft font-medium text-cta-hover" : "bg-muted text-foreground/75")}>
+                <li key={s} className={cn("rounded-md px-2 py-0.5 text-xs", i === 0 && highlight ? "bg-cta-soft font-medium text-cta-strong" : "bg-muted text-foreground/75")}>
                   {s}
                 </li>
               ))}

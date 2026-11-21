@@ -14,6 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Panel } from "@/components/page-header";
+import { useProfile } from "@/layouts/app-layout";
+import { NotIndexedNote, SeoCompletion, SeoScoreRing, GradeLabel } from "@/components/seo";
+import { SEO_CHECK_PAGE } from "@/lib/seo";
 
 interface Dashboard {
   provider: { businessName: string; avgRating: number; totalReviews: number; profileCompletenessPct: number; verificationStatus: string; responseSignal: number | null; favorites: number; city: string; status: string };
@@ -42,6 +45,54 @@ const CHECKLIST_LINKS: Record<string, string> = {
   contact: "/profile",
   verification: "/verification",
 };
+
+/** The SEO score with the next fixes, linking to the SEO page. */
+function SeoCard() {
+  const { data } = useProfile();
+  if (!data) return <Skeleton className="h-56" />;
+  const { seo } = data;
+  return (
+    <Panel
+      title="Google visibility"
+      actions={
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/seo">
+            Details <ArrowRight />
+          </Link>
+        </Button>
+      }
+    >
+      <div className="flex items-center gap-4">
+        <SeoScoreRing score={seo.score} size={76} />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            SEO score <GradeLabel score={seo.score} />
+          </div>
+          <SeoCompletion analysis={seo} />
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Your page targets <span className="font-medium text-foreground">“{seo.focusKeyword}”</span>.
+      </p>
+      <div className="mt-3">
+        <NotIndexedNote analysis={seo} />
+      </div>
+      {seo.suggestions.length > 0 && (
+        <ul className="mt-3 space-y-2">
+          {seo.suggestions.slice(0, 3).map((s) => (
+            <li key={s.key}>
+              <Link to={SEO_CHECK_PAGE[s.key]?.to ?? "/seo"} className="flex items-start gap-2 text-sm hover:text-primary">
+                <Circle className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <span className="line-clamp-2">{seo.checks.find((c) => c.key === s.key)?.label}</span>
+                <span className="ml-auto shrink-0 text-xs font-semibold text-primary tabular-nums">+{s.points}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}
 
 export function DashboardPage() {
   const [days, setDays] = useState(30);
@@ -173,6 +224,7 @@ export function DashboardPage() {
             )}
             <p className="mt-3 text-xs text-white/60">Ranking uses your rating, reviews, verification, profile completeness and how often customers say you responded.</p>
           </div>
+          <SeoCard />
           <Panel title="Profile strength">
             <div className="flex items-center gap-3">
               <Progress value={provider.profileCompletenessPct} className="h-2.5" indicatorClassName={provider.profileCompletenessPct >= 80 ? "bg-success" : "bg-primary"} />
@@ -299,7 +351,7 @@ function Kpi({
   hint: string;
   tone: "primary" | "teal" | "green" | "amber";
 }) {
-  const tones = { primary: "bg-accent text-primary", teal: "bg-[oklch(0.95_0.035_190)] text-[oklch(0.5_0.1_195)]", green: "bg-success-soft text-success", amber: "bg-warning-soft text-[oklch(0.6_0.13_70)]" };
+  const tones = { primary: "bg-accent text-primary", teal: "bg-brand-accent-soft text-brand-accent-strong", green: "bg-success-soft text-success", amber: "bg-warning-soft text-[oklch(0.6_0.13_70)]" };
   return (
     <div className="rounded-2xl border bg-card p-4 shadow-[var(--shadow-soft)] sm:p-5">
       <div className="flex items-center justify-between gap-2">

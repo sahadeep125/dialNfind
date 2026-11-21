@@ -11,15 +11,18 @@ export function pageMetadata({
   path,
   images,
   type = "website",
+  absoluteTitle = false,
 }: {
   title: string;
   description: string;
   path: string;
   images?: { url: string; alt?: string }[];
   type?: "website" | "profile" | "article";
+  /** The title already carries the brand (provider pages), so the " | KaajVa" template is not added again. */
+  absoluteTitle?: boolean;
 }): Metadata {
   return {
-    title,
+    title: absoluteTitle ? { absolute: title } : title,
     description,
     alternates: { canonical: path },
     openGraph: { type, siteName: SITE_NAME, locale: "en_IN", url: path, title, description, ...(images ? { images } : {}) },

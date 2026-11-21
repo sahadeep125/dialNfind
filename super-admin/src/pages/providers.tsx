@@ -1,7 +1,7 @@
 import { useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Award, BadgeCheck, CreditCard, ExternalLink, Loader2, MapPin, Pencil, Phone, Plus, Star, Store, Upload, X } from "lucide-react";
+import { ArrowLeft, Award, BadgeCheck, CreditCard, ExternalLink, EyeOff, Loader2, Search, MapPin, Pencil, Phone, Plus, Star, Store, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { WEB_URL } from "@/lib/config";
@@ -18,6 +18,8 @@ import { emptyPayment, PaymentFields, paymentBody, paymentProblem, type PaymentV
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { NotIndexedNote, SearchPreview, SeoCompletion, SeoReport, SeoScoreBadge, SeoScoreRing } from "@/components/seo";
+import type { SeoAnalysis } from "@/lib/seo";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const STATUS_OPTIONS = [
@@ -28,14 +30,14 @@ const STATUS_OPTIONS = [
 ];
 
 export function ProvidersPage() {
-  const [f, setF] = useUrlState({ q: "", status: "", verification: "", claimed: "", page: "1" });
+  const [f, setF] = useUrlState({ q: "", status: "", verification: "", claimed: "", seo: "", sort: "", page: "1" });
   const qs = new URLSearchParams({ ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)), pageSize: "20" });
   const { data, isLoading } = useQuery({ queryKey: ["admin-providers", qs.toString()], queryFn: () => api<{ providers: ProviderRow[] } & Paged>(`/admin/providers?${qs}`) });
   const selection = useSelection(data?.providers.map((p) => p.id) ?? []);
   const [dialog, setDialog] = useState<"add" | "import" | null>(null);
   const qc = useQueryClient();
   const bulk = useMutation({
-    mutationFn: (action: "approve" | "suspend" | "reject" | "verify") => api<{ updated: number }>("/admin/providers/bulk", { method: "POST", json: { ids: selection.selected, action } }),
+    mutationFn: (action: "approve" | "suspend" | "reject" | "verify" | "hide_from_search" | "show_in_search") => api<{ updated: number }>("/admin/providers/bulk", { method: "POST", json: { ids: selection.selected, action } }),
     onSuccess: ({ updated }) => {
       toast.success(`${updated} listing${updated === 1 ? "" : "s"} updated`);
       selection.clear();
@@ -87,6 +89,28 @@ export function ProvidersPage() {
             { value: "no", label: "Unclaimed" },
           ]}
         />
+        <FilterSelect
+          label="SEO"
+          allLabel="Any SEO score"
+          value={f.seo}
+          onChange={(seo) => setF({ seo, page: "1" })}
+          options={[
+            { value: "good", label: "SEO good (80+)" },
+            { value: "fair", label: "SEO needs work (50-79)" },
+            { value: "poor", label: "SEO poor (under 50)" },
+            { value: "noindex", label: "Hidden from search" },
+          ]}
+        />
+        <FilterSelect
+          label="Sort"
+          allLabel="Newest first"
+          value={f.sort}
+          onChange={(sort) => setF({ sort, page: "1" })}
+          options={[
+            { value: "seo_asc", label: "Lowest SEO first" },
+            { value: "seo_desc", label: "Highest SEO first" },
+          ]}
+        />
         {data && <span className="text-sm text-muted-foreground sm:ml-auto">{data.total.toLocaleString("en-IN")} listings</span>}
       </Toolbar>
       <BulkBar selection={selection} noun="listing">
@@ -96,9 +120,11 @@ export function ProvidersPage() {
             ["verify", "Mark verified"],
             ["suspend", "Suspend"],
             ["reject", "Reject"],
+            ["hide_from_search", "Hide from search"],
+            ["show_in_search", "Show in search"],
           ] as const
         ).map(([action, label]) => (
-          <Button key={action} size="sm" variant={action === "suspend" || action === "reject" ? "outline" : "default"} disabled={bulk.isPending} onClick={() => bulk.mutate(action)}>
+          <Button key={action} size="sm" variant={action === "approve" || action === "verify" ? "default" : "outline"} disabled={bulk.isPending} onClick={() => bulk.mutate(action)}>
             {label}
           </Button>
         ))}
@@ -113,13 +139,14 @@ export function ProvidersPage() {
             <Th>Category</Th>
             <Th>Owner</Th>
             <Th>Rating</Th>
+            <Th>SEO</Th>
             <Th>Status</Th>
             <Th>Added</Th>
           </tr>
         </thead>
         <tbody>
-          {isLoading && <TableSkeleton cols={7} />}
-          {data?.providers.length === 0 && <EmptyRow cols={7} text="No providers match these filters." />}
+          {isLoading && <TableSkeleton cols={8} />}
+          {data?.providers.length === 0 && <EmptyRow cols={8} text="No providers match these filters." />}
           {data?.providers.map((p) => (
             <tr key={p.id} className="hover:bg-muted/40">
               <Td>
@@ -154,6 +181,12 @@ export function ProvidersPage() {
                 )}
               </Td>
               <Td>
+                <Link to={`/providers/${p.id}/edit#seo`} className="inline-flex items-center gap-1.5" aria-label={`SEO score ${p.seoScore}${p.seoNoIndex ? ", hidden from search" : ""}. Open SEO`}>
+                  <SeoScoreBadge score={p.seoScore} />
+                  {p.seoNoIndex && <EyeOff className="size-3.5 text-muted-foreground" aria-hidden />}
+                </Link>
+              </Td>
+              <Td>
                 <StatusBadge status={p.status} label={p.status === "active" ? "Live" : undefined} />
               </Td>
               <Td className="whitespace-nowrap text-muted-foreground">{formatDate(p.createdAt)}</Td>
@@ -164,6 +197,35 @@ export function ProvidersPage() {
       {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
       {!f.status && !f.verification && f.claimed !== "no" && <ProviderSignups key={f.q} q={f.q} />}
     </>
+  );
+}
+
+/** The listing's SEO at a glance: Google preview, score, completion and what to fix first. */
+function ProviderSeoPanel({ providerId, slug, seo }: { providerId: number; slug: string; seo: SeoAnalysis }) {
+  return (
+    <Panel
+      title="Search and Google"
+      description={`Targets “${seo.focusKeyword}”${seo.focusKeywordSource === "automatic" ? " (automatic)" : ""}.`}
+      actions={
+        <Button asChild size="sm" variant="outline">
+          <Link to={`/providers/${providerId}/edit#seo`}>
+            <Pencil /> Edit SEO
+          </Link>
+        </Button>
+      }
+    >
+      <div className="space-y-4">
+        <NotIndexedNote analysis={seo} />
+        <SearchPreview title={seo.title} url={`${WEB_URL.replace(/^https?:\/\//, "")} › providers › ${slug}`} description={seo.description} />
+        <div className="flex items-center gap-4">
+          <SeoScoreRing score={seo.score} size={80} />
+          <div className="min-w-0 flex-1">
+            <SeoCompletion analysis={seo} />
+          </div>
+        </div>
+        <SeoReport analysis={seo} limit={4} showChecks={false} />
+      </div>
+    </Panel>
   );
 }
 
@@ -256,6 +318,7 @@ interface ProviderDetail {
     totalReviews: number;
     profileCompletenessPct: number;
     rankingScore: number;
+    seoNoIndex: boolean;
     isAvailable: boolean;
     createdAt: string;
     claimedAt: string | null;
@@ -286,6 +349,7 @@ interface ProviderDetail {
   };
   stats: { leads30: number; leadsAll: number; openTickets: number };
   recentReviews: { id: number; rating: number; reviewText: string | null; status: string; createdAt: string; user: { name: string } }[];
+  seo: SeoAnalysis;
 }
 
 /** A listing that is not live has no public page; the team gets a short-lived preview link instead. */
@@ -418,6 +482,7 @@ export function ProviderDetailPage() {
         <StatCard label="Leads, last 30 days" value={data.stats.leads30} hint={`${data.stats.leadsAll} all time`} />
         <StatCard label="Rating" value={p.totalReviews ? Number(p.avgRating).toFixed(1) : "None"} hint={`${p.totalReviews} reviews`} />
         <StatCard label="Profile complete" value={`${p.profileCompletenessPct}%`} hint={`Ranking score ${Number(p.rankingScore).toFixed(2)}`} />
+        <StatCard label="SEO score" value={`${data.seo.score}/100`} hint={data.seo.indexable ? `${data.seo.suggestions.length} things to improve` : "Not shown in search"} icon={Search} tone={data.seo.grade === "good" ? "success" : data.seo.grade === "fair" ? "default" : "warning"} to={`/providers/${p.id}/edit#seo`} />
         <StatCard label="Open tickets" value={data.stats.openTickets} />
       </div>
 
@@ -450,6 +515,7 @@ export function ProviderDetailPage() {
               {!p.services.length && <p className="text-sm text-muted-foreground">No services added.</p>}
             </div>
           </Panel>
+          <ProviderSeoPanel providerId={p.id} slug={p.slug} seo={data.seo} />
           <Panel title="Recent reviews">
             {data.recentReviews.length ? (
               <ul className="divide-y">

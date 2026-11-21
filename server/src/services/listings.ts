@@ -7,6 +7,7 @@ import { optionalUploadedImageUrl, releaseFile } from "../storage/references.js"
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "../routes/provider/shared.js";
 import { recalculateCategoryCounts, recalculateProvider } from "./ranking.js";
 import { refreshProviderSlugs } from "./web-cache.js";
+import { seoFieldsSchema } from "./seo.js";
 
 /** Everything needed to create a listing: provider onboarding, admin "Add listing" and CSV import. */
 export const newListingSchema = z.object({
@@ -88,10 +89,14 @@ export const listingProfileSchema = z.object({
   acceptsCalls: z.boolean(),
   acceptsWhatsapp: z.boolean(),
   isAvailable: z.boolean(),
+  ...seoFieldsSchema.shape,
 });
 
+/** The admin team may also hide a profile from search engines; providers' requests drop this field. */
+export const adminListingProfileSchema = listingProfileSchema.extend({ seoNoIndex: z.boolean() });
+
 /** Saves profile changes: a new name or city gets a new slug, and replaced logo or cover files are deleted. */
-export async function updateListingProfile(provider: Provider, body: Partial<z.infer<typeof listingProfileSchema>>) {
+export async function updateListingProfile(provider: Provider, body: Partial<z.infer<typeof adminListingProfileSchema>>) {
   const renamed = (body.businessName && body.businessName !== provider.businessName) || (body.city && body.city !== provider.city);
   const slug = renamed ? await uniqueProviderSlug(body.businessName ?? provider.businessName, body.city ?? provider.city, provider.id) : undefined;
   await prisma.provider.update({ where: { id: provider.id }, data: { ...body, ...(slug ? { slug } : {}) } });

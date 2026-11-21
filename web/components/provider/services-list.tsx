@@ -19,7 +19,7 @@ export function ServicesList({ services }: { services: ProviderDetail["services"
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold">{s.subcategory?.name ?? s.category.name}</span>
-                {s.isPrimary && <span className="rounded bg-cta-soft px-1.5 py-0.5 text-[11px] font-semibold text-cta-hover">Main service</span>}
+                {s.isPrimary && <span className="rounded bg-cta-soft px-1.5 py-0.5 text-[11px] font-semibold text-cta-strong">Main service</span>}
               </div>
               {s.subcategory && <div className="mt-0.5 text-xs text-muted-foreground">{s.category.name}</div>}
             </div>

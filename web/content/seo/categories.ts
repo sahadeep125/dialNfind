@@ -9,9 +9,9 @@ import type { ServiceSeo } from "../types";
  */
 export const CATEGORY_SEO: Record<string, ServiceSeo> = {
   "electronics-repair": {
-    title: `TV, Mobile & Laptop Repair Near Me in ${CITY}`,
-    description: `Find TV repair, mobile repair, laptop repair and CCTV technicians near you in ${CITY}. Compare ratings and prices, then call the technician directly.`,
-    h1: `Electronics repair near you in ${CITY}`,
+    title: `Mobile, TV & Laptop Repair Shops in ${CITY}`,
+    description: `Find mobile repair shops, TV repair, laptop repair and CCTV technicians near you in ${CITY}. Compare ratings and prices, then call the shop directly.`,
+    h1: `Mobile, TV and laptop repair shops in ${CITY}`,
     intro: [
       `Looking for a TV repair shop or a mobile repair technician near you? KaajVa lists local electronics repair experts across ${CITY}, from LED and smart TV repair to phone screen replacement, laptop and computer repair, home theatre repair and CCTV installation. Every listing shows distance, ratings from real customers, opening hours and whether the business is verified.`,
       "Most repairs start with a diagnosis. Many technicians charge a small inspection fee, often adjusted against the final bill, and quote once they know the fault. A power board or software issue is usually quick and inexpensive; a cracked panel or a failed motherboard can cost a large share of the device price, so ask for the quote in writing and ask whether the replacement part is original or compatible.",
@@ -52,6 +52,7 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
       "For anything beyond a simple swap, hire a trained electrician rather than doing it yourself. Old wiring, tripping MCBs, sparks or a burning smell are signs to call a professional straight away.",
     ],
     faqs: [
+      { q: `How do I find an electric mistri near me in ${CITY}?`, a: "Search Electricians on KaajVa to find a local electrician (electric mistri) for wiring, fan fitting, inverter work and repairs. Ask for the visiting charge on the call." },
       { q: `How do I find a reliable electrician near me in ${CITY}?`, a: "Search Electricians on KaajVa, check ratings and recent reviews, and prefer verified listings. Describe the job on the call and ask for the visiting charge and an estimate before work starts." },
       { q: "How much does an electrician charge for small jobs?", a: "Small jobs like fixing a switch or installing a fan are usually a few hundred rupees plus parts. The visiting charge is often adjusted if you go ahead with the work." },
       { q: "When should I rewire my house?", a: "If the wiring is more than 20 to 25 years old, MCBs trip often, sockets feel warm, or you are adding ACs and heavy appliances, ask an electrician to inspect and advise on rewiring." },
@@ -69,6 +70,7 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
       "Shut the main valve before the plumber arrives if water is leaking, and keep a photo of the problem ready to share on WhatsApp so the plumber can bring the right parts.",
     ],
     faqs: [
+      { q: `How do I find a plumber mistri near me in ${CITY}?`, a: "Search Plumbing on KaajVa to find a local plumber (plumber mistri) for leaks, taps, tank cleaning and motor repair. Send a photo of the problem on WhatsApp so they bring the right parts." },
       { q: `How do I find a plumber near me in ${CITY}?`, a: "Search Plumbing on KaajVa and sort by distance or rating. Use the Open now filter for urgent leaks, and call two plumbers to compare visiting charges." },
       { q: "How much does a plumber charge to fix a leaking tap?", a: "A tap or washer repair is usually a small per-job charge plus the part. Replacing the tap or fixing a concealed leak costs more; ask for an estimate before work starts." },
       { q: "How often should a water tank be cleaned?", a: "Clean overhead and underground tanks every three to six months, and after the monsoon. Professional cleaning includes draining, scrubbing, disinfecting and rinsing." },
@@ -86,6 +88,7 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
       "Share photos and rough measurements on WhatsApp first; a good carpenter will visit to measure before giving a final quote.",
     ],
     faqs: [
+      { q: `How do I find a carpenter (kath mistri) near me in ${CITY}?`, a: "Search Carpentry on KaajVa for local carpenters who repair furniture, fit doors and windows and build modular kitchens. Ask for a quote with the wood or board type written down." },
       { q: `How do I find a good carpenter near me in ${CITY}?`, a: "Search Carpentry on KaajVa, check photos of previous work and reviews, and ask for a written quote that lists the materials and hardware." },
       { q: "How do carpenters charge?", a: "Small repairs are per job, larger work is often per day, and new furniture or kitchens are per running foot or square foot including materials. Always compare like for like." },
       { q: "Which ply is best for kitchen cabinets?", a: "Boiling water proof (BWP) plywood is the usual choice under sinks and near water; moisture resistant (MR) ply is fine for dry areas. Ask your carpenter which grade they quote." },
@@ -162,15 +165,16 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     ],
   },
   tutors: {
-    title: `Home Tutors Near Me in ${CITY}`,
-    description: `Find home tutors near you in ${CITY} for maths, science and English, music lessons and competitive exam coaching. Compare tutors and call directly.`,
-    h1: `Home tutors near you in ${CITY}`,
+    title: `Home Tutors & Home Tuition in ${CITY}`,
+    description: `Find home tutors and home tuition near you in ${CITY} for classes 1 to 12, maths, science, English, music and exam coaching. Compare tutors, call directly.`,
+    h1: `Home tutors and home tuition in ${CITY}`,
     intro: [
       `Looking for a home tutor near you? KaajVa lists tutors in ${CITY} for maths, science and English at every school level, music teachers, and coaching for competitive exams. See subjects, experience and ratings from parents and students.`,
       "Home tuition fees depend on the class, the subject, the board (CBSE, ICSE or state board), the tutor's experience, and how many days a week they come. Fees are usually charged per month; senior classes and exam coaching cost more. Ask for a trial class before committing.",
       "Agree on goals and a schedule at the start, and ask the tutor how they will share progress with you.",
     ],
     faqs: [
+      { q: `How do I find a home tuition teacher in ${CITY}?`, a: "Search Tutors on KaajVa for home tuition teachers (tuition sir or madam) by subject and class, including CBSE, ICSE and WBBSE board students. Ask for a trial class and the monthly fee before you start." },
       { q: `How do I find a good home tutor near me in ${CITY}?`, a: "Search Tutors on KaajVa by subject, check experience and reviews, and ask for a trial class. A good tutor asks about your child's goals and current marks first." },
       { q: "How much does home tuition cost per month?", a: "Fees vary by class, subject, board and how many days a week. Primary classes cost less; classes 9 to 12 and exam coaching cost more. Compare two or three tutors." },
       { q: "Home tutor or coaching centre: which is better?", a: "A home tutor gives one-to-one attention and a flexible schedule; a coaching centre offers structure and peer competition. Many students use a tutor for weak subjects." },
@@ -179,15 +183,17 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     ],
   },
   "beauty-salon": {
-    title: `Salon at Home & Bridal Makeup in ${CITY}`,
-    description: `Find salon at home services, men's grooming, bridal makeup artists and spa services near you in ${CITY}. Compare ratings and call beauticians directly.`,
-    h1: `Beauty and salon services near you in ${CITY}`,
+    title: `Beauty Parlour & Salon Near Me in ${CITY}`,
+    description: `Find beauty parlours, unisex and family salons, bridal makeup artists and spas near you in ${CITY}. Compare ratings, see locations and call the salon directly.`,
+    h1: `Beauty parlours and salons in ${CITY}`,
     intro: [
-      `KaajVa lists beauty and salon professionals near you in ${CITY}: salon at home services for women, men's grooming, bridal makeup artists and spa and massage. Compare ratings, services and prices, then call or WhatsApp directly.`,
+      `Looking for a good beauty parlour or salon near you? KaajVa lists ${CITY}'s beauty parlours, unisex and family salons, men's salons, bridal makeup artists, nail studios and spas, on Sevoke Road, Hill Cart Road, Hakimpara, Pradhan Nagar, Matigara and across the city. Compare ratings, services, prices and locations, then call or WhatsApp the salon directly.`,
+      "Many salons and beauticians also offer salon at home services for women, such as waxing, threading, facials and party makeup, so check the listing or ask on the call.",
       "At-home services are usually priced per service or as a package; bridal makeup is priced per look and depends on the artist's experience, the products used, and whether hair styling and draping are included. Ask to see a portfolio and which brands they use.",
       "For a wedding, book a trial session and confirm the date early; popular makeup artists are booked months ahead in the wedding season.",
     ],
     faqs: [
+      { q: `Where can I find a good beauty parlour near me in ${CITY}?`, a: "Search Beauty & Salon on KaajVa to see parlours, unisex and family salons on Sevoke Road, Hill Cart Road, Hakimpara, Pradhan Nagar and other areas. Compare ratings and services, then call to book a slot." },
       { q: "Is salon at home safe and hygienic?", a: "Choose professionals with good reviews who use disposable or sanitised tools and sealed products. Ask about hygiene on the call." },
       { q: "How early should I book a bridal makeup artist?", a: "Book two to four months ahead for the wedding season, and schedule a trial a few weeks before the date." },
       { q: "What is included in bridal makeup?", a: "It usually includes base makeup and eye makeup, and often hair styling and saree or lehenga draping. Confirm what is included and whether travel is extra." },
@@ -196,15 +202,16 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     ],
   },
   "vehicle-repair": {
-    title: `Car & Bike Service Near Me in ${CITY}`,
-    description: `Find car service, bike service, car wash and detailing, tyre and puncture repair and car AC repair near you in ${CITY}. Compare garages and call directly.`,
-    h1: `Car and bike repair near you in ${CITY}`,
+    title: `Bike & Car Service Centres in ${CITY}`,
+    description: `Find bike and car service centres, garages and mechanics near you in ${CITY} for servicing, repairs, car wash, tyres and car AC. Compare and call directly.`,
+    h1: `Bike and car service centres in ${CITY}`,
     intro: [
-      `Need a car service or a bike mechanic near you? KaajVa lists local garages and mechanics in ${CITY} for car servicing, bike servicing, car wash and detailing, tyre and puncture repair, and car AC repair.`,
+      `Need a bike service centre, a two wheeler mechanic or a car garage near you? KaajVa lists authorised service centres, multi-brand garages and local mechanics in ${CITY}, from Sevoke Road and Salugara to Matigara, for bike and scooter servicing, car servicing, car wash and detailing, tyre and puncture repair, and car AC repair.`,
       "A periodic service usually includes an engine oil and filter change, inspection of brakes, fluids and battery, and a wash. Multi-brand garages are usually cheaper than authorised service centres for the same work. Ask for an itemised estimate, keep the old parts, and approve any extra work before it is done.",
       "Pothole-heavy monsoon roads are hard on tyres, suspension and alignment, so a check-up after the rains is worth it.",
     ],
     faqs: [
+      { q: `How do I find a bike mistri or two wheeler mechanic near me in ${CITY}?`, a: "Search Bike service on KaajVa to see authorised service centres and local bike mechanics (mistri) near you. Call ahead to check if they work on your brand and how long the service takes." },
       { q: "How much does a car service cost?", a: "A periodic service at a multi-brand garage usually costs a few thousand rupees for a hatchback and more for a sedan or SUV, plus parts. Authorised service centres usually charge more." },
       { q: "How often should I service my bike?", a: "Most bikes need a service every 3,000 to 5,000 km or every three to four months, whichever comes first. Check your owner's manual." },
       { q: "Will a local garage void my car warranty?", a: "While your car is under the manufacturer's warranty, follow the service schedule at an authorised centre. After that, a trusted multi-brand garage is usually good value." },
