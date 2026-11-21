@@ -13,8 +13,11 @@ import { articleJsonLd, breadcrumbJsonLd, faqJsonLd } from "@/lib/structured-dat
 
 type Params = { slug: string };
 
-/** Every guide is written in the repository, so all of them are built ahead and unknown slugs are 404s. */
-export const dynamicParams = false;
+/**
+ * Every guide is written in the repository, so all of them are built ahead; an unknown slug is a 404 from
+ * notFound() below. Do not add `dynamicParams = false`: once the API refreshes the "categories" cache tag
+ * (server/src/services/web-cache.ts), Next.js then answers every guide with a 404 instead of re-rendering it.
+ */
 export const revalidate = 3600;
 
 export function generateStaticParams(): Params[] {
