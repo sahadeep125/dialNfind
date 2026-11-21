@@ -32,7 +32,7 @@ export function CategoryGrid({ categories }: { categories: Category[] }) {
                     {c.providerCount.toLocaleString("en-IN")} {c.providerCount === 1 ? "pro" : "pros"}
                   </p>
                 </div>
-                <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-[transform,color] group-hover:translate-x-0.5 group-hover:text-cta" aria-hidden />
+                <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-[transform,color] group-hover:translate-x-0.5 group-hover:text-cta-strong" aria-hidden />
               </div>
             </Link>
           </li>

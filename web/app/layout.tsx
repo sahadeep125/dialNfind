@@ -58,7 +58,7 @@ export const metadata: Metadata = {
   other: { "geo.region": "IN-WB", "geo.placename": "Siliguri, West Bengal" },
 };
 
-export const viewport: Viewport = { themeColor: "#14304f" };
+export const viewport: Viewport = { themeColor: "#042161" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const config = await getAppConfig();

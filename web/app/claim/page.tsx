@@ -34,7 +34,7 @@ export default async function ClaimPage() {
         <div className="container-page relative grid items-center gap-10 py-14 lg:grid-cols-2 lg:py-20">
           <div>
             <span className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground">
-              <Store className="size-3.5 text-cta" /> For service providers
+              <Store className="size-3.5 text-cta-strong" /> For service providers
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight text-brand-deep md:text-5xl">Get more calls from customers nearby</h1>
             <p className="mt-5 max-w-xl text-lg text-muted-foreground">

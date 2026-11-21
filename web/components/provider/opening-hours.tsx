@@ -19,7 +19,7 @@ export function OpeningHours({ p }: { p: ProviderDetail }) {
           ))}
         </tbody>
       </table>
-      {p.is24x7 && <p className="mt-3 text-xs font-medium text-cta-hover">Available 24x7 for emergencies</p>}
+      {p.is24x7 && <p className="mt-3 text-xs font-medium text-cta-strong">Available 24x7 for emergencies</p>}
     </SideCard>
   );
 }

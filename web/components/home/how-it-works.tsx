@@ -26,7 +26,7 @@ export function HowItWorks() {
         <li key={step.title}>
           <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
             <Image src={step.image.src} alt={step.image.alt} fill sizes="(min-width: 768px) 26rem, 100vw" className="object-cover" />
-            <span className="absolute left-3 top-3 flex size-9 items-center justify-center rounded-md bg-cta font-display text-base font-bold text-white shadow-sm">
+            <span className="absolute left-3 top-3 flex size-9 items-center justify-center rounded-md bg-cta font-display text-base font-bold text-cta-foreground shadow-sm">
               {i + 1}
             </span>
           </div>

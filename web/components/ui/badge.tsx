@@ -16,7 +16,7 @@ const badgeVariants = cva(
         muted: "border-transparent bg-muted text-muted-foreground",
         destructive: "border-transparent bg-destructive/10 text-destructive",
         soft: "border-transparent bg-accent text-primary",
-        cta: "border-transparent bg-cta-soft text-cta-hover",
+        cta: "border-transparent bg-cta-soft text-cta-strong",
         chip: "rounded-md border-transparent bg-muted px-2.5 py-1 text-[13px] font-medium text-foreground/75",
       },
     },

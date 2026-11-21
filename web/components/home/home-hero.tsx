@@ -22,7 +22,7 @@ export function HomeHero({
     <section className="relative isolate overflow-hidden bg-brand-deep">
       <Image src={HERO_IMAGE.src} alt={HERO_IMAGE.alt} fill priority sizes="100vw" className="-z-20 object-cover object-[75%_center]" />
       {/* Keeps the text side readable while the tradesperson stays visible on the right. */}
-      <div className="absolute inset-0 -z-10 bg-brand-deep/85 md:bg-transparent md:bg-[linear-gradient(90deg,oklch(0.22_0.055_252/0.96)_0%,oklch(0.22_0.055_252/0.88)_42%,oklch(0.22_0.055_252/0.35)_75%,oklch(0.22_0.055_252/0.15)_100%)]" />
+      <div className="absolute inset-0 -z-10 bg-brand-deep/85 md:bg-transparent md:bg-[linear-gradient(90deg,oklch(0.21_0.1_262.5/0.96)_0%,oklch(0.21_0.1_262.5/0.88)_42%,oklch(0.21_0.1_262.5/0.35)_75%,oklch(0.21_0.1_262.5/0.15)_100%)]" />
 
       <div className="container-page py-14 md:py-20 lg:py-24">
         <div className="max-w-3xl">
@@ -31,7 +31,7 @@ export function HomeHero({
           </p>
           <h1 className="mt-5 text-[2.1rem] font-extrabold leading-[1.1] text-white sm:text-5xl lg:text-[3.5rem]">
             Find trusted electricians, plumbers &amp; repair pros in{" "}
-            <span className="text-[oklch(0.8_0.13_60)]">
+            <span className="text-cta">
               <HeroCity />
             </span>
           </h1>
@@ -60,7 +60,7 @@ export function HomeHero({
         <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-white/15 pt-6 text-sm text-white/85">
           {facts.map((f) => (
             <li key={f.label} className="flex items-center gap-2">
-              <f.icon className="size-4 text-[oklch(0.8_0.13_60)]" aria-hidden />
+              <f.icon className="size-4 text-cta" aria-hidden />
               {f.label}
             </li>
           ))}

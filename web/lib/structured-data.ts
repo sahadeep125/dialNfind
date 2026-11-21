@@ -22,8 +22,8 @@ export function organizationJsonLd(contact: { email: string | null; phone: strin
     url: SITE_URL,
     description:
       "KaajVa is a local services directory for Siliguri and North Bengal: find verified electricians, plumbers, AC and TV repair, packers and movers, tutors and more, and call them directly.",
-    // Google wants a raster logo (at least 112px), so the 180px PNG app icon rather than icon.svg.
-    logo: absoluteUrl("/apple-icon"),
+    // Google wants a square raster logo (at least 112px), so the 512px app icon.
+    logo: absoluteUrl("/brand/icon-512.png"),
     image: absoluteUrl("/opengraph-image"),
     email: BUSINESS.infoEmail,
     telephone: phone,

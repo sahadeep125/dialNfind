@@ -7,35 +7,42 @@
   --radius: 0.875rem;
 
   --background: oklch(0.992 0.003 250);
-  --foreground: oklch(0.21 0.035 262);
+  --foreground: oklch(0.21 0.035 262.5);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.21 0.035 262);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0.035 262);
 
-  /* Brand: confident indigo-blue, with a teal accent for positive states. */
-  --primary: oklch(0.53 0.2 266);
-  --primary-foreground: oklch(0.99 0.005 266);
-  --secondary: oklch(0.965 0.012 262);
-  --secondary-foreground: oklch(0.3 0.06 264);
+  /* Brand (from the KaajVa logo): navy #042161 for structure and actions, orange #fd8003 as the accent.
+     Orange is too light for white text (2.5:1): orange fills carry navy text (5.9:1), and orange text on light
+     surfaces uses --brand-accent-strong (5.1:1 on white). */
+  --primary: #042161;
+  --primary-hover: #001755;
+  --primary-foreground: oklch(0.99 0.005 262.5);
+  --brand-accent: #fd8003;
+  --brand-accent-hover: #e77400;
+  --brand-accent-foreground: #042161;
+  --brand-accent-strong: #ae5600;
+  --brand-accent-soft: oklch(0.97 0.03 62);
+  --secondary: oklch(0.965 0.012 262.5);
+  --secondary-foreground: #042161;
   --muted: oklch(0.968 0.006 255);
   --muted-foreground: oklch(0.52 0.025 258);
-  --accent: oklch(0.955 0.02 266);
-  --accent-foreground: oklch(0.38 0.14 266);
+  --accent: oklch(0.955 0.02 262.5);
+  --accent-foreground: #042161;
   --destructive: oklch(0.58 0.22 25);
   --border: oklch(0.915 0.01 258);
   --input: oklch(0.9 0.012 258);
-  --ring: oklch(0.53 0.2 266 / 0.45);
+  --ring: oklch(0.45 0.13 262.5 / 0.45);
 
   --success: oklch(0.6 0.13 165);
   --success-soft: oklch(0.96 0.035 165);
   --warning: oklch(0.76 0.15 72);
   --warning-soft: oklch(0.97 0.04 85);
-  --brand-deep: oklch(0.27 0.09 268);
-  --brand-teal: oklch(0.7 0.12 190);
+  --brand-deep: oklch(0.21 0.1 262.5);
 
-  --chart-1: oklch(0.53 0.2 266);
-  --chart-2: oklch(0.7 0.12 190);
+  --chart-1: #042161;
+  --chart-2: #fd8003;
   --chart-3: oklch(0.76 0.15 72);
   --chart-4: oklch(0.6 0.13 165);
   --chart-5: oklch(0.63 0.2 330);
@@ -68,7 +75,12 @@
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-brand-deep: var(--brand-deep);
-  --color-brand-teal: var(--brand-teal);
+  --color-primary-hover: var(--primary-hover);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-hover: var(--brand-accent-hover);
+  --color-brand-accent-foreground: var(--brand-accent-foreground);
+  --color-brand-accent-strong: var(--brand-accent-strong);
+  --color-brand-accent-soft: var(--brand-accent-soft);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -82,7 +94,7 @@
   --radius-2xl: calc(var(--radius) + 10px);
 
   --shadow-soft: 0 1px 2px oklch(0.2 0.03 262 / 0.04), 0 4px 16px -4px oklch(0.2 0.03 262 / 0.08);
-  --shadow-lift: 0 2px 4px oklch(0.2 0.03 262 / 0.04), 0 16px 40px -12px oklch(0.25 0.08 266 / 0.18);
+  --shadow-lift: 0 2px 4px oklch(0.2 0.03 262 / 0.04), 0 16px 40px -12px oklch(0.25 0.1 262.5 / 0.18);
 }
 
 @layer base {
