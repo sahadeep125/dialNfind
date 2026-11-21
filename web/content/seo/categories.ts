@@ -9,9 +9,9 @@ import type { ServiceSeo } from "../types";
  */
 export const CATEGORY_SEO: Record<string, ServiceSeo> = {
   "electronics-repair": {
-    title: `TV, Mobile & Laptop Repair Near Me in ${CITY}`,
-    description: `Find TV repair, mobile repair, laptop repair and CCTV technicians near you in ${CITY}. Compare ratings and prices, then call the technician directly.`,
-    h1: `Electronics repair near you in ${CITY}`,
+    title: `Mobile, TV & Laptop Repair Shops in ${CITY}`,
+    description: `Find mobile repair shops, TV repair, laptop repair and CCTV technicians near you in ${CITY}. Compare ratings and prices, then call the shop directly.`,
+    h1: `Mobile, TV and laptop repair shops in ${CITY}`,
     intro: [
       `Looking for a TV repair shop or a mobile repair technician near you? KaajVa lists local electronics repair experts across ${CITY}, from LED and smart TV repair to phone screen replacement, laptop and computer repair, home theatre repair and CCTV installation. Every listing shows distance, ratings from real customers, opening hours and whether the business is verified.`,
       "Most repairs start with a diagnosis. Many technicians charge a small inspection fee, often adjusted against the final bill, and quote once they know the fault. A power board or software issue is usually quick and inexpensive; a cracked panel or a failed motherboard can cost a large share of the device price, so ask for the quote in writing and ask whether the replacement part is original or compatible.",
@@ -162,9 +162,9 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     ],
   },
   tutors: {
-    title: `Home Tutors Near Me in ${CITY}`,
-    description: `Find home tutors near you in ${CITY} for maths, science and English, music lessons and competitive exam coaching. Compare tutors and call directly.`,
-    h1: `Home tutors near you in ${CITY}`,
+    title: `Home Tutors & Home Tuition in ${CITY}`,
+    description: `Find home tutors and home tuition near you in ${CITY} for classes 1 to 12, maths, science, English, music and exam coaching. Compare tutors, call directly.`,
+    h1: `Home tutors and home tuition in ${CITY}`,
     intro: [
       `Looking for a home tutor near you? KaajVa lists tutors in ${CITY} for maths, science and English at every school level, music teachers, and coaching for competitive exams. See subjects, experience and ratings from parents and students.`,
       "Home tuition fees depend on the class, the subject, the board (CBSE, ICSE or state board), the tutor's experience, and how many days a week they come. Fees are usually charged per month; senior classes and exam coaching cost more. Ask for a trial class before committing.",
@@ -179,11 +179,12 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     ],
   },
   "beauty-salon": {
-    title: `Salon at Home & Bridal Makeup in ${CITY}`,
-    description: `Find salon at home services, men's grooming, bridal makeup artists and spa services near you in ${CITY}. Compare ratings and call beauticians directly.`,
-    h1: `Beauty and salon services near you in ${CITY}`,
+    title: `Beauty Parlour & Salon Near Me in ${CITY}`,
+    description: `Find beauty parlours, unisex and family salons, bridal makeup artists and spas near you in ${CITY}. Compare ratings, see locations and call the salon directly.`,
+    h1: `Beauty parlours and salons in ${CITY}`,
     intro: [
-      `KaajVa lists beauty and salon professionals near you in ${CITY}: salon at home services for women, men's grooming, bridal makeup artists and spa and massage. Compare ratings, services and prices, then call or WhatsApp directly.`,
+      `Looking for a good beauty parlour or salon near you? KaajVa lists ${CITY}'s beauty parlours, unisex and family salons, men's salons, bridal makeup artists, nail studios and spas, on Sevoke Road, Hill Cart Road, Hakimpara, Pradhan Nagar, Matigara and across the city. Compare ratings, services, prices and locations, then call or WhatsApp the salon directly.`,
+      "Many salons and beauticians also offer salon at home services for women, such as waxing, threading, facials and party makeup, so check the listing or ask on the call.",
       "At-home services are usually priced per service or as a package; bridal makeup is priced per look and depends on the artist's experience, the products used, and whether hair styling and draping are included. Ask to see a portfolio and which brands they use.",
       "For a wedding, book a trial session and confirm the date early; popular makeup artists are booked months ahead in the wedding season.",
     ],
@@ -196,11 +197,11 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
     ],
   },
   "vehicle-repair": {
-    title: `Car & Bike Service Near Me in ${CITY}`,
-    description: `Find car service, bike service, car wash and detailing, tyre and puncture repair and car AC repair near you in ${CITY}. Compare garages and call directly.`,
-    h1: `Car and bike repair near you in ${CITY}`,
+    title: `Bike & Car Service Centres in ${CITY}`,
+    description: `Find bike and car service centres, garages and mechanics near you in ${CITY} for servicing, repairs, car wash, tyres and car AC. Compare and call directly.`,
+    h1: `Bike and car service centres in ${CITY}`,
     intro: [
-      `Need a car service or a bike mechanic near you? KaajVa lists local garages and mechanics in ${CITY} for car servicing, bike servicing, car wash and detailing, tyre and puncture repair, and car AC repair.`,
+      `Need a bike service centre, a two wheeler mechanic or a car garage near you? KaajVa lists authorised service centres, multi-brand garages and local mechanics in ${CITY}, from Sevoke Road and Salugara to Matigara, for bike and scooter servicing, car servicing, car wash and detailing, tyre and puncture repair, and car AC repair.`,
       "A periodic service usually includes an engine oil and filter change, inspection of brakes, fluids and battery, and a wash. Multi-brand garages are usually cheaper than authorised service centres for the same work. Ask for an itemised estimate, keep the old parts, and approve any extra work before it is done.",
       "Pothole-heavy monsoon roads are hard on tyres, suspension and alignment, so a check-up after the rains is worth it.",
     ],

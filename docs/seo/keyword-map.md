@@ -44,6 +44,11 @@ What it showed:
 
 ## Keyword targets by page
 
+**Rank first where the listings are.** In November 2026 the site had 257 beauty, 199 vehicle, 93 tutor and 89
+electronics listings, but only 6 electricians, 2 plumbers and 1 cleaner. Pages with many real listings satisfy
+the searcher and rank fastest, so those four categories lead the home page and get P1. Electricians, plumbers,
+AC repair and cleaning stay targeted but are pushed harder once each has 15 or more listings.
+
 Priority: **P1** high intent and high demand, **P2** steady demand, **P3** long tail.
 
 | Page | Primary keywords | Secondary / long tail | Priority |
@@ -52,15 +57,15 @@ Priority: **P1** high intent and high demand, **P2** steady demand, **P3** long 
 | `/services/home-appliances` | AC repair in Siliguri, AC service near me | AC gas refill Siliguri, fridge repair Siliguri, washing machine repair Siliguri, RO service Siliguri, geyser repair | P1 |
 | `/services/electricians` | electrician in Siliguri, electrician near me | house wiring Siliguri, inverter installation Siliguri, 24 hour electrician | P1 |
 | `/services/plumbing` | plumber in Siliguri, plumber near me | tap leakage repair, water tank cleaning Siliguri, bathroom fitting | P1 |
-| `/services/electronics-repair` | TV repair in Siliguri, mobile repair Siliguri | LED TV repair near me, laptop repair Siliguri, CCTV installation Siliguri | P1 |
+| `/services/electronics-repair` | mobile repair shop in Siliguri, TV repair in Siliguri | LED TV repair near me, laptop repair Siliguri, CCTV installation Siliguri | P1 (89 listings) |
 | `/services/packers-movers` | packers and movers in Siliguri | packers and movers Siliguri to Kolkata, house shifting Siliguri, bike transport | P1 |
-| `/services/tutors` | home tutor in Siliguri | home tuition Siliguri, maths tutor, class 10 tuition Siliguri | P2 |
+| `/services/tutors` | home tutor in Siliguri, home tuition Siliguri | maths tutor, class 10 tuition Siliguri | P1 (93 listings) |
 | `/services/pest-control` | pest control in Siliguri | termite control Siliguri, cockroach control | P2 |
 | `/services/cleaning` | home deep cleaning Siliguri | sofa cleaning Siliguri, bathroom cleaning, office cleaning | P2 |
 | `/services/painting` | house painters in Siliguri | painting contractor Siliguri, wall painting cost per sq ft | P2 |
 | `/services/carpentry` | carpenter in Siliguri | modular kitchen Siliguri, furniture repair | P2 |
-| `/services/vehicle-repair` | car service in Siliguri, bike service Siliguri | car repair near me, two wheeler service | P2 |
-| `/services/beauty-salon` | salon at home Siliguri, bridal makeup Siliguri | makeup artist Siliguri, beauty parlour near me | P2 |
+| `/services/vehicle-repair` | bike service centre Siliguri, car service centre Siliguri | two wheeler service Siliguri, car garage near me | P1 (199 listings) |
+| `/services/beauty-salon` | beauty parlour in Siliguri, salon near me | unisex salon Siliguri, bridal makeup artist Siliguri, salon at home | P1 (257 listings) |
 | Guides `/guides/*` | AC service charges, TV repair cost India, packers and movers charges, house painting cost per sq ft | how to hire an electrician, house shifting checklist | P3 |
 | Provider pages `/providers/*` | "<business name>", "<business name> Siliguri" | "<business name> phone number", "<business name> reviews" | P1 (brand searches of each business) |
 | `/claim` | list my business in Siliguri, free business listing Siliguri | add business on Google alternative, Siliguri business directory | P2 |

@@ -101,17 +101,19 @@ describe("root layout and error pages", () => {
 });
 
 describe("home and content pages", () => {
-  it("home page with popular searches, or the defaults", async () => {
+  it("home page links its shortcuts to service pages and hides an empty review count", async () => {
     const { default: Home, metadata } = await import("@/app/page");
     expect(metadata.title).toEqual({ absolute: expect.stringContaining("Siliguri") });
-    mockApi({ "/categories": { categories }, "/stats": { providers: 10, categories: 2, cities: 1, reviews: 3 }, "/search/popular": { terms: [{ term: "Fan repair" }] }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
+    mockApi({ "/categories": { categories }, "/stats": { providers: 10, categories: 2, cities: 1, reviews: 3 }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
     const { unmount } = await renderAsync(await Home());
-    expect(screen.getByRole("link", { name: "Fan repair" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Bike service" })).toHaveAttribute("href", "/services/vehicle-repair/bike-service");
     expect(screen.getByRole("link", { name: "TV Repair near me" })).toBeInTheDocument();
+    expect(screen.getByText("3+ customer reviews")).toBeInTheDocument();
     unmount();
-    mockApi({ "/categories": { categories: [] }, "/stats": { providers: 0, categories: 0, cities: 0, reviews: 0 }, "/search/popular": { terms: [] }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
+    mockApi({ "/categories": { categories: [] }, "/stats": { providers: 0, categories: 0, cities: 0, reviews: 0 }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
     await renderAsync(await Home());
-    expect(screen.getByRole("link", { name: "RO service" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Beauty parlour" })).toHaveAttribute("href", "/services/beauty-salon");
+    expect(screen.queryByText("0+ customer reviews")).not.toBeInTheDocument();
   });
   it("promo banners show store badges when configured", async () => {
     vi.resetModules();
@@ -366,7 +368,7 @@ describe("provider profile page", () => {
     );
     await renderAsync(await Page({ params: sp({ slug: "shop" }) }));
     await act(async () => undefined);
-    expect(screen.getByText("This provider has not added a description yet.")).toBeInTheDocument();
+    expect(screen.getByText(/is a local services business in .* Services listed include x\./)).toBeInTheDocument();
     expect(screen.getByText("No reviews yet", { selector: "p" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Similar pros nearby" })).toBeNull();
     mockApi(routes(null));

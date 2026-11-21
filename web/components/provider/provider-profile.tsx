@@ -199,7 +199,7 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
               </div>
 
               <ProfileSection title={`About ${p.businessName}`} className="border-t-0">
-                <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground/80">{p.description ?? "This provider has not added a description yet."}</p>
+                <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground/80">{p.description || fallbackDescription(p)}</p>
               </ProfileSection>
 
               <ProfileSection id="services">
@@ -385,4 +385,17 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
       </div>
     </ProviderViewerState>
   );
+}
+
+/**
+ * A plain summary for listings whose owner has not written one yet, built from facts on the listing, so the
+ * page is not a near-empty template to visitors and search engines.
+ */
+export function fallbackDescription(p: ProviderDetail): string {
+  const place = p.locality ? `${p.locality}, ${p.city}` : p.city;
+  const category = p.primaryCategory?.name.toLowerCase() ?? "local services";
+  const names = Array.from(new Set(p.services.map((s) => s.subcategory?.name ?? s.category.name))).slice(0, 4);
+  const offers = names.length ? ` Services listed include ${names.join(", ").toLowerCase()}.` : "";
+  const where = p.addressLine ? ` You can find them at ${p.addressLine}.` : "";
+  return `${p.businessName} is a ${category} business in ${place}.${offers}${where} Call or WhatsApp ${p.businessName} directly from this page to ask about prices and availability; KaajVa adds no booking fee.`;
 }

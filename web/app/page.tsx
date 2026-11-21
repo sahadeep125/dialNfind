@@ -13,33 +13,44 @@ import { SectionHeading } from "@/components/site/section-heading";
 import { SEO_CITY, pageMetadata } from "@/lib/seo";
 import { serviceHref } from "@/lib/service-href";
 
-const TITLE = "KaajVa: Electrician, Plumber & AC Repair in Siliguri";
+const TITLE = "KaajVa: Local Services & Businesses in Siliguri";
 
 export const metadata: Metadata = {
   ...pageMetadata({
     title: TITLE,
     description:
-      "Find verified electricians, plumbers, AC & TV repair, packers and movers and tutors near you in Siliguri. Compare ratings and call local pros directly, free.",
+      "Siliguri's local services directory: beauty parlours, bike and car service, home tutors, mobile and TV repair, electricians and more. Compare and call directly.",
     path: "/",
   }),
   // The home page title already names the site, so it skips the "| KaajVa" suffix.
   title: { absolute: TITLE },
 };
 
+/**
+ * Hero shortcuts. They link to service pages rather than /search (which robots.txt blocks), so the home
+ * page passes its weight to the pages that should rank, led by the services with the most listings.
+ */
+const POPULAR = [
+  { label: "Beauty parlour", href: serviceHref("beauty-salon") },
+  { label: "Bike service", href: serviceHref("vehicle-repair", "bike-service") },
+  { label: "Home tutor", href: serviceHref("tutors") },
+  { label: "Mobile repair", href: serviceHref("electronics-repair", "mobile-phone-repair") },
+  { label: "AC repair", href: serviceHref("home-appliances", "ac-repair-and-service") },
+  { label: "Electrician", href: serviceHref("electricians") },
+];
+
 /** The same for every visitor, so it is cached; the "near you" part loads in the browser. */
 export const revalidate = 600;
 
 export default async function HomePage() {
-  const [{ categories }, stats, { terms }] = await Promise.all([
+  const [{ categories }, stats] = await Promise.all([
     publicApi<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] }),
     publicApi<{ providers: number; categories: number; cities: number; reviews: number }>("/stats", { revalidate: 3600, tags: ["stats"] }),
-    publicApi<{ terms: { term: string }[] }>("/search/popular", { revalidate: 600 }),
   ]);
-  const popular = terms.length ? terms.slice(0, 6).map((t) => t.term) : ["AC repair", "Electrician", "Plumber", "TV repair", "Carpenter", "RO service"];
 
   return (
     <>
-      <HomeHero stats={stats} popular={popular.map((term) => ({ label: term, href: `/search?q=${encodeURIComponent(term)}` }))} />
+      <HomeHero stats={stats} popular={POPULAR} />
 
       <section className="section-y">
         <div className="container-page">

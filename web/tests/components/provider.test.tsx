@@ -233,6 +233,7 @@ describe("profile sections", () => {
         <ContactCard p={detail({ priceUnit: null }) as never} />
         <OpeningHours p={detail({ is24x7: true }) as never} />
         <OpeningHours p={detail({ isAvailable: false }) as never} />
+        <OpeningHours p={detail({ hours: [{ dayOfWeek: 0, day: "Sunday", label: "Closed", openTime: null, closeTime: null, isToday: false }] }) as never} />
         <ServicesList services={detail().services as never} />
         <ReviewsSummary p={detail({ totalReviews: 1 }) as never} />
         <ReviewsSummary p={{ avgRating: 0, totalReviews: 0, ratingBreakdown: [{ rating: 5, count: 0 }] }} />
@@ -244,6 +245,7 @@ describe("profile sections", () => {
     await act(async () => undefined);
     expect(screen.getAllByText("Price on request")).toHaveLength(1);
     expect(screen.getByText("Available 24x7 for emergencies")).toBeInTheDocument();
+    expect(screen.getByText("Hours not added yet. Call to check when they are open.")).toBeInTheDocument();
     expect(screen.getAllByText("(today)")).toHaveLength(2);
     expect(screen.getByText("Main service")).toBeInTheDocument();
     expect(screen.getByText("On request")).toBeInTheDocument();
