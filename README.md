@@ -41,7 +41,7 @@ pnpm dev
 
 For production, see [docs/DEPLOY.md](docs/DEPLOY.md).
 
-The websites, both apps and the API send product analytics to one PostHog project once their keys are set; events, properties and identity rules are in [docs/ANALYTICS.md](docs/ANALYTICS.md).
+The websites, both apps and the API send product analytics to one PostHog project once their keys are set; events, properties and identity rules are in [docs/ANALYTICS.md](docs/ANALYTICS.md). The website and the provider portal also load Google Tag Manager, which sends a short list of events and the ad key events to Google Analytics 4 (same file).
 
 ## Checks
 

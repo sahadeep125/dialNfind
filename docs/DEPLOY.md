@@ -69,7 +69,7 @@ Also set:
 - `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_APPLE_*`
 - `NEXT_PUBLIC_APP_STORE_URL`, `NEXT_PUBLIC_PLAY_STORE_URL`
 - `NEXT_PUBLIC_SENTRY_DSN`
-- `NEXT_PUBLIC_POSTHOG_KEY` ([ANALYTICS.md](ANALYTICS.md)); events go through `/ingest` on the site
+- `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_GTM_ID` ([ANALYTICS.md](ANALYTICS.md)); PostHog events go through `/ingest` on the site
 - `API_URL`: prerendered pages call the API during the build, so the builder must be able to reach it
 
 **Runtime:**
@@ -82,7 +82,7 @@ Also set:
 
 Build arguments:
 - `VITE_API_URL` (required; the build stops without it) and `VITE_WEB_URL`
-- Provider portal only: `VITE_GOOGLE_CLIENT_ID`, `VITE_APPLE_*` and `VITE_POSTHOG_KEY` (analytics go through `/ingest`, proxied by `deploy/spa-nginx.conf`)
+- Provider portal only: `VITE_GOOGLE_CLIENT_ID`, `VITE_APPLE_*`, `VITE_GTM_ID` and `VITE_POSTHOG_KEY` (PostHog go through `/ingest`, proxied by `deploy/spa-nginx.conf`)
 
 These apps keep the sign-in token in the browser. Before launch, add a Content-Security-Policy header at the proxy, in report-only mode first. It must allow Razorpay Checkout, Google Identity and Sign in with Apple, then be tightened.
 

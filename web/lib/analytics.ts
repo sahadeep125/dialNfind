@@ -1,5 +1,6 @@
 import posthog from "posthog-js";
 import { LOCATION_COOKIE } from "./config";
+import { pushGtmEvent } from "./gtm";
 import type { LocationOption, SessionUser } from "./types";
 
 /**
@@ -39,6 +40,8 @@ export function initAnalytics(): void {
 }
 
 export function track(event: string, properties?: Record<string, unknown>): void {
+  // GA4 (through GTM) gets its own short list; it runs even when PostHog is off.
+  pushGtmEvent(event, properties);
   if (!analyticsEnabled) return;
   posthog.capture(event, properties);
 }

@@ -38,6 +38,8 @@ ARG NEXT_PUBLIC_APP_ENV=production
 # Product analytics (PostHog project token); empty sends nothing. The /ingest proxy target is fixed at build time.
 ARG NEXT_PUBLIC_POSTHOG_KEY
 ARG POSTHOG_INGEST_HOST=https://us.i.posthog.com
+# Google Tag Manager container (GA4 and ad conversions); empty loads nothing.
+ARG NEXT_PUBLIC_GTM_ID
 # Pages that are prerendered call the API during the build, so it must be reachable from the builder.
 ARG API_URL
 
@@ -60,6 +62,7 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
     NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV \
     NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \
     POSTHOG_INGEST_HOST=$POSTHOG_INGEST_HOST \
+    NEXT_PUBLIC_GTM_ID=$NEXT_PUBLIC_GTM_ID \
     API_URL=$API_URL \
     NEXT_OUTPUT_STANDALONE=1 \
     NEXT_TELEMETRY_DISABLED=1

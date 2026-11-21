@@ -32,6 +32,8 @@ ARG VITE_APPLE_REDIRECT_URI
 # Provider portal only: product analytics (PostHog project token); empty sends nothing. /ingest is proxied by nginx.
 ARG VITE_POSTHOG_KEY
 ARG VITE_POSTHOG_HOST=/ingest
+# Provider portal only: Google Tag Manager container (GA4 and ad conversions); empty loads nothing.
+ARG VITE_GTM_ID
 ARG VITE_APP_ENV=production
 
 ENV VITE_API_URL=$VITE_API_URL \
@@ -43,6 +45,7 @@ ENV VITE_API_URL=$VITE_API_URL \
     VITE_APPLE_REDIRECT_URI=$VITE_APPLE_REDIRECT_URI \
     VITE_POSTHOG_KEY=$VITE_POSTHOG_KEY \
     VITE_POSTHOG_HOST=$VITE_POSTHOG_HOST \
+    VITE_GTM_ID=$VITE_GTM_ID \
     VITE_APP_ENV=$VITE_APP_ENV
 
 RUN test -n "$VITE_API_URL" || (echo "VITE_API_URL is required; the app would call localhost" && exit 1)

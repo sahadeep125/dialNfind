@@ -38,6 +38,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-kaajva}:${POSTGRES_PASSWORD:-kaajva_secret}@db:5432/${POSTGRES_DB:-kaajva}?schema=public
       PORT: 4000
       JWT_SECRET: ${JWT_SECRET:-change-this-to-a-secure-random-32-char-string-for-prod}
+      POSTHOG_KEY: ${POSTHOG_KEY-phc_BJ5zg2xN9hNbVD66UokRozzhUfZYoQdFmG6qCPonMg3b}
+      APP_ENV: ${APP_ENV:-production}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4000}
       WEB_URL: ${WEB_URL:-http://localhost:3000}
       WEB_INTERNAL_URL: http://web:3000
@@ -77,6 +79,9 @@ services:
         NEXT_PUBLIC_SOCIAL_LINKS: ${SOCIAL_LINKS:-}
         GOOGLE_SITE_VERIFICATION: ${GOOGLE_SITE_VERIFICATION:-}
         BING_SITE_VERIFICATION: ${BING_SITE_VERIFICATION:-}
+        # Analytics (docs/ANALYTICS.md). Both are public IDs; set them to empty in .env to turn tracking off.
+        NEXT_PUBLIC_POSTHOG_KEY: ${POSTHOG_KEY-phc_BJ5zg2xN9hNbVD66UokRozzhUfZYoQdFmG6qCPonMg3b}
+        NEXT_PUBLIC_GTM_ID: ${GTM_ID-GTM-T44QX69N}
         API_URL: http://server:4000/api/v1
     container_name: kaajva-web
     restart: unless-stopped
@@ -101,6 +106,8 @@ services:
         APP: provider
         VITE_API_URL: ${PUBLIC_URL:-http://localhost:4000}/api/v1
         VITE_WEB_URL: ${WEB_URL:-http://localhost:3000}
+        VITE_POSTHOG_KEY: ${POSTHOG_KEY-phc_BJ5zg2xN9hNbVD66UokRozzhUfZYoQdFmG6qCPonMg3b}
+        VITE_GTM_ID: ${GTM_ID-GTM-T44QX69N}
     container_name: kaajva-provider
     restart: unless-stopped
     ports:
