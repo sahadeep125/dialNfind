@@ -21,7 +21,7 @@ export const SMOKE_ACCOUNTS = {
 async function main() {
   if (process.env.NODE_ENV === "production") throw new Error("smoke-fixtures is for CI and local test databases only.");
   const password = process.env.SMOKE_PASSWORD ?? "";
-  if (password.length < 12) throw new Error("Set SMOKE_PASSWORD (12 or more characters).");
+  if (password.length < 10) throw new Error("Set SMOKE_PASSWORD (10 or more characters).");
   if (await prisma.user.findUnique({ where: { email: SMOKE_ACCOUNTS.provider } })) {
     console.log("Smoke fixtures already present");
     return;

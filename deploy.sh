@@ -61,8 +61,8 @@ fi
 if [ "$FRESH" = 1 ]; then
     admin_email="$(env_value BOOTSTRAP_ADMIN_EMAIL)"
     admin_password="$(env_value BOOTSTRAP_ADMIN_PASSWORD)"
-    if [ -z "$admin_email" ] || [ "${#admin_password}" -lt 12 ]; then
-        echo "❌ --fresh needs BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD (12+ characters) in .env for the new super admin."
+    if [ -z "$admin_email" ] || [ "${#admin_password}" -lt 10 ]; then
+        echo "❌ --fresh needs BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD (10+ characters) in .env for the new super admin."
         exit 1
     fi
     db_name="$(env_value POSTGRES_DB)"

@@ -148,11 +148,11 @@ async function main() {
   if ((await prisma.user.count({ where: { role: "super_admin" } })) === 0) {
     const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
     const password = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "";
-    if (!email || password.length < 12) {
-      throw new Error("No super admin yet. Set BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD (12 or more characters) and run again.");
+    if (!email || password.length < 10) {
+      throw new Error("No super admin yet. Set BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD (10 or more characters) and run again.");
     }
     await prisma.user.create({
-      data: { role: "super_admin", name: "DialNFind Admin", email, passwordHash: await bcrypt.hash(password, 12), emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
+      data: { role: "super_admin", name: "DialNFind Admin", email, passwordHash: await bcrypt.hash(password, 10), emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
     });
     log.push(`super admin ${email}`);
   }
