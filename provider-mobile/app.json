@@ -95,7 +95,6 @@
           "color": "#FD8003"
         }
       ],
-      "./plugins/withSceneLifecycle",
       "expo-localization"
     ],
     "experiments": {
