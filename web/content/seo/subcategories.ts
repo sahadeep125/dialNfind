@@ -8,7 +8,7 @@ import type { ServiceSeo } from "../types";
 export const SUBCATEGORY_SEO: Record<string, ServiceSeo> = {
   // Electronics repair ---------------------------------------------------------------------------
   "tv-repair": {
-    title: `TV Repair Near Me in ${CITY}: LED & Smart TV`,
+    title: `TV Repair in ${CITY}: LED & Smart TV at Home`,
     description: `Find LED, LCD and smart TV repair technicians near you in ${CITY}. Home visits for no picture, no sound, lines on screen and power faults. Call directly.`,
     h1: `TV repair near you in ${CITY}`,
     intro: [
@@ -22,9 +22,9 @@ export const SUBCATEGORY_SEO: Record<string, ServiceSeo> = {
     ],
   },
   "mobile-phone-repair": {
-    title: `Mobile Repair Shop Near Me in ${CITY}`,
+    title: `Mobile Repair Shop in ${CITY}: Screen, Battery`,
     description: `Find mobile phone repair shops near you in ${CITY} for screen and battery replacement, charging port, water damage and software issues. Compare and call.`,
-    h1: `Mobile phone repair near you in ${CITY}`,
+    h1: `Mobile repair shops in ${CITY}`,
     intro: [
       `Cracked screen, weak battery or a phone that will not charge? Find a mobile repair shop near you in ${CITY} for Android phones and iPhones.`,
       "Ask whether the replacement screen or battery is original or compatible, how long the repair takes, and what warranty you get. Back up your phone and remove the SIM and memory card before handing it over.",
@@ -714,9 +714,9 @@ export const SUBCATEGORY_SEO: Record<string, ServiceSeo> = {
     ],
   },
   "men-s-grooming": {
-    title: `Men's Grooming & Salon Near Me in ${CITY}`,
+    title: `Men's & Unisex Salon Near Me in ${CITY}`,
     description: `Find men's grooming near you in ${CITY}: haircut, beard styling, shave, facial, hair colour and massage, at home or in the salon.`,
-    h1: `Men's grooming near you in ${CITY}`,
+    h1: `Men's and unisex salons in ${CITY}`,
     intro: [
       `Find men's grooming services near you in ${CITY} for haircuts, beard trim and styling, shaves, facials, hair colour and head massage, at home or in the salon.`,
       "Show a reference photo for haircuts and beard styles to get exactly what you want.",
@@ -728,9 +728,9 @@ export const SUBCATEGORY_SEO: Record<string, ServiceSeo> = {
     ],
   },
   "bridal-makeup": {
-    title: `Bridal Makeup Artist Near Me in ${CITY}`,
+    title: `Bridal Makeup Artist in ${CITY}`,
     description: `Find bridal makeup artists near you in ${CITY} for HD and airbrush bridal makeup, engagement and reception looks, hair styling and draping.`,
-    h1: `Bridal makeup artists near you in ${CITY}`,
+    h1: `Bridal makeup artists in ${CITY}`,
     intro: [
       `Find bridal makeup artists near you in ${CITY} for HD and airbrush bridal looks, engagement, mehendi and reception makeup, hair styling and saree or lehenga draping.`,
       "Look at portfolios, book a trial, and confirm what the package includes: products, hairstyling, draping, lashes, touch-ups and travel.",
@@ -758,9 +758,9 @@ export const SUBCATEGORY_SEO: Record<string, ServiceSeo> = {
 
   // Vehicle repair -------------------------------------------------------------------------------
   "car-service": {
-    title: `Car Service & Repair Near Me in ${CITY}`,
-    description: `Find car service and repair garages near you in ${CITY}: periodic service, oil change, brakes, suspension, clutch and battery for all brands.`,
-    h1: `Car service near you in ${CITY}`,
+    title: `Car Service Centre & Garage in ${CITY}`,
+    description: `Find car service centres and repair garages near you in ${CITY}: periodic service, oil change, brakes, suspension, clutch and battery for all brands.`,
+    h1: `Car service centres and garages in ${CITY}`,
     intro: [
       `Find car service garages near you in ${CITY} for periodic service, oil change, brake and clutch work, suspension, battery and electrical repairs for all brands.`,
       "Ask for an itemised estimate, approve extra work before it is done, and keep the old parts. Multi-brand garages are usually cheaper than dealerships for the same work.",
@@ -772,11 +772,11 @@ export const SUBCATEGORY_SEO: Record<string, ServiceSeo> = {
     ],
   },
   "bike-service": {
-    title: `Bike Service & Mechanic Near Me in ${CITY}`,
-    description: `Find bike mechanics near you in ${CITY} for general service, oil change, brakes, chain, clutch and electrical repairs for all two-wheelers.`,
-    h1: `Bike service near you in ${CITY}`,
+    title: `Bike Service Centre & Mechanic in ${CITY}`,
+    description: `Find bike service centres and two wheeler mechanics near you in ${CITY} for general service, oil change, brakes, chain, clutch and electrical repairs.`,
+    h1: `Bike service centres and mechanics in ${CITY}`,
     intro: [
-      `Find bike and scooter mechanics near you in ${CITY} for general service, engine oil change, brake and clutch adjustment, chain lubrication and electrical repairs.`,
+      `Find a bike service centre or two wheeler mechanic near you in ${CITY} for bikes and scooters of every brand: general service, engine oil change, brake and clutch adjustment, chain lubrication and electrical repairs.`,
       "Service your bike every 3,000 to 5,000 km. Ask the mechanic to list what they replaced and why.",
     ],
     faqs: [

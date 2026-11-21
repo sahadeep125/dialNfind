@@ -15,7 +15,8 @@ export function HomeHero({
 }) {
   const facts = [
     { icon: BadgeCheck, label: `${stats.providers.toLocaleString("en-IN")}+ local professionals` },
-    { icon: Star, label: `${stats.reviews.toLocaleString("en-IN")}+ customer reviews` },
+    // Shown only once there are reviews: "0+ customer reviews" reads as an empty site.
+    stats.reviews > 0 ? { icon: Star, label: `${stats.reviews.toLocaleString("en-IN")}+ customer reviews` } : { icon: Star, label: "Free to use, no sign-up needed" },
     { icon: PhoneCall, label: "No booking fees or commission" },
   ];
   return (
@@ -30,7 +31,7 @@ export function HomeHero({
             <span className="size-1.5 rounded-full bg-cta" aria-hidden /> Local services directory for <HeroCity />
           </p>
           <h1 className="mt-5 text-[2.1rem] font-extrabold leading-[1.1] text-white sm:text-5xl lg:text-[3.5rem]">
-            Find trusted electricians, plumbers &amp; repair pros in{" "}
+            Find trusted salons, mechanics, tutors &amp; repair pros in{" "}
             <span className="text-cta">
               <HeroCity />
             </span>

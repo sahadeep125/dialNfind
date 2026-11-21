@@ -14,6 +14,7 @@ export function ServiceContent({
   guides,
   related,
   relatedHeading,
+  areas,
 }: {
   heading: string;
   intro: string[];
@@ -21,6 +22,8 @@ export function ServiceContent({
   guides: Guide[];
   related: { href: string; label: string }[];
   relatedHeading: string;
+  /** Links to the "<service> in <area>" pages of this category. */
+  areas?: { heading: string; links: { href: string; label: string }[] };
 }) {
   return (
     <section className="border-t bg-muted/30">
@@ -74,6 +77,20 @@ export function ServiceContent({
               <h2 className="text-base font-bold">{relatedHeading}</h2>
               <ul className="mt-3 flex flex-wrap gap-1.5">
                 {related.map((r) => (
+                  <li key={r.href}>
+                    <Link href={r.href} className="inline-block rounded-lg bg-card px-3 py-1.5 text-[13px] font-medium text-foreground/75 ring-1 ring-border transition-colors hover:text-primary">
+                      {r.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {areas && (
+            <div>
+              <h2 className="text-base font-bold">{areas.heading}</h2>
+              <ul className="mt-3 flex flex-wrap gap-1.5">
+                {areas.links.map((r) => (
                   <li key={r.href}>
                     <Link href={r.href} className="inline-block rounded-lg bg-card px-3 py-1.5 text-[13px] font-medium text-foreground/75 ring-1 ring-border transition-colors hover:text-primary">
                       {r.label}

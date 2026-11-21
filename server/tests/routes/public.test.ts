@@ -195,6 +195,20 @@ describe("locations", () => {
     await prisma.providerServiceArea.create({ data: { providerId: full.id, areaName: "Pune Area 99" } });
     expect((await api().get("/api/v1/locations").query({ q: "pune" })).body.locations).toHaveLength(12);
   });
+  it("lists category and locality pairs with enough listings", async () => {
+    const salon = await createCategory({ slug: "salons", name: "Salons" });
+    const garage = await createCategory({ slug: "garages", name: "Garages" });
+    const city = { city: "Siliguri", state: "West Bengal" };
+    for (const locality of ["Hakimpara", "Hakimpara", "hakimpara ", "Sevoke Road", "Siliguri", null]) {
+      await createProvider({ ...city, locality, categoryId: salon.id });
+    }
+    await createProvider({ ...city, locality: "Sevoke Road", categoryId: garage.id });
+    await createProvider({ ...city, locality: "Hakimpara", categoryId: salon.id, status: "pending" });
+    const res = await api().get("/api/v1/locations/category-areas");
+    expect(res.body.areas).toEqual([{ category: "salons", categoryName: "Salons", area: "Hakimpara", slug: "hakimpara", city: "Siliguri", providers: 3 }]);
+    const one = await api().get("/api/v1/locations/category-areas").query({ min: 1 });
+    expect(one.body.areas.map((a: { category: string; slug: string }) => `${a.category}/${a.slug}`)).toEqual(["salons/hakimpara", "garages/sevoke-road", "salons/sevoke-road"]);
+  });
   it("reverse geocodes the current location", async () => {
     mockFetch(json({ lat: "19.1", lon: "72.8", name: "Juhu", display_name: "Juhu", address: { city: "Mumbai", state: "MH" } }), json({ error: "none" }));
     expect((await api().get("/api/v1/locations/reverse").query({ lat: 19.1, lng: 72.8 })).body.location).toMatchObject({ name: "Juhu", kind: "current", latitude: 19.1 });

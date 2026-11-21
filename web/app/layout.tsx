@@ -13,9 +13,9 @@ import { organizationJsonLd, websiteJsonLd } from "@/lib/structured-data";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap", weight: ["500", "600", "700", "800"] });
 
-const TITLE = "KaajVa: Electrician, Plumber & AC Repair in Siliguri";
+const TITLE = "KaajVa: Local Services & Businesses in Siliguri";
 const DESCRIPTION =
-  "Find verified electricians, plumbers, AC & TV repair, packers and movers and tutors near you in Siliguri. Compare ratings and call local pros directly, free.";
+  "Siliguri's local services directory: beauty parlours, bike and car service, home tutors, mobile and TV repair, electricians and more. Compare and call directly.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -26,6 +26,8 @@ export const metadata: Metadata = {
   keywords: [
     "KaajVa",
     "local services in Siliguri",
+    "beauty parlour in Siliguri",
+    "bike service centre in Siliguri",
     "electrician in Siliguri",
     "plumber in Siliguri",
     "AC repair in Siliguri",

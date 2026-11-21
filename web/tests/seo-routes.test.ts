@@ -6,6 +6,7 @@ vi.mock("@/lib/api", () => ({
       return { results: [{ slug: `p-${options?.query?.page}`, updatedAt: "2026-09-01T00:00:00Z" }], total: 90001, totalPages: 3 };
     }
     if (path === "/categories") return { categories: [{ slug: "electronics-repair", subcategories: [{ slug: "tv-repair" }] }] };
+    if (path === "/locations/category-areas") return { areas: [{ category: "electronics-repair", slug: "hakimpara" }] };
     throw new Error(`unexpected ${path}`);
   }),
 }));
@@ -30,6 +31,7 @@ describe("sitemap", () => {
     expect(urls).toContain("https://kaajva.in");
     expect(urls).toContain("https://kaajva.in/services/electronics-repair");
     expect(urls).toContain("https://kaajva.in/services/electronics-repair/tv-repair");
+    expect(urls).toContain("https://kaajva.in/services/electronics-repair/in/hakimpara");
     expect(urls).toContain("https://kaajva.in/guides");
     expect(urls).toContain("https://kaajva.in/guides/tv-repair-cost-india");
     expect(urls.some((u) => u.includes("?sub="))).toBe(false);
