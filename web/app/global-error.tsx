@@ -13,7 +13,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
     <html lang="en-IN">
       <body className="flex min-h-dvh flex-col items-center justify-center p-6 text-center font-sans">
         <h1 className="text-3xl font-bold">Something went wrong</h1>
-        <p className="mt-2 max-w-md text-muted-foreground">We could not load DialNFind. Please try again in a moment.</p>
+        <p className="mt-2 max-w-md text-muted-foreground">We could not load KaajVa. Please try again in a moment.</p>
         <button type="button" onClick={reset} className="mt-6 rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground">
           Try again
         </button>

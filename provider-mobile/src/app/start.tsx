@@ -82,7 +82,7 @@ export default function StartScreen() {
             </AppText>
           )}
           <AppText tone="secondary">
-            Your business may already be on DialNFind. Claim it to keep its reviews, or start fresh.
+            Your business may already be on KaajVa. Claim it to keep its reviews, or start fresh.
           </AppText>
         </View>
 

@@ -75,7 +75,7 @@ export default function OnboardingScreen() {
         await applyToken(res.token);
         if (!res.imagesSaved)
           toast("Your listing is live. Add your logo and cover again from your profile.", "info");
-        else toast("Your business is live on DialNFind", "success");
+        else toast("Your business is live on KaajVa", "success");
         router.replace("/");
       },
       onError: (error: Error) => {

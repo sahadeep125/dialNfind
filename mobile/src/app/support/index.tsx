@@ -85,7 +85,7 @@ export default function SupportScreen() {
           ListHeaderComponent={
             items.length > 0 ? (
               <AppText variant="caption" tone="secondary" style={styles.intro}>
-                Ask the DialNFind team about your account, a provider or anything else. We usually
+                Ask the KaajVa team about your account, a provider or anything else. We usually
                 reply within one working day.
               </AppText>
             ) : null

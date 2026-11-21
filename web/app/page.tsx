@@ -13,16 +13,16 @@ import { SectionHeading } from "@/components/site/section-heading";
 import { SEO_CITY, pageMetadata } from "@/lib/seo";
 import { serviceHref } from "@/lib/service-href";
 
-const TITLE = "Electricians, Plumbers & Repair Services Near Me | DialNFind";
+const TITLE = "KaajVa: Electrician, Plumber & AC Repair in Siliguri";
 
 export const metadata: Metadata = {
   ...pageMetadata({
     title: TITLE,
     description:
-      "Find verified electricians, plumbers, AC and TV repair, cleaners, pest control and tutors near you in Siliguri. Compare ratings and call local pros directly. No booking fees.",
+      "Find verified electricians, plumbers, AC & TV repair, packers and movers and tutors near you in Siliguri. Compare ratings and call local pros directly, free.",
     path: "/",
   }),
-  // The home page title already names the site, so it skips the "| DialNFind" suffix.
+  // The home page title already names the site, so it skips the "| KaajVa" suffix.
   title: { absolute: TITLE },
 };
 
@@ -80,7 +80,7 @@ export default async function HomePage() {
         <div className="container-page">
           <SectionHeading eyebrow="Near you" title={`Popular services in ${SEO_CITY}`} action={{ href: "/guides", label: "Service guides" }} />
           <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-muted-foreground">
-            DialNFind helps you find trusted local professionals near you: electricians, plumbers, AC and fridge repair, TV and mobile repair, home cleaning, pest control, painters,
+            KaajVa helps you find trusted local professionals near you: electricians, plumbers, AC and fridge repair, TV and mobile repair, home cleaning, pest control, painters,
             carpenters, packers and movers, home tutors, beauty services and car and bike mechanics. Compare ratings, prices and distance, then call or WhatsApp the provider
             directly, with no booking fees or commission.
           </p>

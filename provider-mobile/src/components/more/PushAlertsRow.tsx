@@ -46,7 +46,7 @@ export function PushAlertsRow() {
         const next = await registerForPush({ ask: true });
         setStatus(next);
         if (next === "denied")
-          toast("Allow notifications for DialNFind Business in system settings", "info");
+          toast("Allow notifications for KaajVa Business in system settings", "info");
       } else {
         await disablePush();
         setStatus("off");

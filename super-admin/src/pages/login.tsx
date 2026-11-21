@@ -31,7 +31,7 @@ export function LoginPage() {
     try {
       const res = await api<{ token: string; user: { role: string } }>("/auth/login", { method: "POST", json: { email: values.email.trim(), password: values.password } });
       if (res.user.role !== "super_admin" && res.user.role !== "admin") {
-        setError("This account has no admin access. Only the DialNFind team can sign in here.");
+        setError("This account has no admin access. Only the KaajVa team can sign in here.");
         return;
       }
       await signIn(res.token);
@@ -47,7 +47,7 @@ export function LoginPage() {
         <Logo />
         <div className="mx-auto my-auto w-full max-w-sm py-10">
           <h1 className="text-3xl font-bold text-brand-deep">Admin sign in</h1>
-          <p className="mt-2 text-muted-foreground">For the DialNFind team only.</p>
+          <p className="mt-2 text-muted-foreground">For the KaajVa team only.</p>
           <form onSubmit={onSubmit} noValidate className="mt-8 space-y-5">
             <FormAlert message={error} />
             <Field id="email" label="Work email" error={errors.email}>
@@ -74,7 +74,7 @@ export function LoginPage() {
       </div>
       <div className="relative hidden overflow-hidden bg-brand-deep p-12 text-white lg:flex lg:flex-col lg:justify-center">
         <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
-        <h2 className="relative max-w-md text-3xl font-bold leading-tight">Run the DialNFind marketplace from one place</h2>
+        <h2 className="relative max-w-md text-3xl font-bold leading-tight">Run the KaajVa marketplace from one place</h2>
         <div className="relative mt-8 space-y-4 text-[oklch(0.88_0.03_266)]">
           {[
             { icon: Store, t: "Approve listings, check documents and manage categories" },

@@ -76,7 +76,7 @@ export default async function GuidePage({ params }: { params: Promise<Params> })
         <h1 className="text-3xl font-extrabold leading-tight text-brand-deep md:text-4xl">{guide.title}</h1>
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">{guide.summary}</p>
         <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span>By the DialNFind team</span>
+          <span>By the KaajVa team</span>
           <span aria-hidden>·</span>
           <time dateTime={guide.dateModified}>Updated {formatDate(guide.dateModified)}</time>
           <span aria-hidden>·</span>

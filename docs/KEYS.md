@@ -1,6 +1,6 @@
 # Keys and accounts needed for launch
 
-Everything DialNFind needs from outside services before it can go live: what each key is, where to get it, and which app it goes into. Work down the checklist; the sections after it explain each item.
+Everything KaajVa needs from outside services before it can go live: what each key is, where to get it, and which app it goes into. Work down the checklist; the sections after it explain each item.
 
 Two docs go further for two of the services:
 - [social-login.md](social-login.md) covers Google and Apple sign-in step by step.
@@ -43,10 +43,10 @@ This doc tells you what to collect, and points to those two for the detailed set
 
 | App | Address |
 |---|---|
-| Website | `https://dialnfind.com` |
-| Provider portal | `https://business.dialnfind.com` |
-| Admin console | `https://admin.dialnfind.com` |
-| API | `https://api.dialnfind.com` |
+| Website | `https://kaajva.in` |
+| Provider portal | `https://business.kaajva.in` |
+| Admin console | `https://admin.kaajva.in` |
+| API | `https://api.kaajva.in` |
 
 All four must be https. Where each address goes:
 
@@ -57,13 +57,13 @@ All four must be https. Where each address goes:
 | API `PROVIDER_URL` | Provider portal address |
 | API `ADMIN_URL` | Admin console address |
 | API `CORS_ORIGINS` | Website, provider and admin addresses, comma-separated |
-| Web `API_URL` | `https://api.dialnfind.com/api/v1` |
+| Web `API_URL` | `https://api.kaajva.in/api/v1` |
 | Web `NEXT_PUBLIC_SITE_URL` | Website address |
 | Web `NEXT_PUBLIC_IMAGE_ORIGINS` | API address |
 | Web `NEXT_PUBLIC_PROVIDER_APP_URL` | Provider portal address |
-| Provider and Admin `VITE_API_URL` | `https://api.dialnfind.com/api/v1` |
+| Provider and Admin `VITE_API_URL` | `https://api.kaajva.in/api/v1` |
 | Provider and Admin `VITE_WEB_URL` | Website address |
-| Apps `EXPO_PUBLIC_API_URL` | `https://api.dialnfind.com/api/v1` |
+| Apps `EXPO_PUBLIC_API_URL` | `https://api.kaajva.in/api/v1` |
 | Apps `EXPO_PUBLIC_WEB_URL` | Website address |
 | Business app `EXPO_PUBLIC_PROVIDER_URL` | Provider portal address |
 
@@ -93,21 +93,21 @@ The API will not start in production unless this is at least 32 characters long.
 
 Without these, nobody can finish signing up, because the confirmation code is emailed. Use a transactional email service such as Amazon SES, Brevo, Postmark, Mailgun or Zoho ZeptoMail. A personal Gmail account hits sending limits quickly.
 
-1. Create an account with the service and add your domain (`dialnfind.com`).
+1. Create an account with the service and add your domain (`kaajva.in`).
 2. Add the DNS records it gives you (SPF, DKIM, and ideally DMARC), so mail does not land in spam.
 3. Create SMTP credentials. The service shows the host, port (587 or 465), username and password.
 4. Set these:
-   - `SMTP_FROM="DialNFind <no-reply@dialnfind.com>"`
-   - `SUPPORT_EMAIL`: the inbox that should get replies, for example `support@dialnfind.com`
-5. Also put a real contact email in `GEOCODER_USER_AGENT`, for example `DialNFind/1.0 (support@dialnfind.com)`. OpenStreetMap's place search requires it.
+   - `SMTP_FROM="KaajVa <no-reply@kaajva.in>"`
+   - `SUPPORT_EMAIL`: the inbox that should get replies, for example `support@kaajva.in`
+5. Also put a real contact email in `GEOCODER_USER_AGENT`, for example `KaajVa/1.0 (support@kaajva.in)`. OpenStreetMap's place search requires it.
 
 ## 6. Apple Developer account
 
 1. Enrol at [developer.apple.com/programs](https://developer.apple.com/programs/). The fee is USD 99 a year. Enrol as an organisation, which needs a D-U-N-S number, so the store shows your company name.
 2. Note the **Team ID** from Membership details: `APPLE_TEAM_ID` (API and Web). The repo currently uses `9HH33XNTUX`; replace it if your team is different.
 3. In **App Store Connect → Apps**, create two apps:
-   - DialNFind, bundle `com.dialnfind.app`
-   - DialNFind Business, bundle `com.dialnfind.business`
+   - KaajVa, bundle `com.dialnfind.app`
+   - KaajVa Business, bundle `com.dialnfind.business`
 4. For each app, open **App Information** and copy the numeric **Apple ID**. It goes into `submit.production.ios.ascAppId` in that app's `eas.json`.
 5. Accept the **Paid Apps agreement** and add bank and tax details under Agreements. Without them, in-app purchases do not work.
 
@@ -159,7 +159,7 @@ Full steps are in [social-login.md](social-login.md) § 2. All of this is done a
 | **Services ID**, e.g. `com.dialnfind.signin` | Identifiers → Services IDs → create one; add your domains and return URLs | API `APPLE_SERVICES_ID`, Web `NEXT_PUBLIC_APPLE_SERVICES_ID`, Provider `VITE_APPLE_SERVICES_ID`, both apps' `EXPO_PUBLIC_APPLE_SERVICES_ID` |
 | Accepted IDs | Both bundle IDs plus the Services ID | API `APPLE_CLIENT_IDS="com.dialnfind.app,com.dialnfind.business,com.dialnfind.signin"` |
 | **Key ID** and **.p8 key** | Keys → create a key with Sign in with Apple enabled, then download the `.p8`. You can only download it once. | API `APPLE_KEY_ID`, and API `APPLE_PRIVATE_KEY` (the file contents on one line, with `\n` for each line break) |
-| Return URLs | Web: `https://dialnfind.com/login`. Provider: `https://business.dialnfind.com/login` | Web `NEXT_PUBLIC_APPLE_REDIRECT_URI`, Provider `VITE_APPLE_REDIRECT_URI` |
+| Return URLs | Web: `https://kaajva.in/login`. Provider: `https://business.kaajva.in/login` | Web `NEXT_PUBLIC_APPLE_REDIRECT_URI`, Provider `VITE_APPLE_REDIRECT_URI` |
 
 App Review checks that deleting an account revokes Apple access. That only works when `APPLE_PRIVATE_KEY` is set.
 
@@ -175,7 +175,7 @@ Full steps are in [billing.md](billing.md), "Razorpay (web)".
 |---|---|---|
 | Key ID | Settings → API Keys | API `RAZORPAY_KEY_ID` |
 | Key Secret | Shown once when the key is generated | API `RAZORPAY_KEY_SECRET` |
-| Webhook secret | A long random string you make up (`openssl rand -hex 32`). Enter it when you add the webhook `https://api.dialnfind.com/api/v1/webhooks/razorpay` with the events listed in billing.md. | API `RAZORPAY_WEBHOOK_SECRET` |
+| Webhook secret | A long random string you make up (`openssl rand -hex 32`). Enter it when you add the webhook `https://api.kaajva.in/api/v1/webhooks/razorpay` with the events listed in billing.md. | API `RAZORPAY_WEBHOOK_SECRET` |
 
 After the API is live, go to Admin console → Plans and billing → **Sync to Razorpay**.
 
@@ -201,7 +201,7 @@ Full steps are in [billing.md](billing.md), "RevenueCat (business app)". Do sect
 | iOS public SDK key (`appl_…`) | Project → API keys | Business app `EXPO_PUBLIC_REVENUECAT_IOS_KEY` |
 | Android public SDK key (`goog_…`) | Project → API keys | Business app `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` |
 | Secret API key, v1 (`sk_…`) | Project → API keys → new secret key | API `REVENUECAT_SECRET_KEY` |
-| Webhook authorization | A long random string you make up. Enter it as the Authorization header on the webhook `https://api.dialnfind.com/api/v1/webhooks/revenuecat`. | API `REVENUECAT_WEBHOOK_AUTH` |
+| Webhook authorization | A long random string you make up. Enter it as the Authorization header on the webhook `https://api.kaajva.in/api/v1/webhooks/revenuecat`. | API `REVENUECAT_WEBHOOK_AUTH` |
 | Project ID | In the dashboard URL | API `REVENUECAT_PROJECT_ID` (only for links from the admin console) |
 
 Without the two public keys, the business app cannot sell plans.
@@ -223,7 +223,7 @@ The API, provider portal and admin console do not report to Sentry yet.
 
 ## 14. Android signing fingerprint: `ANDROID_SHA256_CERT_FINGERPRINTS` (Web)
 
-This lets links to `dialnfind.com/providers/...` open the Android app.
+This lets links to `kaajva.in/providers/...` open the Android app.
 
 1. Upload the first build to Play Console.
 2. Go to Play Console → your app → Test and release → **App integrity** → App signing.

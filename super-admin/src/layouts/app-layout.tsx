@@ -176,7 +176,7 @@ export function AppLayout() {
               {sidebar}
             </SheetContent>
           </Sheet>
-          <div className="min-w-0 font-semibold lg:hidden">DialNFind Admin</div>
+          <div className="min-w-0 font-semibold lg:hidden">KaajVa Admin</div>
           <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
             <NotificationBell />
             <DropdownMenu>

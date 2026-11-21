@@ -233,7 +233,7 @@ async function onPlanChanged(providerId: bigint, before: string, after: string, 
       provider?.userId,
       "subscription",
       `Your ${oldPlan?.name ?? "paid"} plan has ended`,
-      "You are on the Free plan now. Your listing stays on DialNFind; upgrade any time to get unlimited leads and analytics back.",
+      "You are on the Free plan now. Your listing stays on KaajVa; upgrade any time to get unlimited leads and analytics back.",
       { plan: after },
       { label: "See plans", url: `${env.providerUrl}/subscription` },
     );

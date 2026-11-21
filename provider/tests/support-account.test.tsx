@@ -17,7 +17,7 @@ const ticket = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-const config = (over: Record<string, unknown> = {}) => ({ config: { support_email: "help@dialnfind.com", support_phone: "+919800012345", support_hours: "Mon to Sat, 10 to 6", terms_url: null, privacy_url: null, ...over } });
+const config = (over: Record<string, unknown> = {}) => ({ config: { support_email: "support@kaajva.in", support_phone: "+919800012345", support_hours: "Mon to Sat, 10 to 6", terms_url: null, privacy_url: null, ...over } });
 
 describe("support list", () => {
   it("lists requests with statuses and pages, and shows the contacts", async () => {
@@ -32,7 +32,7 @@ describe("support list", () => {
     expect(screen.getByText("Resolved")).toBeInTheDocument();
     expect(screen.getByText("Closed")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /Wrong phone number/ })[0]).toHaveAttribute("href", "/support/5");
-    expect(screen.getByRole("link", { name: /help@dialnfind.com/ })).toHaveAttribute("href", "mailto:help@dialnfind.com");
+    expect(screen.getByRole("link", { name: /support@kaajva.in/ })).toHaveAttribute("href", "mailto:support@kaajva.in");
     expect(screen.getByRole("link", { name: /\+91 98000 12345/ })).toHaveAttribute("href", "tel:+919800012345");
     expect(screen.getByText("Mon to Sat, 10 to 6")).toBeInTheDocument();
     expect(screen.getByText("What is a lead?")).toBeInTheDocument();
@@ -160,7 +160,7 @@ describe("support conversation", () => {
           ticket: ticket({ status: closed ? "closed" : "pending" }),
           messages: [
             { id: 1, body: "Please fix it", attachments: ["http://cdn.test/doc.pdf"], fromStaff: false, createdAt: "2026-09-20T00:00:00.000Z", authorName: "Ravi" },
-            { id: 2, body: "Which number?", attachments: [], fromStaff: true, createdAt: "2026-09-21T00:00:00.000Z", authorName: "Priya from DialNFind" },
+            { id: 2, body: "Which number?", attachments: [], fromStaff: true, createdAt: "2026-09-21T00:00:00.000Z", authorName: "Priya from KaajVa" },
           ],
         }),
       "POST /support/tickets/5/messages": () => (replyFails ? json({ error: { message: "Reply failed" } }, 500) : json({ ok: true })),
@@ -171,7 +171,7 @@ describe("support conversation", () => {
       },
     });
     await renderApp("/support/5");
-    expect(await screen.findByText("Priya from DialNFind")).toBeInTheDocument();
+    expect(await screen.findByText("Priya from KaajVa")).toBeInTheDocument();
     expect(screen.getByText("You")).toBeInTheDocument();
     expect(screen.getByText(/SUP-5 · opened 20 Sept? 2026/)).toBeInTheDocument();
     expect(screen.getAllByRole("link").some((a) => a.getAttribute("href") === "http://cdn.test/doc.pdf")).toBe(true);

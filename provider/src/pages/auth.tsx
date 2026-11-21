@@ -31,7 +31,7 @@ export function Shell({ title, subtitle, children }: { title: string; subtitle: 
       <div className="relative hidden overflow-hidden bg-brand-deep p-12 text-white lg:flex lg:flex-col lg:justify-center">
         <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
         <BusinessIllustration className="relative mx-auto w-96" />
-        <h2 className="relative mt-10 max-w-md text-3xl font-bold leading-tight">Grow your local business with DialNFind</h2>
+        <h2 className="relative mt-10 max-w-md text-3xl font-bold leading-tight">Grow your local business with KaajVa</h2>
         <div className="relative mt-6 space-y-3 text-[oklch(0.88_0.03_266)]">
           {[
             { icon: PhoneCall, t: "Customers call you directly, no commission" },
@@ -215,7 +215,7 @@ export function RegisterPage() {
 
 const forgotSchema = z.object({ email });
 
-/** Sends the reset link. The link opens the DialNFind website, which works for business accounts too. */
+/** Sends the reset link. The link opens the KaajVa website, which works for business accounts too. */
 export function ForgotPasswordPage() {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

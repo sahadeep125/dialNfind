@@ -81,7 +81,7 @@ export function LoginForm() {
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        New to DialNFind?{" "}
+        New to KaajVa?{" "}
         <Link href={`/register${next !== "/dashboard" ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-semibold text-primary hover:underline">
           Create an account
         </Link>

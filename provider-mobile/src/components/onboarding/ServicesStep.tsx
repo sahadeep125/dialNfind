@@ -77,7 +77,7 @@ export function ServicesStep({ value, errors, onChange }: Props) {
           Category
         </AppText>
         <AppText variant="meta">
-          Categories are managed by DialNFind so customers can find you. Pick the ones that match
+          Categories are managed by KaajVa so customers can find you. Pick the ones that match
           your work.
         </AppText>
         {categories.isLoading ? (

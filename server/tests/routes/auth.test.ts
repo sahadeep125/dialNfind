@@ -21,7 +21,7 @@ describe("register and login", () => {
     expect(res.body.user).toMatchObject({ email: "ravi@example.com", role: "provider", phone: "+919876543210", hasPassword: true, linkedAccounts: [], provider: null });
     expect(verifyToken(res.body.token)).not.toBeNull();
     await settle();
-    expect(sentMails()[0]!.subject).toMatch(/is your DialNFind code$/);
+    expect(sentMails()[0]!.subject).toMatch(/is your KaajVa code$/);
     expect((await register({})).status).toBe(409);
     const bad = await register({ email: "x", acceptTerms: false });
     expect(bad.status).toBe(400);
@@ -104,7 +104,7 @@ describe("profile", () => {
     expect((await api().get("/api/v1/auth/me").set("Authorization", `Bearer ${other}`)).status).toBe(401);
     expect((await c.get("/api/v1/auth/me")).status).toBe(200);
     await settle();
-    expect(sentMails().at(-1)!.subject).toBe("Your DialNFind password was changed");
+    expect(sentMails().at(-1)!.subject).toBe("Your KaajVa password was changed");
     const social = await createUser({ passwordHash: null });
     expect((await (await authed(social)).post("/api/v1/auth/change-password").send({ newPassword: "first1234" })).status).toBe(200);
   });
@@ -129,7 +129,7 @@ describe("account deletion", () => {
     expect((await c.delete("/api/v1/auth/me").send({})).status).toBe(400);
     const ok = await c.delete("/api/v1/auth/me").send({ password: PASSWORD });
     expect(ok.body).toEqual({ ok: true, storeSubscription: null });
-    expect(sentMails()[0]).toMatchObject({ to: "bye@example.com", subject: "Your DialNFind account was deleted" });
+    expect(sentMails()[0]).toMatchObject({ to: "bye@example.com", subject: "Your KaajVa account was deleted" });
     expect((await prisma.user.findUniqueOrThrow({ where: { id: u.id } })).status).toBe("deleted");
   });
   it("closes businesses; password-less owners type DELETE", async () => {
@@ -156,7 +156,7 @@ describe("email verification and password reset", () => {
     const token = await issueUserToken(u.id, "verify_email");
     expect((await api().post("/api/v1/auth/verify-email").send({ token })).body).toEqual({ ok: true });
     await settle();
-    expect(sentMails()[0]!.subject).toBe("Welcome to DialNFind for business");
+    expect(sentMails()[0]!.subject).toBe("Welcome to KaajVa for business");
     expect((await api().post("/api/v1/auth/verify-email").send({ token })).status).toBe(400);
     const v = await createUser();
     const again = await issueUserToken(v.id, "verify_email");
@@ -203,7 +203,7 @@ describe("email verification and password reset", () => {
     expect((await api().post("/api/v1/auth/login").send({ email: "r@example.com", password: "brandnew1" })).status).toBe(200);
     expect((await api().post("/api/v1/auth/reset-password").send({ token, newPassword: "brandnew1" })).status).toBe(400);
     await settle();
-    expect(sentMails().at(-1)!.subject).toBe("Your DialNFind password was changed");
+    expect(sentMails().at(-1)!.subject).toBe("Your KaajVa password was changed");
   });
   it("sets a first password quietly and refuses inactive accounts", async () => {
     const invited = await createUser({ passwordHash: null, verified: false });
@@ -225,7 +225,7 @@ describe("sign in with Google and Apple", () => {
     expect(first.status).toBe(201);
     expect(first.body).toMatchObject({ isNewUser: true, user: { email: "person@example.com", role: "provider", hasPassword: false, linkedAccounts: ["google"] } });
     await settle();
-    expect(sentMails()[0]!.subject).toBe("Welcome to DialNFind for business");
+    expect(sentMails()[0]!.subject).toBe("Welcome to KaajVa for business");
     const again = await api().post("/api/v1/auth/google").send({ idToken: await googleToken() });
     expect(again.status).toBe(200);
     expect(again.body.isNewUser).toBe(false);
@@ -237,7 +237,7 @@ describe("sign in with Google and Apple", () => {
     try {
       stubIdentityFetch(() => Response.json({ refresh_token: "rt-1" }));
       const res = await api().post("/api/v1/auth/apple").send({
-        idToken: await appleToken(), authorizationCode: "code-123456", redirectUri: "https://dialnfind.com/cb", name: { givenName: "Asha", familyName: null },
+        idToken: await appleToken(), authorizationCode: "code-123456", redirectUri: "https://kaajva.in/cb", name: { givenName: "Asha", familyName: null },
       });
       expect(res.status).toBe(201);
       expect(res.body.user.name).toBe("Asha");

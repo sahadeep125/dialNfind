@@ -65,7 +65,7 @@ describe("routing guards", () => {
     let down = true;
     mockApi({ ...routes, "/auth/me": () => (down ? json({ error: { message: "Down" } }, 503) : json(routes["/auth/me"])) });
     await renderApp("/");
-    expect(await screen.findByText("We could not reach DialNFind")).toBeInTheDocument();
+    expect(await screen.findByText("We could not reach KaajVa")).toBeInTheDocument();
     down = false;
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Good to see you")).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe("routing guards", () => {
     await renderApp("/register");
     expect(document.querySelector(".animate-spin")).toBeInTheDocument();
     await act(async () => release());
-    expect(await screen.findByText("We could not reach DialNFind")).toBeInTheDocument();
+    expect(await screen.findByText("We could not reach KaajVa")).toBeInTheDocument();
   });
 
   it("shows a not-found page for unknown paths", async () => {

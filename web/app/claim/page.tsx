@@ -14,7 +14,7 @@ export const revalidate = 600;
 
 export const metadata: Metadata = pageMetadata({
   title: "List or claim your business",
-  description: "List your business on DialNFind for free or claim your existing listing. Get calls from customers nearby, reply to reviews and track leads.",
+  description: "List your business on KaajVa for free or claim your existing listing. Get calls from customers nearby, reply to reviews and track leads.",
   path: "/claim",
 });
 
@@ -38,7 +38,7 @@ export default async function ClaimPage() {
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight text-brand-deep md:text-5xl">Get more calls from customers nearby</h1>
             <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-              Thousands of people search DialNFind when something breaks. List your business for free, or claim your existing listing to take control of it.
+              Thousands of people search KaajVa when something breaks. List your business for free, or claim your existing listing to take control of it.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" variant="cta">
@@ -74,7 +74,7 @@ export default async function ClaimPage() {
         <div className="mx-auto max-w-3xl rounded-xl border bg-card p-6 shadow-[var(--shadow-lift)] md:p-10">
           <h2 className="text-2xl font-bold text-brand-deep md:text-3xl">Is your business already listed?</h2>
           <p className="mt-2 text-muted-foreground">
-            Search for it below. Sign up with your own email, then upload a trade licence, GST certificate or shop registration. Our team checks it and hands the listing over to you. No email on the listing? That's fine: you add your business email once it's yours.
+            Search for it below. Sign up with your own email, then upload a trade licence, GST certificate or shop registration. Our team checks it and hands the listing over to you. No email on the listing? That&apos;s fine: you add your business email once it&apos;s yours.
           </p>
           <div className="mt-6">
             <ClaimSearch providerAppUrl={PROVIDER_APP_URL} />

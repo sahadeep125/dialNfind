@@ -3,7 +3,7 @@ import { BadgeCheck, Mail, MapPin, Phone, PhoneCall, Star } from "lucide-react";
 import { Logo } from "./logo";
 import { publicApi } from "@/lib/api";
 import { getAppConfig } from "@/lib/app-config";
-import { OFFICE_REGION } from "@/lib/config";
+import { BUSINESS, OFFICE_ADDRESS } from "@/lib/config";
 import { formatPhone, telHref } from "@/lib/format";
 import type { Category } from "@/lib/types";
 
@@ -72,9 +72,9 @@ export async function SiteFooter() {
         <div className="space-y-4">
           <Logo inverted />
           <p className="max-w-xs text-sm leading-relaxed">
-            Find trusted local service professionals near you, compare them in seconds, and call the one you prefer.
+            KaajVa helps you find trusted electricians, plumbers, repair technicians and other local service professionals in Siliguri and North Bengal, compare them in seconds, and call the one you prefer.
           </p>
-          <div className="space-y-2 text-sm">
+          <address className="space-y-2 text-sm not-italic">
             {config.support_email && (
               <a href={`mailto:${config.support_email}`} className="flex items-center gap-2 transition-colors hover:text-white">
                 <Mail className="size-4" aria-hidden /> {config.support_email}
@@ -85,12 +85,17 @@ export async function SiteFooter() {
                 <Phone className="size-4" aria-hidden /> {formatPhone(config.support_phone)}
               </a>
             )}
-            {OFFICE_REGION && (
-              <p className="flex items-center gap-2">
-                <MapPin className="size-4" aria-hidden /> {OFFICE_REGION}
+            {config.support_email !== BUSINESS.infoEmail && (
+              <a href={`mailto:${BUSINESS.infoEmail}`} className="flex items-center gap-2 transition-colors hover:text-white">
+                <Mail className="size-4" aria-hidden /> {BUSINESS.infoEmail}
+              </a>
+            )}
+            {OFFICE_ADDRESS && (
+              <p className="flex items-start gap-2">
+                <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden /> {OFFICE_ADDRESS}
               </p>
             )}
-          </div>
+          </address>
         </div>
         {columns.map((col) => (
           <div key={col.title}>
@@ -109,7 +114,7 @@ export async function SiteFooter() {
       </div>
       <div className="border-t border-white/10">
         <div className="container-wide flex flex-col gap-2 py-6 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {new Date().getFullYear()} DialNFind. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} KaajVa. All rights reserved.</p>
           <nav aria-label="Legal" className="flex gap-4">
             <Link href="/terms" className="hover:text-white">Terms of use</Link>
             <Link href="/privacy" className="hover:text-white">Privacy policy</Link>

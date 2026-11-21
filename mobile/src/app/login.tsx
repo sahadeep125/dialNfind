@@ -38,7 +38,7 @@ export default function LoginScreen() {
     isNewUser: boolean;
   }): void => {
     const first = user.name.split(" ")[0];
-    toast(isNewUser ? `Welcome to DialNFind, ${first}` : `Welcome back, ${first}`, "success");
+    toast(isNewUser ? `Welcome to KaajVa, ${first}` : `Welcome back, ${first}`, "success");
     close();
   };
 
@@ -70,7 +70,7 @@ export default function LoginScreen() {
       footer={
         <>
           <AuthSwitch
-            prompt="New to DialNFind?"
+            prompt="New to KaajVa?"
             action="Create an account"
             onPress={() => router.replace("/register")}
           />

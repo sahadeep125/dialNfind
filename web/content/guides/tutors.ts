@@ -23,7 +23,7 @@ export const TUTORS_GUIDES: Guide[] = [
       {
         heading: "Where to look",
         paragraphs: [
-          "Ask other parents and your child's classmates, check school notice boards, and use local directories such as DialNFind to find tutors near you by subject, with ratings and reviews. A tutor who lives nearby is more likely to be punctual and consistent.",
+          "Ask other parents and your child's classmates, check school notice boards, and use local directories such as KaajVa to find tutors near you by subject, with ratings and reviews. A tutor who lives nearby is more likely to be punctual and consistent.",
         ],
       },
       {
@@ -98,7 +98,7 @@ export const TUTORS_GUIDES: Guide[] = [
       { q: "How many days a week should a home tutor come?", a: "Two to three days a week is common; more before exams or for senior classes." },
       { q: "Should I choose a tutor for one subject or all subjects?", a: "One tutor for all subjects can work for younger classes. From class 9 onwards, subject specialists are usually better." },
       { q: "Are online tutors as good as home tutors?", a: "For motivated older students, online tutoring works well. Younger children usually do better with in-person lessons." },
-      { q: "How do I find a tutor near me?", a: "Search Tutors on DialNFind, filter by subject, and call tutors to discuss your child's needs." },
+      { q: "How do I find a tutor near me?", a: "Search Tutors on KaajVa, filter by subject, and call tutors to discuss your child's needs." },
     ],
   },
   {
@@ -183,7 +183,7 @@ export const TUTORS_GUIDES: Guide[] = [
       {
         heading: "Finding tutors near you",
         paragraphs: [
-          "On DialNFind you can find home tutors near you in Siliguri and other cities, by subject, with ratings and reviews from other parents. Call a few tutors, ask about their fees and approach, and book trial classes before choosing.",
+          "On KaajVa you can find home tutors near you in Siliguri and other cities, by subject, with ratings and reviews from other parents. Call a few tutors, ask about their fees and approach, and book trial classes before choosing.",
         ],
       },
       {

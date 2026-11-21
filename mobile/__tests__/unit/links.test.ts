@@ -2,15 +2,15 @@ import { mapWebPath } from "@/utils/links";
 
 describe("mapWebPath", () => {
   it.each([
-    ["https://dialnfind.com/providers/sharma-tv", "/provider/sharma-tv"],
+    ["https://kaajva.in/providers/sharma-tv", "/provider/sharma-tv"],
     ["/providers/sharma-tv/", "/provider/sharma-tv"],
-    ["https://dialnfind.com/services", "/categories"],
-    ["https://dialnfind.com/services/electronics-repair?sub=tv-repair&lat=1", "/category/electronics-repair?sub=tv-repair"],
-    ["https://dialnfind.com/services/electronics-repair/tv-repair?lat=1", "/category/electronics-repair?sub=tv-repair"],
-    ["https://dialnfind.com/search?q=plumber&lat=1&lng=2", "/search?q=plumber"],
-    ["https://dialnfind.com/dashboard/support/42", "/support/42"],
-    ["https://dialnfind.com/dashboard/notifications", "/notifications"],
-    ["https://dialnfind.com/dashboard/contacts", "/contacts"],
+    ["https://kaajva.in/services", "/categories"],
+    ["https://kaajva.in/services/electronics-repair?sub=tv-repair&lat=1", "/category/electronics-repair?sub=tv-repair"],
+    ["https://kaajva.in/services/electronics-repair/tv-repair?lat=1", "/category/electronics-repair?sub=tv-repair"],
+    ["https://kaajva.in/search?q=plumber&lat=1&lng=2", "/search?q=plumber"],
+    ["https://kaajva.in/dashboard/support/42", "/support/42"],
+    ["https://kaajva.in/dashboard/notifications", "/notifications"],
+    ["https://kaajva.in/dashboard/contacts", "/contacts"],
   ])("maps %s to %s", (input, expected) => {
     expect(mapWebPath(input)).toBe(expected);
   });

@@ -28,7 +28,7 @@ const CATEGORIES: CategoryData[] = JSON.parse(readFileSync(`${DATA_DIR}/categori
 
 const BADGES = [
   { name: "Top Rated", criteriaDescription: "Average rating of 4.5 or higher from at least 10 reviews" },
-  { name: "Verified Pro", criteriaDescription: "Phone and business documents verified by DialNFind" },
+  { name: "Verified Pro", criteriaDescription: "Phone and business documents verified by KaajVa" },
   { name: "Quick Responder", criteriaDescription: "Most customers report a quick response" },
   { name: "Pro Partner", criteriaDescription: "Active Pro plan subscriber" },
   { name: "Business Partner", criteriaDescription: "Active Business plan subscriber" },
@@ -80,9 +80,9 @@ const PLANS = [
   },
 ] as const;
 
-// Support phone and published legal links are left for the team to fill in under Settings.
-// The support address starts as the mail inbox from .env; without one it is left empty rather than made up.
-const supportEmail = (process.env.SUPPORT_EMAIL || process.env.SMTP_USER || "").trim().toLowerCase();
+// Published legal links are left for the team to fill in under Settings; the support phone falls back to the
+// default in services/settings.ts. The support address is SUPPORT_EMAIL from .env, or the KaajVa support inbox.
+const supportEmail = (process.env.SUPPORT_EMAIL || "support@kaajva.in").trim().toLowerCase();
 const SETTINGS = [
   { key: "sponsored_cpc", value: "5" },
   { key: "sponsored_min_budget", value: "500" },
@@ -152,7 +152,7 @@ async function main() {
       throw new Error("No super admin yet. Set BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD (10 or more characters) and run again.");
     }
     await prisma.user.create({
-      data: { role: "super_admin", name: "DialNFind Admin", email, passwordHash: await bcrypt.hash(password, 10), emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
+      data: { role: "super_admin", name: "KaajVa Admin", email, passwordHash: await bcrypt.hash(password, 12), emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
     });
     log.push(`super admin ${email}`);
   }

@@ -210,7 +210,7 @@ function ProfileEditor({ profile }: { profile: ProviderProfile }) {
             </div>
           </Panel>
 
-          <Panel title="Contact" description="Customers reach you directly. DialNFind never charges per lead.">
+          <Panel title="Contact" description="Customers reach you directly. KaajVa never charges per lead.">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id="phone" label="Business phone" error={errors.phone} required>
                 <Input type="tel" inputMode="tel" autoComplete="tel" {...fieldA11y("phone", errors.phone)} {...register("phone")} />

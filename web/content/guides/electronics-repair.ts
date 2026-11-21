@@ -91,7 +91,7 @@ export const ELECTRONICS_REPAIR_GUIDES: Guide[] = [
       { q: "How long does TV repair take?", a: "Simple fixes can be done the same day. Backlight or board replacements typically take one to three days; panels may take longer if they must be ordered." },
       { q: "Why is panel replacement so expensive?", a: "The panel is the single most expensive part of a TV, and it must be handled in a clean workshop. For many sizes, the panel alone costs close to the price of a new budget TV." },
       { q: "Do local technicians give a warranty?", a: "Many give a warranty of a few weeks to a few months on the repair and replaced parts. Ask before you agree and get it written on the bill." },
-      { q: "How do I find a TV repair technician near me?", a: "Search TV repair on DialNFind to see nearby technicians with ratings, reviews and opening hours, then call them directly." },
+      { q: "How do I find a TV repair technician near me?", a: "Search TV repair on KaajVa to see nearby technicians with ratings, reviews and opening hours, then call them directly." },
     ],
   },
   {
@@ -171,7 +171,7 @@ export const ELECTRONICS_REPAIR_GUIDES: Guide[] = [
         heading: "Getting a second opinion",
         paragraphs: [
           "If a technician says the panel is gone or the TV is not worth repairing, it can be worth paying a small diagnosis fee for a second opinion, especially on a larger or newer TV. Faults such as a failed backlight are sometimes mistaken for panel damage, and the difference in cost is large.",
-          "On DialNFind you can compare several TV repair technicians near you, read what other customers say about their honesty and turnaround time, and call two of them to compare what they tell you.",
+          "On KaajVa you can compare several TV repair technicians near you, read what other customers say about their honesty and turnaround time, and call two of them to compare what they tell you.",
         ],
       },
       {

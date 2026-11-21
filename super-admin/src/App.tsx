@@ -41,7 +41,7 @@ function NoAccess() {
         <ShieldAlert className="size-7" />
       </span>
       <h1 className="mt-5 text-2xl font-bold text-brand-deep">This account has no admin access</h1>
-      <p className="mt-2 max-w-md text-muted-foreground">The admin console is only for the DialNFind team. Ask the super admin to add you to the team, or sign in with a different account.</p>
+      <p className="mt-2 max-w-md text-muted-foreground">The admin console is only for the KaajVa team. Ask the super admin to add you to the team, or sign in with a different account.</p>
       <Button className="mt-6" onClick={signOut}>
         Sign in with another account
       </Button>
@@ -55,7 +55,7 @@ function Unreachable() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
       <CloudOff className="size-10 text-muted-foreground" />
-      <h1 className="mt-5 text-2xl font-bold text-brand-deep">We could not reach DialNFind</h1>
+      <h1 className="mt-5 text-2xl font-bold text-brand-deep">We could not reach KaajVa</h1>
       <p className="mt-2 max-w-md text-muted-foreground">Check your connection. If it keeps happening, the service may be down for a moment.</p>
       <Button className="mt-6" onClick={retry}>
         Try again

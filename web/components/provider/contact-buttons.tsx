@@ -66,7 +66,7 @@ export function ContactButtons({
 
   function whatsapp(number: string) {
     recordLead(provider.id, "whatsapp", source, categorySlug);
-    window.open(whatsappHref(number, `Hi ${provider.businessName}, I found you on DialNFind and need help with a service.`), "_blank", "noopener");
+    window.open(whatsappHref(number, `Hi ${provider.businessName}, I found you on KaajVa and need help with a service.`), "_blank", "noopener");
   }
 
   return (
@@ -107,7 +107,7 @@ export function ContactButtons({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Call {provider.businessName}</DialogTitle>
-            <DialogDescription>Mention DialNFind when you call so they know how you found them.</DialogDescription>
+            <DialogDescription>Mention KaajVa when you call so they know how you found them.</DialogDescription>
           </DialogHeader>
           <div className="flex items-center gap-3 rounded-lg bg-accent p-4">
             <span className="flex size-11 items-center justify-center rounded-full bg-cta text-cta-foreground">

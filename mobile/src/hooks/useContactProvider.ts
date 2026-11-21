@@ -44,7 +44,7 @@ export function useContactProvider(): (
       }
       try {
         if (channel === "call") await openPhone(number);
-        else await openWhatsApp(number, `Hi ${provider.businessName}, I found you on DialNFind.`);
+        else await openWhatsApp(number, `Hi ${provider.businessName}, I found you on KaajVa.`);
         // Counted now; any rating prompt waits until the person is back in the app (RatingPrompter).
         recordContact();
       } catch (error: unknown) {

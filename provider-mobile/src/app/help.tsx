@@ -23,8 +23,8 @@ const FAQ: { q: string; a: string }[] = [
     a: "A lead is a customer who tapped Call or WhatsApp on your listing. The Leads tab lists them with the service they looked at and any details they shared. Tap a lead to mark it contacted, won or lost and add a private note.",
   },
   {
-    q: "Is DialNFind taking a cut of my jobs?",
-    a: "No. Customers contact you directly and pay you directly. DialNFind does not take bookings or commission on your work.",
+    q: "Is KaajVa taking a cut of my jobs?",
+    a: "No. Customers contact you directly and pay you directly. KaajVa does not take bookings or commission on your work.",
   },
   {
     q: "How do reviews work?",
@@ -61,7 +61,7 @@ export default function HelpScreen() {
   const toast = useToast();
   const { data: config, isLoading: configLoading } = useAppConfig();
   const [open, setOpen] = useState<number | null>(null);
-  // Contacts are set by the DialNFind team in the admin console; a channel without one is not offered.
+  // Contacts are set by the KaajVa team in the admin console; a channel without one is not offered.
   const email = config?.support_email || null;
   const phone = config?.support_phone || null;
 
@@ -122,7 +122,7 @@ export default function HelpScreen() {
               leading={<Mail size={16} color={theme.colors.text.secondary} />}
               onPress={() =>
                 void run(
-                  () => openEmail(email, "Help with DialNFind Business"),
+                  () => openEmail(email, "Help with KaajVa Business"),
                   "Could not open email.",
                 )
               }

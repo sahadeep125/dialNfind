@@ -11,7 +11,7 @@ import { useTheme } from "@/hooks/useTheme";
 interface Props {
   title: string;
   subtitle?: string;
-  /** Glyph above the title. Without one, the DialNFind mark is shown. */
+  /** Glyph above the title. Without one, the KaajVa mark is shown. */
   icon?: LucideIcon;
   iconTone?: IconTileTone;
   headerTitle?: string;

@@ -176,7 +176,7 @@ billingRouter.post("/billing/razorpay/checkout", limits.billing, async (req, res
   res.status(201).json({
     subscriptionId: rzp.id,
     keyId: env.razorpay.keyId,
-    name: "DialNFind",
+    name: "KaajVa",
     description: `${price.plan.name} plan, ${body.billingCycle}`,
     amount: num(price.amount),
     prefill: { name: user.name, email: user.email, contact: user.phone ?? undefined },

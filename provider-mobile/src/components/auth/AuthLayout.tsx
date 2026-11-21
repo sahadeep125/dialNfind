@@ -48,7 +48,7 @@ export function AuthLayout({ title, subtitle, back = false, children, footer }: 
           ) : (
             <View style={[styles.brand, { gap: theme.spacing[2], marginBottom: theme.spacing[8] }]}>
               <BrandMark size={32} />
-              <AppText variant="section">DialNFind</AppText>
+              <AppText variant="section">KaajVa</AppText>
               <View
                 style={[
                   styles.tag,

@@ -36,7 +36,7 @@ export function ForgotPasswordForm() {
       <div className="card-surface p-6 text-center">
         <MailCheck className="mx-auto size-10 text-primary" />
         <h2 className="mt-3 text-lg font-semibold">Check your email</h2>
-        <p className="mt-1 text-sm text-muted-foreground">If {sentTo} has a DialNFind account, we sent it a link to choose a new password. The link works for one hour.</p>
+        <p className="mt-1 text-sm text-muted-foreground">If {sentTo} has a KaajVa account, we sent it a link to choose a new password. The link works for one hour.</p>
         <Button asChild variant="outline" className="mt-5">
           <Link href="/login">Back to log in</Link>
         </Button>

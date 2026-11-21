@@ -31,7 +31,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 
 const FAQ: { q: string; a: string }[] = [
   {
-    q: "Is DialNFind free to use?",
+    q: "Is KaajVa free to use?",
     a: "Yes. Searching, calling and messaging providers is free. You pay the provider directly for their work.",
   },
   {
@@ -40,7 +40,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How do I contact a provider?",
-    a: "Tap Call or WhatsApp on any listing. You talk to the provider directly; DialNFind does not take bookings or payments.",
+    a: "Tap Call or WhatsApp on any listing. You talk to the provider directly; KaajVa does not take bookings or payments.",
   },
   {
     q: "What does Verified mean?",
@@ -67,8 +67,8 @@ const FAQ: { q: string; a: string }[] = [
     a: "Each provider sets their own prices. Describe the job on the call and ask for a quote before work starts.",
   },
   {
-    q: "Do I pay through DialNFind?",
-    a: "No. You pay the provider directly by cash, UPI or any method you agree on. DialNFind takes no commission and adds no booking fees.",
+    q: "Do I pay through KaajVa?",
+    a: "No. You pay the provider directly by cash, UPI or any method you agree on. KaajVa takes no commission and adds no booking fees.",
   },
   {
     q: "A listing has a wrong number or the business has closed. What can I do?",
@@ -247,7 +247,7 @@ export default function HelpScreen() {
                 tone="accent"
                 title="Email us"
                 text={email}
-                onPress={() => void run(() => openEmail(email, "Help with DialNFind"))}
+                onPress={() => void run(() => openEmail(email, "Help with KaajVa"))}
               />
             ) : null}
             {phone ? (

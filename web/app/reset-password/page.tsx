@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Choose a new password", robots: NO_I
 export default async function ResetPasswordPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token } = await searchParams;
   return (
-    <AuthShell title="Choose a new password" subtitle="This works for DialNFind customer, business and team accounts.">
+    <AuthShell title="Choose a new password" subtitle="This works for KaajVa customer, business and team accounts.">
       {token ? (
         <ResetPasswordForm token={token} />
       ) : (

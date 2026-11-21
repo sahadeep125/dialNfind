@@ -17,7 +17,7 @@ const pub = (key: string) => `${env.publicUrl}/uploads/${key}`;
 describe("app shell", () => {
   it("answers health, root, 404 and malformed JSON", async () => {
     expect((await api().get("/api/v1/health")).body).toEqual({ ok: true });
-    expect((await api().get("/")).body).toMatchObject({ name: "DialNFind API" });
+    expect((await api().get("/")).body).toMatchObject({ name: "KaajVa API" });
     const missing = await api().get("/api/v1/nope");
     expect(missing.status).toBe(404);
     expect(missing.body.error.message).toBe("No route for GET /api/v1/nope");
@@ -225,7 +225,7 @@ describe("misc routes", () => {
   });
   it("serves app config, plans and stats", async () => {
     await prisma.setting.create({ data: { key: "support_phone", value: "+911234" } });
-    expect((await api().get("/api/v1/app-config")).body.config).toMatchObject({ site_name: "DialNFind", support_phone: "+911234", terms_url: null, min_review_length: 10 });
+    expect((await api().get("/api/v1/app-config")).body.config).toMatchObject({ site_name: "KaajVa", support_phone: "+911234", terms_url: null, min_review_length: 10 });
     await seedPlans();
     expect((await api().get("/api/v1/plans")).body.plans.map((p: { code: string }) => p.code)).toEqual(["free", "pro", "business"]);
     await createCategory();
@@ -356,7 +356,7 @@ describe("leads", () => {
     expect(res.body.contact).toEqual({ number: "+919876543210" });
     expect(await prisma.attributeValue.findMany({ select: { value: true } })).toEqual([{ value: "TV" }]);
     await settle();
-    expect(await prisma.notification.findFirstOrThrow({ where: { userId: user.id } })).toMatchObject({ title: "New call from DialNFind" });
+    expect(await prisma.notification.findFirstOrThrow({ where: { userId: user.id } })).toMatchObject({ title: "New call from KaajVa" });
 
     expect((await api().post("/api/v1/leads").send({ providerId: Number(provider.id), channel: "whatsapp" })).body.error.message).toBe("This business takes calls only");
     await subscribe(provider.id, plans.pro.id);
@@ -666,7 +666,7 @@ describe("support tickets", () => {
       ],
     });
     const detail = await c.get(`/api/v1/support/tickets/${id}`);
-    expect(detail.body.messages.map((m: { authorName: string }) => m.authorName)).toEqual(["Ravi", "DialNFind Support", "Ravi"]);
+    expect(detail.body.messages.map((m: { authorName: string }) => m.authorName)).toEqual(["Ravi", "KaajVa Support", "Ravi"]);
     expect(detail.body.messages[0].attachments[0]).toContain("sig=");
 
     await prisma.supportTicket.update({ where: { id: BigInt(id) }, data: { status: "resolved", assignedToId: agent.id } });

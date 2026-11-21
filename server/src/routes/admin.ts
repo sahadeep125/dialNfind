@@ -113,7 +113,7 @@ adminRouter.patch("/verifications/:id", async (req, res) => {
     owner?.userId,
     "verification",
     decision === "approved" ? `${label} verified` : `${label} document not accepted`,
-    decision === "approved" ? "Your verification badge on DialNFind has been updated." : `${notes} Please upload a new document from the Verification page.`,
+    decision === "approved" ? "Your verification badge on KaajVa has been updated." : `${notes} Please upload a new document from the Verification page.`,
     { verificationId: Number(id) },
     { label: "Open Verification", url: `${env.providerUrl}/verification` },
   );
@@ -294,7 +294,7 @@ adminRouter.post("/providers/:id/badges", async (req, res) => {
   });
   void refreshProviderPages(providerId);
   await logAdmin(currentUser(req).id, "badge.award", "provider", providerId, { badgeId });
-  void notify(provider.userId, "listing", `You earned the ${badge.name} badge`, "It now shows on your DialNFind profile.", { badgeId });
+  void notify(provider.userId, "listing", `You earned the ${badge.name} badge`, "It now shows on your KaajVa profile.", { badgeId });
   res.status(201).json({ providerBadge: awarded });
 });
 

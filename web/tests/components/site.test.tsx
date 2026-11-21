@@ -51,7 +51,7 @@ describe("small site pieces", () => {
       </>,
     );
     expect(container.querySelectorAll("svg").length).toBeGreaterThan(4);
-    expect(screen.getAllByLabelText("DialNFind home")[0]).toHaveAttribute("href", "/x");
+    expect(screen.getAllByLabelText("KaajVa home")[0]).toHaveAttribute("href", "/x");
     expect(screen.getByRole("heading", { level: 1, name: "C" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /All/ })).toHaveAttribute("href", "/a");
     expect(screen.getByAltText(HERO_IMAGE.alt)).toBeInTheDocument();
@@ -191,7 +191,7 @@ describe("MobileNav", () => {
 describe("SiteFooter", () => {
   it("lists popular services and support contacts", async () => {
     vi.resetModules();
-    vi.stubEnv("NEXT_PUBLIC_OFFICE_REGION", "Siliguri, West Bengal");
+    vi.stubEnv("NEXT_PUBLIC_OFFICE_ADDRESS", "Ghogomali, Siliguri, West Bengal, India 734006");
     const { SiteFooter: Footer } = await import("@/components/site/site-footer");
     const rtl = await import("@testing-library/react");
     mockApi({
@@ -204,7 +204,8 @@ describe("SiteFooter", () => {
     expect(links.indexOf("Beta")).toBeLessThan(links.indexOf("Alpha"));
     expect(rtl.screen.getByText("help@x.co")).toBeInTheDocument();
     expect(rtl.screen.getByText("+91 98765 43210")).toBeInTheDocument();
-    expect(rtl.screen.getByText("Siliguri, West Bengal")).toBeInTheDocument();
+    expect(rtl.screen.getByText("Ghogomali, Siliguri, West Bengal, India 734006")).toBeInTheDocument();
+    expect(rtl.screen.getByText("info@kaajva.in")).toBeInTheDocument();
   });
   it("still renders when the API is down", async () => {
     vi.resetModules();

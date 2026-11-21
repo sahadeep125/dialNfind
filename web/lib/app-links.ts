@@ -1,4 +1,4 @@
-/** Paths on this site that open in the DialNFind app when it is installed (mobile/src/app/+native-intent.tsx maps them). */
+/** Paths on this site that open in the KaajVa app when it is installed (mobile/src/app/+native-intent.tsx maps them). */
 export const APP_LINK_PATHS = ["/providers/*", "/services", "/services/*", "/search", "/dashboard/notifications", "/dashboard/support/*", "/dashboard/contacts"];
 
 export const IOS_APP_ID = `${process.env.APPLE_TEAM_ID || "9HH33XNTUX"}.${process.env.IOS_BUNDLE_ID || "com.dialnfind.app"}`;

@@ -55,7 +55,7 @@ export function BrandSplash({ onFinish }: Props) {
 
   return (
     <AppBrandSurface style={styles.fill}>
-      <View style={styles.center} accessibilityLabel="DialNFind is loading">
+      <View style={styles.center} accessibilityLabel="KaajVa is loading">
         <View style={styles.markWrap}>
           <Animated.View style={[styles.ring, ringStyle]} />
           <Animated.View style={[styles.mark, markStyle]}>
@@ -64,7 +64,7 @@ export function BrandSplash({ onFinish }: Props) {
         </View>
         <Animated.View entering={FadeInDown.delay(200).duration(450)} style={styles.copy}>
           <AppText variant="hero" tone="white" align="center">
-            DialNFind
+            KaajVa
           </AppText>
           <AppText variant="bodyLarge" tone="whiteMuted" align="center">
             Trusted local services, one call away

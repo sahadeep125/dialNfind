@@ -80,7 +80,7 @@ export function CategoriesPage() {
     <>
       <PageHeader
         title="Categories"
-        description="Only the DialNFind team can create categories. Providers pick from these when they list their services."
+        description="Only the KaajVa team can create categories. Providers pick from these when they list their services."
         actions={
           <Button onClick={() => setEditCat("new")}>
             <Plus /> New category

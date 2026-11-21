@@ -141,7 +141,7 @@ adminSupportRouter.post("/tickets/:id/messages", async (req, res) => {
       void sendMail({
         to: ticket.email,
         subject: `Re: ${ticket.subject} [${ticketRef(id)}]`,
-        lines: [body.body, ticket.userId ? "You can reply from Help and support in your DialNFind account." : "Reply to our contact form and mention this reference if you need more help."],
+        lines: [body.body, ticket.userId ? "You can reply from Help and support in your KaajVa account." : "Reply to our contact form and mention this reference if you need more help."],
       });
     }
   }

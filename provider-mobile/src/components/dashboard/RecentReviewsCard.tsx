@@ -29,7 +29,7 @@ export function RecentReviewsCard({ reviews, unreplied, onViewAll }: Props) {
           compact
           icon={MessageSquareText}
           title="No reviews yet"
-          text="Ask happy customers to rate you on DialNFind."
+          text="Ask happy customers to rate you on KaajVa."
         />
       ) : (
         shown.map((r) => (

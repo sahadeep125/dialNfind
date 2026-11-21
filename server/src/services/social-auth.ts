@@ -5,7 +5,7 @@ import type { VerifiedIdentity } from "../lib/oauth.js";
 import { sendSignInMethodAdded } from "./emails.js";
 
 const isStaff = (user: Pick<User, "role">) => user.role === "admin" || user.role === "super_admin";
-const FALLBACK_NAME = "DialNFind user";
+const FALLBACK_NAME = "KaajVa user";
 
 /** Provider names can hold digits, emoji and the like; keep what our own name rule allows. */
 export function cleanName(raw: string | null | undefined): string | null {
@@ -61,7 +61,7 @@ export async function signInWithIdentity(input: SocialSignIn, attempt = 0): Prom
     // that sign-in (for example the account was deleted), Apple has to be told to forget us first.
     throw badRequest(
       provider === "apple"
-        ? "Apple did not share your email. Open Settings › Apple ID › Sign in with Apple, remove DialNFind, then try again."
+        ? "Apple did not share your email. Open Settings › Apple ID › Sign in with Apple, remove KaajVa, then try again."
         : "Your Google account did not share an email address.",
     );
   }

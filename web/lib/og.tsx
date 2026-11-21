@@ -18,16 +18,16 @@ export function OgFrame({ eyebrow, title, subtitle, footer }: { eyebrow: string;
     >
       <div style={{ display: "flex", alignItems: "center", gap: 18, fontSize: 34, fontWeight: 700 }}>
         <div style={{ width: 56, height: 56, borderRadius: 16, background: "white", color: "#c2410c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34 }}>
-          D
+          K
         </div>
-        DialNFind
+        KaajVa
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         <div style={{ fontSize: 30, color: "#b9c4d4", textTransform: "uppercase", letterSpacing: 2 }}>{eyebrow}</div>
         <div style={{ fontSize: title.length > 40 ? 64 : 76, fontWeight: 800, lineHeight: 1.1 }}>{title}</div>
         {subtitle ? <div style={{ fontSize: 34, color: "#e3e8ef" }}>{subtitle}</div> : null}
       </div>
-      <div style={{ fontSize: 28, color: "#b9c4d4" }}>{footer ?? "Find trusted local pros near you. Call them directly."}</div>
+      <div style={{ fontSize: 28, color: "#b9c4d4" }}>{footer ?? "kaajva.in · Find trusted local pros near you. Call them directly."}</div>
     </div>
   );
 }

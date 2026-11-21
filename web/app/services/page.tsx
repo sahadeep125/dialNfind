@@ -13,7 +13,7 @@ export const revalidate = 600;
 
 export const metadata: Metadata = pageMetadata({
   title: `All Home Services Near Me in ${SEO_CITY}`,
-  description: `Browse every service on DialNFind: electricians, plumbers, AC and TV repair, cleaning, pest control, painters, tutors, movers and more near you in ${SEO_CITY}.`,
+  description: `Browse every service on KaajVa: electricians, plumbers, AC and TV repair, cleaning, pest control, painters, tutors, movers and more near you in ${SEO_CITY}.`,
   path: "/services",
 });
 
@@ -30,7 +30,7 @@ export default async function ServicesPage() {
           </nav>
         }
         title={`Home services in ${SEO_CITY}`}
-        subtitle="Browse every category on DialNFind, or search for the exact service you need."
+        subtitle="Browse every category on KaajVa, or search for the exact service you need."
       />
       <div className="container-wide py-10 md:py-14">
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

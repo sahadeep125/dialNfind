@@ -110,7 +110,7 @@ export default function ReviewsScreen() {
             <EmptyState
               icon={MessageSquare}
               title="No reviews yet"
-              text="Customers who contact you through DialNFind can leave a review here."
+              text="Customers who contact you through KaajVa can leave a review here."
             />
           )
         }

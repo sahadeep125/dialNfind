@@ -505,7 +505,7 @@ insightsRouter.post("/sponsored/checkout", limits.billing, async (req, res) => {
   res.status(201).json({
     orderId: rzp.id,
     keyId: env.razorpay.keyId,
-    name: "DialNFind",
+    name: "KaajVa",
     description: `Sponsored in ${category.name}, ${body.days} days`,
     amount,
     currency: "INR",

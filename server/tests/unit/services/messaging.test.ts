@@ -156,7 +156,7 @@ describe("emails", () => {
     const customer = await recipient("customer", " ");
     await emails.sendVerificationEmail(customer);
     const [p, c] = sentMails();
-    expect(p!.subject).toMatch(/^\d{6} is your DialNFind code$/);
+    expect(p!.subject).toMatch(/^\d{6} is your KaajVa code$/);
     expect(p!.text).toContain(`${env.providerUrl}/verify-email?token=`);
     expect(p!.text).toContain("Hi Ravi,");
     expect(c!.text).toContain(`${env.webUrl}/verify-email?token=`);
@@ -183,20 +183,20 @@ describe("emails", () => {
     await emails.sendStaffDigest({ email: "s@x.co", name: "Staff" }, ["• 1 thing"], "https://admin");
     const subjects = sentMails().map((m) => m.subject);
     expect(subjects).toEqual([
-      "Welcome to DialNFind for business",
-      "Your DialNFind password was changed",
+      "Welcome to KaajVa for business",
+      "Your KaajVa password was changed",
       "Sign in with Google was added to your account",
       "Sign in with Apple was added to your account",
-      "Your DialNFind account was deleted",
-      "Your DialNFind account was deleted",
-      "Your DialNFind account was deleted",
-      "Your DialNFind account has been suspended",
+      "Your KaajVa account was deleted",
+      "Your KaajVa account was deleted",
+      "Your KaajVa account was deleted",
+      "Your KaajVa account has been suspended",
       "Payment for your Pro plan failed",
       "Payment for your Pro plan failed",
       "We got your request [DNF-000001]",
       "We got your request [DNF-000001]",
-      "You have been added to the DialNFind team",
-      "Today's DialNFind review queue",
+      "You have been added to the KaajVa team",
+      "Today's KaajVa review queue",
     ]);
     const texts = sentMails().map((m) => m.text);
     expect(texts[4]).toContain("unclaimed listing");
