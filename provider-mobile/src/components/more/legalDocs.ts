@@ -1,4 +1,4 @@
-// Generic placeholder terms and privacy text for business accounts. The DialNFind team can link the
+// Generic placeholder terms and privacy text for business accounts. The KaajVa team can link the
 // authoritative versions from the admin console (terms_url / privacy_url), which the legal screen
 // then offers as "Read the latest version online".
 
@@ -21,7 +21,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
     title: "Terms for businesses",
     updated: "September 2026",
     intro:
-      "These terms apply when you list a business on DialNFind and use the DialNFind Business app. They are a general summary; the version published by DialNFind is the one that applies.",
+      "These terms apply when you list a business on KaajVa and use the KaajVa Business app. They are a general summary; the version published by KaajVa is the one that applies.",
     sections: [
       {
         heading: "Your listing",
@@ -33,7 +33,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
       },
       {
         heading: "Leads and customers",
-        body: "Customers contact you directly by phone or WhatsApp. DialNFind does not take bookings or payments for your work, and any agreement about price and scope is between you and the customer. Treat customers fairly and do not contact them for anything other than the enquiry they made.",
+        body: "Customers contact you directly by phone or WhatsApp. KaajVa does not take bookings or payments for your work, and any agreement about price and scope is between you and the customer. Treat customers fairly and do not contact them for anything other than the enquiry they made.",
       },
       {
         heading: "Reviews",
@@ -49,7 +49,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
       },
       {
         heading: "Liability",
-        body: "DialNFind is a directory that helps customers find local businesses. To the extent the law allows, we are not responsible for work you carry out, disputes with customers or loss of business caused by downtime or ranking changes.",
+        body: "KaajVa is a directory that helps customers find local businesses. To the extent the law allows, we are not responsible for work you carry out, disputes with customers or loss of business caused by downtime or ranking changes.",
       },
       {
         heading: "Changes",
@@ -61,7 +61,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
     title: "Privacy for businesses",
     updated: "September 2026",
     intro:
-      "This explains what DialNFind collects when you run a business listing and how it is used. It is a general summary; the version published by DialNFind is the one that applies.",
+      "This explains what KaajVa collects when you run a business listing and how it is used. It is a general summary; the version published by KaajVa is the one that applies.",
     sections: [
       {
         heading: "What we collect",
@@ -73,7 +73,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
       },
       {
         heading: "How we use it",
-        body: "To show your listing in search, send you leads, verify your business, run plans and campaigns, show you insights, answer support requests, prevent fraud and improve DialNFind.",
+        body: "To show your listing in search, send you leads, verify your business, run plans and campaigns, show you insights, answer support requests, prevent fraud and improve KaajVa.",
       },
       {
         heading: "Who we share it with",
@@ -85,7 +85,7 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
       },
       {
         heading: "Your choices",
-        body: "You can edit your listing at any time in the app. You can delete your account yourself from your account settings. To get a copy of your data or correct something you cannot edit, contact DialNFind support.",
+        body: "You can edit your listing at any time in the app. You can delete your account yourself from your account settings. To get a copy of your data or correct something you cannot edit, contact KaajVa support.",
       },
     ],
   },

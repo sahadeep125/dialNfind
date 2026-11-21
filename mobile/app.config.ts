@@ -17,5 +17,5 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   if (sentryOrg && sentryProject) {
     plugins.push(["@sentry/react-native/expo", { url: "https://sentry.io/", organization: sentryOrg, project: sentryProject }]);
   }
-  return { ...config, name: config.name ?? "DialNFind", slug: config.slug ?? "dialnfind", plugins };
+  return { ...config, name: config.name ?? "KaajVa", slug: config.slug ?? "kaajva", plugins };
 };

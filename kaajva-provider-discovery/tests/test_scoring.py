@@ -1,7 +1,7 @@
-from dialnfind.classification import ClassificationResult, build_rules, classify
-from dialnfind.config import load_settings
-from dialnfind.models import Evidence, Location, Provider
-from dialnfind.scoring import quality_score, relevance_score, source_confidence
+from kaajva.classification import ClassificationResult, build_rules, classify
+from kaajva.config import load_settings
+from kaajva.models import Evidence, Location, Provider
+from kaajva.scoring import quality_score, relevance_score, source_confidence
 
 LOC = Location("Siliguri", "West Bengal", "India")
 SETTINGS = load_settings(None)

@@ -16,7 +16,7 @@ function createStore(): KeyValueStore {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- must be lazy so a missing native module can be caught
     const { createMMKV } = require("react-native-mmkv") as typeof import("react-native-mmkv");
-    return createMMKV({ id: "dialnfind" });
+    return createMMKV({ id: "kaajva" });
   } catch (error: unknown) {
     logError(
       "[storage] MMKV is not available in this build; nothing will be saved between launches. Use a development build (npx expo run:android).",
@@ -47,7 +47,7 @@ export const STORAGE_KEYS = {
   onboarded: "prefs.onboarded",
 } as const;
 
-const SECURE_TOKEN_KEY = "dialnfind.authToken";
+const SECURE_TOKEN_KEY = "kaajva.authToken";
 
 /**
  * The session token lives in the Keychain (iOS) / Keystore (Android), not in MMKV. If the secure

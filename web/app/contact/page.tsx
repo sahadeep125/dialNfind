@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import { Clock, Headphones, LifeBuoy, Mail, MapPin, Phone } from "lucide-react";
 import { getAppConfig } from "@/lib/app-config";
-import { OFFICE_ADDRESS } from "@/lib/config";
+import { BUSINESS, OFFICE_ADDRESS } from "@/lib/config";
 import { formatPhone, telHref } from "@/lib/format";
 import { ContactForm } from "@/components/site/contact-form";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Contact us",
-  description: "Questions, feedback or a problem with a listing? Contact the DialNFind support team and we will get back to you.",
+  title: "Contact KaajVa, Siliguri",
+  description: "Contact KaajVa in Ghogomali, Siliguri: call +91 89066 09532 or email support@kaajva.in for help with a listing, feedback or business enquiries.",
   path: "/contact",
 });
 
@@ -18,7 +18,8 @@ export default async function ContactPage() {
   const config = await getAppConfig();
   // Only the details the team has filled in under Settings are shown.
   const cards = [
-    config.support_email && { icon: Mail, title: "Email", body: config.support_email, href: `mailto:${config.support_email}` },
+    config.support_email && { icon: Mail, title: "Support email", body: config.support_email, href: `mailto:${config.support_email}` },
+    config.support_email !== BUSINESS.infoEmail && { icon: Mail, title: "General and business enquiries", body: BUSINESS.infoEmail, href: `mailto:${BUSINESS.infoEmail}` },
     config.support_phone && { icon: Phone, title: "Phone", body: formatPhone(config.support_phone), href: telHref(config.support_phone) },
     config.support_hours && { icon: Clock, title: "Support hours", body: config.support_hours },
     OFFICE_ADDRESS && { icon: MapPin, title: "Office", body: OFFICE_ADDRESS },

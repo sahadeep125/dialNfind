@@ -1,9 +1,9 @@
 import httpx
 
-from dialnfind.config import Settings
-from dialnfind.crawler import OUTCOME_BLOCKED, OUTCOME_FAILED, OUTCOME_SKIPPED, Crawler
-from dialnfind.rate_limiter import DomainRateLimiter
-from dialnfind.robots import parse_robots
+from kaajva.config import Settings
+from kaajva.crawler import OUTCOME_BLOCKED, OUTCOME_FAILED, OUTCOME_SKIPPED, Crawler
+from kaajva.rate_limiter import DomainRateLimiter
+from kaajva.robots import parse_robots
 
 
 def make_crawler(handler, **crawler_kw):
@@ -16,14 +16,14 @@ def make_crawler(handler, **crawler_kw):
 
 
 def test_robots_semantics():
-    agent = "dialnfindProviderDiscovery/1.0"
+    agent = "kaajvaProviderDiscovery/1.0"
     rules = parse_robots(200, "User-agent: *\nDisallow: /private/\nCrawl-delay: 5\n", agent)
     assert rules.allowed("https://x.example/contact") and not rules.allowed("https://x.example/private/a")
     assert rules.crawl_delay() == 5
     assert not parse_robots(403, "", agent).allowed("https://x.example/")
     assert parse_robots(404, "", agent).allowed("https://x.example/")
     assert not parse_robots(503, "", agent).allowed("https://x.example/")  # unreachable -> disallow
-    specific = parse_robots(200, "User-agent: dialnfindProviderDiscovery\nDisallow: /\n", agent)
+    specific = parse_robots(200, "User-agent: kaajvaProviderDiscovery\nDisallow: /\n", agent)
     assert not specific.allowed("https://x.example/")
 
 
@@ -37,7 +37,7 @@ def test_user_agent_is_honest():
 
     crawler, _ = make_crawler(handler)
     assert crawler.fetch_page("https://biz.example/").ok
-    assert seen["ua"].startswith("dialnfindProviderDiscovery/1.0") and "ops@example.org" in seen["ua"]
+    assert seen["ua"].startswith("kaajvaProviderDiscovery/1.0") and "ops@example.org" in seen["ua"]
     assert "Mozilla" not in seen["ua"]
 
 

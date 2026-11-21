@@ -25,7 +25,7 @@ export function crossSiteRejection(request: Request): NextResponse | null {
 }
 
 function forbidden() {
-  return NextResponse.json({ error: { code: "forbidden", message: "This request must come from the DialNFind website." } }, { status: 403 });
+  return NextResponse.json({ error: { code: "forbidden", message: "This request must come from the KaajVa website." } }, { status: 403 });
 }
 
 /** Reads an API response body, or null when it is not JSON (a proxy error page, for example). */

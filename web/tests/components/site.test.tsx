@@ -51,7 +51,7 @@ describe("small site pieces", () => {
       </>,
     );
     expect(container.querySelectorAll("svg").length).toBeGreaterThan(4);
-    expect(screen.getAllByLabelText("DialNFind home")[0]).toHaveAttribute("href", "/x");
+    expect(screen.getAllByLabelText("KaajVa home")[0]).toHaveAttribute("href", "/x");
     expect(screen.getByRole("heading", { level: 1, name: "C" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /All/ })).toHaveAttribute("href", "/a");
     expect(screen.getByAltText(HERO_IMAGE.alt)).toBeInTheDocument();
@@ -191,7 +191,7 @@ describe("MobileNav", () => {
 describe("SiteFooter", () => {
   it("lists popular services and support contacts", async () => {
     vi.resetModules();
-    vi.stubEnv("NEXT_PUBLIC_OFFICE_REGION", "Siliguri, West Bengal");
+    vi.stubEnv("NEXT_PUBLIC_OFFICE_ADDRESS", "Ghogomali, Siliguri, West Bengal, India 734006");
     const { SiteFooter: Footer } = await import("@/components/site/site-footer");
     const rtl = await import("@testing-library/react");
     mockApi({
@@ -204,7 +204,8 @@ describe("SiteFooter", () => {
     expect(links.indexOf("Beta")).toBeLessThan(links.indexOf("Alpha"));
     expect(rtl.screen.getByText("help@x.co")).toBeInTheDocument();
     expect(rtl.screen.getByText("+91 98765 43210")).toBeInTheDocument();
-    expect(rtl.screen.getByText("Siliguri, West Bengal")).toBeInTheDocument();
+    expect(rtl.screen.getByText("Ghogomali, Siliguri, West Bengal, India 734006")).toBeInTheDocument();
+    expect(rtl.screen.getByText("info@kaajva.in")).toBeInTheDocument();
   });
   it("still renders when the API is down", async () => {
     vi.resetModules();
@@ -222,7 +223,7 @@ describe("ClaimSearch", () => {
 
   it("finds listings and links to claim them", async () => {
     const u = userEvent.setup();
-    document.cookie = `dnf_location=${encodeURIComponent(JSON.stringify({ label: "M", city: "Mumbai", latitude: 1, longitude: 1 }))}; path=/`;
+    document.cookie = `kjv_location=${encodeURIComponent(JSON.stringify({ label: "M", city: "Mumbai", latitude: 1, longitude: 1 }))}; path=/`;
     const fetch = mockApi({
       "/locations": locations,
       "/search/providers": (url: URL) => json({ results: url.searchParams.get("q") === "none" ? [] : [provider(), provider({ id: 2, isClaimed: false, slug: "b" })] }),
@@ -298,9 +299,9 @@ describe("ContactForm", () => {
     mockApi({ "POST /contact": () => Promise.reject(new TypeError("x")) as never });
     await u.click(screen.getByRole("button", { name: /send message/i }));
     expect(await screen.findByText("Could not send your message")).toBeInTheDocument();
-    const fetch = mockApi({ "POST /contact": { id: 5, reference: "DNF-000005" } });
+    const fetch = mockApi({ "POST /contact": { id: 5, reference: "KJV-000005" } });
     await u.click(screen.getByRole("button", { name: /send message/i }));
-    expect(await screen.findByText("DNF-000005")).toBeInTheDocument();
+    expect(await screen.findByText("KJV-000005")).toBeInTheDocument();
     expect(JSON.parse(String(fetch.mock.calls[0]![1]!.body))).toMatchObject({ phone: "+919876543210", subject: "Partnerships" });
     expect(screen.getByText(/by email\./)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Follow the conversation" })).toBeNull();
@@ -309,7 +310,7 @@ describe("ContactForm", () => {
   });
   it("fills in the signed-in person and links to the ticket", async () => {
     const u = userEvent.setup();
-    await withSession(<ContactForm />, { user: user() }, { "POST /contact": { id: 9, reference: "DNF-000009" } });
+    await withSession(<ContactForm />, { user: user() }, { "POST /contact": { id: 9, reference: "KJV-000009" } });
     await waitFor(() => expect(screen.getByLabelText(/Full name/)).toHaveValue("Asha Rao"));
     expect(screen.getByLabelText(/Email/)).toHaveValue("asha@example.com");
     await u.type(screen.getByLabelText(/Message/), "Something is wrong here");

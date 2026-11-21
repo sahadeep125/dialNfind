@@ -17,7 +17,7 @@ interface SaveReviewInput {
 
 /**
  * Creates a review, or updates the person's existing one when reviewId is given. Resolves with the saved
- * review, whose status is "pending" when the DialNFind team checks it before it shows.
+ * review, whose status is "pending" when the KaajVa team checks it before it shows.
  */
 export function useSaveReview(): UseMutationResult<OwnReview, Error, SaveReviewInput> {
   const qc = useQueryClient();

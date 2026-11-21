@@ -202,7 +202,7 @@ export default function SettingsScreen() {
             />
             <AppListItem
               title="Support requests"
-              subtitle="Ask the DialNFind team and follow the replies"
+              subtitle="Ask the KaajVa team and follow the replies"
               leading={<LifeBuoy size={18} color={icon} />}
               onPress={() => router.push("/support")}
             />
@@ -239,7 +239,7 @@ export default function SettingsScreen() {
               subtitle={email}
               leading={<Mail size={18} color={icon} />}
               onPress={() =>
-                void run(() => openEmail(email, "DialNFind app support"), "Could not open email.")
+                void run(() => openEmail(email, "KaajVa app support"), "Could not open email.")
               }
             />
           ) : null}
@@ -257,7 +257,7 @@ export default function SettingsScreen() {
           ) : null}
           <AppListItem
             title="Own a business?"
-            subtitle="List it on DialNFind for free, or claim your listing"
+            subtitle="List it on KaajVa for free, or claim your listing"
             leading={<Store size={18} color={icon} />}
             onPress={() => {
               track("claim_clicked", { source: "settings" });
@@ -265,7 +265,7 @@ export default function SettingsScreen() {
             }}
           />
           <AppListItem
-            title="Rate DialNFind"
+            title="Rate KaajVa"
             subtitle="Tell us how we are doing"
             leading={<Star size={18} color={icon} />}
             onPress={() => void run(rateApp, "Could not open the store.")}
@@ -318,7 +318,7 @@ export default function SettingsScreen() {
         <View style={[styles.footer, { gap: theme.spacing[2] }]}>
           <BrandMark size={28} />
           <AppText variant="caption" tone="tertiary" align="center">
-            DialNFind {version}
+            KaajVa {version}
           </AppText>
         </View>
       </ScrollView>

@@ -172,7 +172,7 @@ describe("accounts", () => {
     const review = await createReview(reviewed.id, user.id, { photos: { create: { photoUrl: reviewPhoto } } });
     await prisma.userOAuthAccount.createMany({
       data: [
-        { userId: user.id, provider: "apple", providerUserId: "a1", refreshToken: "rt", clientId: "com.dialnfind.app" },
+        { userId: user.id, provider: "apple", providerUserId: "a1", refreshToken: "rt", clientId: "com.kaajva.app" },
         { userId: user.id, provider: "apple", providerUserId: "a2", refreshToken: "rt2", clientId: null },
       ],
     });
@@ -213,7 +213,7 @@ describe("social auth", () => {
     expect(link).toMatchObject({ email: "new@example.com", clientId: "google-web" });
 
     const fallback = await signInWithIdentity({ provider: "apple", identity: identity({ sub: "a-9", email: "x@y.co", name: null, audience: "" }), role: "customer" });
-    expect(fallback.user.name).toBe("DialNFind user");
+    expect(fallback.user.name).toBe("KaajVa user");
 
     const existing = await createUser({ email: "old@example.com", verified: false });
     const linked = await signInWithIdentity({ provider: "apple", identity: identity({ sub: "a-1", email: "old@example.com" }), role: "customer", name: "Given" });
@@ -256,7 +256,7 @@ describe("social auth", () => {
 
 describe("tickets", () => {
   it("formats references and finds support staff", async () => {
-    expect(ticketRef(12)).toBe("DNF-000012");
+    expect(ticketRef(12)).toBe("KJV-000012");
     expect(await supportStaffIds(5n)).toEqual([5n]);
     const boss = await createStaff();
     const agent = await createStaff(["support"]);

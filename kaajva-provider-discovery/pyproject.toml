@@ -1,5 +1,5 @@
 [project]
-name = "dialnfind-provider-discovery"
+name = "kaajva-provider-discovery"
 version = "1.0.0"
 description = "Discover local service providers from permitted public sources and export clean CSV/JSON."
 requires-python = ">=3.12"

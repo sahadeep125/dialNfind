@@ -9,7 +9,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { api, errorMessage } from "@/services/api";
 import { validateEmail } from "@/utils/validation";
 
-/** Emails a reset link. The link opens the DialNFind website, where the new password is chosen. */
+/** Emails a reset link. The link opens the KaajVa website, where the new password is chosen. */
 export default function ForgotPasswordScreen() {
   const theme = useTheme();
   const [email, setEmail] = useState("");

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 
-/** Public settings edited by the DialNFind team in the admin console (support contacts, legal links). */
+/** Public settings edited by the KaajVa team in the admin console (support contacts, legal links). */
 export interface AppConfig {
   site_name: string | null;
   support_email: string | null;

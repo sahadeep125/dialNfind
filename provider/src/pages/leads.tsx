@@ -70,7 +70,7 @@ export function LeadsPage() {
   const exportCsv = async () => {
     setExporting(true);
     try {
-      await download(`/provider/leads/export.csv${filterQuery ? `?${filterQuery}` : ""}`, "dialnfind-leads.csv");
+      await download(`/provider/leads/export.csv${filterQuery ? `?${filterQuery}` : ""}`, "kaajva-leads.csv");
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {

@@ -70,7 +70,7 @@ export function DeleteAccountSheet({ visible, onClose, businessName, hasPassword
       <View style={{ gap: theme.spacing[4], paddingHorizontal: theme.spacing[4] }}>
         <AppText tone="secondary">
           {businessName
-            ? `${businessName} will be removed from DialNFind search straight away, your plan will stop renewing and running promotions will end. Your sign-in details are erased. This cannot be undone.`
+            ? `${businessName} will be removed from KaajVa search straight away, your plan will stop renewing and running promotions will end. Your sign-in details are erased. This cannot be undone.`
             : "Your account and sign-in details are erased. This cannot be undone."}
         </AppText>
         {hasPassword ? (

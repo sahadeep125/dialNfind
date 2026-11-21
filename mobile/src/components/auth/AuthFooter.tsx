@@ -12,7 +12,7 @@ interface SwitchProps {
   onPress: () => void;
 }
 
-/** "New to DialNFind? Create an account": the one-line hop between sign in and sign up. */
+/** "New to KaajVa? Create an account": the one-line hop between sign in and sign up. */
 export function AuthSwitch({ prompt, action, onPress }: SwitchProps) {
   return (
     <View style={styles.row}>

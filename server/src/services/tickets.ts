@@ -5,8 +5,8 @@ import { planOf } from "./entitlements.js";
 
 export const TICKET_CATEGORIES = ["general", "account", "listing", "billing", "verification", "report", "technical"] as const;
 
-/** Public reference shown to customers, e.g. DNF-000123. */
-export const ticketRef = (id: bigint | number) => `DNF-${String(id).padStart(6, "0")}`;
+/** Public reference shown to customers, e.g. KJV-000123. */
+export const ticketRef = (id: bigint | number) => `KJV-${String(id).padStart(6, "0")}`;
 
 export const ticketListSelect = {
   id: true,

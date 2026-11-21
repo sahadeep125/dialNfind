@@ -177,9 +177,9 @@ class Settings:
     source_priority: list[str] = field(
         default_factory=lambda: ["website", "overture", "fsq", "osm", "directory", "search_api", "manual"]
     )
-    # categories.json shared with the dialnfind server; every rule must map onto it.
-    dialnfind_categories: str = "../server/prisma/data/categories.json"
-    # --export-dialnfind: the bundle the server imports on deploy.
+    # categories.json shared with the kaajva server; every rule must map onto it.
+    kaajva_categories: str = "../server/prisma/data/categories.json"
+    # --export-kaajva: the bundle the server imports on deploy.
     bundle_output: str = ""
     blocked_domains: list[str] = field(default_factory=list)
     directories: list[dict[str, Any]] = field(default_factory=list)

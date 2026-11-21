@@ -26,7 +26,7 @@ export function DashboardPage() {
 
   return (
     <>
-      <PageHeader title={`Good ${hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening"}, ${user?.name.split(" ")[0]}`} description="Here is what needs attention on DialNFind today." />
+      <PageHeader title={`Good ${hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening"}, ${user?.name.split(" ")[0]}`} description="Here is what needs attention on KaajVa today." />
 
       {visible.length > 0 && (
         <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

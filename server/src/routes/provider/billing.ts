@@ -20,7 +20,7 @@ export const billingRouter = Router();
 /** Where a store subscription is managed; the web cannot change it. */
 export const STORE_MANAGE_URLS = {
   app_store: "https://apps.apple.com/account/subscriptions",
-  play_store: "https://play.google.com/store/account/subscriptions?package=com.dialnfind.business",
+  play_store: "https://play.google.com/store/account/subscriptions?package=com.kaajva.business",
 } as const;
 
 /** Paid plans on sale, with their prices per billing cycle. */
@@ -176,7 +176,7 @@ billingRouter.post("/billing/razorpay/checkout", limits.billing, async (req, res
   res.status(201).json({
     subscriptionId: rzp.id,
     keyId: env.razorpay.keyId,
-    name: "DialNFind",
+    name: "KaajVa",
     description: `${price.plan.name} plan, ${body.billingCycle}`,
     amount: num(price.amount),
     prefill: { name: user.name, email: user.email, contact: user.phone ?? undefined },

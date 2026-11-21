@@ -72,7 +72,7 @@ export function SupportPage() {
     <>
       <PageHeader
         title="Help and support"
-        description="Ask the DialNFind team about your listing, payments or anything else. We usually reply within one working day."
+        description="Ask the KaajVa team about your listing, payments or anything else. We usually reply within one working day."
         actions={
           <Button onClick={() => setCreating(true)}>
             <Plus /> New request

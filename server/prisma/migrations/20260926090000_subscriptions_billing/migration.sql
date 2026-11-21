@@ -130,10 +130,10 @@ UPDATE "subscription_plans" SET "is_active" = false WHERE "code" = 'basic';
 UPDATE "provider_subscriptions" SET "end_date" = "end_date" + interval '1 day' - interval '1 second' WHERE "end_date" IS NOT NULL;
 
 INSERT INTO "plan_prices" ("plan_id", "billing_cycle", "amount", "ios_product_id", "android_product_id")
-SELECT "id", 'monthly', "price", 'dnf_' || "code" || '_monthly', 'dnf_' || "code" || ':monthly'
+SELECT "id", 'monthly', "price", 'kjv_' || "code" || '_monthly', 'kjv_' || "code" || ':monthly'
 FROM "subscription_plans" WHERE "code" IN ('pro', 'business');
 INSERT INTO "plan_prices" ("plan_id", "billing_cycle", "amount", "ios_product_id", "android_product_id")
-SELECT "id", 'yearly', "price" * 10, 'dnf_' || "code" || '_yearly', 'dnf_' || "code" || ':yearly'
+SELECT "id", 'yearly', "price" * 10, 'kjv_' || "code" || '_yearly', 'kjv_' || "code" || ':yearly'
 FROM "subscription_plans" WHERE "code" IN ('pro', 'business');
 
 -- CreateIndex

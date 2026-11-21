@@ -73,7 +73,7 @@ function ProfileForm({ me }: { me: Me }) {
   });
 
   return (
-    <Panel title="Profile" description="Your name is shown in the audit log and on internal ticket notes. Customers only ever see DialNFind Support.">
+    <Panel title="Profile" description="Your name is shown in the audit log and on internal ticket notes. Customers only ever see KaajVa Support.">
       <form className="space-y-4" noValidate onSubmit={handleSubmit((v) => (setServerError(null), save.mutate(v)))}>
         <FormAlert message={serverError} />
         <Field id="avatar" label="Photo" optional>

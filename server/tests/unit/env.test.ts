@@ -22,11 +22,11 @@ afterEach(() => {
 const PROD_OK = {
   NODE_ENV: "production",
   JWT_SECRET: "x".repeat(40),
-  PUBLIC_URL: "https://api.dialnfind.com/",
-  WEB_URL: "https://dialnfind.com",
-  PROVIDER_URL: "https://business.dialnfind.com",
-  ADMIN_URL: "https://admin.dialnfind.com",
-  CORS_ORIGINS: "https://dialnfind.com",
+  PUBLIC_URL: "https://api.kaajva.in/",
+  WEB_URL: "https://kaajva.in",
+  PROVIDER_URL: "https://business.kaajva.in",
+  ADMIN_URL: "https://admin.kaajva.in",
+  CORS_ORIGINS: "https://kaajva.in",
   SMTP_HOST: "smtp.x",
   RATE_LIMIT_MULTIPLIER: "1",
 };
@@ -40,9 +40,9 @@ describe("env", () => {
       nodeEnv: "development", port: 4000, sessionDays: 30, staffSessionHours: 12, rateLimitMultiplier: 1, trustProxyHops: 1,
       corsOrigins: ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"], timezone: "Asia/Kolkata", runJobs: false,
       publicUrl: "http://localhost:4000",
-      smtp: { host: "", port: 587, from: "DialNFind <no-reply@dialnfind.com>", replyTo: "support@dialnfind.com" },
+      smtp: { host: "", port: 587, from: "KaajVa <no-reply@kaajva.in>", replyTo: "support@kaajva.in" },
       geocoder: { enabled: true, country: "in" },
-      oauth: { googleClientIds: [], appRedirectSchemes: ["dialnfind", "dialnfind-business"], applePrivateKey: "" },
+      oauth: { googleClientIds: [], appRedirectSchemes: ["kaajva", "kaajva-business"], applePrivateKey: "" },
       posthog: { key: "", host: "https://us.i.posthog.com", environment: "development" },
     });
     expect(env.uploadDir).toMatch(/uploads\/public$/);
@@ -70,10 +70,10 @@ describe("env", () => {
     await loadEnv({ ...PROD_OK, REVALIDATE_SECRET: "s" });
     expect(console.warn).not.toHaveBeenCalledWith(expect.stringContaining("REVALIDATE_SECRET"));
     process.env = { ...saved };
-    const err = await loadEnv({ ...PROD_OK, JWT_SECRET: "change-me-in-production", PUBLIC_URL: "http://localhost:4000", WEB_URL: "http://dialnfind.com", CORS_ORIGINS: undefined, SMTP_HOST: "", RATE_LIMIT_MULTIPLIER: "0" }).catch((e: Error) => e);
+    const err = await loadEnv({ ...PROD_OK, JWT_SECRET: "change-me-in-production", PUBLIC_URL: "http://localhost:4000", WEB_URL: "http://kaajva.in", CORS_ORIGINS: undefined, SMTP_HOST: "", RATE_LIMIT_MULTIPLIER: "0" }).catch((e: Error) => e);
     expect(String(err)).toContain("JWT_SECRET must be a random value");
     expect(String(err)).toContain("PUBLIC_URL must be the public https address");
-    expect(String(err)).toContain("WEB_URL must be the public https address, not http://dialnfind.com");
+    expect(String(err)).toContain("WEB_URL must be the public https address, not http://kaajva.in");
     expect(String(err)).toContain("CORS_ORIGINS must list");
     expect(String(err)).toContain("SMTP_HOST is empty");
     expect(String(err)).toContain("RATE_LIMIT_MULTIPLIER must be above 0");
@@ -88,7 +88,7 @@ describe("env", () => {
     expect(String(err)).toContain("SMTP_PASS is still the example value");
     process.env = { ...saved };
     const { env } = await loadEnv({ ...PROD_OK, SMTP_USER: "team@shop.in", SMTP_FROM: "", SUPPORT_EMAIL: "" });
-    expect(env.smtp.from).toBe("DialNFind <team@shop.in>");
+    expect(env.smtp.from).toBe("KaajVa <team@shop.in>");
     expect(env.smtp.replyTo).toBe("team@shop.in");
   });
 });

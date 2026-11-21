@@ -32,7 +32,7 @@ export function ContactCard({ p }: { p: ProviderDetail }) {
       </div>
 
       <ContactButtons provider={p} source="profile" categorySlug={p.primaryCategory?.slug} size="lg" layout="stack" variant="profile" className="mt-5 hidden lg:flex" />
-      <p className="mt-3 hidden text-center text-xs text-muted-foreground lg:block">Mention DialNFind when you call. No booking fees.</p>
+      <p className="mt-3 hidden text-center text-xs text-muted-foreground lg:block">Mention KaajVa when you call. No booking fees.</p>
 
       <div className={cn("flex gap-2", "mt-5 border-t pt-4")}>
         {p.email && (

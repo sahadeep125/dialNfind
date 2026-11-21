@@ -80,7 +80,7 @@ export const PEST_CONTROL_GUIDES: Guide[] = [
       {
         heading: "Finding pest control near you",
         paragraphs: [
-          "Compare pest control services near you on DialNFind, check reviews that mention the pest you have, and prefer providers who inspect first and explain the treatment. Ask about the chemical used and the warranty before booking.",
+          "Compare pest control services near you on KaajVa, check reviews that mention the pest you have, and prefer providers who inspect first and explain the treatment. Ask about the chemical used and the warranty before booking.",
         ],
       },
     ],
@@ -185,7 +185,7 @@ export const PEST_CONTROL_GUIDES: Guide[] = [
       {
         heading: "Choosing a pest control provider for the season",
         paragraphs: [
-          "The weeks before the monsoon are busy for pest control companies, so book early. Prefer providers who inspect before quoting, explain which chemicals they use and whether they are approved for household use, and give a written warranty for termite treatment. On DialNFind you can compare pest control services near you in Siliguri and other cities by rating and reviews, and call them directly to book an inspection.",
+          "The weeks before the monsoon are busy for pest control companies, so book early. Prefer providers who inspect before quoting, explain which chemicals they use and whether they are approved for household use, and give a written warranty for termite treatment. On KaajVa you can compare pest control services near you in Siliguri and other cities by rating and reviews, and call them directly to book an inspection.",
         ],
       },
     ],

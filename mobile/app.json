@@ -1,29 +1,29 @@
 {
   "expo": {
-    "name": "DialNFind",
-    "slug": "dialnfind",
-    "scheme": "dialnfind",
+    "name": "KaajVa",
+    "slug": "kaajva",
+    "scheme": "kaajva",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dialnfind.app",
+      "bundleIdentifier": "com.kaajva.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "DialNFind uses your location to show service providers near you."
+        "NSLocationWhenInUseUsageDescription": "KaajVa uses your location to show service providers near you."
       },
       "appleTeamId": "9HH33XNTUX",
       "usesAppleSignIn": true,
       "associatedDomains": [
-        "applinks:dialnfind.com"
+        "applinks:kaajva.in"
       ],
       "config": {
         "usesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.dialnfind.app",
+      "package": "com.kaajva.app",
       "adaptiveIcon": {
         "backgroundColor": "#355EDD",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -42,32 +42,32 @@
           "data": [
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/providers"
             },
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/services"
             },
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/search"
             },
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/dashboard/notifications"
             },
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/dashboard/support"
             },
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/dashboard/contacts"
             }
           ],
@@ -77,7 +77,7 @@
           ]
         }
       ],
-      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.dialnfind.app",
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.kaajva.app",
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.RECORD_AUDIO"
@@ -109,7 +109,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "DialNFind uses your location to show service providers near you.",
+          "locationWhenInUsePermission": "KaajVa uses your location to show service providers near you.",
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false,
           "motionUsagePermission": false
@@ -126,8 +126,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "DialNFind uses your photos for your profile picture, review photos and support requests.",
-          "cameraPermission": "DialNFind uses the camera to take photos for your reviews and support requests.",
+          "photosPermission": "KaajVa uses your photos for your profile picture, review photos and support requests.",
+          "cameraPermission": "KaajVa uses the camera to take photos for your reviews and support requests.",
           "microphonePermission": false
         }
       ],

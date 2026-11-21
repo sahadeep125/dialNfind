@@ -92,7 +92,7 @@ export const PACKERS_MOVERS_GUIDES: Guide[] = [
       {
         heading: "Finding packers and movers near you",
         paragraphs: [
-          "Compare packers and movers near you in Siliguri and other cities on DialNFind, read what customers say about punctuality, care and final bills, and call two or three for a survey. For local shifts, a mover based close to you is often cheaper and more flexible.",
+          "Compare packers and movers near you in Siliguri and other cities on KaajVa, read what customers say about punctuality, care and final bills, and call two or three for a survey. For local shifts, a mover based close to you is often cheaper and more flexible.",
         ],
       },
       {
@@ -168,7 +168,7 @@ export const PACKERS_MOVERS_GUIDES: Guide[] = [
       {
         heading: "First days in your new home",
         paragraphs: [
-          "Check every item against the inventory before signing the delivery receipt, and note any damage. Unpack the kitchen and bedrooms first, then the rest room by room. Find local essentials early: an electrician, plumber and grocery store nearby. DialNFind can help you find trusted services around your new address.",
+          "Check every item against the inventory before signing the delivery receipt, and note any damage. Unpack the kitchen and bedrooms first, then the rest room by room. Find local essentials early: an electrician, plumber and grocery store nearby. KaajVa can help you find trusted services around your new address.",
         ],
       },
       {

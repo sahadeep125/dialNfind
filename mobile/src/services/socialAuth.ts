@@ -36,7 +36,7 @@ export interface ApplePayload {
   name?: { givenName?: string | null; familyName?: string | null };
 }
 
-const APP_SCHEME = String(Constants.expoConfig?.scheme ?? "dialnfind");
+const APP_SCHEME = String(Constants.expoConfig?.scheme ?? "kaajva");
 /** The deep link the API's Apple callback redirects to; +native-intent keeps the router off it. */
 export const APPLE_RETURN_URL = `${APP_SCHEME}://auth/apple`;
 

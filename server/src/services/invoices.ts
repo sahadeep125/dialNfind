@@ -51,7 +51,7 @@ async function seller(): Promise<Party> {
     getSetting("invoice_address"),
     getSetting("invoice_state_code"),
   ]);
-  return { name: name || "DialNFind", gstin: gstin || null, address: address || null, stateCode: stateCode || null, state: stateName(stateCode) };
+  return { name: name || "KaajVa", gstin: gstin || null, address: address || null, stateCode: stateCode || null, state: stateName(stateCode) };
 }
 
 /**
@@ -92,10 +92,10 @@ export async function issueInvoice(transactionId: bigint, opts: { email?: boolea
   const sub = txn.subscription;
   const description =
     txn.type === "subscription"
-      ? `DialNFind ${sub?.plan.name ?? "plan"} subscription${sub ? ` (${sub.billingCycle})` : ""}`
+      ? `KaajVa ${sub?.plan.name ?? "plan"} subscription${sub ? ` (${sub.billingCycle})` : ""}`
       : txn.type === "sponsored_ad"
-        ? "DialNFind sponsored listing campaign"
-        : "DialNFind lead fee";
+        ? "KaajVa sponsored listing campaign"
+        : "KaajVa lead fee";
   const lines: InvoiceLine[] = [
     { description, sac: sac || "998365", period: sub?.endDate ? `Until ${dateFmt(sub.endDate)}` : null, taxable: tax.taxable },
   ];
@@ -106,7 +106,7 @@ export async function issueInvoice(transactionId: bigint, opts: { email?: boolea
     const n = seq.next - 1;
     return tx.invoice.create({
       data: {
-        number: `${prefix || "DNF"}/${fy}/${String(n).padStart(5, "0")}`,
+        number: `${prefix || "KJV"}/${fy}/${String(n).padStart(5, "0")}`,
         providerId: p.id,
         transactionId: txn.id,
         billedTo: billedTo as unknown as Prisma.InputJsonValue,
@@ -124,7 +124,7 @@ export async function issueInvoice(transactionId: bigint, opts: { email?: boolea
   });
   if (opts.email !== false) {
     void mailUser(p.userId, {
-      subject: `Invoice ${invoice.number} from DialNFind`,
+      subject: `Invoice ${invoice.number} from KaajVa`,
       lines: [`Thank you for your payment of Rs ${total.toFixed(2)}.`, "Your GST invoice is ready to download from Plan and billing."],
       action: { label: "Download invoice", url: `${env.providerUrl}/subscription` },
     });
@@ -150,7 +150,7 @@ export function renderInvoicePdf(invoice: Invoice): Promise<Buffer> {
   const left = 48;
   const right = doc.page.width - 48;
 
-  doc.fillColor("#2a2f7a").font("Helvetica-Bold").fontSize(20).text("DialNFind", left, 48);
+  doc.fillColor("#2a2f7a").font("Helvetica-Bold").fontSize(20).text("KaajVa", left, 48);
   doc.fillColor(ink).fontSize(14).text(invoice.status === "void" ? "TAX INVOICE (VOID)" : "TAX INVOICE", left, 48, { align: "right" });
   doc.font("Helvetica").fontSize(9).fillColor(muted);
   doc.text(`Invoice no. ${invoice.number}`, { align: "right" });

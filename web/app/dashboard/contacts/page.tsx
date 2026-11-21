@@ -15,7 +15,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: Pro
   return (
     <div>
       <h1 className="text-2xl font-bold text-brand-deep">Recent contacts</h1>
-      <p className="mt-1 text-muted-foreground">Everyone you called or messaged through DialNFind. Let us know if they responded, it helps rank providers fairly.</p>
+      <p className="mt-1 text-muted-foreground">Everyone you called or messaged through KaajVa. Let us know if they responded, it helps rank providers fairly.</p>
       <div className="mt-6 space-y-3">
         {data.contacts.length ? (
           data.contacts.map((c) => <ContactRow key={c.id} item={c} />)

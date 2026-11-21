@@ -60,7 +60,7 @@ interface Draft {
 export function OnboardingPage() {
   const { user, providerState, signIn, refresh } = useAuth();
   const navigate = useNavigate();
-  const draftKey = `dnf_onboarding_${user?.id ?? "anon"}`;
+  const draftKey = `kjv_onboarding_${user?.id ?? "anon"}`;
   // Picks up where the person left off if they refreshed or came back later.
   const [draft] = useState(() => loadDraft<Draft>(draftKey));
   const [step, setStep] = useState(draft?.step ?? 0);
@@ -159,7 +159,7 @@ export function OnboardingPage() {
       track("onboarding_completed", { service_count: services.length, area_count: areas.length, business_type: business.businessType });
       if (res.token) await signIn(res.token);
       else await refresh();
-      toast.success("Your business is live on DialNFind");
+      toast.success("Your business is live on KaajVa");
       navigate("/", { replace: true });
     } catch (err) {
       setFormError(errorMessage(err));

@@ -7,7 +7,7 @@ import { DEFAULT_LOCATION } from "@/lib/default-location";
 
 const loc = (label: string, city = "Pune") => ({ ...DEFAULT_LOCATION, label, city });
 const setLocationCookie = (value: unknown) => {
-  document.cookie = `dnf_location=${encodeURIComponent(typeof value === "string" ? value : JSON.stringify(value))}; path=/`;
+  document.cookie = `kjv_location=${encodeURIComponent(typeof value === "string" ? value : JSON.stringify(value))}; path=/`;
 };
 
 async function freshAnalytics(key = "phc_key") {
@@ -95,7 +95,7 @@ describe("clientApi", () => {
   it("saves the location cookie", async () => {
     const { saveLocationCookie } = await import("@/lib/client");
     saveLocationCookie(loc("Here"));
-    expect(document.cookie).toContain("dnf_location=");
+    expect(document.cookie).toContain("kjv_location=");
   });
 });
 
@@ -151,7 +151,7 @@ describe("image hosts", () => {
     vi.stubEnv("ANDROID_PACKAGE", "");
     vi.stubEnv("ANDROID_SHA256_CERT_FINGERPRINTS", undefined as never);
     const defaults = await import("@/lib/app-links");
-    expect(defaults.IOS_APP_ID).toBe("9HH33XNTUX.com.dialnfind.app");
+    expect(defaults.IOS_APP_ID).toBe("9HH33XNTUX.com.kaajva.app");
     expect(defaults.ANDROID_FINGERPRINTS).toEqual([]);
   });
   it("config reads its settings from the environment", async () => {

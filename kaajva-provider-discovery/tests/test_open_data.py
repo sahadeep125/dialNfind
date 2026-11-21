@@ -1,25 +1,25 @@
-"""Overture / Foursquare sources, dialnfind category mapping and the provider bundle (offline)."""
+"""Overture / Foursquare sources, kaajva category mapping and the provider bundle (offline)."""
 
 import json
 from pathlib import Path
 
 import pytest
 
-from dialnfind.bundle import (
+from kaajva.bundle import (
     bundle_record,
     clean_business_name,
-    load_dialnfind_categories,
+    load_kaajva_categories,
     mapping_errors,
     write_bundle,
 )
-from dialnfind.classification import build_rules, classify
-from dialnfind.config import load_categories, load_settings
-from dialnfind.crawler import Crawler
-from dialnfind.models import Evidence, Location, Provider
-from dialnfind.sources import SourceContext
-from dialnfind.sources.foursquare import fsq_to_record
-from dialnfind.sources.overture import OvertureSource, place_to_record
-from dialnfind.state import StateStore
+from kaajva.classification import build_rules, classify
+from kaajva.config import load_categories, load_settings
+from kaajva.crawler import Crawler
+from kaajva.models import Evidence, Location, Provider
+from kaajva.sources import SourceContext
+from kaajva.sources.foursquare import fsq_to_record
+from kaajva.sources.overture import OvertureSource, place_to_record
+from kaajva.state import StateStore
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCATION = Location("Siliguri", "West Bengal", "India")
@@ -58,10 +58,10 @@ def overture_row(**over):
     return row
 
 
-def test_every_rule_maps_to_a_real_dialnfind_category(rules, settings):
-    categories = load_dialnfind_categories((ROOT / settings.dialnfind_categories).resolve())
+def test_every_rule_maps_to_a_real_kaajva_category(rules, settings):
+    categories = load_kaajva_categories((ROOT / settings.kaajva_categories).resolve())
     assert mapping_errors(rules, categories) == []
-    covered = {(r.dialnfind_category, r.dialnfind_subcategory) for r in rules}
+    covered = {(r.kaajva_category, r.kaajva_subcategory) for r in rules}
     for cat, subs in categories.items():
         assert (cat, "") in covered, f"no category-level rule for {cat}"
         for sub in subs:
@@ -254,5 +254,5 @@ def test_write_bundle(tmp_path, rules):
                                     LOCATION, ["credit"])
     data = json.loads(path.read_text())
     assert written == 1 and skipped == {"no valid Indian phone": 1}
-    assert data["format"] == "dialnfind-providers/1" and data["count"] == 1
+    assert data["format"] == "kaajva-providers/1" and data["count"] == 1
     assert data["attribution"] == ["credit"] and data["location"]["city"] == "Siliguri"

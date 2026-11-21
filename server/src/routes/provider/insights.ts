@@ -275,7 +275,7 @@ insightsRouter.get("/leads/export.csv", limits.exports, async (req, res) => {
       .join(","),
   );
   const stamp = new Date().toISOString().slice(0, 10);
-  res.set({ "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="dialnfind-leads-${stamp}.csv"`, "Cache-Control": "private, no-store" });
+  res.set({ "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="kaajva-leads-${stamp}.csv"`, "Cache-Control": "private, no-store" });
   // BOM so Excel opens it as UTF-8.
   res.send("\ufeff" + [header.map(csvCell).join(","), ...lines].join("\r\n"));
 });
@@ -505,7 +505,7 @@ insightsRouter.post("/sponsored/checkout", limits.billing, async (req, res) => {
   res.status(201).json({
     orderId: rzp.id,
     keyId: env.razorpay.keyId,
-    name: "DialNFind",
+    name: "KaajVa",
     description: `Sponsored in ${category.name}, ${body.days} days`,
     amount,
     currency: "INR",

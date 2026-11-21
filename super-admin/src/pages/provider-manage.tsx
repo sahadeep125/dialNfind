@@ -99,7 +99,7 @@ export function OwnerActions({ providerId, businessName, hasOwner, onDone }: { p
         open={dialog === "remove"}
         onOpenChange={(o) => setDialog(o ? "remove" : null)}
         title="Remove the owner?"
-        description={`${businessName} stays on DialNFind as an unclaimed listing. The account keeps working but can no longer manage it.`}
+        description={`${businessName} stays on KaajVa as an unclaimed listing. The account keeps working but can no longer manage it.`}
         confirmLabel="Remove owner"
         destructive
         busy={remove.isPending}

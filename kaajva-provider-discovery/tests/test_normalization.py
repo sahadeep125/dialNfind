@@ -1,6 +1,6 @@
 import pytest
 
-from dialnfind.normalization import (
+from kaajva.normalization import (
     clean_phone,
     core_name,
     extract_emails,

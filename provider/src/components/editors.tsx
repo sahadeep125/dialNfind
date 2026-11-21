@@ -156,7 +156,7 @@ export function ServicesEditor({ value, onChange }: { value: ProviderService[]; 
     <div className="space-y-6">
       <div className="space-y-2">
         <Label>Category</Label>
-        <p className="text-xs text-muted-foreground">Categories are managed by DialNFind so customers can find you. Pick the ones that match your work.</p>
+        <p className="text-xs text-muted-foreground">Categories are managed by KaajVa so customers can find you. Pick the ones that match your work.</p>
         <div className="flex flex-wrap gap-2 pt-1">
           {categories.map((c) => {
             const count = value.filter((s) => s.categoryId === c.id).length;

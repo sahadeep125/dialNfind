@@ -97,7 +97,7 @@ export const HOME_APPLIANCES_GUIDES: Guide[] = [
       {
         heading: "Finding a good AC technician near you",
         paragraphs: [
-          "Look for technicians with consistent, recent reviews that mention honesty about gas and parts. Check whether they service your brand and type of AC, and whether they give a warranty on repairs. On DialNFind you can see AC repair and service providers near you, compare ratings and distance, and call them directly without paying any booking fee.",
+          "Look for technicians with consistent, recent reviews that mention honesty about gas and parts. Check whether they service your brand and type of AC, and whether they give a warranty on repairs. On KaajVa you can see AC repair and service providers near you, compare ratings and distance, and call them directly without paying any booking fee.",
         ],
       },
     ],

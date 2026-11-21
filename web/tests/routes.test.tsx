@@ -34,7 +34,7 @@ describe("auth routes", () => {
     const fetch = mockApi({ "POST /auth/login": { token: "t1", user: { id: 1 } }, "POST /auth/register": { token: "t2", user: { id: 2 } } });
     const a = await login(post("/api/auth/login", { email: "a@b.co", password: "x" }));
     expect(await a.json()).toEqual({ user: { id: 1 } });
-    expect(a.headers.get("set-cookie")).toContain("dnf_token=t1");
+    expect(a.headers.get("set-cookie")).toContain("kjv_token=t1");
     const b = await register(post("/api/auth/register", { name: "A" }));
     expect(await b.json()).toEqual({ user: { id: 2 } });
     expect(fetch.mock.calls[0]![1]!.body).toBe(JSON.stringify({ email: "a@b.co", password: "x" }));
@@ -50,11 +50,11 @@ describe("auth routes", () => {
     expect((await social(post("/api/auth/social", "not json"))).status).toBe(400);
   });
   it("logs out on the API and clears the cookie, even when the API is down", async () => {
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     const fetch = mockApi({ "POST /auth/logout": { ok: true } });
     const res = await logout(post("/api/auth/logout", {}));
     expect(await res.json()).toEqual({ ok: true });
-    expect(res.headers.get("set-cookie")).toContain("dnf_token=;");
+    expect(res.headers.get("set-cookie")).toContain("kjv_token=;");
     expect((fetch.mock.calls[0]![1]!.headers as Headers).get("authorization")).toBe("Bearer t");
     mockApi({ "POST /auth/logout": () => Promise.reject(new Error("down")) as never });
     expect((await logout(post("/api/auth/logout", {}))).status).toBe(200);
@@ -62,7 +62,7 @@ describe("auth routes", () => {
   });
   it("reports the session with the unread count", async () => {
     expect(await (await session()).json()).toEqual({ user: null, unread: 0 });
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     mockApi({ "/auth/me": { user: user() }, "/me/notifications": { unread: 3 } });
     const res = await session();
     expect(res.headers.get("cache-control")).toBe("private, no-store");
@@ -78,7 +78,7 @@ describe("API proxy", () => {
   const ctx = (...path: string[]) => ({ params: Promise.resolve({ path }) });
 
   it("forwards the request with the session token and passes headers back", async () => {
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     const fetch = mockApi({
       "POST /uploads": new Response('{"url":"u"}', { status: 201, headers: { "content-type": "application/json", "retry-after": "5", "x-internal": "no" } }),
     });
@@ -129,7 +129,7 @@ describe("old subcategory links", () => {
 describe("well-known and metadata routes", () => {
   it("serves app link files", async () => {
     const apple = await aasa().json();
-    expect(apple.applinks.details[0].appIDs[0]).toMatch(/com\.dialnfind\.app$/);
+    expect(apple.applinks.details[0].appIDs[0]).toMatch(/com\.kaajva\.app$/);
     expect(await assetlinks().json()).toEqual([]);
     vi.resetModules();
     vi.stubEnv("ANDROID_SHA256_CERT_FINGERPRINTS", "AA:BB");
@@ -139,11 +139,11 @@ describe("well-known and metadata routes", () => {
   it("lists the sitemap files and builds them", async () => {
     mockApi({ "/providers/sitemap": { results: [{ slug: "a", updatedAt: "2026-01-01T00:00:00Z" }], total: 100000, totalPages: 3 }, "/categories": { categories: [{ slug: "c", subcategories: [{ slug: "s" }] }] } });
     const xml = await (await sitemapIndex()).text();
-    expect(xml).toContain("<loc>https://dialnfind.com/sitemaps/sitemap/3.xml</loc>");
+    expect(xml).toContain("<loc>https://kaajva.in/sitemaps/sitemap/3.xml</loc>");
     expect(await generateSitemaps()).toEqual([{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }]);
     expect((await sitemap({ id: Promise.resolve("0") })).length).toBeGreaterThan(9);
-    expect(await sitemap({ id: Promise.resolve("1") })).toEqual([expect.objectContaining({ url: "https://dialnfind.com/providers/a" })]);
-    expect(manifest().short_name).toBe("DialNFind");
+    expect(await sitemap({ id: Promise.resolve("1") })).toEqual([expect.objectContaining({ url: "https://kaajva.in/providers/a" })]);
+    expect(manifest().short_name).toBe("KaajVa");
   });
   it("draws the social images", async () => {
     expect((OgImage() as unknown as { markup: string }).markup).toContain("Find trusted local pros");
@@ -155,7 +155,7 @@ describe("well-known and metadata routes", () => {
     expect(((await GuideOg({ params: Promise.resolve({ slug: guide.slug }) })) as unknown as { markup: string }).markup).toContain(guide.title.slice(0, 20));
     expect(((await GuideTwitter({ params: Promise.resolve({ slug: "nope" }) })) as unknown as { markup: string }).markup).toContain("Home service guides");
     expect(((await GuideOg({ params: Promise.resolve({ slug: "nope" }) })) as unknown as { markup: string }).markup).toContain("Home service guides");
-    expect(((await GuideTwitter({ params: Promise.resolve({ slug: guide.slug }) })) as unknown as { markup: string }).markup).toContain("DialNFind guide");
+    expect(((await GuideTwitter({ params: Promise.resolve({ slug: guide.slug }) })) as unknown as { markup: string }).markup).toContain("KaajVa guide");
   });
   it.each([["opengraph", ProviderOg], ["twitter", ProviderTwitter]] as const)("draws the %s image for a provider", async (_name, Image) => {
     const draw = async (p: Record<string, unknown> | null) => {
@@ -167,7 +167,7 @@ describe("well-known and metadata routes", () => {
     expect(full).toContain("Andheri, Mumbai · Rated 4.5 from 12 reviews");
     expect(full).toContain("Verified provider");
     const bare = await draw({ locality: null, totalReviews: 0, primaryCategory: null, verificationStatus: "none" });
-    expect(bare).toContain("Mumbai · New on DialNFind");
+    expect(bare).toContain("Mumbai · New on KaajVa");
     expect(bare).toContain("Local services");
     expect(bare).not.toContain("Verified provider");
   });
@@ -178,7 +178,7 @@ describe("refreshProvider action", () => {
     await refreshProvider("Bad Slug!");
     await refreshProvider("sharma-tv");
     expect(updateTag).not.toHaveBeenCalled();
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     mockApi({ "/auth/me": { user: user() } });
     await refreshProvider("sharma-tv");
     expect(updateTag).toHaveBeenCalledWith("provider:sharma-tv");

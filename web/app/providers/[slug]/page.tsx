@@ -58,7 +58,7 @@ export async function generateMetadata({
   return pageMetadata({
     title: `${p.businessName}: ${service} in ${place}`,
     description: clip(
-      `${rating}${about || `${service} in ${place}.`} Call ${p.businessName} directly on DialNFind.`,
+      `${rating}${about || `${service} in ${place}.`} Call ${p.businessName} directly on KaajVa.`,
     ),
     path: `/providers/${p.slug}`,
     type: "profile",

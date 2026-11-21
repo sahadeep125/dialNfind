@@ -120,7 +120,7 @@ describe("social buttons", () => {
       "/provider/profile": json({ error: { message: "x" } }, 500),
       "/me/notifications": { notifications: [], unread: 0 },
       [`POST /auth/${provider}`]: () => {
-        localStorage.setItem("dnf_provider_token", "tok");
+        localStorage.setItem("kjv_provider_token", "tok");
         return json({ token: "tok", isNewUser, user: user() });
       },
     };

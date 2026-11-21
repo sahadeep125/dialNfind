@@ -1,4 +1,4 @@
-# Deploying DialNFind
+# Deploying KaajVa
 
 The hosting platform is not chosen yet, so this guide covers what every setup needs: the images, the release step, the settings for each app, and the one-time setup with Google, Apple, Razorpay, RevenueCat and the app stores. CI (`.github/workflows/ci.yml`) typechecks, lints, tests and runs the API smoke test on every push.
 
@@ -13,7 +13,7 @@ The hosting platform is not chosen yet, so this guide covers what every setup ne
 
 Build every image from the repository root, because the pnpm lockfile lives there. The build commands are at the top of each Dockerfile. These images have not been built yet: CI checks the apps, not the Dockerfiles, so build each one once before the first deploy.
 
-Suggested addresses: `dialnfind.com` (website), `business.dialnfind.com` (provider portal), `admin.dialnfind.com` (admin console) and `api.dialnfind.com` (API). Put every one on https; the mobile apps refuse plain http in release builds.
+Suggested addresses: `kaajva.in` (website), `business.kaajva.in` (provider portal), `admin.kaajva.in` (admin console) and `api.kaajva.in` (API). Put every one on https; the mobile apps refuse plain http in release builds.
 
 ## Rules for running the API
 
@@ -29,15 +29,15 @@ Suggested addresses: `dialnfind.com` (website), `business.dialnfind.com` (provid
 Run this once per release, before the new API version starts:
 
 ```bash
-docker run --rm --env-file api.env dialnfind-api pnpm release
+docker run --rm --env-file api.env kaajva-api pnpm release
 # = prisma migrate deploy && tsx prisma/bootstrap.ts
 ```
 
-`bootstrap.ts` only adds what is missing: the Free, Pro and Business plans, default settings, the starting categories and admin roles, the first super admin, and the real provider listings bundled in `server/prisma/data/providers-*.json`. On the first deploy, set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` (12 or more characters). Sign in, change the password, then remove both variables.
+`bootstrap.ts` only adds what is missing: the Free, Pro and Business plans, default settings, the starting categories and admin roles, the first super admin, and the real provider listings bundled in `server/prisma/data/providers-*.json`. On the first deploy, set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` (10 or more characters). Sign in, change the password, then remove both variables.
 
 The provider import runs on every release and only adds source records it has not seen before (tracked in `provider_sources`), so listings the team edited or deleted stay that way. A fresh install therefore ends with exactly one user (the super admin), the default categories and every bundled listing, all unclaimed. Set `BOOTSTRAP_IMPORT_PROVIDERS=false` to skip it.
 
-On the Mac host, `./deploy.sh` does all of this and keeps existing data. `./deploy.sh --fresh` first deletes the database volume (after you type the database name), for a clean install: one super admin, the default categories and the bundled listings. Files in `./uploads` are kept. There is no demo data and no seed script; `server/scripts/smoke-fixtures.ts` is for test databases only and refuses to run with `NODE_ENV=production`.
+On the Mac host, `./deploy.sh` does all of this and keeps existing data. `./deploy.sh --fresh` first deletes the database volume (after you type the database name), for a clean install: one super admin, the default categories and the bundled listings. Files in `./uploads` are kept. With `docker-compose.yml`, every port is published on 127.0.0.1 only, for Cloudflare Tunnel on the same machine (`BIND_ADDRESS=0.0.0.0` opens them, only behind a firewall), and the database publishes no port (`docker compose exec db psql ...` for a shell). After starting the containers, `deploy.sh` refreshes the website's cached pages (this needs `REVALIDATE_SECRET`), because the website image is built before the API is up. `uploads/` is readable only by its owner, since `uploads/private` holds ID documents. There is no demo data and no seed script; `server/scripts/smoke-fixtures.ts` is for test databases only and refuses to run with `NODE_ENV=production`.
 
 ## Settings
 
@@ -89,9 +89,9 @@ These apps keep the sign-in token in the browser. Before launch, add a Content-S
 ## Outside services (one time)
 
 - **Webhooks:**
-  - Razorpay → `https://api.dialnfind.com/api/v1/webhooks/razorpay`
-  - RevenueCat → `https://api.dialnfind.com/api/v1/webhooks/revenuecat`
-  - Apple server notifications → `https://api.dialnfind.com/api/v1/auth/apple/notifications`
+  - Razorpay → `https://api.kaajva.in/api/v1/webhooks/razorpay`
+  - RevenueCat → `https://api.kaajva.in/api/v1/webhooks/revenuecat`
+  - Apple server notifications → `https://api.kaajva.in/api/v1/auth/apple/notifications`
 - **Razorpay:** live keys, then Admin → Plans and billing → Sync to Razorpay. Set the seller GSTIN and address under Settings → Invoicing before the first payment.
 - **Google and Apple:** follow the release checklist in [social-login.md](social-login.md).
 
@@ -101,7 +101,7 @@ Once per app:
 1. **Link the project to EAS.** `eas init` adds the EAS project id. Push notifications stay off until it exists.
 2. **Set up over-the-air updates.** `eas update:configure` installs `expo-updates` and sets the update URL. Also set `runtimeVersion: { "policy": "appVersion" }` in `app.json`.
 3. **Add the EAS environment variables** for `production` and `preview`:
-   - `EXPO_PUBLIC_API_URL=https://api.dialnfind.com/api/v1` and `EXPO_PUBLIC_WEB_URL`
+   - `EXPO_PUBLIC_API_URL=https://api.kaajva.in/api/v1` and `EXPO_PUBLIC_WEB_URL`
    - the Google, Apple, Sentry and PostHog (`EXPO_PUBLIC_POSTHOG_KEY`) keys
    - business app only: `EXPO_PUBLIC_PROVIDER_URL` and the RevenueCat keys
    - secret: `SENTRY_AUTH_TOKEN`. Leave Expo's enhanced push security off: the API sends pushes without an access token.

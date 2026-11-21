@@ -1,16 +1,16 @@
-# dialnfind-provider-discovery
+# kaajva-provider-discovery
 
-A command-line tool that finds local service providers (AC repair, electricians, plumbers and so on) for the dialnfind marketplace. It collects them only from **permitted public sources** and exports deduplicated, scored CSV and JSON files for manual review and a later import.
+A command-line tool that finds local service providers (AC repair, electricians, plumbers and so on) for the kaajva marketplace. It collects them only from **permitted public sources** and exports deduplicated, scored CSV and JSON files for manual review and a later import.
 
 It is a discovery pipeline, not a general web scraper:
 
 ```
 allowed public sources ─▶ candidates ─▶ crawl (robots.txt, rate-limited) ─▶ extract
    ─▶ validate ─▶ deduplicate / merge ─▶ classify ─▶ score ─▶ CSV + review CSV + JSON
-   ─▶ admin review ─▶ unclaimed dialnfind profile ─▶ business claims & verifies it
+   ─▶ admin review ─▶ unclaimed kaajva profile ─▶ business claims & verifies it
 ```
 
-Records are **discovered, unclaimed and unverified**: `claim_status=unclaimed`, `verification_status=none`, `source_type=discovered`. They must not be shown as businesses that have joined dialnfind.
+Records are **discovered, unclaimed and unverified**: `claim_status=unclaimed`, `verification_status=none`, `source_type=discovered`. They must not be shown as businesses that have joined kaajva.
 
 ---
 
@@ -19,8 +19,8 @@ Records are **discovered, unclaimed and unverified**: `claim_status=unclaimed`, 
 You need **Python 3.12 or newer**.
 
 ```bash
-git clone <your-repo-url> dialnfind-provider-discovery   # or copy the folder
-cd dialnfind-provider-discovery
+git clone <your-repo-url> kaajva-provider-discovery   # or copy the folder
+cd kaajva-provider-discovery
 ```
 
 ## 2. Virtual environment
@@ -61,7 +61,7 @@ cp .env.example .env          # Windows: copy .env.example .env
 ```
 
 Set `CONTACT_EMAIL` in `.env` at minimum. The crawler identifies itself honestly as
-`dialnfindProviderDiscovery/1.0 (+contact: you@yourdomain.com)`, so site owners can reach you.
+`kaajvaProviderDiscovery/1.0 (+contact: you@yourdomain.com)`, so site owners can reach you.
 
 Key `config.yaml` sections:
 
@@ -72,7 +72,7 @@ Key `config.yaml` sections:
 | `scoring` | `minimum_relevance` (50, main CSV), `minimum_quality` (40, review flag), `reject_below_relevance` (20) |
 | `sources` | Turn each source on or off (see below) |
 | `overture` / `foursquare` | Open dataset release, confidence floor, cache lifetime |
-| `dialnfind_categories` | Path to the server's `categories.json`, used to check the category mapping |
+| `kaajva_categories` | Path to the server's `categories.json`, used to check the category mapping |
 | `source_priority` | Which source wins when merged records disagree |
 | `osm` | Overpass endpoints (tried in order), delay, search area `bbox` (`[south, west, north, east]`; empty = one cached Nominatim lookup of the city, e.g. Siliguri ≈ `[26.64, 88.38, 26.79, 88.49]`), cache lifetime |
 | `search_api` | Licensed search API provider and limits (keys go in `.env`) |
@@ -97,23 +97,23 @@ Key `config.yaml` sections:
 
 Search engine result pages, Google Maps, Justdial, IndiaMART, Facebook, Instagram, LinkedIn and similar sites are on the blocklist. The block is enforced inside the HTTP client, so no source can get around it, including after redirects.
 
-To add a new source, subclass `dialnfind.sources.base.DiscoverySource`, implement `discover(query, location, category) -> list[Candidate]`, register the class in `dialnfind/sources/__init__.py`, and add a toggle under `sources:`.
+To add a new source, subclass `kaajva.sources.base.DiscoverySource`, implement `discover(query, location, category) -> list[Candidate]`, register the class in `kaajva/sources/__init__.py`, and add a toggle under `sources:`.
 
-## 5. Categories: one rule per dialnfind subcategory
+## 5. Categories: one rule per kaajva subcategory
 
-`categories.txt` lists the rule names, one per line; lines starting with `#` are ignored. Each rule in `config.yaml` → `category_rules` maps onto the dialnfind database through `dialnfind:`. There is one rule per subcategory, plus one category-level rule per category for businesses whose evidence doesn't name a specific service (they are listed under the category without a subcategory):
+`categories.txt` lists the rule names, one per line; lines starting with `#` are ignored. Each rule in `config.yaml` → `category_rules` maps onto the kaajva database through `kaajva:`. There is one rule per subcategory, plus one category-level rule per category for businesses whose evidence doesn't name a specific service (they are listed under the category without a subcategory):
 
 ```yaml
 category_rules:
   Pest Control:                                   # category-level rule
-    dialnfind: {category: pest-control}
+    kaajva: {category: pest-control}
     keywords: [pest control, fumigation]
     queries: [pest control]                       # search API queries (the city is appended)
     osm_tags: [craft=pest_control]                # OSM tags that mean "offers this" (strong)
     overture: [pest_control_service]              # Overture taxonomy ids (strong)
     fsq: [pest control service]                   # Foursquare category names (strong)
   Termite Treatment:                              # subcategory rule
-    dialnfind: {category: pest-control, subcategory: termite-treatment}
+    kaajva: {category: pest-control, subcategory: termite-treatment}
     keywords: [termite control, anti termite]
     overture_weak: [pest_control_service]         # weak: needs the name to agree (osm_name_regex / keywords)
     osm_name_regex: "termite"
@@ -125,17 +125,17 @@ When you add a category or subcategory in the admin console that should get list
 
 ## 6. Running discovery
 
-Run all commands from inside the `dialnfind-provider-discovery` folder with the virtual environment active.
+Run all commands from inside the `kaajva-provider-discovery` folder with the virtual environment active.
 
 ```bash
 python main.py --help
 
-# Siliguri, all enabled sources, plus the bundle the dialnfind server imports on deploy
+# Siliguri, all enabled sources, plus the bundle the kaajva server imports on deploy
 python main.py --city Siliguri --state "West Bengal" --country India \
-  --export-dialnfind ../server/prisma/data/providers-siliguri.json
+  --export-kaajva ../server/prisma/data/providers-siliguri.json
 
 # Open datasets only (no website crawling, no API key): minutes instead of hours
-python main.py --sources osm,overture --export-dialnfind ../server/prisma/data/providers-siliguri.json
+python main.py --sources osm,overture --export-kaajva ../server/prisma/data/providers-siliguri.json
 
 # Preview sources and queries without touching the network
 python main.py --dry-run
@@ -282,24 +282,24 @@ This prints counts per reason, then each flagged record with its scores, contact
 
 1. Resolve rows that share a `duplicate_group_id`: keep one and note the others.
 2. Check the `source_url` to confirm the business is real and active.
-3. Leave `verification_status=none`. Verification happens only when the business claims its profile in dialnfind (OTP, then business verification).
+3. Leave `verification_status=none`. Verification happens only when the business claims its profile in kaajva (OTP, then business verification).
 
-## 13. The dialnfind bundle (`--export-dialnfind`)
+## 13. The kaajva bundle (`--export-kaajva`)
 
-`--export-dialnfind PATH` also writes a JSON bundle (`format: dialnfind-providers/1`) shaped for the server's listing validation. Commit it as `server/prisma/data/providers-<city>.json`. Every deploy (`pnpm release` → `prisma/bootstrap.ts` → `prisma/import-providers.ts`) imports it, so a new database never needs a new scrape.
+`--export-kaajva PATH` also writes a JSON bundle (`format: kaajva-providers/1`) shaped for the server's listing validation. Commit it as `server/prisma/data/providers-<city>.json`. Every deploy (`pnpm release` → `prisma/bootstrap.ts` → `prisma/import-providers.ts`) imports it, so a new database never needs a new scrape.
 
 Each record has the listing fields (name, phone, optional email/website/WhatsApp/address/PIN code, coordinates), `services` as category/subcategory slugs, `hours` (0 = Sunday), and `sources`: every merged source record key (`osm:node/123`, `overture:<id>`, `fsq:<id>`, `website:<host>`) with its URL. The server remembers those keys, so importing again never duplicates a listing or brings back one the team deleted, and a record whose phone matches an existing listing is linked to it instead.
 
 A provider goes into the bundle only when:
 
 - it passed the main-CSV relevance threshold;
-- it has a valid Indian phone (`+91` and 10 digits). dialnfind is call-first, so records without a phone stay in the review CSV;
-- it has coordinates and a category that maps onto dialnfind;
+- it has a valid Indian phone (`+91` and 10 digits). kaajva is call-first, so records without a phone stay in the review CSV;
+- it has coordinates and a category that maps onto kaajva;
 - its category is backed by evidence (`category_evidence` in the JSON is `evidence` or `name`): a dataset category, page text or OSM tag, or a full service phrase in the name ("Sharma TV Repair"). A shop type or loose name pattern alone ("Sayan Mobile Centre") is `weak` and stays in the review CSV for a person to check.
 
 Email is never required: about 40% of listings have none, and the business adds its own after claiming. Keyword-stuffed names from map data ("SMART SERVICE CENTER - AC repair & service in siliguri, …") keep only their first part. The run summary prints how many providers were left out and why.
 
-Workflow for a new scrape: run with `--export-dialnfind`, look through the review CSV, commit the bundle, deploy. Listings already on the site are untouched; only new source records are added.
+Workflow for a new scrape: run with `--export-kaajva`, look through the review CSV, commit the bundle, deploy. Listings already on the site are untouched; only new source records are added.
 
 ---|---|
 | `providers` | `provider_id` (stable key), `provider_name`, `normalized_name`, `phone`, `whatsapp`, `email`, `website`, `description`, `claim_status`, `is_claimed`, `data_quality_score`, `relevance_score`, `source_confidence`, `scraped_at` |
@@ -319,7 +319,7 @@ Suggested path: load `siliguri_providers.json` with a small script (Python `supa
 main.py                   CLI entry point
 config.yaml               all settings
 categories.txt            categories to search
-dialnfind/
+kaajva/
   cli.py pipeline.py      orchestration
   discovery.py            query generation + source runner
   crawler.py robots.py rate_limiter.py   polite HTTP layer
@@ -328,7 +328,7 @@ dialnfind/
   validation.py classification.py scoring.py deduplication.py
   geocoding.py            optional, cached
   exporters.py review.py state.py models.py config.py logging_setup.py
-  bundle.py               dialnfind bundle export and category mapping check
+  bundle.py               kaajva bundle export and category mapping check
   sources/                base.py osm.py overture.py foursquare.py _places.py website.py manual.py
                           search_api.py directory.py
 tests/                    pytest suite + fictional offline fixtures

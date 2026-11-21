@@ -1,7 +1,7 @@
-from dialnfind.config import DedupSettings
-from dialnfind.deduplication import deduplicate, merge_records, name_similarity
-from dialnfind.models import RawRecord
-from dialnfind.normalization import core_name
+from kaajva.config import DedupSettings
+from kaajva.deduplication import deduplicate, merge_records, name_similarity
+from kaajva.models import RawRecord
+from kaajva.normalization import core_name
 
 SETTINGS = DedupSettings(shared_hosting_domains=["blogspot.com"])
 PRIORITY = ["website", "osm", "directory", "search_api", "manual"]

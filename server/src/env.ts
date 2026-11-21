@@ -59,9 +59,9 @@ export const env = {
     user: process.env.SMTP_USER ?? "",
     pass: process.env.SMTP_PASS ?? "",
     /** Defaults to the SMTP login: Gmail and most providers rewrite or reject a From address the account does not own. */
-    from: process.env.SMTP_FROM || (process.env.SMTP_USER ? `DialNFind <${process.env.SMTP_USER}>` : "DialNFind <no-reply@dialnfind.com>"),
+    from: process.env.SMTP_FROM || (process.env.SMTP_USER ? `KaajVa <${process.env.SMTP_USER}>` : "KaajVa <no-reply@kaajva.in>"),
     /** Where replies to account emails go, so people who answer a no-reply message still reach someone. */
-    replyTo: process.env.SUPPORT_EMAIL || process.env.SMTP_USER || "support@dialnfind.com",
+    replyTo: process.env.SUPPORT_EMAIL || process.env.SMTP_USER || "support@kaajva.in",
   },
   /** Public origin of this API, used to build URLs for uploaded files. */
   publicUrl: (process.env.PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 4000}`).replace(/\/$/, ""),
@@ -71,7 +71,7 @@ export const env = {
    */
   geocoder: {
     url: (process.env.GEOCODER_URL ?? "https://nominatim.openstreetmap.org").replace(/\/$/, ""),
-    userAgent: process.env.GEOCODER_USER_AGENT || `DialNFind/1.0 (${process.env.SUPPORT_EMAIL || process.env.SMTP_USER || "support@dialnfind.com"})`,
+    userAgent: process.env.GEOCODER_USER_AGENT || `KaajVa/1.0 (${process.env.SUPPORT_EMAIL || process.env.SMTP_USER || "support@kaajva.in"})`,
     country: process.env.GEOCODER_COUNTRY ?? "in",
     enabled: process.env.GEOCODER_ENABLED !== "false",
   },
@@ -89,7 +89,7 @@ export const env = {
     appleKeyId: process.env.APPLE_KEY_ID ?? "",
     applePrivateKey: (process.env.APPLE_PRIVATE_KEY ?? "").replace(/\\n/g, "\n"),
     /** App URL schemes the Android Apple sign-in callback may send people back to. */
-    appRedirectSchemes: list(process.env.APPLE_APP_REDIRECT_SCHEMES ?? "dialnfind,dialnfind-business"),
+    appRedirectSchemes: list(process.env.APPLE_APP_REDIRECT_SCHEMES ?? "kaajva,kaajva-business"),
   },
   /**
    * Web payments (Razorpay Subscriptions). Checkout answers 501 until the keys are set. The webhook

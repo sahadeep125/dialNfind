@@ -1,6 +1,6 @@
 # Plans, payments and invoices
 
-Providers can be on one of three plans: **Free**, **Pro** and **Business**. They can pay on the web through Razorpay Subscriptions, or in the business app through the App Store or Google Play (handled by RevenueCat). The DialNFind team can also grant a plan by hand after an offline payment. Every one of these writes to the same subscription tables, and the server alone decides what a provider can use.
+Providers can be on one of three plans: **Free**, **Pro** and **Business**. They can pay on the web through Razorpay Subscriptions, or in the business app through the App Store or Google Play (handled by RevenueCat). The KaajVa team can also grant a plan by hand after an offline payment. Every one of these writes to the same subscription tables, and the server alone decides what a provider can use.
 
 ```
                  provider_subscriptions (server = source of truth)
@@ -71,13 +71,13 @@ To test, use test cards or UPI id `success@razorpay`. For webhooks on localhost,
 
 ## RevenueCat (business app)
 
-1. In RevenueCat, create a project with an App Store app (`com.dialnfind.business`) and a Play Store app (`com.dialnfind.business`).
+1. In RevenueCat, create a project with an App Store app (`com.kaajva.business`) and a Play Store app (`com.kaajva.business`).
 2. Create the store products and add them in RevenueCat:
 
    | Plan | iOS product | Android subscription:base plan |
    |---|---|---|
-   | Pro monthly / yearly | `dnf_pro_monthly` / `dnf_pro_yearly` | `dnf_pro:monthly` / `dnf_pro:yearly` |
-   | Business monthly / yearly | `dnf_business_monthly` / `dnf_business_yearly` | `dnf_business:monthly` / `dnf_business:yearly` |
+   | Pro monthly / yearly | `kjv_pro_monthly` / `kjv_pro_yearly` | `kjv_pro:monthly` / `kjv_pro:yearly` |
+   | Business monthly / yearly | `kjv_business_monthly` / `kjv_business_yearly` | `kjv_business:monthly` / `kjv_business:yearly` |
 
    Put all four iOS products in one subscription group, so moving between Pro and Business is an upgrade.
 3. Entitlements:
@@ -107,8 +107,8 @@ To test, use a StoreKit configuration file or sandbox tester on iOS, and a licen
 
 ## Invoices (GST)
 
-- **When:** an invoice is issued for every successful Razorpay charge and every payment the team records. It is emailed to the provider. Store purchases have no DialNFind invoice, because Apple and Google are the seller and send their own receipts.
-- **Numbers:** `DNF/2026-27/00001`, sequential per Indian financial year, never reused. Void an invoice instead of deleting it.
+- **When:** an invoice is issued for every successful Razorpay charge and every payment the team records. It is emailed to the provider. Store purchases have no KaajVa invoice, because Apple and Google are the seller and send their own receipts.
+- **Numbers:** `KJV/2026-27/00001`, sequential per Indian financial year, never reused. Void an invoice instead of deleting it.
 - **Tax:** prices include GST, so taxable value = total ÷ (1 + rate). The rate defaults to 18%. It is split as CGST + SGST when the provider's state matches the seller's state, and as IGST otherwise.
 - **Seller details:** set in the admin console under Settings → Invoicing: legal name, GSTIN, address, state code, SAC code, number prefix and rate. Issued invoices keep the details they were issued with.
 - **Buyer details:** the provider sets name, address, state and an optional GSTIN in Plan and billing.

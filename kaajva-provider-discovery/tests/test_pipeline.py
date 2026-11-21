@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from dialnfind.config import apply_source_selection, load_categories, load_settings
-from dialnfind.pipeline import run_pipeline
-from dialnfind.review import load_review_rows
-from dialnfind.state import StateStore
+from kaajva.config import apply_source_selection, load_categories, load_settings
+from kaajva.pipeline import run_pipeline
+from kaajva.review import load_review_rows
+from kaajva.state import StateStore
 from tests.fixtures import sites
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -113,6 +113,6 @@ def test_failed_discovery_keeps_previous_outputs(settings, tmp_path):
 
 
 def test_cli_missing_url_file_exits_2(tmp_path):
-    from dialnfind.cli import main
+    from kaajva.cli import main
 
     assert main(["--input-urls", str(tmp_path / "missing.txt"), "--state-db", str(tmp_path / "d.db")]) == 2

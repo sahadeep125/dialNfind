@@ -21,7 +21,7 @@ import {
   validatePassword,
 } from "@/utils/validation";
 
-/** Create a DialNFind business account. The listing itself is set up on the next screens. */
+/** Create a KaajVa business account. The listing itself is set up on the next screens. */
 export default function RegisterScreen() {
   const theme = useTheme();
   const toast = useToast();
@@ -64,7 +64,7 @@ export default function RegisterScreen() {
           router.replace({ pathname: "/verify-email", params: { sent: "1" } });
           return;
         }
-        toast(`Welcome to DialNFind, ${user.name.split(" ")[0]}`, "success");
+        toast(`Welcome to KaajVa, ${user.name.split(" ")[0]}`, "success");
         router.replace("/");
       },
       onError: (error: Error) => setFormError(errorMessage(error)),
@@ -80,7 +80,7 @@ export default function RegisterScreen() {
     isNewUser: boolean;
   }): void => {
     const first = user.name.split(" ")[0];
-    toast(isNewUser ? `Welcome to DialNFind, ${first}` : `Welcome back, ${first}`, "success");
+    toast(isNewUser ? `Welcome to KaajVa, ${first}` : `Welcome back, ${first}`, "success");
     router.replace("/");
   };
 

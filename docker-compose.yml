@@ -1,21 +1,25 @@
-name: dialnfind
+name: kaajva
+
+# Every port is published on 127.0.0.1 only: Cloudflare Tunnel (cloudflared on this machine) reaches the apps
+# through localhost, and nothing else on the network can bypass Cloudflare. The database publishes no port.
+# BIND_ADDRESS=0.0.0.0 in .env opens them to the network again (only behind a firewall).
 
 services:
   # 1. PostgreSQL Database with PostGIS extension (Required for location-based provider search)
   db:
     image: postgis/postgis:16-3.4
-    container_name: dialnfind-db
+    container_name: kaajva-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-dialnfind}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dialnfind_secret}
-      POSTGRES_DB: ${POSTGRES_DB:-dialnfind}
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-kaajva}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kaajva_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-kaajva}
+    # Not published on the host: the API reaches it as db:5432 on the compose network.
+    # For a psql shell: docker compose exec db psql -U <POSTGRES_USER> <POSTGRES_DB>
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dialnfind} -d ${POSTGRES_DB:-dialnfind}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kaajva} -d ${POSTGRES_DB:-kaajva}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,13 +29,13 @@ services:
     build:
       context: .
       dockerfile: server/Dockerfile
-    container_name: dialnfind-server
+    container_name: kaajva-server
     restart: unless-stopped
     ports:
-      - "4000:4000"
+      - "${BIND_ADDRESS:-127.0.0.1}:4000:4000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-dialnfind}:${POSTGRES_PASSWORD:-dialnfind_secret}@db:5432/${POSTGRES_DB:-dialnfind}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kaajva}:${POSTGRES_PASSWORD:-kaajva_secret}@db:5432/${POSTGRES_DB:-kaajva}?schema=public
       PORT: 4000
       JWT_SECRET: ${JWT_SECRET:-change-this-to-a-secure-random-32-char-string-for-prod}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4000}
@@ -70,16 +74,21 @@ services:
         NEXT_PUBLIC_SITE_URL: ${WEB_URL:-http://localhost:3000}
         NEXT_PUBLIC_IMAGE_ORIGINS: ${PUBLIC_URL:-http://localhost:4000}
         NEXT_PUBLIC_PROVIDER_APP_URL: ${PROVIDER_URL:-http://localhost:5173}
+        NEXT_PUBLIC_SOCIAL_LINKS: ${SOCIAL_LINKS:-}
+        GOOGLE_SITE_VERIFICATION: ${GOOGLE_SITE_VERIFICATION:-}
+        BING_SITE_VERIFICATION: ${BING_SITE_VERIFICATION:-}
         API_URL: http://server:4000/api/v1
-    container_name: dialnfind-web
+    container_name: kaajva-web
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${BIND_ADDRESS:-127.0.0.1}:3000:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
       API_URL: http://server:4000/api/v1
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}
+      GOOGLE_SITE_VERIFICATION: ${GOOGLE_SITE_VERIFICATION:-}
+      BING_SITE_VERIFICATION: ${BING_SITE_VERIFICATION:-}
     depends_on:
       - server
 
@@ -92,10 +101,10 @@ services:
         APP: provider
         VITE_API_URL: ${PUBLIC_URL:-http://localhost:4000}/api/v1
         VITE_WEB_URL: ${WEB_URL:-http://localhost:3000}
-    container_name: dialnfind-provider
+    container_name: kaajva-provider
     restart: unless-stopped
     ports:
-      - "5173:8080"
+      - "${BIND_ADDRESS:-127.0.0.1}:5173:8080"
     depends_on:
       - server
 
@@ -108,10 +117,10 @@ services:
         APP: super-admin
         VITE_API_URL: ${PUBLIC_URL:-http://localhost:4000}/api/v1
         VITE_WEB_URL: ${WEB_URL:-http://localhost:3000}
-    container_name: dialnfind-super-admin
+    container_name: kaajva-super-admin
     restart: unless-stopped
     ports:
-      - "5174:8080"
+      - "${BIND_ADDRESS:-127.0.0.1}:5174:8080"
     depends_on:
       - server
 

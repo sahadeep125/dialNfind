@@ -27,7 +27,7 @@ describe("api", () => {
     expect(toQuery({})).toBe("");
   });
   it("forwards the session token, client IP and JSON body", async () => {
-    request.cookies.set("dnf_token", "tok");
+    request.cookies.set("kjv_token", "tok");
     request.headers = new Headers({ "x-forwarded-for": "1.2.3.4" });
     const fetch = mockApi({ "POST /things": { ok: true } });
     expect(await api("/things", { method: "POST", body: "{}", query: { page: 2 } })).toEqual({ ok: true });
@@ -39,7 +39,7 @@ describe("api", () => {
     expect(headers.get("x-forwarded-for")).toBe("1.2.3.4");
   });
   it("can skip auth and keeps an explicit content type", async () => {
-    request.cookies.set("dnf_token", "tok");
+    request.cookies.set("kjv_token", "tok");
     const fetch = mockApi({ "/x": { ok: 1 } });
     await api("/x", { auth: false, body: "a", headers: { "content-type": "text/plain" } });
     const headers = fetch.mock.calls[0]![1]!.headers as Headers;
@@ -120,7 +120,7 @@ describe("session", () => {
     expect(await getSession()).toBeNull();
   });
   it("loads the user, and treats 401 as signed out and other errors as unreachable", async () => {
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     mockApi({ "/auth/me": { user: user() } });
     expect(await getSession()).toMatchObject({ id: 7 });
     mockApi({ "/auth/me": json({}, 401) });
@@ -128,10 +128,10 @@ describe("session", () => {
     await expect(requireSession("/dashboard?x=1")).rejects.toEqual(new RedirectError("/login?next=%2Fdashboard%3Fx%3D1"));
     mockApi({ "/auth/me": json({}, 500) });
     expect(await getSession()).toBeNull();
-    await expect(requireSession("/d")).rejects.toThrow("could not reach DialNFind");
+    await expect(requireSession("/d")).rejects.toThrow("could not reach KaajVa");
   });
   it("requires a confirmed email for signed-in pages", async () => {
-    request.cookies.set("dnf_token", "t");
+    request.cookies.set("kjv_token", "t");
     mockApi({ "/auth/me": { user: user({ emailVerifiedAt: null }) } });
     await expect(requireSession("/dashboard")).rejects.toEqual(new RedirectError("/verify-email?next=%2Fdashboard"));
     mockApi({ "/auth/me": { user: user() } });
@@ -139,11 +139,11 @@ describe("session", () => {
   });
   it("reads the saved location cookie", async () => {
     expect(await getSavedLocation()).toBe(DEFAULT_LOCATION);
-    request.cookies.set("dnf_location", JSON.stringify({ ...DEFAULT_LOCATION, label: "Here" }));
+    request.cookies.set("kjv_location", JSON.stringify({ ...DEFAULT_LOCATION, label: "Here" }));
     expect((await getSavedLocation()).label).toBe("Here");
-    request.cookies.set("dnf_location", JSON.stringify({ label: "No coords" }));
+    request.cookies.set("kjv_location", JSON.stringify({ label: "No coords" }));
     expect(await getSavedLocation()).toBe(DEFAULT_LOCATION);
-    request.cookies.set("dnf_location", "{bad");
+    request.cookies.set("kjv_location", "{bad");
     expect(await getSavedLocation()).toBe(DEFAULT_LOCATION);
   });
   it("resolves the location from the URL first", async () => {
@@ -159,11 +159,11 @@ describe("app config", () => {
     vi.resetModules();
     mockApi({ "/app-config": { config: { support_email: "help@x.co" } } });
     const a = await import("@/lib/app-config");
-    expect(await a.getAppConfig()).toMatchObject({ site_name: "DialNFind", support_email: "help@x.co", min_review_length: 10 });
+    expect(await a.getAppConfig()).toMatchObject({ site_name: "KaajVa", support_email: "help@x.co", min_review_length: 10 });
     vi.resetModules();
     mockApi({ "/app-config": json({}, 500) });
     const b = await import("@/lib/app-config");
-    expect((await b.getAppConfig()).support_email).toBeNull();
+    expect((await b.getAppConfig()).support_email).toBe("support@kaajva.in");
   });
 });
 
@@ -208,10 +208,10 @@ describe("small helpers", () => {
   });
   it("structured data", () => {
     expect(absoluteUrl("https://x.co/a")).toBe("https://x.co/a");
-    expect(absoluteUrl("a")).toBe("https://dialnfind.com/a");
-    expect(organizationJsonLd({ email: null, phone: "+91" }).contactPoint).toEqual([expect.objectContaining({ telephone: "+91" })]);
+    expect(absoluteUrl("a")).toBe("https://kaajva.in/a");
+    expect(organizationJsonLd({ email: null, phone: "+91" }).contactPoint).toEqual([expect.objectContaining({ telephone: "+91", email: "support@kaajva.in" }), expect.objectContaining({ email: "info@kaajva.in" })]);
     expect(websiteJsonLd()["@type"]).toBe("WebSite");
-    expect(itemListJsonLd([{ name: "A", path: "/a" }]).itemListElement).toEqual([{ "@type": "ListItem", position: 1, url: "https://dialnfind.com/a", name: "A" }]);
+    expect(itemListJsonLd([{ name: "A", path: "/a" }]).itemListElement).toEqual([{ "@type": "ListItem", position: 1, url: "https://kaajva.in/a", name: "A" }]);
     expect(articleJsonLd({ title: "T", description: "D", path: "/g", datePublished: "2026", dateModified: "2026", keywords: ["a", "b"] })).toMatchObject({ keywords: "a, b" });
     const base = {
       slug: "s", businessName: "B", description: null, shortDescription: "", phone: "1", email: null, coverUrl: null, logoUrl: null, portfolio: [],
@@ -286,9 +286,9 @@ describe("small helpers", () => {
 describe("auth route helpers", () => {
   it("sets a secure cookie only in production", () => {
     const res = setSessionCookie(NextResponse.json({}), "tok");
-    expect(res.cookies.get("dnf_token")).toMatchObject({ value: "tok", httpOnly: true, secure: false, maxAge: 2592000 });
+    expect(res.cookies.get("kjv_token")).toMatchObject({ value: "tok", httpOnly: true, secure: false, maxAge: 2592000 });
     vi.stubEnv("NODE_ENV", "production");
-    expect(setSessionCookie(NextResponse.json({}), "tok").cookies.get("dnf_token")!.secure).toBe(true);
+    expect(setSessionCookie(NextResponse.json({}), "tok").cookies.get("kjv_token")!.secure).toBe(true);
   });
   it("signs in through the API and keeps the token", async () => {
     const req = (headers: Record<string, string> = {}) => new Request("http://localhost/api/auth/login", { method: "POST", headers: { host: "localhost", origin: "http://localhost", "x-forwarded-for": "9.9.9.9", ...headers } });
@@ -296,7 +296,7 @@ describe("auth route helpers", () => {
     const ok = await signInThroughApi(req(), "/auth/login", "{}", (d) => ({ user: d.user }));
     expect(ok.status).toBe(200);
     expect(await ok.json()).toEqual({ user: { id: 1 } });
-    expect(ok.cookies.get("dnf_token")!.value).toBe("tok");
+    expect(ok.cookies.get("kjv_token")!.value).toBe("tok");
     expect((fetch.mock.calls[0]![1]!.headers as Headers).get("x-forwarded-for")).toBe("9.9.9.9");
 
     mockApi({ "POST /auth/login": json({ error: { message: "Bad" } }, 401) });
@@ -306,7 +306,7 @@ describe("auth route helpers", () => {
     expect((await signInThroughApi(req(), "/auth/login", "{}", () => ({}))).status).toBe(502);
     mockApi({ "POST /auth/login": new Response("<html>", { status: 502 }) });
     const gateway = await signInThroughApi(req(), "/auth/login", "{}", () => ({}));
-    expect(await gateway.json()).toEqual({ error: { code: "bad_gateway", message: "Could not reach DialNFind. Please try again." } });
+    expect(await gateway.json()).toEqual({ error: { code: "bad_gateway", message: "Could not reach KaajVa. Please try again." } });
     expect((await signInThroughApi(req({ origin: "https://evil.example" }), "/auth/login", "{}", () => ({}))).status).toBe(403);
   });
   it("same-origin edge cases", async () => {

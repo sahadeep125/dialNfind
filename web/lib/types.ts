@@ -86,7 +86,7 @@ export interface MyReview {
   ratingLocked: boolean;
 }
 
-/** Whether the visitor may review a business: only after contacting it through DialNFind (server/src/services/review-trust.ts). */
+/** Whether the visitor may review a business: only after contacting it through KaajVa (server/src/services/review-trust.ts). */
 export interface ReviewEligibility {
   canReview: boolean;
   reason: "sign_in" | "verify_email" | "own_business" | "no_contact" | "too_soon" | null;

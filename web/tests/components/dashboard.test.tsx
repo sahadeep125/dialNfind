@@ -258,7 +258,7 @@ describe("support", () => {
     mockApi({ "POST /support/tickets": json({ error: { message: "Slow down" } }, 429) });
     await u.click(screen.getByRole("button", { name: /Send request/ }));
     expect(await screen.findByText("Slow down")).toBeInTheDocument();
-    const fetch = mockApi({ "POST /support/tickets": { ticket: { id: 12, reference: "DNF-000012" } } });
+    const fetch = mockApi({ "POST /support/tickets": { ticket: { id: 12, reference: "KJV-000012" } } });
     await u.click(screen.getByRole("button", { name: /Send request/ }));
     await waitFor(() => expect(nav.router.push).toHaveBeenCalledWith("/dashboard/support/12"));
     expect(JSON.parse(String(fetch.mock.calls[0]![1]!.body))).toMatchObject({ category: "account", attachments: ["https://u/a.webp"] });
@@ -304,7 +304,7 @@ describe("support", () => {
 
 describe("NotificationList", () => {
   const items = [
-    { id: 1, type: "support", title: "Reply on DNF-1", body: "We replied", isRead: false, dataJson: { ticketId: 1 }, createdAt: new Date().toISOString() },
+    { id: 1, type: "support", title: "Reply on KJV-1", body: "We replied", isRead: false, dataJson: { ticketId: 1 }, createdAt: new Date().toISOString() },
     { id: 2, type: "system", title: "Welcome", body: null, isRead: false, dataJson: null, createdAt: new Date().toISOString() },
     { id: 3, type: "review_reply", title: "Old", body: null, isRead: true, dataJson: { providerSlug: "shop" }, createdAt: new Date().toISOString() },
     { id: 4, type: "system", title: "Read", body: null, isRead: true, dataJson: null, createdAt: new Date().toISOString() },
@@ -326,7 +326,7 @@ describe("NotificationList", () => {
     mockApi({ "POST /me/notifications/read": { ok: true }, "/api/session": { user: user(), unread: 1 } });
     await u.click(screen.getByRole("button", { name: "Mark read" }));
     expect(await screen.findByText("1 unread")).toBeInTheDocument();
-    const link = screen.getByRole("link", { name: /Reply on DNF-1/ });
+    const link = screen.getByRole("link", { name: /Reply on KJV-1/ });
     link.addEventListener("click", (e) => e.preventDefault());
     await u.click(link);
     await waitFor(() => expect(screen.queryByText(/unread$/)).toBeNull());

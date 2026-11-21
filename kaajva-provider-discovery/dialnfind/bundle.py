@@ -1,10 +1,10 @@
-"""dialnfind provider bundle: the JSON file the dialnfind server imports on deploy.
+"""kaajva provider bundle: the JSON file the kaajva server imports on deploy.
 
 The server (``server/prisma/import-providers.ts``) creates one unclaimed, unverified listing per
 record and remembers every ``sources[].key``, so re-running the import never duplicates or
 resurrects a listing. Values are shaped to pass the server's listing validation as-is:
 
-* phone: ``+91`` and 10 digits (records without one are left out; dialnfind is call-first)
+* phone: ``+91`` and 10 digits (records without one are left out; kaajva is call-first)
 * email / website / whatsapp / pincode: valid or ``null`` -- never required
 * services: category and subcategory slugs from ``server/prisma/data/categories.json``
 
@@ -26,7 +26,7 @@ from .exporters import DISCLAIMER
 from .models import Location, Provider, utc_now
 from .normalization import DAYS, host_of
 
-BUNDLE_FORMAT = "dialnfind-providers/1"
+BUNDLE_FORMAT = "kaajva-providers/1"
 _PHONE = re.compile(r"^\+91[1-9]\d{9}$")
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[a-z]{2,}$", re.I)
 _PINCODE = re.compile(r"^[1-9]\d{5}$")
@@ -35,7 +35,7 @@ DAY_INDEX = {code: (i + 1) % 7 for i, code in enumerate(DAYS)}
 NAME_SPLIT = re.compile(r"\s+[-|–—]\s+|\s*,\s*")
 
 
-def load_dialnfind_categories(path: str | Path) -> dict[str, set[str]]:
+def load_kaajva_categories(path: str | Path) -> dict[str, set[str]]:
     """{category slug: {subcategory slugs}} from the server's categories.json."""
     with open(path, encoding="utf-8") as fh:
         data = json.load(fh)
@@ -45,9 +45,9 @@ def load_dialnfind_categories(path: str | Path) -> dict[str, set[str]]:
 def mapping_errors(rules: list[CategoryRule], categories: dict[str, set[str]]) -> list[str]:
     errors = []
     for rule in rules:
-        cat, sub = rule.dialnfind_category, rule.dialnfind_subcategory
+        cat, sub = rule.kaajva_category, rule.kaajva_subcategory
         if not cat:
-            errors.append(f"{rule.name}: missing dialnfind.category")
+            errors.append(f"{rule.name}: missing kaajva.category")
         elif cat not in categories:
             errors.append(f"{rule.name}: unknown category {cat!r}")
         elif sub and sub not in categories[cat]:
@@ -100,9 +100,9 @@ def _services(p: Provider, rules: dict[str, CategoryRule]) -> list[dict[str, Any
     picked: list[tuple[str, str | None]] = []
     for name in [p.primary_category, *p.secondary_categories]:
         rule = rules.get(name)
-        if rule is None or not rule.dialnfind_category:
+        if rule is None or not rule.kaajva_category:
             continue
-        pair = (rule.dialnfind_category, rule.dialnfind_subcategory or None)
+        pair = (rule.kaajva_category, rule.kaajva_subcategory or None)
         if pair not in picked:
             picked.append(pair)
     # A category-level entry adds nothing once the same category has a specific subcategory.

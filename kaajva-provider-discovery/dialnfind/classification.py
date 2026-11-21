@@ -51,8 +51,8 @@ class CategoryRule:
     overture_weak: list[str] = field(default_factory=list)
     fsq: list[str] = field(default_factory=list)  # Foursquare category names (last label segment)
     fsq_weak: list[str] = field(default_factory=list)
-    dialnfind_category: str = ""  # category slug in the dialnfind database
-    dialnfind_subcategory: str = ""  # subcategory slug; empty = category-level listing
+    kaajva_category: str = ""  # category slug in the kaajva database
+    kaajva_subcategory: str = ""  # subcategory slug; empty = category-level listing
 
     def __post_init__(self) -> None:
         self._kw = [(k, _pattern(k)) for k in dict.fromkeys(k.lower() for k in self.keywords if k)]
@@ -122,8 +122,8 @@ def build_rules(categories: list[str], config_rules: dict[str, dict[str, Any]]) 
                 overture_weak=list(cfg.get("overture_weak") or []),
                 fsq=list(cfg.get("fsq") or []),
                 fsq_weak=list(cfg.get("fsq_weak") or []),
-                dialnfind_category=str((cfg.get("dialnfind") or {}).get("category") or ""),
-                dialnfind_subcategory=str((cfg.get("dialnfind") or {}).get("subcategory") or ""),
+                kaajva_category=str((cfg.get("kaajva") or {}).get("category") or ""),
+                kaajva_subcategory=str((cfg.get("kaajva") or {}).get("subcategory") or ""),
             )
         )
     _warn_shared_strong_tags(rules)
@@ -215,7 +215,7 @@ def classify(
         for tag in rule.weak_tags:
             if tag.lower() in osm_tags:
                 if name_hit:
-                    specific = bool(rule.dialnfind_subcategory) or not rule.dialnfind_category
+                    specific = bool(rule.kaajva_subcategory) or not rule.kaajva_category
                     total += FIELD_WEIGHTS["osm"] + (CORROBORATED_WEAK_BONUS if specific else -CORROBORATED_WEAK_BONUS)
                     outside_name += FIELD_WEIGHTS["osm"]
                     hits.append(tag)

@@ -33,8 +33,8 @@ async function createPlans() {
       featuresJson: ["Unlimited leads"],
       prices: {
         create: [
-          { billingCycle: "monthly", amount: 599, razorpayPlanId: "plan_pro_m", iosProductId: "dnf_pro_monthly", androidProductId: "dnf_pro:monthly" },
-          { billingCycle: "yearly", amount: 5990, razorpayPlanId: "plan_pro_y", iosProductId: "dnf_pro_yearly", androidProductId: "dnf_pro:yearly" },
+          { billingCycle: "monthly", amount: 599, razorpayPlanId: "plan_pro_m", iosProductId: "kjv_pro_monthly", androidProductId: "kjv_pro:monthly" },
+          { billingCycle: "yearly", amount: 5990, razorpayPlanId: "plan_pro_y", iosProductId: "kjv_pro_yearly", androidProductId: "kjv_pro:yearly" },
         ],
       },
     },
@@ -44,8 +44,8 @@ async function createPlans() {
       code: "business", name: "Business", price: 999, leadAccessLimit: null, photoLimit: null, analyticsEnabled: true, rankingBoost: 0.04, badgeId: badges.business.id,
       prices: {
         create: [
-          { billingCycle: "monthly", amount: 999, razorpayPlanId: "plan_biz_m", iosProductId: "dnf_business_monthly", androidProductId: "dnf_business:monthly" },
-          { billingCycle: "yearly", amount: 9990, iosProductId: "dnf_business_yearly", androidProductId: "dnf_business:yearly" },
+          { billingCycle: "monthly", amount: 999, razorpayPlanId: "plan_biz_m", iosProductId: "kjv_business_monthly", androidProductId: "kjv_business:monthly" },
+          { billingCycle: "yearly", amount: 9990, iosProductId: "kjv_business_yearly", androidProductId: "kjv_business:yearly" },
         ],
       },
     },

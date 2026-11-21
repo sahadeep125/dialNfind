@@ -37,14 +37,14 @@ jobs:
       postgres:
         image: postgis/postgis:16-3.4
         env:
-          POSTGRES_USER: dialnfind
-          POSTGRES_PASSWORD: dialnfind
-          POSTGRES_DB: dialnfind
+          POSTGRES_USER: kaajva
+          POSTGRES_PASSWORD: kaajva
+          POSTGRES_DB: kaajva
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U dialnfind" --health-interval 5s --health-timeout 5s --health-retries 10
+          --health-cmd "pg_isready -U kaajva" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      DATABASE_URL: postgresql://dialnfind:dialnfind@localhost:5432/dialnfind?schema=public
+      DATABASE_URL: postgresql://kaajva:kaajva@localhost:5432/kaajva?schema=public
       JWT_SECRET: ci-only-secret-not-used-anywhere-else
       RUN_JOBS: "false"
       GEOCODER_ENABLED: "false"
@@ -60,6 +60,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile --filter server...
+      - run: pnpm --filter server exec prisma generate
       - run: pnpm --filter server db:deploy
       - run: pnpm --filter server db:bootstrap
       - run: pnpm --filter server exec tsx scripts/smoke-fixtures.ts

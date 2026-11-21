@@ -1,10 +1,10 @@
-# DialNFind website. Build from the repository root (the pnpm lockfile lives there). NEXT_PUBLIC_* values
+# KaajVa website. Build from the repository root (the pnpm lockfile lives there). NEXT_PUBLIC_* values
 # are compiled into the pages, so they are build arguments; everything else (API_URL, CLIENT_IP_HEADER,
 # ANDROID_SHA256_CERT_FINGERPRINTS, ...) is read at runtime from the container environment.
-#   docker build -f web/Dockerfile -t dialnfind-web \
-#     --build-arg NEXT_PUBLIC_SITE_URL=https://dialnfind.com \
-#     --build-arg NEXT_PUBLIC_IMAGE_ORIGINS=https://api.dialnfind.com \
-#     --build-arg NEXT_PUBLIC_PROVIDER_APP_URL=https://business.dialnfind.com .
+#   docker build -f web/Dockerfile -t kaajva-web \
+#     --build-arg NEXT_PUBLIC_SITE_URL=https://kaajva.in \
+#     --build-arg NEXT_PUBLIC_IMAGE_ORIGINS=https://api.kaajva.in \
+#     --build-arg NEXT_PUBLIC_PROVIDER_APP_URL=https://business.kaajva.in .
 
 FROM node:22-bookworm-slim AS build
 RUN npm install -g pnpm@10.33.0
@@ -30,6 +30,9 @@ ARG NEXT_PUBLIC_APP_STORE_URL
 ARG NEXT_PUBLIC_PLAY_STORE_URL
 ARG NEXT_PUBLIC_OFFICE_ADDRESS
 ARG NEXT_PUBLIC_OFFICE_REGION
+ARG NEXT_PUBLIC_SOCIAL_LINKS
+ARG GOOGLE_SITE_VERIFICATION
+ARG BING_SITE_VERIFICATION
 ARG NEXT_PUBLIC_SENTRY_DSN
 ARG NEXT_PUBLIC_APP_ENV=production
 # Product analytics (PostHog project token); empty sends nothing. The /ingest proxy target is fixed at build time.
@@ -50,6 +53,9 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
     NEXT_PUBLIC_PLAY_STORE_URL=$NEXT_PUBLIC_PLAY_STORE_URL \
     NEXT_PUBLIC_OFFICE_ADDRESS=$NEXT_PUBLIC_OFFICE_ADDRESS \
     NEXT_PUBLIC_OFFICE_REGION=$NEXT_PUBLIC_OFFICE_REGION \
+    NEXT_PUBLIC_SOCIAL_LINKS=$NEXT_PUBLIC_SOCIAL_LINKS \
+    GOOGLE_SITE_VERIFICATION=$GOOGLE_SITE_VERIFICATION \
+    BING_SITE_VERIFICATION=$BING_SITE_VERIFICATION \
     NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN \
     NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV \
     NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \

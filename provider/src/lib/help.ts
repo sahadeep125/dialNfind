@@ -9,8 +9,8 @@ export const FAQ: { q: string; a: string }[] = [
     a: "A lead is a customer who tapped Call or WhatsApp on your listing. Leads lists them with the service they looked at and any details they shared. Mark each one as contacted, won or lost and add a private note so you can follow up.",
   },
   {
-    q: "Is DialNFind taking a cut of my jobs?",
-    a: "No. Customers contact you directly and pay you directly. DialNFind does not take bookings or commission on your work.",
+    q: "Is KaajVa taking a cut of my jobs?",
+    a: "No. Customers contact you directly and pay you directly. KaajVa does not take bookings or commission on your work.",
   },
   {
     q: "How do reviews work?",

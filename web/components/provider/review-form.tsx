@@ -209,7 +209,7 @@ function ReviewNotAllowed({ eligibility, pathname }: { eligibility: ReviewEligib
       </>
     );
   } else if (eligibility.reason === "no_contact") {
-    text = "Reviews come from customers who contacted this business on DialNFind. Call or WhatsApp them from this page to review them later.";
+    text = "Reviews come from customers who contacted this business on KaajVa. Call or WhatsApp them from this page to review them later.";
   } else {
     return null;
   }

@@ -26,7 +26,7 @@ export default async function SupportPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-brand-deep">Help and support</h1>
-          <p className="mt-1 text-muted-foreground">Your conversations with the DialNFind team.</p>
+          <p className="mt-1 text-muted-foreground">Your conversations with the KaajVa team.</p>
         </div>
         <NewTicketButton />
       </div>

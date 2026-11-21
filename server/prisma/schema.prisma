@@ -1,4 +1,4 @@
-// DialNFind database schema (v2 architecture).
+// KaajVa database schema (v2 architecture).
 // One shared schema serves the web app, the provider dashboard and future mobile apps.
 // BIGSERIAL primary keys, snake_case columns (mapped), `xxx_id` = FK to `xxx.id`.
 // Spatial search uses PostGIS: providers.location is a geography(Point, 4326) column kept in
@@ -562,7 +562,7 @@ model ProviderClaim {
   @@map("provider_claims")
 }
 
-// Where an imported listing came from (prisma/data/providers-*.json, built by dialnfind-provider-discovery).
+// Where an imported listing came from (prisma/data/providers-*.json, built by kaajva-provider-discovery).
 // One row per source record ("osm:node/123", "overture:…"). The row outlives its listing (providerId is set
 // to null when the listing is deleted), so re-running the import never brings a deleted listing back.
 model ProviderSource {
@@ -887,7 +887,7 @@ model PlanPrice {
   amount           Decimal      @db.Decimal(10, 2)
   razorpayPlanId   String?      @unique @map("razorpay_plan_id")
   iosProductId     String?      @unique @map("ios_product_id")
-  // Play subscription id and base plan, e.g. dnf_pro:monthly
+  // Play subscription id and base plan, e.g. kjv_pro:monthly
   androidProductId String?      @unique @map("android_product_id")
   isActive         Boolean      @default(true) @map("is_active")
 
@@ -956,7 +956,7 @@ model Transaction {
 // none: Apple and Google are the seller and send their own receipts.
 model Invoice {
   id            BigInt        @id @default(autoincrement())
-  // e.g. DNF/2026-27/00001, sequential per financial year.
+  // e.g. KJV/2026-27/00001, sequential per financial year.
   number        String        @unique
   providerId    BigInt        @map("provider_id")
   transactionId BigInt        @unique @map("transaction_id")
@@ -1194,7 +1194,7 @@ model TicketMessage {
   id          BigInt   @id @default(autoincrement())
   ticketId    BigInt   @map("ticket_id")
   authorId    BigInt?  @map("author_id")
-  // Staff replies are shown to the requester as "DialNFind Support".
+  // Staff replies are shown to the requester as "KaajVa Support".
   fromStaff   Boolean  @default(false) @map("from_staff")
   // Internal notes are visible to staff only.
   isInternal  Boolean  @default(false) @map("is_internal")

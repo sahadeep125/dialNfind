@@ -50,8 +50,8 @@ supportRouter.get("/tickets/:id", async (req, res) => {
     .messages({ where: { isInternal: false }, orderBy: { createdAt: "asc" }, select: { id: true, body: true, attachments: true, fromStaff: true, createdAt: true, author: { select: { name: true } } } });
   res.json({
     ticket: { ...ticket, reference: ticketRef(ticket.id) },
-    // Requesters see "DialNFind Support" rather than the individual staff member's name.
-    messages: messages.map((m) => ({ ...m, authorName: m.fromStaff ? "DialNFind Support" : (m.author?.name ?? ticket.name), author: undefined })),
+    // Requesters see "KaajVa Support" rather than the individual staff member's name.
+    messages: messages.map((m) => ({ ...m, authorName: m.fromStaff ? "KaajVa Support" : (m.author?.name ?? ticket.name), author: undefined })),
   });
 });
 

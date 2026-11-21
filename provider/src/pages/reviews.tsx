@@ -61,7 +61,7 @@ export function ReviewsPage() {
             </TabsList>
           </Tabs>
           {data.reviews.length === 0 ? (
-            <EmptyState icon={MessageSquare} title={filter === "unreplied" ? "You are all caught up" : "No reviews yet"} text={filter === "unreplied" ? "Every review has a reply." : "Customers who contact you through DialNFind can leave a review here."} />
+            <EmptyState icon={MessageSquare} title={filter === "unreplied" ? "You are all caught up" : "No reviews yet"} text={filter === "unreplied" ? "Every review has a reply." : "Customers who contact you through KaajVa can leave a review here."} />
           ) : (
             <div className="space-y-4">
               {data.reviews.map((r) => (
@@ -118,7 +118,7 @@ function ReviewCard({ review }: { review: ProviderReview }) {
             <span className="font-medium">{review.author}</span>
             {review.isVerifiedContact && (
               <span className="inline-flex items-center gap-1 text-xs text-success">
-                <BadgeCheck className="size-3.5" /> Contacted via DialNFind
+                <BadgeCheck className="size-3.5" /> Contacted via KaajVa
               </span>
             )}
             <span className="ml-auto">

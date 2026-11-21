@@ -90,7 +90,7 @@ export const CLEANING_GUIDES: Guide[] = [
       {
         heading: "Finding cleaning services near you",
         paragraphs: [
-          "Compare cleaning services near you on DialNFind by rating, reviews and distance, and call them directly. Ask for the checklist in writing, especially for large homes or move-out cleaning.",
+          "Compare cleaning services near you on KaajVa by rating, reviews and distance, and call them directly. Ask for the checklist in writing, especially for large homes or move-out cleaning.",
         ],
       },
       {

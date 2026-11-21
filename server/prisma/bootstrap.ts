@@ -23,12 +23,12 @@ interface CategoryData {
   attributes: { label: string; appliesTo: "lead" | "provider"; fieldType: "text" | "number" | "select" | "multiselect" | "boolean"; options?: string[] }[];
 }
 
-// The default directory, shared with dialnfind-provider-discovery (which maps what it finds onto these slugs).
+// The default directory, shared with kaajva-provider-discovery (which maps what it finds onto these slugs).
 const CATEGORIES: CategoryData[] = JSON.parse(readFileSync(`${DATA_DIR}/categories.json`, "utf8"));
 
 const BADGES = [
   { name: "Top Rated", criteriaDescription: "Average rating of 4.5 or higher from at least 10 reviews" },
-  { name: "Verified Pro", criteriaDescription: "Phone and business documents verified by DialNFind" },
+  { name: "Verified Pro", criteriaDescription: "Phone and business documents verified by KaajVa" },
   { name: "Quick Responder", criteriaDescription: "Most customers report a quick response" },
   { name: "Pro Partner", criteriaDescription: "Active Pro plan subscriber" },
   { name: "Business Partner", criteriaDescription: "Active Business plan subscriber" },
@@ -59,8 +59,8 @@ const PLANS = [
     badge: "Pro Partner",
     featuresJson: ["Unlimited leads", "Profile analytics and ranking", "WhatsApp button", "30 portfolio photos", "Pro Partner badge"],
     prices: [
-      { billingCycle: "monthly", amount: 599, iosProductId: "dnf_pro_monthly", androidProductId: "dnf_pro:monthly" },
-      { billingCycle: "yearly", amount: 5990, iosProductId: "dnf_pro_yearly", androidProductId: "dnf_pro:yearly" },
+      { billingCycle: "monthly", amount: 599, iosProductId: "kjv_pro_monthly", androidProductId: "kjv_pro:monthly" },
+      { billingCycle: "yearly", amount: 5990, iosProductId: "kjv_pro_yearly", androidProductId: "kjv_pro:yearly" },
     ],
   },
   {
@@ -74,15 +74,15 @@ const PLANS = [
     badge: "Business Partner",
     featuresJson: ["Everything in Pro", "Sponsored campaigns", "Priority support", "Unlimited portfolio photos", "Business Partner badge"],
     prices: [
-      { billingCycle: "monthly", amount: 999, iosProductId: "dnf_business_monthly", androidProductId: "dnf_business:monthly" },
-      { billingCycle: "yearly", amount: 9990, iosProductId: "dnf_business_yearly", androidProductId: "dnf_business:yearly" },
+      { billingCycle: "monthly", amount: 999, iosProductId: "kjv_business_monthly", androidProductId: "kjv_business:monthly" },
+      { billingCycle: "yearly", amount: 9990, iosProductId: "kjv_business_yearly", androidProductId: "kjv_business:yearly" },
     ],
   },
 ] as const;
 
-// Support phone and published legal links are left for the team to fill in under Settings.
-// The support address starts as the mail inbox from .env; without one it is left empty rather than made up.
-const supportEmail = (process.env.SUPPORT_EMAIL || process.env.SMTP_USER || "").trim().toLowerCase();
+// Published legal links are left for the team to fill in under Settings; the support phone falls back to the
+// default in services/settings.ts. The support address is SUPPORT_EMAIL from .env, or the KaajVa support inbox.
+const supportEmail = (process.env.SUPPORT_EMAIL || "support@kaajva.in").trim().toLowerCase();
 const SETTINGS = [
   { key: "sponsored_cpc", value: "5" },
   { key: "sponsored_min_budget", value: "500" },
@@ -148,11 +148,11 @@ async function main() {
   if ((await prisma.user.count({ where: { role: "super_admin" } })) === 0) {
     const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
     const password = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "";
-    if (!email || password.length < 12) {
-      throw new Error("No super admin yet. Set BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD (12 or more characters) and run again.");
+    if (!email || password.length < 10) {
+      throw new Error("No super admin yet. Set BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD (10 or more characters) and run again.");
     }
     await prisma.user.create({
-      data: { role: "super_admin", name: "DialNFind Admin", email, passwordHash: await bcrypt.hash(password, 12), emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
+      data: { role: "super_admin", name: "KaajVa Admin", email, passwordHash: await bcrypt.hash(password, 12), emailVerifiedAt: new Date(), termsAcceptedAt: new Date() },
     });
     log.push(`super admin ${email}`);
   }

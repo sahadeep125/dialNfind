@@ -15,7 +15,7 @@ import { GUIDES } from "@/lib/guides";
 import { json, mockApi, provider } from "../helpers";
 
 const setLocation = (o: Record<string, unknown>) => {
-  document.cookie = `dnf_location=${encodeURIComponent(JSON.stringify({ label: "L", name: "Kothrud", city: "Pune", state: "MH", kind: "area", latitude: 1, longitude: 2, ...o }))}; path=/`;
+  document.cookie = `kjv_location=${encodeURIComponent(JSON.stringify({ label: "L", name: "Kothrud", city: "Pune", state: "MH", kind: "area", latitude: 1, longitude: 2, ...o }))}; path=/`;
 };
 
 describe("home sections", () => {

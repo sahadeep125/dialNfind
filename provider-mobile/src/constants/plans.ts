@@ -32,8 +32,8 @@ export const FEATURE_COPY: Record<string, { title: string; text: string; entitle
 export const planFor = (entitlement: Entitlement): "Pro" | "Business" => (entitlement === "provider_business" ? "Business" : "Pro");
 
 export const SOURCE_LABEL = {
-  admin: "Set up by the DialNFind team",
-  razorpay: "Paid on the DialNFind website",
+  admin: "Set up by the KaajVa team",
+  razorpay: "Paid on the KaajVa website",
   app_store: "Billed through the App Store",
   play_store: "Billed through Google Play",
 } as const;

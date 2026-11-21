@@ -25,7 +25,7 @@ const listQuery = paginationSchema.extend({
 adminSupportRouter.get("/tickets", async (req, res) => {
   const q = parse(listQuery, req.query);
   const me = currentUser(req).id;
-  const ref = q.q?.match(/^(?:DNF-)?0*(\d+)$/i);
+  const ref = q.q?.match(/^(?:KJV-)?0*(\d+)$/i);
   const where: Prisma.SupportTicketWhereInput = {
     ...(q.status === "active" ? { status: { in: ["open", "pending"] } } : q.status ? { status: q.status } : {}),
     ...(q.priority ? { priority: q.priority } : {}),
@@ -141,7 +141,7 @@ adminSupportRouter.post("/tickets/:id/messages", async (req, res) => {
       void sendMail({
         to: ticket.email,
         subject: `Re: ${ticket.subject} [${ticketRef(id)}]`,
-        lines: [body.body, ticket.userId ? "You can reply from Help and support in your DialNFind account." : "Reply to our contact form and mention this reference if you need more help."],
+        lines: [body.body, ticket.userId ? "You can reply from Help and support in your KaajVa account." : "Reply to our contact form and mention this reference if you need more help."],
       });
     }
   }

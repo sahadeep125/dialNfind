@@ -11,7 +11,7 @@ export function StartPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="text-3xl font-bold text-brand-deep md:text-4xl">Welcome, {user?.name.split(" ")[0]}. Let us get you listed.</h1>
-      <p className="mt-3 text-muted-foreground">Many local businesses are already on DialNFind. Check if yours is, or create a new listing.</p>
+      <p className="mt-3 text-muted-foreground">Many local businesses are already on KaajVa. Check if yours is, or create a new listing.</p>
 
       {pending.length > 0 && (
         <div className="mt-6 rounded-2xl border border-warning/50 bg-warning-soft p-4 text-sm">
@@ -32,7 +32,7 @@ export function StartPage() {
             <Search className="size-6" />
           </span>
           <h2 className="mt-5 text-xl font-bold">Claim my existing listing</h2>
-          <p className="mt-2 flex-1 text-sm text-muted-foreground">Your business is already on DialNFind with reviews. Verify ownership with a code sent to the listed number.</p>
+          <p className="mt-2 flex-1 text-sm text-muted-foreground">Your business is already on KaajVa with reviews. Verify ownership with a code sent to the listed number.</p>
           <span className="mt-5 flex items-center gap-1 text-sm font-semibold text-primary">
             Find my business <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
           </span>

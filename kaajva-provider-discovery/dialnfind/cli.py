@@ -15,7 +15,7 @@ from .config import apply_source_selection, enforce_limits, load_categories, loa
 from .logging_setup import setup_logging
 from .state import StateStore
 
-log = logging.getLogger("dialnfind.cli")
+log = logging.getLogger("kaajva.cli")
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 
 BANNER = f"""\
@@ -26,13 +26,13 @@ India's DPDP Act 2023 and the IT Act) and with the terms of service of every
 website and API you use this tool with. The tool respects robots.txt, skips
 blocked domains and never bypasses logins, CAPTCHAs or bot protection -- but
 that does not by itself make any particular use lawful. Collected records are
-unverified business listings; they must not be presented as dialnfind members.
+unverified business listings; they must not be presented as kaajva members.
 ------------------------------------------------------------------------------"""
 
 # CLI args that are persisted so a bare `--resume` repeats the previous run.
 RESUMABLE_ARGS = (
     "city", "state", "country", "categories", "output", "max_results", "concurrency",
-    "delay", "sources", "min_score", "input_urls", "max_pages", "config", "export_dialnfind",
+    "delay", "sources", "min_score", "input_urls", "max_pages", "config", "export_kaajva",
 )
 
 
@@ -61,8 +61,8 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--output", help="Main CSV path (review CSV and JSON are written next to it)")
     g.add_argument("--min-score", type=int, help="Minimum relevance score for the main CSV (0-100)")
     g.add_argument("--max-results", type=int, help="Maximum number of discovered candidates")
-    g.add_argument("--export-dialnfind", metavar="JSON",
-                   help="Also write the provider bundle the dialnfind server imports on deploy "
+    g.add_argument("--export-kaajva", metavar="JSON",
+                   help="Also write the provider bundle the kaajva server imports on deploy "
                         "(e.g. ../server/prisma/data/providers-siliguri.json)")
 
     g = p.add_argument_group("crawling")
@@ -118,22 +118,22 @@ def _restore_previous_args(args: argparse.Namespace, db_path: str) -> None:
         log.info("--resume: reusing previous %s", ", ".join(restored))
 
 
-def check_dialnfind_mapping(settings: Any, categories: list[str]) -> list[str]:
-    """Every category rule must point at a real dialnfind category/subcategory, so a bundle
+def check_kaajva_mapping(settings: Any, categories: list[str]) -> list[str]:
+    """Every category rule must point at a real kaajva category/subcategory, so a bundle
     never carries a service the server would reject."""
-    from .bundle import load_dialnfind_categories, mapping_errors
+    from .bundle import load_kaajva_categories, mapping_errors
     from .classification import build_rules
 
-    path = Path(settings.dialnfind_categories)
+    path = Path(settings.kaajva_categories)
     if not path.is_absolute():
         path = PROJECT_DIR / path
     if not path.exists():
         if settings.bundle_output:
-            return [f"dialnfind categories file not found: {path} (config: dialnfind_categories)"]
-        log.warning("dialnfind categories file %s not found; skipping the category mapping check", path)
+            return [f"kaajva categories file not found: {path} (config: kaajva_categories)"]
+        log.warning("kaajva categories file %s not found; skipping the category mapping check", path)
         return []
     rules = build_rules(categories, settings.category_rules)
-    return [f"category mapping: {e}" for e in mapping_errors(rules, load_dialnfind_categories(path))]
+    return [f"category mapping: {e}" for e in mapping_errors(rules, load_kaajva_categories(path))]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -171,8 +171,8 @@ def main(argv: list[str] | None = None) -> int:
         settings.crawler.max_pages_per_domain = args.max_pages
     settings.state_db = db_path
     settings.resume = args.resume
-    if args.export_dialnfind:
-        settings.bundle_output = args.export_dialnfind
+    if args.export_kaajva:
+        settings.bundle_output = args.export_kaajva
     settings.dry_run = args.dry_run
     if args.input_urls:
         settings.input_urls = _resolve(args.input_urls, args.input_urls)
@@ -192,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     except (ValueError, OSError) as exc:
         log.error("%s", exc)
         return 2
-    if problems := check_dialnfind_mapping(settings, categories):
+    if problems := check_kaajva_mapping(settings, categories):
         for problem in problems:
             log.error("%s", problem)
         return 2

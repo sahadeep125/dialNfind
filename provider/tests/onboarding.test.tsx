@@ -98,7 +98,7 @@ describe("claim page", () => {
     await userEvent.upload(document.querySelector<HTMLInputElement>("#claim-doc")!, pdfFile());
     await screen.findByRole("button", { name: /Remove/ });
     await userEvent.click(screen.getByRole("button", { name: /Submit document/ }));
-    await waitFor(() => expect(localStorage.getItem("dnf_provider_token")).toBe("customer-upgraded"));
+    await waitFor(() => expect(localStorage.getItem("kjv_provider_token")).toBe("customer-upgraded"));
     // Swapping the session reloads the account, which remounts the page on the listing again
     // instead of showing "Claim submitted" (reported as a finding).
     expect(await screen.findByText("Prove that you own this business")).toBeInTheDocument();
@@ -251,7 +251,7 @@ describe("onboarding", () => {
     await userEvent.click(screen.getByRole("button", { name: /Publish my listing/ }));
 
     await waitFor(() => expect(where()).toBe("/"));
-    expect(await screen.findByText("Your business is live on DialNFind")).toBeInTheDocument();
+    expect(await screen.findByText("Your business is live on KaajVa")).toBeInTheDocument();
     expect(lastBody(fetch, "/provider/onboarding")).toMatchObject({
       businessName: "Ravi Repairs",
       businessType: "company",
@@ -262,11 +262,11 @@ describe("onboarding", () => {
       whatsappNumber: "+919876543210",
       serviceAreas: [{ areaName: "Sevoke Road" }],
     });
-    expect(localStorage.getItem("dnf_onboarding_7")).toBeNull();
+    expect(localStorage.getItem("kjv_onboarding_7")).toBeNull();
   });
 
   it("resumes a saved draft, reports a failed publish, and signs in with a returned token", async () => {
-    localStorage.setItem("dnf_onboarding_7", JSON.stringify(fullDraft()));
+    localStorage.setItem("kjv_onboarding_7", JSON.stringify(fullDraft()));
     let fail = true;
     const fetch = onboardingApi({
       "POST /provider/onboarding": () => (fail ? json({ error: { message: "Name is taken" } }, 409) : json({ token: "new-token" })),
@@ -277,7 +277,7 @@ describe("onboarding", () => {
     expect(await screen.findByText("Name is taken")).toBeInTheDocument();
     fail = false;
     await userEvent.click(screen.getByRole("button", { name: /Publish my listing/ }));
-    await waitFor(() => expect(localStorage.getItem("dnf_provider_token")).toBe("new-token"));
+    await waitFor(() => expect(localStorage.getItem("kjv_provider_token")).toBe("new-token"));
     expect(lastBody(fetch, "/provider/onboarding")).toMatchObject({
       businessName: "Ravi Repairs",
       yearsExperience: null,
@@ -288,7 +288,7 @@ describe("onboarding", () => {
   });
 
   it("goes back a step, clears the form error, and leaves from the first step", async () => {
-    localStorage.setItem("dnf_onboarding_7", JSON.stringify(fullDraft({ step: 1 })));
+    localStorage.setItem("kjv_onboarding_7", JSON.stringify(fullDraft({ step: 1 })));
     onboardingApi();
     await renderApp("/onboarding");
     expect(await screen.findByText("What services do you offer?")).toBeInTheDocument();
@@ -302,7 +302,7 @@ describe("onboarding", () => {
     onboardingApi();
     await renderApp("/onboarding");
     await userEvent.type(await screen.findByLabelText(/Business name/), "Draft Shop");
-    await waitFor(() => expect(JSON.parse(localStorage.getItem("dnf_onboarding_7")!).business.businessName).toBe("Draft Shop"));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem("kjv_onboarding_7")!).business.businessName).toBe("Draft Shop"));
   });
 
   it("sends accounts that already have a business to the dashboard", async () => {
@@ -316,6 +316,6 @@ describe("onboarding", () => {
     renderWith(<OnboardingPage />);
     await userEvent.type(screen.getByLabelText(/Business name/), "Anon");
     await act(async () => new Promise((r) => setTimeout(r, 450)));
-    expect(JSON.parse(localStorage.getItem("dnf_onboarding_anon")!).contact).toMatchObject({ phone: "", email: "" });
+    expect(JSON.parse(localStorage.getItem("kjv_onboarding_anon")!).contact).toMatchObject({ phone: "", email: "" });
   });
 });

@@ -1,11 +1,11 @@
 # The provider portal or the admin console as a static site behind nginx. Build from the repository root;
 # APP picks the app, and VITE_* values are compiled into the bundle, so they are build arguments.
 #   docker build -f deploy/spa.Dockerfile --build-arg APP=provider \
-#     --build-arg VITE_API_URL=https://api.dialnfind.com/api/v1 --build-arg VITE_WEB_URL=https://dialnfind.com \
-#     -t dialnfind-provider .
+#     --build-arg VITE_API_URL=https://api.kaajva.in/api/v1 --build-arg VITE_WEB_URL=https://kaajva.in \
+#     -t kaajva-provider .
 #   docker build -f deploy/spa.Dockerfile --build-arg APP=super-admin \
-#     --build-arg VITE_API_URL=https://api.dialnfind.com/api/v1 --build-arg VITE_WEB_URL=https://dialnfind.com \
-#     -t dialnfind-admin .
+#     --build-arg VITE_API_URL=https://api.kaajva.in/api/v1 --build-arg VITE_WEB_URL=https://kaajva.in \
+#     -t kaajva-admin .
 
 FROM node:22-bookworm-slim AS build
 RUN npm install -g pnpm@10.33.0

@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { publicApi } from "./api";
+import { BUSINESS } from "./config";
 
 /** Public settings from the admin console (GET /app-config). Unset ones are null. */
 export interface AppConfig {
@@ -14,9 +15,9 @@ export interface AppConfig {
 }
 
 const FALLBACK: AppConfig = {
-  site_name: "DialNFind",
-  support_email: null,
-  support_phone: null,
+  site_name: "KaajVa",
+  support_email: BUSINESS.supportEmail,
+  support_phone: BUSINESS.phone,
   support_hours: null,
   terms_url: null,
   privacy_url: null,
@@ -27,7 +28,9 @@ const FALLBACK: AppConfig = {
 export const getAppConfig = cache(async (): Promise<AppConfig> => {
   try {
     const { config } = await publicApi<{ config: Partial<AppConfig> }>("/app-config", { revalidate: 600, tags: ["app-config"] });
-    return { ...FALLBACK, ...config };
+    // A setting the team has not filled in comes back null; keep the KaajVa default for it.
+    const set = Object.fromEntries(Object.entries(config).filter(([, v]) => v !== null && v !== ""));
+    return { ...FALLBACK, ...set };
   } catch {
     return FALLBACK;
   }

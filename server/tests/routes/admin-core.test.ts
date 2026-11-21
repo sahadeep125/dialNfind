@@ -204,7 +204,7 @@ describe("team and roles", () => {
     expect((await c.post("/api/v1/admin/roles").send({ name: "Bad", permissions: ["team"] })).status).toBe(400);
     const invite = await c.post("/api/v1/admin/team").send({ name: "Asha Rao", email: "asha@example.com", roleId: role.id });
     expect(invite.status).toBe(201);
-    expect(sentMails()[0]!.text).toContain("Boss Person added you to the DialNFind admin team as Finance");
+    expect(sentMails()[0]!.text).toContain("Boss Person added you to the KaajVa admin team as Finance");
     const customer = await createUser({ email: "cust@example.com" });
     expect((await c.post("/api/v1/admin/team").send({ name: "Cust Omer", email: "cust@example.com", roleId: role.id })).body.member.role).toBe("admin");
     expect((await c.post("/api/v1/admin/team").send({ name: "Asha Rao", email: "asha@example.com", roleId: role.id })).status).toBe(409);
@@ -259,8 +259,8 @@ describe("settings", () => {
     const got = await boss.get("/api/v1/admin/settings");
     const fields = got.body.groups.flatMap((g: { fields: { key: string; isSet: boolean; value: string }[] }) => g.fields);
     expect(fields.find((f: { key: string }) => f.key === "support_email")).toMatchObject({ isSet: true, value: "help@x.co" });
-    expect(fields.find((f: { key: string }) => f.key === "site_name")).toMatchObject({ isSet: false, value: "DialNFind" });
-    expect(fields.find((f: { key: string }) => f.key === "support_phone")).toMatchObject({ isSet: false, value: "" });
+    expect(fields.find((f: { key: string }) => f.key === "site_name")).toMatchObject({ isSet: false, value: "KaajVa" });
+    expect(fields.find((f: { key: string }) => f.key === "support_phone")).toMatchObject({ isSet: false, value: "+918906609532" });
     expect(got.body.other).toEqual([expect.objectContaining({ key: "legacy_key", value: "old" })]);
 
     const save = (values: Record<string, unknown>) => boss.put("/api/v1/admin/settings").send({ values });
@@ -269,7 +269,7 @@ describe("settings", () => {
     expect(await getSetting("default_search_radius_km")).toBe("20");
     expect(await prisma.setting.findUnique({ where: { key: "support_phone" } })).toBeNull();
     await save({ site_name: "" });
-    expect(await getSetting("site_name")).toBe("DialNFind");
+    expect(await getSetting("site_name")).toBe("KaajVa");
     const bad = async (values: Record<string, unknown>) => (await save(values)).body.error.message;
     expect(await bad({ nope: "1" })).toBe("Unknown setting nope");
     expect(await bad({ default_search_radius_km: "x" })).toMatch(/must be a number/);
@@ -317,7 +317,7 @@ describe("admin help desk", () => {
     expect(await q({ assignee: "me" })).toBe(1);
     expect(await q({ assignee: "none" })).toBe(1);
     expect(await q({ assignee: Number(other.id) })).toBe(1);
-    expect(await q({ q: `DNF-${String(t1.id).padStart(6, "0")}` })).toBe(1);
+    expect(await q({ q: `KJV-${String(t1.id).padStart(6, "0")}` })).toBe(1);
     expect(await q({ q: "billing" })).toBe(1);
     expect((await c.get("/api/v1/admin/tickets/assignees")).body.assignees.map((a: { name: string }) => a.name)).toContain("Agent Smith");
 
@@ -382,7 +382,7 @@ describe("admin users", () => {
     expect((await c.get("/api/v1/admin/users").query({ q: "9000" })).body.total).toBe(1);
     expect((await c.get("/api/v1/admin/users").query({ role: "provider", status: "active" })).body.users[0].id).toBe(Number(owner.id));
     const detail = await c.get(`/api/v1/admin/users/${u.id}`);
-    expect(detail.body).toMatchObject({ favorites: [{ id: Number(provider.id) }], tickets: [{ reference: expect.stringMatching(/^DNF-/) }], sessions: [expect.any(Object)] });
+    expect(detail.body).toMatchObject({ favorites: [{ id: Number(provider.id) }], tickets: [{ reference: expect.stringMatching(/^KJV-/) }], sessions: [expect.any(Object)] });
     expect(detail.body.reviews).toHaveLength(1);
     expect(detail.body.leads).toHaveLength(1);
     expect((await c.get("/api/v1/admin/users/999")).status).toBe(404);

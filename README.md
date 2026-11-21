@@ -1,4 +1,4 @@
-# DialNFind
+# KaajVa
 
 A hyperlocal service directory: customers find trusted local providers (TV repair, plumbers, tutors...) near them and call or WhatsApp them directly. Providers claim or create a listing and manage it from their own portal.
 
@@ -9,9 +9,9 @@ The repository is a pnpm workspace with four separate apps, plus two mobile apps
 | `server/` | REST API | Node, Express 5, Prisma 6, PostgreSQL + PostGIS, Zod, JWT | http://localhost:4000/api/v1 |
 | `web/` | Customer website | Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui | http://localhost:3000 |
 | `provider/` | Provider portal | React 19 + Vite, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query | http://localhost:5173 |
-| `super-admin/` | Admin console for the DialNFind team | React 19 + Vite, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, Recharts | http://localhost:5174 |
+| `super-admin/` | Admin console for the KaajVa team | React 19 + Vite, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, Recharts | http://localhost:5174 |
 | `mobile/` | Customer app for Android and iOS | Expo SDK 57, React Native 0.86, Expo Router, NativeWind, Zustand, MMKV, TanStack Query | Expo dev server on :8081 |
-| `provider-mobile/` | Provider app (DialNFind Business) for Android and iOS | Same stack as `mobile/` | Expo dev server on :8081 |
+| `provider-mobile/` | Provider app (KaajVa Business) for Android and iOS | Same stack as `mobile/` | Expo dev server on :8081 |
 
 The architecture, schema decisions and API list are in [docs/PLAN.md](docs/PLAN.md).
 
@@ -21,8 +21,8 @@ Requirements: Node 22+, pnpm 10, PostgreSQL 16 with the PostGIS extension availa
 
 ```bash
 # 1. Database (any PostgreSQL with PostGIS works)
-createuser -s dialnfind && psql -c "ALTER USER dialnfind PASSWORD 'dialnfind'"
-createdb -O dialnfind dialnfind
+createuser -s kaajva && psql -c "ALTER USER kaajva PASSWORD 'kaajva'"
+createdb -O kaajva kaajva
 
 # 2. Install and configure
 pnpm install
@@ -54,11 +54,11 @@ The websites, both apps and the API send product analytics to one PostHog projec
 
 Besides `API_URL`, set these in `web/.env.local` (see `web/.env.example`):
 
-- `NEXT_PUBLIC_SITE_URL`: the public address, used for canonical links, the sitemap and social previews (defaults to `https://dialnfind.com`).
+- `NEXT_PUBLIC_SITE_URL`: the public address, used for canonical links, the sitemap and social previews (defaults to `https://kaajva.in`).
 - `NEXT_PUBLIC_IMAGE_ORIGINS`: the API's upload origin and any image CDN, so Next can resize those images.
 - `ANDROID_SHA256_CERT_FINGERPRINTS` (and `APPLE_TEAM_ID` if it changes): let links to the site open the mobile app.
 - `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`: error reporting (optional).
-- `GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_OFFICE_ADDRESS`, `NEXT_PUBLIC_OFFICE_REGION`: optional.
+- `GOOGLE_SITE_VERIFICATION`, `BING_SITE_VERIFICATION`, `NEXT_PUBLIC_SOCIAL_LINKS`, `NEXT_PUBLIC_OFFICE_ADDRESS`, `NEXT_PUBLIC_OFFICE_REGION`: optional. See [docs/seo/keyword-map.md](docs/seo/keyword-map.md) for the search setup.
 
 Support email, phone and hours, and links to published terms and privacy pages, come from the admin console (Settings).
 
@@ -89,7 +89,7 @@ There is no demo data. A new database (local or production) gets what `pnpm --fi
 - the default categories and subcategories from `server/prisma/data/categories.json`;
 - the real provider listings in `server/prisma/data/providers-*.json`: unclaimed, unverified and live. Many have no email; the business adds one after claiming.
 
-The listings were found by [`dialnfind-provider-discovery/`](dialnfind-provider-discovery/README.md) from open data (OpenStreetMap, Overture Maps and, optionally, Foursquare OS Places, a licensed search API and the businesses' own websites). The bundle is committed, so setting up a database never needs a new scrape. The import is idempotent: every source record is remembered in `provider_sources`, so a listing is imported once, and one the team deleted or edited is left alone. To add a new scrape to a running site, commit the new bundle and deploy, or run `pnpm --filter server db:import-providers`. `BOOTSTRAP_IMPORT_PROVIDERS=false` skips the import.
+The listings were found by [`kaajva-provider-discovery/`](kaajva-provider-discovery/README.md) from open data (OpenStreetMap, Overture Maps and, optionally, Foursquare OS Places, a licensed search API and the businesses' own websites). The bundle is committed, so setting up a database never needs a new scrape. The import is idempotent: every source record is remembered in `provider_sources`, so a listing is imported once, and one the team deleted or edited is left alone. To add a new scrape to a running site, commit the new bundle and deploy, or run `pnpm --filter server db:import-providers`. `BOOTSTRAP_IMPORT_PROVIDERS=false` skips the import.
 
 For the smoke test and the mobile/web walkthroughs, `server/scripts/smoke-fixtures.ts` adds throwaway customer and provider accounts to a test database (never production); they use `SMOKE_PASSWORD`, which the walkthroughs read as `E2E_PASSWORD`.
 
@@ -99,7 +99,7 @@ In development, emails (sign-up confirmation, password reset, decisions on listi
 
 ## Admin console
 
-`super-admin/` is for the DialNFind team only. Customer and provider accounts are refused at sign-in. It covers:
+`super-admin/` is for the KaajVa team only. Customer and provider accounts are refused at sign-in. It covers:
 
 - **Marketplace**: providers (add a listing, import listings from CSV, edit every part of a listing, approve, suspend, verify in bulk, badges, change plan, give a listing to an account or remove its owner, delete), listing claims, verification documents, categories with subcategories and attributes, badges, reviews (bulk publish or hide) and reports.
 - **Revenue**: subscription plans with their features, subscribers and payments; payments received outside the app (UPI, bank transfer) are recorded with a reference, and can be marked refunded or failed; promotions (sponsored listings) with budgets.
@@ -109,7 +109,7 @@ In development, emails (sign-up confirmation, password reset, decisions on listi
 
 **Team and permissions.** `super_admin` can open everything. Everyone else has the `admin` role plus an admin role (Operations, Support agent, Finance, or any role the super admin creates) that lists the sections they can open. The API enforces this on every `/admin` path (`server/src/lib/permissions.ts`); the console hides what a member cannot open. Only the super admin can manage Team, so no one can widen their own access. Adding a member returns a temporary password once; the member can change it, or use "Forgot password" on the website.
 
-**Support tickets.** Customers raise tickets from the website (Dashboard, Help and support, or the contact form) and providers from the provider portal. Staff reply from the console; customers see replies as "DialNFind Support", and internal notes are never shown to them. References look like `DNF-000123`.
+**Support tickets.** Customers raise tickets from the website (Dashboard, Help and support, or the contact form) and providers from the provider portal. Staff reply from the console; customers see replies as "KaajVa Support", and internal notes are never shown to them. References look like `KJV-000123`.
 
 **Plans and promotions.** Providers pay for plans online: Razorpay on the provider website and the App Store or Google Play (through RevenueCat) in the business app; see [docs/billing.md](docs/billing.md). Promotions can be paid online on the website, or requested with "Request campaign", which opens a billing ticket. The team can also grant a plan after an offline payment with Change plan on the provider page, or start a promotion with New promotion, ticking "The provider paid" to record the amount and reference.
 
@@ -144,7 +144,7 @@ On a real phone, point `EXPO_PUBLIC_API_URL` at your computer's LAN address (for
 
 ## Provider mobile app
 
-`provider-mobile/` is DialNFind Business, the provider portal as an Android and iOS app on the same `/provider` API. Signing in leads to the dashboard when the account has a business, and to setup (add a new listing or claim an existing one) when it does not.
+`provider-mobile/` is KaajVa Business, the provider portal as an Android and iOS app on the same `/provider` API. Signing in leads to the dashboard when the account has a business, and to setup (add a new listing or claim an existing one) when it does not.
 
 - **Tabs**: Dashboard (period stats, daily chart, profile checklist), Leads (channel filter, call or WhatsApp back), Reviews (filter and reply), More.
 - **Screens**: Sign in, Create account, Start, Claim a listing (search, then an ownership document), Add your business (step by step), Edit profile, Services, Hours, Service areas, Portfolio, Verification, Promote, Plan, Support tickets and chat, Notifications, Help, Terms and Privacy.

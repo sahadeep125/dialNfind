@@ -115,7 +115,7 @@ export interface OwnReview {
   rating: number;
   reviewText: string | null;
   photos: string[];
-  /** pending: held for the DialNFind team; flagged or removed: taken down after a report. */
+  /** pending: held for the KaajVa team; flagged or removed: taken down after a report. */
   status: ReviewStatus;
   createdAt: string;
   /** After a week only the text can change, and a change is checked again before it shows. */
@@ -124,7 +124,7 @@ export interface OwnReview {
 
 export type ReviewStatus = "pending" | "published" | "flagged" | "removed";
 
-/** Whether the person may review a business: only after contacting it through DialNFind. */
+/** Whether the person may review a business: only after contacting it through KaajVa. */
 export interface ReviewEligibility {
   canReview: boolean;
   reason: "sign_in" | "verify_email" | "own_business" | "no_contact" | "too_soon" | null;

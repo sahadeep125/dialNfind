@@ -81,7 +81,7 @@ export function TicketsPage() {
       ) : (
         <>
       <Toolbar>
-        <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search subject, email or DNF-000123" />
+        <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search subject, email or KJV-000123" />
         <FilterSelect label="Priority" allLabel="Any priority" value={f.priority} onChange={(priority) => setF({ priority, page: "1" })} options={PRIORITIES.map((p) => ({ value: p, label: humanize(p) }))} />
         <FilterSelect
           label="Assignee"
@@ -192,7 +192,7 @@ export function TicketDetailPage() {
                       <Lock className="size-3" /> Internal note
                     </span>
                   ) : (
-                    m.fromStaff && <span className="text-xs text-muted-foreground">Shown to the customer as DialNFind Support</span>
+                    m.fromStaff && <span className="text-xs text-muted-foreground">Shown to the customer as KaajVa Support</span>
                   )}
                   <span className="ml-auto text-xs text-muted-foreground">{new Date(m.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span>
                 </div>
@@ -369,7 +369,7 @@ function Composer({ ticketId, status }: { ticketId: number; status: Status }) {
         rows={5}
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder={mode === "note" ? "Only the team sees this" : `Hi, this is ${user?.name.split(" ")[0] ?? "the team"} from DialNFind Support.`}
+        placeholder={mode === "note" ? "Only the team sees this" : `Hi, this is ${user?.name.split(" ")[0] ?? "the team"} from KaajVa Support.`}
         aria-invalid={!!error || undefined}
         aria-describedby={error ? "ticket-body-error" : undefined}
         maxLength={5000}

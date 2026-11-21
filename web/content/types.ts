@@ -5,7 +5,7 @@
 
 export type Faq = { q: string; a: string };
 
-/** Copy for a category or subcategory page. `title` is used before the " | DialNFind" suffix. */
+/** Copy for a category or subcategory page. `title` is used before the " | KaajVa" suffix. */
 export interface ServiceSeo {
   /** At most 50 characters, so the full title with the site suffix stays near 60. */
   title: string;
@@ -28,7 +28,7 @@ export interface Guide {
   slug: string;
   /** Shown as the H1. At most 70 characters. */
   title: string;
-  /** The <title>, used before the " | DialNFind" suffix. At most 50 characters. */
+  /** The <title>, used before the " | KaajVa" suffix. At most 50 characters. */
   metaTitle: string;
   /** At most 160 characters. */
   description: string;

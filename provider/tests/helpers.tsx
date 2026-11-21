@@ -75,7 +75,7 @@ export const providerMe = (over: Record<string, unknown> = {}) => ({
 
 /** The API answers for a signed-in provider with a live business. */
 export const signedIn = (u: Record<string, unknown> = {}, me: Record<string, unknown> = {}) => {
-  localStorage.setItem("dnf_provider_token", "tok");
+  localStorage.setItem("kjv_provider_token", "tok");
   return { "/auth/me": { user: user(u) }, "/provider/me": providerMe(me), "/app-config": { config: { support_email: "help@x.co", support_phone: null, terms_url: null, privacy_url: null } } };
 };
 

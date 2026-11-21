@@ -45,7 +45,7 @@ describe("admin email settings", () => {
     const ok = await admin.post("/api/v1/admin/settings/email/test").send({ to: " Me@Shop.in " });
     expect(ok.body).toEqual({ ok: true, response: "250 OK" });
     expect(transport.verify).toHaveBeenCalled();
-    expect(transport.sendMail.mock.calls[0]![0]).toMatchObject({ to: "me@shop.in", subject: "DialNFind test email" });
+    expect(transport.sendMail.mock.calls[0]![0]).toMatchObject({ to: "me@shop.in", subject: "KaajVa test email" });
     expect(await prisma.adminActivityLog.count({ where: { action: "settings.test_email" } })).toBe(1);
 
     transport.verify.mockRejectedValueOnce(Object.assign(new Error("Invalid login"), { code: "EAUTH", responseCode: 535 }));

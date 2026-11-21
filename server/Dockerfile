@@ -1,7 +1,7 @@
-# DialNFind API. Build from the repository root (the pnpm lockfile lives there):
-#   docker build -f server/Dockerfile -t dialnfind-api .
+# KaajVa API. Build from the repository root (the pnpm lockfile lives there):
+#   docker build -f server/Dockerfile -t kaajva-api .
 # Before starting a new version, run the release step once (migrations, then the idempotent bootstrap):
-#   docker run --rm --env-file server/.env dialnfind-api pnpm release
+#   docker run --rm --env-file server/.env kaajva-api pnpm release
 # Uploads live in /app/uploads; mount a persistent volume there (docs/DEPLOY.md).
 
 FROM node:22-bookworm-slim AS base

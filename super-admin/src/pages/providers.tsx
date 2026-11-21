@@ -48,7 +48,7 @@ export function ProvidersPage() {
     <>
       <PageHeader
         title="Providers"
-        description="Every business listed on DialNFind. Approve new listings, suspend bad actors and check each profile."
+        description="Every business listed on KaajVa. Approve new listings, suspend bad actors and check each profile."
         actions={
           <div className="flex flex-wrap gap-2">
             <ExportButton entity="providers" filters={f} />
