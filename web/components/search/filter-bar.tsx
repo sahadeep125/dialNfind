@@ -17,7 +17,7 @@ const RATINGS = [
 ];
 
 const PILL = "inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-md border border-input bg-card px-3 text-sm font-medium text-foreground/85 transition-colors hover:border-foreground/25 hover:bg-muted";
-const PILL_ON = "border-cta/50 bg-cta-soft text-cta-hover hover:border-cta/60 hover:bg-cta-soft";
+const PILL_ON = "border-cta/50 bg-cta-soft text-cta-strong hover:border-cta/60 hover:bg-cta-soft";
 
 /** One row of quick filters under the search banner; every change is written to the URL. */
 export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius }: { categories?: Category[]; lockedCategory?: Category; lockedSub?: string; defaultRadius: number }) {
@@ -61,7 +61,7 @@ export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius
         </Popover>
 
         <button type="button" aria-pressed={verified} onClick={() => update({ verified: verified ? null : "true" })} className={cn(PILL, verified && PILL_ON)}>
-          <BadgeCheck className={cn("size-4", verified ? "text-cta" : "text-success")} /> Verified only
+          <BadgeCheck className={cn("size-4", verified ? "text-cta-strong" : "text-success")} /> Verified only
         </button>
 
         {categories && !lockedCategory && (
@@ -123,7 +123,7 @@ function RadiusPill({ radius, active, onCommit }: { radius: number; active: bool
       <PopoverContent align="start" className="w-72">
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium">Distance</span>
-          <span className="font-semibold text-cta">Within {value} km</span>
+          <span className="font-semibold text-cta-strong">Within {value} km</span>
         </div>
         <Slider className="mt-4" min={1} max={50} step={1} value={[value]} onValueChange={([v]) => setValue(v)} onValueCommit={([v]) => onCommit(v)} />
         <div className="mt-2 flex justify-between text-xs text-muted-foreground">

@@ -359,7 +359,7 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
               {!p.isClaimed && (
                 <div className="rounded-lg border border-dashed bg-card p-5">
                   <div className="flex items-center gap-2 font-semibold">
-                    <Store className="size-4 text-cta" /> Is this your business?
+                    <Store className="size-4 text-cta-strong" /> Is this your business?
                   </div>
                   <p className="mt-1.5 text-sm text-muted-foreground">Claim it for free to update details, reply to reviews and see who is calling.</p>
                   <Button asChild size="sm" variant="outline" className="mt-3">

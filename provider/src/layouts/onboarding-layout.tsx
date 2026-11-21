@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export function OnboardingLayout() {
   const { user, signOut } = useAuth();
   return (
-    <div className="min-h-dvh bg-[linear-gradient(180deg,oklch(0.965_0.02_266),transparent_40%)]">
+    <div className="min-h-dvh bg-[linear-gradient(180deg,oklch(0.965_0.02_262.5),transparent_40%)]">
       <header className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
         <Logo />
         <div className="flex items-center gap-3 text-sm text-muted-foreground">

@@ -90,7 +90,7 @@ export function ProfileHeader({ p, chips, extraChips, facts }: { p: ProviderDeta
         <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-[repeat(auto-fit,minmax(9rem,1fr))]">
           {facts.map((f) => (
             <div key={f.label} className="flex items-center gap-3 bg-card px-4 py-3.5">
-              <f.icon className="size-5 shrink-0 text-cta" aria-hidden />
+              <f.icon className="size-5 shrink-0 text-cta-strong" aria-hidden />
               <div className="flex min-w-0 flex-col-reverse">
                 <dt className="truncate text-xs text-muted-foreground">{f.label}</dt>
                 <dd className="truncate text-[15px] font-bold">{f.value}</dd>

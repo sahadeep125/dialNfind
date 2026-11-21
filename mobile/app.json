@@ -25,7 +25,7 @@
     "android": {
       "package": "com.kaajva.app",
       "adaptiveIcon": {
-        "backgroundColor": "#355EDD",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -94,11 +94,11 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 160,
+          "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#355EDD",
+          "backgroundColor": "#042161",
           "dark": {
-            "backgroundColor": "#0B0F18"
+            "backgroundColor": "#010B2B"
           }
         }
       ],
@@ -135,7 +135,7 @@
         "expo-notifications",
         {
           "icon": "./assets/android-icon-monochrome.png",
-          "color": "#355EDD"
+          "color": "#FD8003"
         }
       ],
       "./plugins/withSceneLifecycle",

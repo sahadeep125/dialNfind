@@ -299,7 +299,7 @@ function Kpi({
   hint: string;
   tone: "primary" | "teal" | "green" | "amber";
 }) {
-  const tones = { primary: "bg-accent text-primary", teal: "bg-[oklch(0.95_0.035_190)] text-[oklch(0.5_0.1_195)]", green: "bg-success-soft text-success", amber: "bg-warning-soft text-[oklch(0.6_0.13_70)]" };
+  const tones = { primary: "bg-accent text-primary", teal: "bg-brand-accent-soft text-brand-accent-strong", green: "bg-success-soft text-success", amber: "bg-warning-soft text-[oklch(0.6_0.13_70)]" };
   return (
     <div className="rounded-2xl border bg-card p-4 shadow-[var(--shadow-soft)] sm:p-5">
       <div className="flex items-center justify-between gap-2">

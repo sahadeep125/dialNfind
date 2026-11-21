@@ -8,40 +8,43 @@
 
   /* Warm neutral surfaces, so photos and the orange CTA sit on something calmer than pure grey. */
   --background: oklch(0.985 0.004 95);
-  --foreground: oklch(0.23 0.025 265);
+  --foreground: oklch(0.23 0.03 262.5);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.23 0.025 265);
+  --card-foreground: oklch(0.23 0.03 262.5);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.23 0.025 265);
+  --popover-foreground: oklch(0.23 0.03 262.5);
 
-  /* Brand: deep navy for trust and structure; safety orange only for the main action on a screen. */
-  --primary: oklch(0.3 0.07 252);
-  --primary-hover: oklch(0.25 0.065 252);
+  /* Brand (from the KaajVa logo): navy #042161 for trust and structure; orange #fd8003 only for the main action on a screen.
+     Orange is too light for white text (2.5:1), so orange fills carry navy text (5.9:1), and orange *text* on light
+     surfaces uses --cta-strong (5.1:1 on white). On navy, plain --cta reads fine as text (5.9:1). */
+  --primary: #042161;
+  --primary-hover: #001755;
   --primary-foreground: oklch(0.99 0.003 95);
-  --cta: oklch(0.553 0.195 38.4);
-  --cta-hover: oklch(0.47 0.157 37.3);
-  --cta-foreground: oklch(1 0 0);
-  --cta-soft: oklch(0.97 0.022 60);
-  --secondary: oklch(0.955 0.012 250);
-  --secondary-foreground: oklch(0.3 0.07 252);
+  --cta: #fd8003;
+  --cta-hover: #e77400;
+  --cta-foreground: #042161;
+  --cta-strong: #ae5600;
+  --cta-soft: oklch(0.97 0.03 62);
+  --secondary: oklch(0.955 0.015 262.5);
+  --secondary-foreground: #042161;
   --muted: oklch(0.962 0.006 90);
-  --muted-foreground: oklch(0.5 0.022 265);
-  --accent: oklch(0.955 0.014 250);
-  --accent-foreground: oklch(0.3 0.07 252);
+  --muted-foreground: oklch(0.5 0.025 262.5);
+  --accent: oklch(0.955 0.015 262.5);
+  --accent-foreground: #042161;
   --destructive: oklch(0.55 0.21 27);
   --border: oklch(0.915 0.01 85);
   --input: oklch(0.88 0.012 85);
-  --ring: oklch(0.45 0.1 252 / 0.4);
+  --ring: oklch(0.45 0.13 262.5 / 0.4);
 
   --success: oklch(0.56 0.13 155);
   --success-soft: oklch(0.965 0.03 155);
   --warning: oklch(0.78 0.16 72);
   --warning-soft: oklch(0.97 0.04 85);
-  --brand-deep: oklch(0.24 0.06 252);
+  --brand-deep: oklch(0.21 0.1 262.5);
   --star: oklch(0.78 0.16 72);
 
-  --chart-1: oklch(0.3 0.07 252);
-  --chart-2: oklch(0.553 0.195 38.4);
+  --chart-1: #042161;
+  --chart-2: #fd8003;
   --chart-3: oklch(0.78 0.16 72);
   --chart-4: oklch(0.56 0.13 155);
   --chart-5: oklch(0.55 0.12 230);
@@ -68,6 +71,7 @@
   --color-cta-hover: var(--cta-hover);
   --color-cta-foreground: var(--cta-foreground);
   --color-cta-soft: var(--cta-soft);
+  --color-cta-strong: var(--cta-strong);
   --color-star: var(--star);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -181,7 +185,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--cta);
+  color: var(--cta-strong);
 }
 
 /* Hides a horizontal scroller's bar while keeping it scrollable. */

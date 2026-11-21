@@ -14,7 +14,7 @@ export function PromoBanners() {
     <div className="space-y-5">
       <div className="grid overflow-hidden rounded-xl bg-primary text-white md:grid-cols-[1.1fr_1fr]">
         <div className="p-7 sm:p-10 lg:p-14">
-          <p className="eyebrow mb-3 text-[oklch(0.8_0.13_60)]">For professionals</p>
+          <p className="eyebrow mb-3 text-cta">For professionals</p>
           <h2 className="text-2xl font-bold text-white md:text-[2rem] md:leading-tight">Grow your business with local customers</h2>
           <p className="mt-3 max-w-md text-[15px] leading-relaxed text-white/75">
             List your services for free and get found by people nearby who are ready to hire.
@@ -23,7 +23,7 @@ export function PromoBanners() {
             {PROVIDER_PERKS.map((perk) => (
               <li key={perk} className="flex items-center gap-2.5 text-[15px] text-white/90">
                 <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cta">
-                  <Check className="size-3.5 text-white" strokeWidth={3} aria-hidden />
+                  <Check className="size-3.5 text-cta-foreground" strokeWidth={3} aria-hidden />
                 </span>
                 {perk}
               </li>

@@ -19,14 +19,14 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
       </div>
       <div className="relative isolate hidden h-full min-h-[560px] overflow-hidden rounded-xl bg-brand-deep p-10 text-white lg:flex lg:flex-col lg:justify-between">
         <Image src={AUTH_IMAGE.src} alt={AUTH_IMAGE.alt} fill sizes="40rem" className="-z-20 object-cover" />
-        <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,oklch(0.22_0.055_252/0.55)_0%,oklch(0.22_0.055_252/0.2)_40%,oklch(0.22_0.055_252/0.92)_100%)]" />
+        <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,oklch(0.21_0.1_262.5/0.55)_0%,oklch(0.21_0.1_262.5/0.2)_40%,oklch(0.21_0.1_262.5/0.92)_100%)]" />
         <Logo inverted />
         <div>
           <p className="max-w-sm text-2xl font-bold leading-snug">Find a trusted pro nearby, and call them directly.</p>
           <ul className="mt-6 space-y-3">
             {POINTS.map((f) => (
               <li key={f.t} className="flex items-center gap-3 text-white/90">
-                <f.icon className="size-5 text-[oklch(0.8_0.13_60)]" aria-hidden /> {f.t}
+                <f.icon className="size-5 text-cta" aria-hidden /> {f.t}
               </li>
             ))}
           </ul>

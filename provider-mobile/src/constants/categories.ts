@@ -92,8 +92,8 @@ export const CATEGORY_STYLES: Record<string, CategoryStyle> = {
 
 export const FALLBACK_CATEGORY_STYLE: CategoryStyle = {
   icon: Briefcase,
-  light: { bg: "#EAF0FE", fg: "#1F3A8B" },
-  dark: { bg: "#1D2842", fg: "#C9D7FC" },
+  light: { bg: "#EEF2FA", fg: "#042161" },
+  dark: { bg: "#16224A", fg: "#C7D2EC" },
 };
 
 export const SORT_OPTIONS: {

@@ -22,7 +22,7 @@ interface Props {
   style?: StyleProp<ViewStyle>;
 }
 
-/** Deep indigo gradient with a soft glow in the top-right corner, drawn once behind hero content. */
+/** Deep navy gradient with a soft glow in the top-right corner, drawn once behind hero content. */
 export function HeroBackground({ radius }: { radius: number }) {
   return (
     <View
@@ -32,12 +32,12 @@ export function HeroBackground({ radius }: { radius: number }) {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <Defs>
           <LinearGradient id="hero-bg" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={palette.indigo600} />
-            <Stop offset="1" stopColor={palette.indigo900} />
+            <Stop offset="0" stopColor={palette.navy500} />
+            <Stop offset="1" stopColor={palette.navy900} />
           </LinearGradient>
           <RadialGradient id="hero-glow" cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={palette.indigo400} stopOpacity="0.55" />
-            <Stop offset="1" stopColor={palette.indigo400} stopOpacity="0" />
+            <Stop offset="0" stopColor={palette.navy400} stopOpacity="0.45" />
+            <Stop offset="1" stopColor={palette.navy400} stopOpacity="0" />
           </RadialGradient>
         </Defs>
         <Rect width="100%" height="100%" fill="url(#hero-bg)" />
@@ -64,7 +64,7 @@ export function AppCard({
       : variant === "flat"
         ? theme.colors.background.subtle
         : variant === "hero"
-          ? palette.indigo700
+          ? palette.navy500
           : tokens.background;
   const border = variant === "outlined" || variant === "raised" ? tokens.border : background;
   const surface: ViewStyle = {

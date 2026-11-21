@@ -88,7 +88,7 @@ export default async function HomePage() {
             {categories.map((c) => (
               <div key={c.id}>
                 <h3 className="text-[15px] font-semibold">
-                  <Link href={serviceHref(c.slug)} className="hover:text-cta">
+                  <Link href={serviceHref(c.slug)} className="hover:text-cta-strong">
                     {c.name}
                   </Link>
                 </h3>

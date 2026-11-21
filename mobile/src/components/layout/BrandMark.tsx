@@ -1,31 +1,56 @@
-import Svg, { Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
+import { Image } from "expo-image";
+import { StyleSheet, View } from "react-native";
+
+const MARK = require("../../../assets/brand/kaajva-mark.png");
+const LOGO = require("../../../assets/brand/kaajva-logo.png");
+const LOGO_WHITE = require("../../../assets/brand/kaajva-logo-white.png");
 
 interface Props {
   size?: number;
-  /** "brand" is the gradient tile used on light surfaces; "inverse" is a white tile for the splash. */
+  /** "brand" is the tile used on app surfaces; "inverse" drops the outline on the navy splash and hero surfaces. */
   tone?: "brand" | "inverse";
 }
 
-/** The KaajVa mark, the same drawing as the website logo: a location pin holding a phone handset. */
+/** The KaajVa house-and-wrench mark (logo/icon.png) on a white rounded tile, so it reads on light, dark and navy surfaces. */
 export function BrandMark({ size = 40, tone = "brand" }: Props) {
-  const inverse = tone === "inverse";
+  const radius = Math.round(size * 0.26);
   return (
-    <Svg width={size} height={size} viewBox="0 0 40 40" accessibilityLabel="KaajVa">
-      <Defs>
-        <LinearGradient id="kjv-mark" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#5A78F2" />
-          <Stop offset="1" stopColor="#3345C2" />
-        </LinearGradient>
-      </Defs>
-      <Rect width={40} height={40} rx={11} fill={inverse ? "#FFFFFF" : "url(#kjv-mark)"} />
-      <Path
-        d="M20 8.5c-5.1 0-9 3.9-9 8.9 0 6.2 7.4 13 8.2 13.7.5.4 1.1.4 1.6 0 .8-.7 8.2-7.5 8.2-13.7 0-5-3.9-8.9-9-8.9Z"
-        fill={inverse ? "#355EDD" : "#FFFFFF"}
-      />
-      <Path
-        d="M17.3 13.6c.3-.3.8-.3 1 .1l1 1.6c.2.3.1.7-.1 1l-.6.5c.4.9 1.1 1.6 2 2l.5-.6c.3-.3.7-.3 1-.1l1.6 1c.4.2.4.7.1 1l-.8.8c-.5.5-1.3.6-1.9.3-1.9-.9-3.4-2.4-4.3-4.3-.3-.6-.2-1.4.3-1.9l.2-.4Z"
-        fill={inverse ? "#FFFFFF" : "#355EDD"}
-      />
-    </Svg>
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel="KaajVa"
+      style={[
+        styles.tile,
+        { width: size, height: size, borderRadius: radius },
+        tone === "brand" ? styles.outlined : null,
+      ]}
+    >
+      <Image source={MARK} style={{ width: size * 0.78, height: size * 0.78 }} contentFit="contain" />
+    </View>
   );
 }
+
+interface LogoProps {
+  /** Height of the wordmark; the width follows the logo's aspect ratio. */
+  height?: number;
+  /** "white" for navy and dark surfaces, "color" for light ones. */
+  tone?: "color" | "white";
+}
+
+/** The full KaajVa logo: the mark with the wordmark (logo/logo.png and logo/logo-white.png). */
+export function BrandLogo({ height = 32, tone = "color" }: LogoProps) {
+  const white = tone === "white";
+  return (
+    <Image
+      source={white ? LOGO_WHITE : LOGO}
+      accessibilityLabel="KaajVa"
+      style={{ height, width: height * (white ? 4.37 : 4.12) }}
+      contentFit="contain"
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  tile: { alignItems: "center", backgroundColor: "#FFFFFF", justifyContent: "center" },
+  outlined: { borderColor: "rgba(4, 33, 97, 0.12)", borderWidth: StyleSheet.hairlineWidth },
+});

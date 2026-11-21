@@ -20,7 +20,7 @@ import {
   AppPressable,
   AppText,
 } from "@/components/design-system";
-import { BrandMark, FocusStatusBar } from "@/components/layout";
+import { BrandLogo, FocusStatusBar } from "@/components/layout";
 import { markOnboarded } from "@/components/layout/OnboardingGate";
 import { OnboardingArt, type ArtKind } from "@/components/onboarding/OnboardingArt";
 import { MAX_FORM_WIDTH } from "@/constants/spacing";
@@ -208,10 +208,7 @@ export default function OnboardingScreen() {
           ]}
         >
           <View style={styles.brand}>
-            <BrandMark size={30} tone="inverse" />
-            <AppText variant="subheading" tone="white">
-              KaajVa
-            </AppText>
+            <BrandLogo tone="white" height={28} />
           </View>
           {!isLast ? (
             <AppPressable

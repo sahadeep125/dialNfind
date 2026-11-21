@@ -62,7 +62,7 @@ export function SubscriptionPage() {
         description: session.description,
         prefill: session.prefill,
         notes: session.notes,
-        theme: { color: "#3d4bd6" },
+        theme: { color: "#042161" },
       });
       if (!result) {
         track("checkout_dismissed", props);

@@ -14,7 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { AppBrandSurface, AppText } from "@/components/design-system";
-import { BrandMark } from "./BrandMark";
+import { BrandLogo, BrandMark } from "./BrandMark";
 
 interface Props {
   onFinish: () => void;
@@ -63,9 +63,9 @@ export function BrandSplash({ onFinish }: Props) {
           </Animated.View>
         </View>
         <Animated.View entering={FadeInDown.delay(200).duration(450)} style={styles.copy}>
-          <AppText variant="hero" tone="white" align="center">
-            KaajVa
-          </AppText>
+          <View style={styles.logo}>
+            <BrandLogo tone="white" height={44} />
+          </View>
           <AppText variant="bodyLarge" tone="whiteMuted" align="center">
             Trusted local services, one call away
           </AppText>
@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
   },
   mark: { borderRadius: 28, boxShadow: "0 16px 40px rgba(0, 0, 0, 0.35)" },
   copy: { gap: 8 },
+  logo: { alignItems: "center" },
   footer: { alignItems: "center", gap: 14, paddingHorizontal: 48 },
   track: {
     backgroundColor: "rgba(255, 255, 255, 0.16)",

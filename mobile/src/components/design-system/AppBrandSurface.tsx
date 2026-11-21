@@ -13,15 +13,15 @@ interface Props {
 }
 
 /**
- * The deep indigo brand surface: splash, onboarding, the Home hero and auth headers.
+ * The deep navy brand surface (logo navy #042161): splash, onboarding, the Home hero and auth headers.
  * Text on it is white (AppText tone "white" / "whiteMuted").
  */
 export function AppBrandSurface({ children, style, decorated = true }: Props) {
   const theme = useTheme();
   // Gradient ids must be unique per instance, or two surfaces on screen share one definition.
   const id = useId().replace(/:/g, "");
-  const from = theme.mode === "dark" ? theme.colors.brand.ink : palette.indigo800;
-  const to = theme.mode === "dark" ? "#0A1030" : palette.indigo950;
+  const from = theme.mode === "dark" ? theme.colors.brand.ink : palette.navy500;
+  const to = theme.mode === "dark" ? palette.navy950 : palette.navy900;
   return (
     <View style={[styles.base, { backgroundColor: to }, style]}>
       <Svg style={StyleSheet.absoluteFill} preserveAspectRatio="none" pointerEvents="none">
@@ -31,8 +31,8 @@ export function AppBrandSurface({ children, style, decorated = true }: Props) {
             <Stop offset="1" stopColor={to} />
           </LinearGradient>
           <RadialGradient id={`glow${id}`} cx="85%" cy="0%" r="70%">
-            <Stop offset="0" stopColor={palette.indigo400} stopOpacity={0.55} />
-            <Stop offset="1" stopColor={palette.indigo400} stopOpacity={0} />
+            <Stop offset="0" stopColor={palette.navy400} stopOpacity={0.45} />
+            <Stop offset="1" stopColor={palette.navy400} stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Rect width="100%" height="100%" fill={`url(#bg${id})`} />
@@ -61,8 +61,8 @@ export function AppBrandSurface({ children, style, decorated = true }: Props) {
               cx="-4%"
               cy="100%"
               r="140"
-              stroke={palette.teal500}
-              strokeOpacity={0.14}
+              stroke={palette.orange500}
+              strokeOpacity={0.22}
               strokeWidth={1.5}
               fill="none"
             />
