@@ -63,7 +63,7 @@ function ProfilePanel({ user }: { user: User }) {
     }
   });
   return (
-    <Panel title="Your details" description="The name and phone number on your DialNFind account.">
+    <Panel title="Your details" description="The name and phone number on your KaajVa account.">
       <form noValidate onSubmit={onSubmit} className="space-y-4">
         <FormAlert message={error} />
         <div className="grid gap-4 sm:grid-cols-2">
@@ -142,7 +142,7 @@ function PasswordPanel({ user }: { user: User }) {
 function DeletePanel({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   return (
-    <Panel title="Delete account" description="Permanently delete your business account and remove your listing from DialNFind.">
+    <Panel title="Delete account" description="Permanently delete your business account and remove your listing from KaajVa.">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           <li>Your listing is removed from search straight away.</li>
@@ -199,7 +199,7 @@ function DeleteDialog({ user, open, onClose }: { user: User; open: boolean; onCl
             <AlertTriangle className="size-5 text-destructive" /> Delete your account?
           </DialogTitle>
           <DialogDescription>
-            Your listing leaves DialNFind, your plan stops renewing and running promotions end. Leads and reviews are kept only as anonymous records. This cannot be undone.
+            Your listing leaves KaajVa, your plan stops renewing and running promotions end. Leads and reviews are kept only as anonymous records. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <form

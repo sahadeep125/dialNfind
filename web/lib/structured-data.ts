@@ -1,4 +1,4 @@
-import { SITE_NAME, SITE_URL } from "./config";
+import { BUSINESS, SITE_NAME, SITE_URL } from "./config";
 import type { ProviderDetail, Review } from "./types";
 
 /** schema.org JSON-LD for search engines. Kept free of React so it can be unit tested. */
@@ -6,19 +6,41 @@ type Thing = Record<string, unknown>;
 
 export const absoluteUrl = (path: string) => (/^https?:\/\//.test(path) ? path : `${SITE_URL}${path.startsWith("/") ? "" : "/"}${path}`);
 
+/** Profiles elsewhere (Facebook, Instagram, Google Business Profile...), comma separated in NEXT_PUBLIC_SOCIAL_LINKS. */
+const SOCIAL_LINKS = (process.env.NEXT_PUBLIC_SOCIAL_LINKS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter((s) => /^https?:\/\//.test(s));
+
+/**
+ * The business itself, with its name, address and phone (NAP) so search engines can tie the site to its
+ * Google Business Profile. `contact` is what the admin console sets; the fixed KaajVa details fill any gap.
+ */
 export function organizationJsonLd(contact: { email: string | null; phone: string | null }): Thing {
-  const contactPoint = contact.email || contact.phone
-    ? [{ "@type": "ContactPoint", contactType: "customer support", areaServed: "IN", availableLanguage: ["en"], ...(contact.email ? { email: contact.email } : {}), ...(contact.phone ? { telephone: contact.phone } : {}) }]
-    : undefined;
+  const supportEmail = contact.email || BUSINESS.supportEmail;
+  const phone = contact.phone || BUSINESS.phone;
   return {
     "@context": "https://schema.org",
-    "@type": "Organization",
+    "@type": ["Organization", "LocalBusiness"],
     "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
+    alternateName: ["Kaajva", "Kaaj Va", BUSINESS.domain],
     url: SITE_URL,
+    description:
+      "KaajVa is a local services directory for Siliguri and North Bengal: find verified electricians, plumbers, AC and TV repair, packers and movers, tutors and more, and call them directly.",
     // Google wants a raster logo (at least 112px), so the 180px PNG app icon rather than icon.svg.
     logo: absoluteUrl("/apple-icon"),
-    ...(contactPoint ? { contactPoint } : {}),
+    image: absoluteUrl("/opengraph-image"),
+    email: BUSINESS.infoEmail,
+    telephone: phone,
+    address: { "@type": "PostalAddress", ...BUSINESS.address },
+    areaServed: BUSINESS.areaServed.map((name) => ({ "@type": name === "West Bengal" ? "State" : "City", name })),
+    knowsLanguage: ["en", "hi", "bn"],
+    contactPoint: [
+      { "@type": "ContactPoint", contactType: "customer support", email: supportEmail, telephone: phone, areaServed: "IN", availableLanguage: ["English", "Hindi", "Bengali"] },
+      { "@type": "ContactPoint", contactType: "sales", email: BUSINESS.infoEmail, telephone: phone, areaServed: "IN", availableLanguage: ["English", "Hindi", "Bengali"] },
+    ],
+    ...(SOCIAL_LINKS.length ? { sameAs: SOCIAL_LINKS } : {}),
   };
 }
 

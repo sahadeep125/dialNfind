@@ -38,7 +38,7 @@ const ROLE_LABEL = { super_admin: "Super admin", admin: "Team member", provider:
 /** A short device description from a user agent, e.g. "Chrome on Android". */
 function device(ua: string | null) {
   if (!ua) return "Unknown device";
-  const browser = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : /okhttp|Expo|CFNetwork|Dalvik/i.test(ua) ? "DialNFind app" : "Browser";
+  const browser = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : /okhttp|Expo|CFNetwork|Dalvik/i.test(ua) ? "KaajVa app" : "Browser";
   const os = /Android/.test(ua) ? "Android" : /iPhone|iPad|iOS/.test(ua) ? "iOS" : /Mac OS X/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : /Linux/.test(ua) ? "Linux" : "";
   return os ? `${browser} on ${os}` : browser;
 }

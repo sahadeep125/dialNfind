@@ -1,6 +1,6 @@
 # Product analytics (PostHog)
 
-Every DialNFind surface sends events to **one PostHog project** (US cloud):
+Every KaajVa surface sends events to **one PostHog project** (US cloud):
 - customer website (`web/`)
 - provider portal (`provider/`)
 - customer app (`mobile/`)
@@ -34,7 +34,7 @@ The four client modules have the same shape: `track`, `identifyUser` and `resetU
   - Phone numbers are never sent.
 - **Reset** runs on sign-out, on account deletion and when a session expires (401). The next person on the device starts as a new anonymous visitor.
 - **Before sign-in**, activity is anonymous and is merged into the person on identify.
-  - The website and the provider portal share a cookie on the parent domain, so the anonymous id carries over from `dialnfind.com` to `business.dialnfind.com`.
+  - The website and the provider portal share a cookie on the parent domain, so the anonymous id carries over from `kaajva.in` to `business.kaajva.in`.
   - Persons are only created for identified users (`person_profiles: "identified_only"`).
 
 ## Properties on every event

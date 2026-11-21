@@ -31,7 +31,7 @@ export async function getSession(): Promise<SessionUser | null> {
  */
 export async function requireSession(next: string): Promise<SessionUser> {
   const { user, unreachable } = await loadSession();
-  if (unreachable) throw new Error("We could not reach DialNFind to check your sign-in. Please try again in a moment.");
+  if (unreachable) throw new Error("We could not reach KaajVa to check your sign-in. Please try again in a moment.");
   if (!user) redirect(`/login?next=${encodeURIComponent(next)}`);
   if (!user.emailVerifiedAt) redirect(`/verify-email?next=${encodeURIComponent(next)}`);
   return user;

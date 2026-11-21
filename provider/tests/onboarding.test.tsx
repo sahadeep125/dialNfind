@@ -251,7 +251,7 @@ describe("onboarding", () => {
     await userEvent.click(screen.getByRole("button", { name: /Publish my listing/ }));
 
     await waitFor(() => expect(where()).toBe("/"));
-    expect(await screen.findByText("Your business is live on DialNFind")).toBeInTheDocument();
+    expect(await screen.findByText("Your business is live on KaajVa")).toBeInTheDocument();
     expect(lastBody(fetch, "/provider/onboarding")).toMatchObject({
       businessName: "Ravi Repairs",
       businessType: "company",

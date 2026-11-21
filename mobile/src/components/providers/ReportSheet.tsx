@@ -27,7 +27,7 @@ const COPY = {
   },
 } as const;
 
-/** Sends a listing or review report to the DialNFind team. */
+/** Sends a listing or review report to the KaajVa team. */
 export function ReportSheet({ target, onClose }: Props) {
   const theme = useTheme();
   const toast = useToast();

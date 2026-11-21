@@ -159,7 +159,7 @@ export function OnboardingPage() {
       track("onboarding_completed", { service_count: services.length, area_count: areas.length, business_type: business.businessType });
       if (res.token) await signIn(res.token);
       else await refresh();
-      toast.success("Your business is live on DialNFind");
+      toast.success("Your business is live on KaajVa");
       navigate("/", { replace: true });
     } catch (err) {
       setFormError(errorMessage(err));

@@ -100,7 +100,7 @@ export default function ContactsScreen() {
             <EmptyState
               icon={PhoneCall}
               title="No contacts yet"
-              text="Providers you call or message from DialNFind show up here."
+              text="Providers you call or message from KaajVa show up here."
               action={
                 <AppButton icon={Search} onPress={() => router.push("/search")}>
                   Find a provider

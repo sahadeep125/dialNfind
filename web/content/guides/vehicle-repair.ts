@@ -92,7 +92,7 @@ export const VEHICLE_REPAIR_GUIDES: Guide[] = [
       {
         heading: "Finding a reliable garage near you",
         paragraphs: [
-          "Choose a garage with good reviews for your car brand, clear pricing and a willingness to explain the work. On DialNFind you can compare car service garages near you in Siliguri and other cities, check ratings and call to ask about pickup and drop and service packages.",
+          "Choose a garage with good reviews for your car brand, clear pricing and a willingness to explain the work. On KaajVa you can compare car service garages near you in Siliguri and other cities, check ratings and call to ask about pickup and drop and service packages.",
         ],
       },
       {
@@ -196,7 +196,7 @@ export const VEHICLE_REPAIR_GUIDES: Guide[] = [
       {
         heading: "Choosing a mechanic",
         paragraphs: [
-          "A good mechanic explains what needs replacing and why, shows you old parts, and gives you a rough bill before starting. Ask other riders for recommendations and check reviews. On DialNFind you can find bike service and repair mechanics near you in Siliguri and other cities, and call to check whether they offer doorstep service.",
+          "A good mechanic explains what needs replacing and why, shows you old parts, and gives you a rough bill before starting. Ask other riders for recommendations and check reviews. On KaajVa you can find bike service and repair mechanics near you in Siliguri and other cities, and call to check whether they offer doorstep service.",
         ],
       },
       {

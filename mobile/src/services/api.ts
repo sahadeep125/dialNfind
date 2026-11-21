@@ -47,7 +47,7 @@ export function toQuery(query: Query): string {
   return params.length ? `?${params.join("&")}` : "";
 }
 
-/** JSON request to the DialNFind API. Throws ApiError with the server's message on failure. */
+/** JSON request to the KaajVa API. Throws ApiError with the server's message on failure. */
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = options.token === undefined ? tokenGetter() : options.token;
   const headers: Record<string, string> = { accept: "application/json" };
@@ -63,7 +63,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     });
   } catch (error: unknown) {
     logError("[api] Network error", path, error);
-    throw new ApiError(0, "Could not reach DialNFind. Check your connection and try again.");
+    throw new ApiError(0, "Could not reach KaajVa. Check your connection and try again.");
   }
 
   const json: unknown = await res.json().catch(() => null);

@@ -585,7 +585,7 @@ function PaymentsTab() {
           description={
             reversing.status === "refunded" && reversing.txn.gateway === "razorpay"
               ? `${formatPrice(reversing.txn.amount)} goes back to ${reversing.txn.provider.businessName} through Razorpay now, and the invoice is voided. Their plan is not changed; cancel it from Subscribers if needed.`
-              : `${formatPrice(reversing.txn.amount)} from ${reversing.txn.provider.businessName} stops counting as revenue and its invoice is voided. Return the money outside DialNFind first; this only records it.`
+              : `${formatPrice(reversing.txn.amount)} from ${reversing.txn.provider.businessName} stops counting as revenue and its invoice is voided. Return the money outside KaajVa first; this only records it.`
           }
           confirmLabel={reversing.status === "refunded" ? "Mark refunded" : "Mark failed"}
           destructive
@@ -708,7 +708,7 @@ function RecordPaymentDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Record a payment</DialogTitle>
-          <DialogDescription>For money received outside DialNFind. To also switch the plan, use Change plan on the provider page, which records the payment for you.</DialogDescription>
+          <DialogDescription>For money received outside KaajVa. To also switch the plan, use Change plan on the provider page, which records the payment for you.</DialogDescription>
         </DialogHeader>
         <form
           id="record-payment"

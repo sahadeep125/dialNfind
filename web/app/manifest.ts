@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "DialNFind: trusted local services",
-    short_name: "DialNFind",
+    name: "KaajVa: trusted local services",
+    short_name: "KaajVa",
     description: "Find trusted local service providers near you and call them directly.",
     start_url: "/",
     scope: "/",

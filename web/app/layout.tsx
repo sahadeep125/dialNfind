@@ -13,24 +13,33 @@ import { organizationJsonLd, websiteJsonLd } from "@/lib/structured-data";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap", weight: ["500", "600", "700", "800"] });
 
-const TITLE = "Electricians, Plumbers & Repair Services Near Me | DialNFind";
+const TITLE = "KaajVa: Electrician, Plumber & AC Repair in Siliguri";
 const DESCRIPTION =
-  "Find verified electricians, plumbers, AC and TV repair, cleaners, pest control and tutors near you in Siliguri. Compare ratings and call local pros directly. No booking fees.";
+  "Find verified electricians, plumbers, AC & TV repair, packers and movers and tutors near you in Siliguri. Compare ratings and call local pros directly, free.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: TITLE, template: "%s | DialNFind" },
+  title: { default: TITLE, template: "%s | KaajVa" },
   description: DESCRIPTION,
   applicationName: SITE_NAME,
+  // Search engines mostly ignore this tag; the real targets are in docs/seo/keyword-map.md.
   keywords: [
+    "KaajVa",
+    "local services in Siliguri",
+    "electrician in Siliguri",
+    "plumber in Siliguri",
+    "AC repair in Siliguri",
+    "TV repair in Siliguri",
+    "packers and movers in Siliguri",
+    "home tutor in Siliguri",
     "services near me",
-    "electrician near me",
-    "plumber near me",
-    "AC repair near me",
-    "TV repair near me",
-    "home services in Siliguri",
-    "local service providers",
+    "Siliguri business directory",
+    "North Bengal local services",
   ],
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "Local services directory",
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
@@ -41,7 +50,12 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
   formatDetection: { telephone: false },
-  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
+  verification: {
+    ...(process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : {}),
+    ...(process.env.BING_SITE_VERIFICATION ? { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } } : {}),
+  },
+  // Regional hints some engines (Bing, local directories) still read.
+  other: { "geo.region": "IN-WB", "geo.placename": "Siliguri, West Bengal" },
 };
 
 export const viewport: Viewport = { themeColor: "#14304f" };

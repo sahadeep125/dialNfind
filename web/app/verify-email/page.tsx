@@ -13,7 +13,7 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
   const { token, next: rawNext, sent } = await searchParams;
   if (token) {
     return (
-      <AuthShell title="Confirm your email" subtitle="One click and your DialNFind account is confirmed.">
+      <AuthShell title="Confirm your email" subtitle="One click and your KaajVa account is confirmed.">
         <VerifyEmail token={token} />
       </AuthShell>
     );
@@ -23,7 +23,7 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
   if (!user) redirect(`/login?next=${encodeURIComponent(`/verify-email?next=${next}`)}`);
   if (user.emailVerifiedAt) redirect(next);
   return (
-    <AuthShell title="Check your inbox" subtitle="Confirm your email address to start using DialNFind.">
+    <AuthShell title="Check your inbox" subtitle="Confirm your email address to start using KaajVa.">
       <VerifyEmailCode email={user.email} next={next} justSent={sent === "1"} />
     </AuthShell>
   );

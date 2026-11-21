@@ -10,8 +10,8 @@ import { PROVIDER_IMAGE, STEP_IMAGES, TOOLS_IMAGE } from "@/lib/stock-images";
 export const revalidate = 600;
 
 export const metadata: Metadata = pageMetadata({
-  title: "About DialNFind",
-  description: "How DialNFind helps you find trusted local service providers, how listings are verified and ranked, and how businesses get listed for free.",
+  title: "About KaajVa",
+  description: "How KaajVa helps you find trusted local service providers, how listings are verified and ranked, and how businesses get listed for free.",
   path: "/about",
 });
 
@@ -24,7 +24,7 @@ export default async function AboutPage() {
           <span className="eyebrow">About us</span>
           <h1 className="mt-3 text-4xl font-extrabold leading-tight text-brand-deep md:text-5xl">Local help should be one search away</h1>
           <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-            DialNFind is a directory of local service professionals: electricians, plumbers, appliance technicians, cleaners, tutors and more. You tell us what you need and
+            KaajVa is a directory of local service professionals: electricians, plumbers, appliance technicians, cleaners, tutors and more. You tell us what you need and
             where you are. We show who is nearby, how others rated them, and how to reach them directly.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-4">
@@ -115,7 +115,7 @@ export default async function AboutPage() {
             <div className="mt-8 grid gap-5 sm:grid-cols-2">
               {[
                 { icon: BadgeCheck, t: "Verification you can see", d: "Every profile lists which checks were done: phone, business documents, location or ID." },
-                { icon: Star, t: "Reviews tied to real contact", d: "Reviews from people who contacted the provider through DialNFind carry a Verified contact tag." },
+                { icon: Star, t: "Reviews tied to real contact", d: "Reviews from people who contacted the provider through KaajVa carry a Verified contact tag." },
                 { icon: Scale, t: "Fair ranking", d: "Ranking weighs ratings, verification, profile quality and responsiveness. Paid plans add only a small boost." },
                 { icon: Flag, t: "Report and review", d: "Anyone can report a listing or review. Our team checks every report and removes abuse." },
                 { icon: ShieldCheck, t: "Consent for phone numbers", d: "Providers agree to show their number publicly. We never sell customer data." },

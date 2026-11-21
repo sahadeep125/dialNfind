@@ -97,7 +97,7 @@ export const PAINTING_GUIDES: Guide[] = [
       {
         heading: "Finding painters near you",
         paragraphs: [
-          "Ask painters for photos of recent work and the brands they usually use. On DialNFind you can compare house painters near you, read reviews and call them for a site visit and quote.",
+          "Ask painters for photos of recent work and the brands they usually use. On KaajVa you can compare house painters near you, read reviews and call them for a site visit and quote.",
         ],
       },
       {

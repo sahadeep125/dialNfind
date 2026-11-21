@@ -81,7 +81,7 @@ export const CARPENTRY_GUIDES: Guide[] = [
       {
         heading: "Finding a carpenter you can trust",
         paragraphs: [
-          "Ask to see photos of completed work, ideally jobs similar to yours, and speak to one or two past customers if you can. DialNFind lists carpenters near you in Siliguri and other cities, with ratings, reviews and photos where available, so you can shortlist a few and call them directly.",
+          "Ask to see photos of completed work, ideally jobs similar to yours, and speak to one or two past customers if you can. KaajVa lists carpenters near you in Siliguri and other cities, with ratings, reviews and photos where available, so you can shortlist a few and call them directly.",
         ],
       },
       {

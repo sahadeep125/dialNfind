@@ -70,10 +70,12 @@ describe("providerJsonLd", () => {
 describe("other builders", () => {
   it("numbers breadcrumbs with absolute URLs", () => {
     const ld = breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Plumbing", path: "/services/plumbing" }]) as Ld;
-    expect(ld.itemListElement[1]).toMatchObject({ position: 2, item: "https://dialnfind.com/services/plumbing" });
+    expect(ld.itemListElement[1]).toMatchObject({ position: 2, item: "https://kaajva.in/services/plumbing" });
   });
   it("adds a contact point only when there are details", () => {
-    expect((organizationJsonLd({ email: null, phone: null }) as Record<string, unknown>).contactPoint).toBeUndefined();
+    const fallback = organizationJsonLd({ email: null, phone: null }) as Ld;
+    expect(fallback.contactPoint[0]).toMatchObject({ email: "support@kaajva.in", telephone: "+918906609532" });
+    expect(fallback.address).toMatchObject({ addressLocality: "Siliguri", addressRegion: "West Bengal", postalCode: "734006", addressCountry: "IN" });
     expect((organizationJsonLd({ email: "help@x.in", phone: null }) as Ld).contactPoint[0].email).toBe("help@x.in");
   });
   it("builds FAQ questions", () => {

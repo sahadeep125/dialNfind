@@ -24,7 +24,7 @@ export type ReviewEligibility = { canReview: true; leadId: bigint } | { canRevie
 
 /**
  * Who may review a business: a signed-in customer with a confirmed email who contacted it through
- * DialNFind (tapped Call or WhatsApp while signed in), once they said the business responded or once
+ * KaajVa (tapped Call or WhatsApp while signed in), once they said the business responded or once
  * `review_min_contact_hours` have passed since the contact. The contact the review is linked to is the
  * newest one that qualifies.
  */

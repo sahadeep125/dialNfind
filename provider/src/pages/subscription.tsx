@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const POPULAR: PlanCode = "business";
-const SOURCE_LABEL = { admin: "Set up by the DialNFind team", razorpay: "Paid online", app_store: "Bought in the App Store", play_store: "Bought on Google Play" } as const;
+const SOURCE_LABEL = { admin: "Set up by the KaajVa team", razorpay: "Paid online", app_store: "Bought in the App Store", play_store: "Bought on Google Play" } as const;
 const STATUS_BADGE = {
   active: { label: "Active", variant: "success" },
   past_due: { label: "Payment failed", variant: "destructive" },
@@ -353,7 +353,7 @@ function CurrentPlan({ data, onCancel, onResume, resuming }: { data: BillingResp
       </div>
       {(data.managedIn === "app_store" || data.managedIn === "play_store") && (
         <p className="mt-4 rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground">
-          This plan is billed by {data.managedIn === "app_store" ? "Apple" : "Google"}. Change or cancel it from the DialNFind Business app or your store subscriptions; the
+          This plan is billed by {data.managedIn === "app_store" ? "Apple" : "Google"}. Change or cancel it from the KaajVa Business app or your store subscriptions; the
           receipt comes from the store.
         </p>
       )}

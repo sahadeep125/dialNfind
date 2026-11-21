@@ -103,7 +103,7 @@ await call("POST", "/leads", { body: { providerId: me.provider.id, channel: "cal
 await call("PATCH", `/leads/${lead.lead.id}/response`, { token: cust, body: { responded: true } });
 await call("POST", "/leads", { body: { providerId: featured[2].id, channel: "call" }, label: "guest" });
 const other = featured.find((p) => p.id !== me.provider.id && p.slug !== featured[1].slug) ?? featured[3];
-// Reviews need a contact through DialNFind, and a "they responded" answer (or a few hours) first.
+// Reviews need a contact through KaajVa, and a "they responded" answer (or a few hours) first.
 const otherLead = await call("POST", "/leads", { token: cust, body: { providerId: other.id, channel: "call" } });
 await call("PATCH", `/leads/${otherLead.lead.id}/response`, { token: cust, body: { responded: true } });
 const rv = await call("POST", "/reviews", { token: cust, body: { providerId: other.id, rating: 4, reviewText: "Smoke test review, prompt and polite service." }, expect: [201, 409] });

@@ -16,7 +16,7 @@ const SEEDED: Record<string, string[]> = Object.fromEntries(
   ),
 );
 
-// The root layout adds " | DialNFind" (13 characters); 50 keeps the full title near Google's ~60-character cut-off.
+// The root layout adds " | KaajVa" (13 characters); 50 keeps the full title near Google's ~60-character cut-off.
 const MAX_TITLE = 50;
 const MAX_DESCRIPTION = 160;
 
@@ -70,9 +70,9 @@ describe("guides", () => {
     expect(data).toMatchObject({
       "@type": "Article",
       headline: g.title,
-      url: `https://dialnfind.com/guides/${g.slug}`,
+      url: `https://kaajva.in/guides/${g.slug}`,
       datePublished: g.datePublished,
-      publisher: { "@id": "https://dialnfind.com/#organization" },
+      publisher: { "@id": "https://kaajva.in/#organization" },
     });
   });
 });
@@ -93,7 +93,7 @@ describe("subcategory addresses", () => {
   });
 
   it("permanently redirects old ?sub= links and keeps the other query values", () => {
-    const res = proxy(new NextRequest("https://dialnfind.com/services/electronics-repair?sub=tv-repair&lat=26.7&sort=rating"));
+    const res = proxy(new NextRequest("https://kaajva.in/services/electronics-repair?sub=tv-repair&lat=26.7&sort=rating"));
     expect(res.status).toBe(308);
     const location = new URL(res.headers.get("location")!);
     expect(location.pathname).toBe("/services/electronics-repair/tv-repair");
@@ -103,7 +103,7 @@ describe("subcategory addresses", () => {
   });
 
   it("leaves other addresses alone", () => {
-    for (const url of ["https://dialnfind.com/services/electronics-repair", "https://dialnfind.com/services/electronics-repair/tv-repair?sub=x"]) {
+    for (const url of ["https://kaajva.in/services/electronics-repair", "https://kaajva.in/services/electronics-repair/tv-repair?sub=x"]) {
       expect(proxy(new NextRequest(url)).headers.get("location")).toBeNull();
     }
   });

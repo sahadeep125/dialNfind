@@ -63,7 +63,7 @@ export default function RegisterScreen() {
           router.replace({ pathname: "/verify-email", params: { sent: "1" } });
           return;
         }
-        toast(`Welcome to DialNFind, ${user.name.split(" ")[0]}`, "success");
+        toast(`Welcome to KaajVa, ${user.name.split(" ")[0]}`, "success");
         if (router.canGoBack()) router.back();
         else router.replace("/");
       },
@@ -83,7 +83,7 @@ export default function RegisterScreen() {
     isNewUser: boolean;
   }): void => {
     const first = user.name.split(" ")[0];
-    toast(isNewUser ? `Welcome to DialNFind, ${first}` : `Welcome back, ${first}`, "success");
+    toast(isNewUser ? `Welcome to KaajVa, ${first}` : `Welcome back, ${first}`, "success");
     if (router.canGoBack()) router.back();
     else router.replace("/");
   };

@@ -115,7 +115,7 @@ export function createApp() {
   api.use(miscRouter);
 
   app.use("/api/v1", api);
-  app.get("/", (_req, res) => res.json({ name: "DialNFind API", version: "v1", docs: "/api/v1/health" }));
+  app.get("/", (_req, res) => res.json({ name: "KaajVa API", version: "v1", docs: "/api/v1/health" }));
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

@@ -90,7 +90,7 @@ export function SocialButtons({ mode, onError, onSignedIn }: Props) {
             )}
           </div>
         )}
-        <p className="text-center text-xs text-muted-foreground">By continuing you agree to the DialNFind terms of use.</p>
+        <p className="text-center text-xs text-muted-foreground">By continuing you agree to the KaajVa terms of use.</p>
       </div>
       <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
         <span className="h-px flex-1 bg-border" />

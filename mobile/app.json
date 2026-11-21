@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "DialNFind",
+    "name": "KaajVa",
     "slug": "dialnfind",
     "scheme": "dialnfind",
     "version": "1.0.0",
@@ -11,12 +11,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.dialnfind.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "DialNFind uses your location to show service providers near you."
+        "NSLocationWhenInUseUsageDescription": "KaajVa uses your location to show service providers near you."
       },
       "appleTeamId": "9HH33XNTUX",
       "usesAppleSignIn": true,
       "associatedDomains": [
-        "applinks:dialnfind.com"
+        "applinks:kaajva.in"
       ],
       "config": {
         "usesNonExemptEncryption": false
@@ -42,32 +42,32 @@
           "data": [
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/providers"
             },
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/services"
             },
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/search"
             },
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/dashboard/notifications"
             },
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/dashboard/support"
             },
             {
               "scheme": "https",
-              "host": "dialnfind.com",
+              "host": "kaajva.in",
               "pathPrefix": "/dashboard/contacts"
             }
           ],
@@ -109,7 +109,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "DialNFind uses your location to show service providers near you.",
+          "locationWhenInUsePermission": "KaajVa uses your location to show service providers near you.",
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false,
           "motionUsagePermission": false
@@ -126,8 +126,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "DialNFind uses your photos for your profile picture, review photos and support requests.",
-          "cameraPermission": "DialNFind uses the camera to take photos for your reviews and support requests.",
+          "photosPermission": "KaajVa uses your photos for your profile picture, review photos and support requests.",
+          "cameraPermission": "KaajVa uses the camera to take photos for your reviews and support requests.",
           "microphonePermission": false
         }
       ],

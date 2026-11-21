@@ -1,4 +1,4 @@
-// DialNFind database schema (v2 architecture).
+// KaajVa database schema (v2 architecture).
 // One shared schema serves the web app, the provider dashboard and future mobile apps.
 // BIGSERIAL primary keys, snake_case columns (mapped), `xxx_id` = FK to `xxx.id`.
 // Spatial search uses PostGIS: providers.location is a geography(Point, 4326) column kept in
@@ -1194,7 +1194,7 @@ model TicketMessage {
   id          BigInt   @id @default(autoincrement())
   ticketId    BigInt   @map("ticket_id")
   authorId    BigInt?  @map("author_id")
-  // Staff replies are shown to the requester as "DialNFind Support".
+  // Staff replies are shown to the requester as "KaajVa Support".
   fromStaff   Boolean  @default(false) @map("from_staff")
   // Internal notes are visible to staff only.
   isInternal  Boolean  @default(false) @map("is_internal")

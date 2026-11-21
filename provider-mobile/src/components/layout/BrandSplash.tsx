@@ -63,7 +63,7 @@ export function BrandSplash({ onFinish }: Props) {
   const barStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 
   return (
-    <View style={styles.fill} accessibilityLabel="DialNFind Business is loading">
+    <View style={styles.fill} accessibilityLabel="KaajVa Business is loading">
       <Backdrop />
       <View style={styles.center}>
         <Animated.View style={markStyle}>
@@ -71,7 +71,7 @@ export function BrandSplash({ onFinish }: Props) {
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(160).duration(420)} style={styles.copy}>
           <AppText variant="display" tone="white" align="center">
-            DialNFind
+            KaajVa
           </AppText>
           <View style={styles.pill}>
             <AppText variant="overline" style={styles.pillText}>

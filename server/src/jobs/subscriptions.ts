@@ -61,7 +61,7 @@ export async function remindExpiringSubscriptions(): Promise<string> {
       sub.provider.userId,
       "subscription",
       `Your ${sub.plan.name} plan ends on ${longDate(sub.endDate!)}`,
-      "Renew from Plan and billing to keep unlimited leads and analytics. Your listing stays on DialNFind either way.",
+      "Renew from Plan and billing to keep unlimited leads and analytics. Your listing stays on KaajVa either way.",
       { subscriptionId: Number(sub.id) },
       { label: "Renew your plan", url: `${env.providerUrl}/subscription` },
     );

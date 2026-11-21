@@ -24,7 +24,7 @@ export const ELECTRICIANS_GUIDES: Guide[] = [
       {
         heading: "Where to find a good electrician",
         paragraphs: [
-          "Recommendations from neighbours and building caretakers are a good start. Online directories like DialNFind let you compare electricians near you by distance, rating and reviews, and see who is verified and open now. Look for recent reviews that mention the kind of job you need.",
+          "Recommendations from neighbours and building caretakers are a good start. Online directories like KaajVa let you compare electricians near you by distance, rating and reviews, and see who is verified and open now. Look for recent reviews that mention the kind of job you need.",
         ],
       },
       {
@@ -85,7 +85,7 @@ export const ELECTRICIANS_GUIDES: Guide[] = [
       {
         heading: "Finding an electrician near you in Siliguri",
         paragraphs: [
-          "In a growing city like Siliguri, many good electricians work through word of mouth and are hard to find online. DialNFind lists electricians across Siliguri and nearby areas, with ratings, reviews, working hours and verification, so you can compare a few before you call. Use the Open now filter for urgent jobs.",
+          "In a growing city like Siliguri, many good electricians work through word of mouth and are hard to find online. KaajVa lists electricians across Siliguri and nearby areas, with ratings, reviews, working hours and verification, so you can compare a few before you call. Use the Open now filter for urgent jobs.",
         ],
       },
     ],
@@ -93,7 +93,7 @@ export const ELECTRICIANS_GUIDES: Guide[] = [
       { q: "How much does an electrician charge for a visit?", a: "Visiting charges are commonly a few hundred rupees and are often adjusted against the job if you go ahead." },
       { q: "Should I buy the materials myself?", a: "You can, especially if you want specific brands, but ask the electrician for an exact list first so nothing is wrong or missing." },
       { q: "How do I know if an electrician is qualified?", a: "Ask about training and experience, look at reviews and past work, and prefer verified listings. For large jobs, ask for references." },
-      { q: "Can I get an electrician on a Sunday or at night?", a: "Yes, many offer emergency service at a higher charge. Use the Open now filter on DialNFind." },
+      { q: "Can I get an electrician on a Sunday or at night?", a: "Yes, many offer emergency service at a higher charge. Use the Open now filter on KaajVa." },
       { q: "What should I do in an electrical emergency?", a: "Switch off the main supply if it is safe, do not touch anything sparking or wet, and call an electrician. For fire, call the fire service on 101 or 112." },
     ],
   },

@@ -81,7 +81,7 @@ export const BEAUTY_SALON_GUIDES: Guide[] = [
       {
         heading: "Finding beauticians near you",
         paragraphs: [
-          "On DialNFind you can find salon at home professionals, men's grooming and spa services near you in Siliguri and other cities. Compare ratings and reviews, and call or WhatsApp to confirm services, prices and a convenient time.",
+          "On KaajVa you can find salon at home professionals, men's grooming and spa services near you in Siliguri and other cities. Compare ratings and reviews, and call or WhatsApp to confirm services, prices and a convenient time.",
         ],
       },
       {
@@ -186,7 +186,7 @@ export const BEAUTY_SALON_GUIDES: Guide[] = [
       {
         heading: "Finding bridal makeup artists near you",
         paragraphs: [
-          "Browse bridal makeup artists near you in Siliguri and other cities on DialNFind, look at their photos and reviews, and call to check availability for your dates. Shortlist two or three for a consultation before booking a trial.",
+          "Browse bridal makeup artists near you in Siliguri and other cities on KaajVa, look at their photos and reviews, and call to check availability for your dates. Shortlist two or three for a consultation before booking a trial.",
         ],
       },
       {

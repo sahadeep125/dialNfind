@@ -23,7 +23,7 @@ export async function signInThroughApi(request: Request, apiPath: string, body: 
   const data = await readJson<SignInResponse>(res);
   if (!res.ok || !data?.token) {
     const status = res.ok ? 502 : res.status;
-    return NextResponse.json(data ?? { error: { code: "bad_gateway", message: "Could not reach DialNFind. Please try again." } }, { status });
+    return NextResponse.json(data ?? { error: { code: "bad_gateway", message: "Could not reach KaajVa. Please try again." } }, { status });
   }
   return setSessionCookie(NextResponse.json(pick(data)), data.token);
 }

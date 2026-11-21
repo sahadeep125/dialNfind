@@ -14,10 +14,10 @@ export function LogoMark({ className }: { className?: string }) {
 
 export function Logo({ className, href = "/", inverted = false }: { className?: string; href?: string; inverted?: boolean }) {
   return (
-    <Link href={href} className={cn("flex shrink-0 items-center gap-2.5", className)} aria-label="DialNFind home">
+    <Link href={href} className={cn("flex shrink-0 items-center gap-2.5", className)} aria-label="KaajVa home">
       <LogoMark />
       <span className={cn("font-display text-xl font-extrabold tracking-tight", inverted ? "text-white" : "text-primary")}>
-        Dial<span className={inverted ? "text-[oklch(0.8_0.13_60)]" : "text-cta"}>N</span>Find
+        Kaaj<span className={inverted ? "text-[oklch(0.8_0.13_60)]" : "text-cta"}>Va</span>
       </span>
     </Link>
   );

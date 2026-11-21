@@ -13,7 +13,7 @@ vi.mock("@/lib/api", () => ({
 describe("robots", () => {
   it("points to the sitemap and keeps private areas out", async () => {
     const robots = (await import("@/app/robots")).default();
-    expect(robots.sitemap).toBe("https://dialnfind.com/sitemap.xml");
+    expect(robots.sitemap).toBe("https://kaajva.in/sitemap.xml");
     const rule = Array.isArray(robots.rules) ? robots.rules[0] : robots.rules;
     expect(rule.disallow).toEqual(expect.arrayContaining(["/dashboard", "/api/"]));
   });
@@ -27,16 +27,16 @@ describe("sitemap", () => {
   it("lists pages, categories, subcategories and guides in file 0", async () => {
     const sitemap = (await import("@/app/sitemaps/sitemap")).default;
     const urls = (await sitemap({ id: Promise.resolve("0") })).map((e) => e.url);
-    expect(urls).toContain("https://dialnfind.com");
-    expect(urls).toContain("https://dialnfind.com/services/electronics-repair");
-    expect(urls).toContain("https://dialnfind.com/services/electronics-repair/tv-repair");
-    expect(urls).toContain("https://dialnfind.com/guides");
-    expect(urls).toContain("https://dialnfind.com/guides/tv-repair-cost-india");
+    expect(urls).toContain("https://kaajva.in");
+    expect(urls).toContain("https://kaajva.in/services/electronics-repair");
+    expect(urls).toContain("https://kaajva.in/services/electronics-repair/tv-repair");
+    expect(urls).toContain("https://kaajva.in/guides");
+    expect(urls).toContain("https://kaajva.in/guides/tv-repair-cost-india");
     expect(urls.some((u) => u.includes("?sub="))).toBe(false);
   });
   it("lists providers in the later files", async () => {
     const sitemap = (await import("@/app/sitemaps/sitemap")).default;
     const entries = await sitemap({ id: Promise.resolve("2") });
-    expect(entries[0]).toMatchObject({ url: "https://dialnfind.com/providers/p-2" });
+    expect(entries[0]).toMatchObject({ url: "https://kaajva.in/providers/p-2" });
   });
 });

@@ -26,7 +26,7 @@ export function Logo({ className, light = false }: { className?: string; light?:
       <LogoMark />
       <span className="leading-none">
         <span className={cn("block font-display text-lg font-bold tracking-tight", light ? "text-white" : "text-brand-deep")}>
-          Dial<span className={light ? "text-[oklch(0.8_0.1_200)]" : "text-primary"}>N</span>Find
+          Kaaj<span className={light ? "text-[oklch(0.8_0.1_200)]" : "text-primary"}>Va</span>
         </span>
         <span className={cn("block text-[10px] font-semibold uppercase tracking-[0.18em]", light ? "text-white/60" : "text-muted-foreground")}>for Business</span>
       </span>

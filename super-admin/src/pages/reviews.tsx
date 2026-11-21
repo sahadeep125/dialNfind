@@ -33,7 +33,7 @@ interface ReviewRow {
 /** Why a review was held for approval (server/src/services/review-trust.ts). */
 const HOLD_REASONS: Record<string, string> = {
   new_account: "Account less than a day old",
-  no_contact: "No contact through DialNFind",
+  no_contact: "No contact through KaajVa",
   burst: "Several reviews of this business within minutes",
   shared_ip: "Same network as another reviewer of this business",
   shared_device: "Same phone as another reviewer account",

@@ -1,6 +1,6 @@
-# DialNFind build plan
+# KaajVa build plan
 
-DialNFind is a local service directory: tell us what you need, pick your location, see nearby
+KaajVa is a local service directory: tell us what you need, pick your location, see nearby
 providers, call the one you prefer. This repository holds four independent apps that share one
 PostgreSQL + PostGIS database through the API server.
 
@@ -25,7 +25,7 @@ The root is a pnpm workspace so `pnpm install` once installs all four, but each 
 3. **Seed data** — realistic demo directory so the web app is presentable on first run.
 4. **Web** — customer-facing Next.js site.
 5. **Provider** — provider onboarding and dashboard SPA.
-6. **Super admin** — admin console for the DialNFind team, with roles per staff member.
+6. **Super admin** — admin console for the KaajVa team, with roles per staff member.
 7. **Mobile** — customer app for Android and iOS on the same API.
 
 ## 1. Schema
@@ -65,7 +65,7 @@ reset links sent over SMTP.
   - profile views: `GET /providers/:slug?view=false` skips counting (the website renders profiles from a shared cache) and `POST /providers/:slug/visit` counts one view per visit and returns the visitor's favorite and review
 - **leads**: create call/WhatsApp lead (guest or user) with optional answers to the category's lead questions, "did they respond?" follow-up; a contact in a promoted category counts as a sponsored click
 - **reviews**: create, edit own, delete own; provider reply; report. Only signed-in customers with a
-  confirmed email who contacted the business through DialNFind can review it, once they said it responded or
+  confirmed email who contacted the business through KaajVa can review it, once they said it responded or
   after `review_min_contact_hours` (default 4); the profile's `reviewEligibility` says whether to show "Write a
   review". New reviews are held as `pending` for the admin team when the account is under a day old, several
   reviews of the business arrive within minutes, another reviewer of the business shares the IP (or another
@@ -169,7 +169,7 @@ preview and production builds.
 
 ## 8. Provider mobile (Expo)
 
-DialNFind Business: the provider portal as a native app on the same `/provider` endpoints.
+KaajVa Business: the provider portal as a native app on the same `/provider` endpoints.
 Sign in, then setup (new listing or claim) or the tabs Dashboard, Leads, Reviews, More. Listing
 editors (profile, services, hours, areas, portfolio, verification), Promote, Plan, Support,
 Notifications, Help and legal pages, push alerts for new leads, and account deletion. Plans can be

@@ -103,10 +103,10 @@ describe("sessions", () => {
 
 describe("settings", () => {
   it("reads stored values, defaults and caches them", async () => {
-    expect(await getSetting("site_name")).toBe("DialNFind");
+    expect(await getSetting("site_name")).toBe("KaajVa");
     expect(await getSetting("unknown_key")).toBeNull();
     await prisma.setting.create({ data: { key: "site_name", value: "Changed" } });
-    expect(await getSetting("site_name")).toBe("DialNFind"); // cached
+    expect(await getSetting("site_name")).toBe("KaajVa"); // cached
     clearSettingsCache();
     expect(await getSetting("site_name")).toBe("Changed");
   });

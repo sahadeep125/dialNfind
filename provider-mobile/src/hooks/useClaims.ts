@@ -34,7 +34,7 @@ export function useClaimListing(id: number | null): UseQueryResult<ClaimListing>
   });
 }
 
-/** Starts a claim with a proof-of-ownership document; the DialNFind team reviews it. */
+/** Starts a claim with a proof-of-ownership document; the KaajVa team reviews it. */
 export function useStartClaim() {
   return useMutation<StartClaimResponse, Error, StartClaimInput>({
     mutationFn: (input: StartClaimInput): Promise<StartClaimResponse> =>

@@ -52,8 +52,8 @@ export async function shareProvider(slug: string, businessName: string): Promise
   const url = `${WEB_URL}/providers/${encodeURIComponent(slug)}`;
   const result = await Share.share(
     Platform.OS === "ios"
-      ? { message: `${businessName} on DialNFind`, url }
-      : { message: `${businessName} on DialNFind: ${url}` },
+      ? { message: `${businessName} on KaajVa`, url }
+      : { message: `${businessName} on KaajVa: ${url}` },
   );
   track("provider_shared", { provider_slug: slug, method: "native", completed: result.action === Share.sharedAction });
 }

@@ -35,7 +35,7 @@ async function handle(request: Request, { params }: { params: Promise<{ path: st
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch {
-    return NextResponse.json({ error: { code: "unavailable", message: "We could not reach DialNFind. Check your connection and try again." } }, { status: 502 });
+    return NextResponse.json({ error: { code: "unavailable", message: "We could not reach KaajVa. Check your connection and try again." } }, { status: 502 });
   }
   const out = new Headers();
   for (const name of PASSED_HEADERS) {

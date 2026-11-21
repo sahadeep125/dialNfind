@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Forgot password", robots: NO_INDEX }
 
 export default function ForgotPasswordPage() {
   return (
-    <AuthShell title="Forgot your password?" subtitle="Enter the email you use for DialNFind and we will send you a link to choose a new one.">
+    <AuthShell title="Forgot your password?" subtitle="Enter the email you use for KaajVa and we will send you a link to choose a new one.">
       <ForgotPasswordForm />
     </AuthShell>
   );

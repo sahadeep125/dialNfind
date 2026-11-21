@@ -15,7 +15,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = pageMetadata({
   title: "Home Service Guides: Costs, Checklists & Tips",
-  description: "Practical guides to home services in India: repair and service costs, how to hire the right professional, checklists and seasonal tips from DialNFind.",
+  description: "Practical guides to home services in India: repair and service costs, how to hire the right professional, checklists and seasonal tips from KaajVa.",
   path: "/guides",
 });
 

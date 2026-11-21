@@ -6,7 +6,7 @@ import { shutdownAnalytics } from "./services/analytics.js";
 
 const app = createApp();
 const server = app.listen(env.port, () => {
-  console.log(`DialNFind API listening on http://localhost:${env.port}/api/v1`);
+  console.log(`KaajVa API listening on http://localhost:${env.port}/api/v1`);
 });
 startJobs();
 

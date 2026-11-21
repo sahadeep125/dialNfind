@@ -3,7 +3,7 @@ import { publicApiOrNull } from "@/lib/api";
 import { OG_SIZE, OgFrame } from "@/lib/og";
 import type { ProviderDetail } from "@/lib/types";
 
-export const alt = "Provider profile on DialNFind";
+export const alt = "Provider profile on KaajVa";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 export const revalidate = 3600;
@@ -16,14 +16,14 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     tags: [`provider:${slug}`, "providers"],
   });
   const p = data?.provider;
-  if (!p) return new ImageResponse(<OgFrame eyebrow="DialNFind" title="Trusted local service providers" />, size);
-  const rating = p.totalReviews > 0 ? `Rated ${p.avgRating.toFixed(1)} from ${p.totalReviews} reviews` : "New on DialNFind";
+  if (!p) return new ImageResponse(<OgFrame eyebrow="KaajVa" title="Trusted local service providers" />, size);
+  const rating = p.totalReviews > 0 ? `Rated ${p.avgRating.toFixed(1)} from ${p.totalReviews} reviews` : "New on KaajVa";
   return new ImageResponse(
     <OgFrame
       eyebrow={p.primaryCategory?.name ?? "Local services"}
       title={p.businessName}
       subtitle={`${p.locality ? `${p.locality}, ` : ""}${p.city} · ${rating}`}
-      footer={p.verificationStatus === "verified" ? "Verified provider · Call directly on DialNFind" : "Call directly on DialNFind"}
+      footer={p.verificationStatus === "verified" ? "Verified provider · Call directly on KaajVa" : "Call directly on KaajVa"}
     />,
     size,
   );

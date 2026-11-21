@@ -33,7 +33,7 @@ export async function closeBusinessAccount(userId: bigint): Promise<{ storeSubsc
 /**
  * Deletes a person's account: the row is kept so leads, tickets and the audit log stay consistent,
  * but everything that identifies them is cleared and they are signed out everywhere. Their reviews,
- * favourites and addresses are removed. A business they owned stays on DialNFind as an unclaimed listing.
+ * favourites and addresses are removed. A business they owned stays on KaajVa as an unclaimed listing.
  * Google/Apple sign-in links are removed, and Apple is told to revoke our access (App Store requirement).
  */
 export async function anonymiseUser(userId: bigint): Promise<void> {

@@ -41,7 +41,7 @@ export const ReviewCard = memo(function ReviewCard({ review, onReply, onReport }
               <BadgeCheck
                 size={14}
                 color={theme.colors.semantic.success}
-                accessibilityLabel="Contacted you via DialNFind"
+                accessibilityLabel="Contacted you via KaajVa"
               />
             ) : null}
           </View>

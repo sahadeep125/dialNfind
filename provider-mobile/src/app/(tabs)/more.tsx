@@ -71,8 +71,8 @@ async function rateApp(): Promise<void> {
   // No App Store id configured yet on iOS: fall back to a store search.
   await openUrl(
     Platform.OS === "ios"
-      ? "https://apps.apple.com/search?term=DialNFind%20Business"
-      : "https://play.google.com/store/search?q=DialNFind%20Business",
+      ? "https://apps.apple.com/search?term=KaajVa%20Business"
+      : "https://play.google.com/store/search?q=KaajVa%20Business",
   );
 }
 
@@ -279,7 +279,7 @@ export default function MoreScreen() {
         </AppSection>
 
         <AppText variant="meta" align="center">
-          DialNFind Business {version}
+          KaajVa Business {version}
         </AppText>
       </ScreenScroll>
 

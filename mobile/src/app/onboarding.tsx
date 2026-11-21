@@ -210,7 +210,7 @@ export default function OnboardingScreen() {
           <View style={styles.brand}>
             <BrandMark size={30} tone="inverse" />
             <AppText variant="subheading" tone="white">
-              DialNFind
+              KaajVa
             </AppText>
           </View>
           {!isLast ? (

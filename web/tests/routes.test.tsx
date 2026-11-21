@@ -139,11 +139,11 @@ describe("well-known and metadata routes", () => {
   it("lists the sitemap files and builds them", async () => {
     mockApi({ "/providers/sitemap": { results: [{ slug: "a", updatedAt: "2026-01-01T00:00:00Z" }], total: 100000, totalPages: 3 }, "/categories": { categories: [{ slug: "c", subcategories: [{ slug: "s" }] }] } });
     const xml = await (await sitemapIndex()).text();
-    expect(xml).toContain("<loc>https://dialnfind.com/sitemaps/sitemap/3.xml</loc>");
+    expect(xml).toContain("<loc>https://kaajva.in/sitemaps/sitemap/3.xml</loc>");
     expect(await generateSitemaps()).toEqual([{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }]);
     expect((await sitemap({ id: Promise.resolve("0") })).length).toBeGreaterThan(9);
-    expect(await sitemap({ id: Promise.resolve("1") })).toEqual([expect.objectContaining({ url: "https://dialnfind.com/providers/a" })]);
-    expect(manifest().short_name).toBe("DialNFind");
+    expect(await sitemap({ id: Promise.resolve("1") })).toEqual([expect.objectContaining({ url: "https://kaajva.in/providers/a" })]);
+    expect(manifest().short_name).toBe("KaajVa");
   });
   it("draws the social images", async () => {
     expect((OgImage() as unknown as { markup: string }).markup).toContain("Find trusted local pros");
@@ -155,7 +155,7 @@ describe("well-known and metadata routes", () => {
     expect(((await GuideOg({ params: Promise.resolve({ slug: guide.slug }) })) as unknown as { markup: string }).markup).toContain(guide.title.slice(0, 20));
     expect(((await GuideTwitter({ params: Promise.resolve({ slug: "nope" }) })) as unknown as { markup: string }).markup).toContain("Home service guides");
     expect(((await GuideOg({ params: Promise.resolve({ slug: "nope" }) })) as unknown as { markup: string }).markup).toContain("Home service guides");
-    expect(((await GuideTwitter({ params: Promise.resolve({ slug: guide.slug }) })) as unknown as { markup: string }).markup).toContain("DialNFind guide");
+    expect(((await GuideTwitter({ params: Promise.resolve({ slug: guide.slug }) })) as unknown as { markup: string }).markup).toContain("KaajVa guide");
   });
   it.each([["opengraph", ProviderOg], ["twitter", ProviderTwitter]] as const)("draws the %s image for a provider", async (_name, Image) => {
     const draw = async (p: Record<string, unknown> | null) => {
@@ -167,7 +167,7 @@ describe("well-known and metadata routes", () => {
     expect(full).toContain("Andheri, Mumbai · Rated 4.5 from 12 reviews");
     expect(full).toContain("Verified provider");
     const bare = await draw({ locality: null, totalReviews: 0, primaryCategory: null, verificationStatus: "none" });
-    expect(bare).toContain("Mumbai · New on DialNFind");
+    expect(bare).toContain("Mumbai · New on KaajVa");
     expect(bare).toContain("Local services");
     expect(bare).not.toContain("Verified provider");
   });

@@ -29,7 +29,7 @@ function pageCopy(category: Category, sub: Subcategory | undefined) {
   const count = category.providerCount > 0 ? `${category.providerCount.toLocaleString("en-IN")}+ ` : "";
   return {
     title: `${name} near me in ${SEO_CITY}`,
-    description: clip(`Compare ${count}${name.toLowerCase()} providers near you on DialNFind. See ratings, prices and who is open now, then call directly. ${category.description ?? ""}`),
+    description: clip(`Compare ${count}${name.toLowerCase()} providers near you on KaajVa. See ratings, prices and who is open now, then call directly. ${category.description ?? ""}`),
     h1: sub ? `${sub.name} near you` : category.name,
     intro: category.description ? [category.description] : [],
     faqs: [],

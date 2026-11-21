@@ -131,7 +131,7 @@ describe("password reset", () => {
     expect(await screen.findByText("Could not send the email. Try again.")).toBeInTheDocument();
     mockApi({ "POST /auth/forgot-password": { ok: true } });
     await u.click(screen.getByRole("button", { name: /send reset link/i }));
-    expect(await screen.findByText(/If a@b.co has a DialNFind account/)).toBeInTheDocument();
+    expect(await screen.findByText(/If a@b.co has a KaajVa account/)).toBeInTheDocument();
   });
   it("sets a new password", async () => {
     const u = userEvent.setup();
