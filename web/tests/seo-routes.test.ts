@@ -40,3 +40,35 @@ describe("sitemap", () => {
     expect(entries[0]).toMatchObject({ url: "https://kaajva.in/providers/p-2" });
   });
 });
+
+describe("llms.txt", () => {
+  it("summarises the site and links the pages, services, guides and official profiles", async () => {
+    const { llmsTxt } = await import("@/lib/llms");
+    const { GUIDES } = await import("@/lib/guides");
+    const text = llmsTxt([
+      { name: "Electricians", slug: "electricians", providerCount: 12, description: null },
+      { name: "Tutors", slug: "tutors", providerCount: 0, description: null },
+    ]);
+    expect(text).toMatch(/^# KaajVa\n\n> /);
+    expect(text).toContain("Siliguri");
+    expect(text).toContain("[Electricians in Siliguri](https://kaajva.in/services/electricians): 12 listings");
+    expect(text).not.toContain("Tutors in Siliguri");
+    for (const g of GUIDES) expect(text).toContain(`(https://kaajva.in/guides/${g.slug})`);
+    expect(text).toContain("https://www.instagram.com/kaajvaofficial/");
+    expect(llmsTxt([])).not.toContain("## Services in Siliguri");
+  });
+  it("is served as plain text", async () => {
+    const res = await (await import("@/app/llms.txt/route")).GET();
+    expect(res.headers.get("content-type")).toBe("text/plain; charset=utf-8");
+  });
+});
+
+describe("robots for AI crawlers", () => {
+  it("names the AI crawlers with the same private paths", async () => {
+    const { default: robots, AI_CRAWLERS } = await import("@/app/robots");
+    const rules = robots().rules;
+    const ai = Array.isArray(rules) ? rules[1] : undefined;
+    expect(ai?.userAgent).toEqual(AI_CRAWLERS);
+    expect(ai?.disallow).toEqual(expect.arrayContaining(["/dashboard", "/api/"]));
+  });
+});

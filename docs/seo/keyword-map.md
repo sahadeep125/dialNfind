@@ -89,6 +89,11 @@ Pradhan Nagar, Hakimpara, Champasari, Salugara, Ghogomali, Jalpaiguri, Darjeelin
   `robots.txt` blocks the dashboard, API, and filtered search URLs.
 - Private and one-off pages are `noindex`; social preview images are generated per page.
 - Fonts with `display: swap`, Next image optimisation, cached public pages for fast responses.
+- `/llms.txt` (a plain-text map of the site for AI assistants, rebuilt hourly from the live categories) and a
+  `robots.txt` group that names the AI search crawlers (GPTBot, OAI-SearchBot, ClaudeBot, PerplexityBot,
+  Google-Extended, Applebot-Extended...) with the same rules as everyone else.
+- The official Facebook, Instagram, YouTube and X profiles in the footer and as `sameAs` in the Organization JSON-LD
+  (`OFFICIAL_SOCIAL_LINKS` in `web/lib/config.ts`).
 - Google and Bing verification tags via `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION`.
 
 ## Off-site steps (done by the owner, not in code)

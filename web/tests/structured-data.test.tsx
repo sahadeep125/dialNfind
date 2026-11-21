@@ -78,6 +78,12 @@ describe("other builders", () => {
     expect(fallback.address).toMatchObject({ addressLocality: "Siliguri", addressRegion: "West Bengal", postalCode: "734006", addressCountry: "IN" });
     expect((organizationJsonLd({ email: "help@x.in", phone: null }) as Ld).contactPoint[0].email).toBe("help@x.in");
   });
+  it("lists the official social profiles as sameAs", () => {
+    const org = organizationJsonLd({ email: null, phone: null }) as Ld;
+    expect(org.sameAs).toEqual(
+      expect.arrayContaining(["https://www.facebook.com/kaajva", "https://www.youtube.com/@kaajva", "https://www.instagram.com/kaajvaofficial/", "https://x.com/kaajvaofficial"]),
+    );
+  });
   it("builds FAQ questions", () => {
     expect((faqJsonLd([{ q: "Q?", a: "A." }]) as Ld).mainEntity[0].acceptedAnswer.text).toBe("A.");
   });
