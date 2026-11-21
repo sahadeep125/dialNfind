@@ -66,6 +66,7 @@ Priority: **P1** high intent and high demand, **P2** steady demand, **P3** long 
 | `/services/carpentry` | carpenter in Siliguri | modular kitchen Siliguri, furniture repair | P2 |
 | `/services/vehicle-repair` | bike service centre Siliguri, car service centre Siliguri | two wheeler service Siliguri, car garage near me | P1 (199 listings) |
 | `/services/beauty-salon` | beauty parlour in Siliguri, salon near me | unisex salon Siliguri, bridal makeup artist Siliguri, salon at home | P1 (257 listings) |
+| Area pages `/services/<category>/in/<area>` | "<service> in <area>", e.g. beauty parlours in Hakimpara, bike service Sevoke Road | "<service> near <area>" | P1 (built automatically for every locality with 3+ listings in a category) |
 | Guides `/guides/*` | AC service charges, TV repair cost India, packers and movers charges, house painting cost per sq ft | how to hire an electrician, house shifting checklist | P3 |
 | Provider pages `/providers/*` | "<business name>", "<business name> Siliguri" | "<business name> phone number", "<business name> reviews" | P1 (brand searches of each business) |
 | `/claim` | list my business in Siliguri, free business listing Siliguri | add business on Google alternative, Siliguri business directory | P2 |
