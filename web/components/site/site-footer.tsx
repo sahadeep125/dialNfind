@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { BadgeCheck, Mail, MapPin, Phone, PhoneCall, Star } from "lucide-react";
 import { Logo } from "./logo";
+import { SocialIcon } from "./social-icons";
 import { publicApi } from "@/lib/api";
 import { getAppConfig } from "@/lib/app-config";
-import { BUSINESS, OFFICE_ADDRESS } from "@/lib/config";
+import { BUSINESS, OFFICE_ADDRESS, OFFICIAL_SOCIAL_LINKS } from "@/lib/config";
 import { formatPhone, telHref } from "@/lib/format";
 import type { Category } from "@/lib/types";
 
@@ -96,6 +97,21 @@ export async function SiteFooter() {
               </p>
             )}
           </address>
+          <ul aria-label="KaajVa on social media" className="flex gap-2 pt-1">
+            {OFFICIAL_SOCIAL_LINKS.map((s) => (
+              <li key={s.url}>
+                <a
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer me"
+                  aria-label={`KaajVa on ${s.label}`}
+                  className="flex size-9 items-center justify-center rounded-md bg-white/10 text-white transition-colors hover:bg-white/20"
+                >
+                  <SocialIcon name={s.label} className="size-4" />
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
         {columns.map((col) => (
           <div key={col.title}>

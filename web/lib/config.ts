@@ -26,6 +26,23 @@ export const BUSINESS = {
   /** The cities and districts the directory covers, for areaServed. */
   areaServed: ["Siliguri", "Jalpaiguri", "Darjeeling", "Matigara", "Bagdogra", "West Bengal"],
 } as const;
+/**
+ * KaajVa's own profiles elsewhere: shown in the footer and listed as sameAs in the Organization JSON-LD, which
+ * tells search engines and AI assistants these accounts belong to this business. NEXT_PUBLIC_SOCIAL_LINKS
+ * (comma separated) adds more, such as the Google Business Profile link once it is verified.
+ */
+export const OFFICIAL_SOCIAL_LINKS = [
+  { label: "Facebook", url: "https://www.facebook.com/kaajva" },
+  { label: "Instagram", url: "https://www.instagram.com/kaajvaofficial/" },
+  { label: "YouTube", url: "https://www.youtube.com/@kaajva" },
+  { label: "X", url: "https://x.com/kaajvaofficial" },
+] as const;
+const EXTRA_SOCIAL_LINKS = (process.env.NEXT_PUBLIC_SOCIAL_LINKS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter((s) => /^https?:\/\//.test(s));
+/** Every profile URL, official ones first, without duplicates. */
+export const SOCIAL_LINKS: string[] = [...new Set([...OFFICIAL_SOCIAL_LINKS.map((l) => l.url), ...EXTRA_SOCIAL_LINKS])];
 /** Office shown on the contact page and footer; set the env vars to override. */
 export const OFFICE_ADDRESS = process.env.NEXT_PUBLIC_OFFICE_ADDRESS || "Ghogomali, Siliguri, West Bengal, India 734006";
 export const OFFICE_REGION = process.env.NEXT_PUBLIC_OFFICE_REGION || "Siliguri, West Bengal";

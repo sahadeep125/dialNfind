@@ -1,16 +1,10 @@
-import { BUSINESS, SITE_NAME, SITE_URL } from "./config";
+import { BUSINESS, SITE_NAME, SITE_URL, SOCIAL_LINKS } from "./config";
 import type { ProviderDetail, Review } from "./types";
 
 /** schema.org JSON-LD for search engines. Kept free of React so it can be unit tested. */
 type Thing = Record<string, unknown>;
 
 export const absoluteUrl = (path: string) => (/^https?:\/\//.test(path) ? path : `${SITE_URL}${path.startsWith("/") ? "" : "/"}${path}`);
-
-/** Profiles elsewhere (Facebook, Instagram, Google Business Profile...), comma separated in NEXT_PUBLIC_SOCIAL_LINKS. */
-const SOCIAL_LINKS = (process.env.NEXT_PUBLIC_SOCIAL_LINKS ?? "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter((s) => /^https?:\/\//.test(s));
 
 /**
  * The business itself, with its name, address and phone (NAP) so search engines can tie the site to its
@@ -40,7 +34,7 @@ export function organizationJsonLd(contact: { email: string | null; phone: strin
       { "@type": "ContactPoint", contactType: "customer support", email: supportEmail, telephone: phone, areaServed: "IN", availableLanguage: ["English", "Hindi", "Bengali"] },
       { "@type": "ContactPoint", contactType: "sales", email: BUSINESS.infoEmail, telephone: phone, areaServed: "IN", availableLanguage: ["English", "Hindi", "Bengali"] },
     ],
-    ...(SOCIAL_LINKS.length ? { sameAs: SOCIAL_LINKS } : {}),
+    sameAs: SOCIAL_LINKS,
   };
 }
 
