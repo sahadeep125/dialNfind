@@ -36,7 +36,7 @@ export function PhotoGallery({ photos, businessName, categorySlug }: { photos: L
       <PhotoTrigger index={0} className={cn("group relative overflow-hidden bg-muted", spans.main)} aria-label={`Open photo: ${main.title || businessName}`}>
         <Image
           src={main.imageUrl}
-          alt={main.title || businessName}
+          alt={main.altText || main.title || businessName}
           fill
           priority
           className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
@@ -53,7 +53,7 @@ export function PhotoGallery({ photos, businessName, categorySlug }: { photos: L
         >
           <Image
             src={photo.imageUrl}
-            alt={photo.title || businessName}
+            alt={photo.altText || photo.title || businessName}
             fill
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
             sizes="(min-width: 640px) 25vw, 1px"

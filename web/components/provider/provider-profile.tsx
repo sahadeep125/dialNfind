@@ -94,8 +94,11 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
   const visibleChips = otherChips.slice(0, 4);
   const extraChips = otherChips.length - visibleChips.length;
 
-  // Cover first, then the portfolio: one list for the banner and the photo viewer.
-  const photos: LightboxPhoto[] = [...(p.coverUrl ? [{ id: "cover", title: p.businessName, imageUrl: p.coverUrl }] : []), ...p.portfolio];
+  // Cover first, then the portfolio: one list for the banner and the photo viewer. The cover's alt text names
+  // the business, its service and the place, as image search reads it.
+  const place = p.locality ? `${p.locality}, ${p.city}` : p.city;
+  const coverAlt = `${p.businessName}, ${p.seo?.service ?? leadChip ?? "local services"} in ${place}`;
+  const photos: LightboxPhoto[] = [...(p.coverUrl ? [{ id: "cover", title: p.businessName, imageUrl: p.coverUrl, altText: coverAlt }] : []), ...p.portfolio];
   const portfolioOffset = p.coverUrl ? 1 : 0;
   const portfolioShown = p.portfolio.slice(0, 8);
   const portfolioMore = p.portfolio.length - portfolioShown.length;
@@ -225,7 +228,7 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
                         >
                           <Image
                             src={item.imageUrl}
-                            alt={item.title || p.businessName}
+                            alt={item.altText || item.title || p.businessName}
                             fill
                             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                             sizes="(min-width: 640px) 16vw, 45vw"

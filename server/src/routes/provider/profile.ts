@@ -13,10 +13,11 @@ import { privateFileUrl } from "../../lib/private-files.js";
 import { listingProfileSchema, updateListingProfile } from "../../services/listings.js";
 import { planOf } from "../../services/entitlements.js";
 import { previewUrl, refreshProviderSlugs } from "../../services/web-cache.js";
+import { checkSeoDraft, providerSeo, seoDraftSchema } from "../../services/seo.js";
 
 export const profileRouter = Router();
 
-/** The provider's full profile with its checklist, as the provider apps and the admin editor show it. */
+/** The provider's full profile with its checklist and SEO report, as the provider apps and the admin editor show it. */
 export async function loadProfile(providerId: bigint) {
   const provider = await prisma.provider.findUniqueOrThrow({
     where: { id: providerId },
@@ -34,6 +35,7 @@ export async function loadProfile(providerId: bigint) {
     ...rest,
     services: provider.services.map((s) => ({ ...s, startingPrice: num(s.startingPrice) })),
     checklist: completenessChecklist(provider),
+    seo: await providerSeo(providerId),
   };
 }
 
@@ -52,6 +54,12 @@ profileRouter.patch("/profile", async (req, res) => {
   const provider = await ownProvider(req);
   await updateListingProfile(provider, parse(listingProfileSchema.partial(), req.body));
   res.json({ provider: await loadProfile(provider.id) });
+});
+
+/** POST /provider/seo/check — the SEO score for unsaved edits, so the editor can show it live. Saves nothing. */
+profileRouter.post("/seo/check", async (req, res) => {
+  const provider = await ownProvider(req);
+  res.json({ seo: await checkSeoDraft(provider.id, parse(seoDraftSchema, req.body ?? {})) });
 });
 
 profileRouter.put("/hours", async (req, res) => {
@@ -213,7 +221,8 @@ profileRouter.patch("/portfolio/:id", async (req, res) => {
     }),
   ]);
   if (body.imageUrl && body.imageUrl !== existing.imageUrl) void releaseFile(existing.imageUrl);
-  refreshProviderSlugs([provider.slug]);
+  // A new title is new alt text, which the SEO score checks; this also refreshes the public page.
+  await recalculateProvider(provider.id);
   res.json({ item });
 });
 

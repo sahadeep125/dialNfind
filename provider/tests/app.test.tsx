@@ -342,6 +342,13 @@ describe("dashboard", () => {
     expect(screen.getByText(/Renews on/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Manage plan" })).toBeInTheDocument();
     expect(screen.getByText("Leads and profile views")).toBeInTheDocument();
+    // Google visibility: the SEO score with the next fixes, each linking to where it is fixed.
+    expect(screen.getByText("Google visibility")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "SEO score 62 of 100, Needs work" })).toBeInTheDocument();
+    expect(screen.getByText("“tv repair in Mumbai”")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Business description\s*\+8/ })).toHaveAttribute("href", "/profile");
+    expect(screen.getByRole("link", { name: /Service areas\s*\+1/ })).toHaveAttribute("href", "/areas");
+    expect(screen.getByRole("link", { name: /Details/ })).toHaveAttribute("href", "/seo");
 
     await userEvent.click(screen.getByRole("button", { name: "7 days" }));
     await waitFor(() => expect(fetch.mock.calls.some(([u]) => String(u).includes("days=7"))).toBe(true));

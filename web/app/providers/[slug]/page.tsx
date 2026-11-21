@@ -46,6 +46,16 @@ export async function generateMetadata({
       robots: { index: false, follow: true },
     };
   const p = provider;
+  const path = `/providers/${p.slug}`;
+  // The API writes the title and description (the provider can edit them), so the site, the provider's SEO
+  // page and the admin console all show the same text.
+  if (p.seo) {
+    return {
+      ...pageMetadata({ title: p.seo.title, description: p.seo.description, path, type: "profile", absoluteTitle: true }),
+      keywords: p.seo.keywords,
+      ...(p.seo.noIndex ? { robots: { index: false, follow: true } } : {}),
+    };
+  }
   const place = p.locality ? `${p.locality}, ${p.city}` : p.city;
   const service = p.primaryCategory?.name ?? "Local services";
   const rating =
@@ -60,7 +70,7 @@ export async function generateMetadata({
     description: clip(
       `${rating}${about || `${service} in ${place}.`} Call ${p.businessName} directly on KaajVa.`,
     ),
-    path: `/providers/${p.slug}`,
+    path,
     type: "profile",
   });
 }

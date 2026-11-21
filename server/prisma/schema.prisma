@@ -411,6 +411,15 @@ model Provider {
   responseSignal            Decimal?                               @map("response_signal") @db.Decimal(4, 3)
   profileCompletenessPct    Int                                    @default(0) @map("profile_completeness_pct")
   rankingScore              Decimal                                @default(0) @map("ranking_score") @db.Decimal(8, 4)
+  // Search engine text for the public profile; null means the website writes it from the listing (services/seo.ts).
+  seoTitle                  String?                                @map("seo_title") @db.VarChar(70)
+  seoDescription            String?                                @map("seo_description") @db.VarChar(200)
+  focusKeyword              String?                                @map("focus_keyword") @db.VarChar(80)
+  seoKeywords               String[]                               @default([]) @map("seo_keywords")
+  // Set by the KaajVa team only: keeps the profile out of search results and the sitemap.
+  seoNoIndex                Boolean                                @default(false) @map("seo_no_index")
+  // 0-100, cached by recalculateProvider so the admin console can sort and filter by it.
+  seoScore                  Int                                    @default(0) @map("seo_score") @db.SmallInt
   verificationStatus        VerificationStatus                     @default(none) @map("verification_status")
   status                    ProviderStatus                         @default(pending)
   claimedAt                 DateTime?                              @map("claimed_at")
@@ -444,6 +453,7 @@ model Provider {
 
   @@index([status, rankingScore])
   @@index([city])
+  @@index([seoScore])
   @@map("providers")
 }
 

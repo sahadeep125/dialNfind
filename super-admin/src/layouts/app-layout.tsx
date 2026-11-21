@@ -52,6 +52,8 @@ export interface Overview {
   activeSubscriptions: number;
   leadSeries: { date: string; value: number }[];
   signupSeries: { date: string; value: number }[];
+  /** Live listings by SEO score band; `hidden` are kept out of search engines by the team. */
+  seo: { average: number; good: number; fair: number; poor: number; hidden: number };
 }
 
 export function useOverview() {

@@ -78,7 +78,7 @@ describe("rating and badges", () => {
         <OpenStatus provider={{ isAvailable: true, isOpenNow: false, todayHours: "Closed today" }} />
       </>,
     );
-    expect(screen.getByAltText("Asha Rao")).toBeInTheDocument();
+    expect(screen.getByAltText("Asha Rao logo")).toBeInTheDocument();
     expect(screen.getByText("Currently unavailable")).toBeInTheDocument();
     expect(screen.getByText("Closed")).toBeInTheDocument();
   });
