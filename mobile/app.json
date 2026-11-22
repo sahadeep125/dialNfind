@@ -3,7 +3,7 @@
     "name": "KaajVa",
     "slug": "kaajva",
     "scheme": "kaajva",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -142,6 +142,17 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "debba090-205f-45b6-bd0b-eee682ba53cf"
+      }
+    },
+    "owner": "sahadeep125"
   }
 }

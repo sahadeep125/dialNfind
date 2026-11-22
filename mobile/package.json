@@ -1,6 +1,6 @@
 {
   "name": "kaajva-mobile",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -34,6 +34,7 @@
     "expo-status-bar": "~58.0.5",
     "expo-store-review": "~58.0.3",
     "expo-system-ui": "~58.0.7",
+    "expo-updates": "~58.0.22",
     "expo-web-browser": "~58.1.0",
     "lucide-react-native": "^1.48.0",
     "nativewind": "^4.2.7",
