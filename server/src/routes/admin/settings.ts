@@ -65,8 +65,8 @@ function check(field: SettingField, value: string): string {
 
 // Email ------------------------------------------------------------------------------------------
 
-adminSettingsRouter.get("/settings/email", (_req, res) => {
-  res.json({ config: mailConfig() });
+adminSettingsRouter.get("/settings/email", async (_req, res) => {
+  res.json({ config: await mailConfig() });
 });
 
 /** Sends a test email and returns the SMTP server's reply, or its error so a wrong password or host is visible. */

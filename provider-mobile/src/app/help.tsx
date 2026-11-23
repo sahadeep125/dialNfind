@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
-import { LifeBuoy, Mail, Phone } from "lucide-react-native";
+import { LifeBuoy, Mail, MapPin, Phone } from "lucide-react-native";
 
 import { AppListItem, AppSection, AppSkeleton } from "@/components/design-system";
 import { Screen, ScreenHeader, ScreenScroll } from "@/components/layout";
@@ -134,6 +134,13 @@ export default function HelpScreen() {
               subtitle={formatPhone(phone)}
               leading={<Phone size={16} color={theme.colors.text.secondary} />}
               onPress={() => void run(() => openPhone(phone), "Calling is not available.")}
+            />
+          ) : null}
+          {config?.office_address ? (
+            <AppListItem
+              title="Office"
+              subtitle={config.office_address.replace(/\s*\n\s*/g, ", ")}
+              leading={<MapPin size={16} color={theme.colors.text.secondary} />}
             />
           ) : null}
         </AppSection>

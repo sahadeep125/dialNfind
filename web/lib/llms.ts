@@ -20,7 +20,15 @@ const KEY_QUESTIONS = ["What is KaajVa?", "Is KaajVa free to use?", "What does V
 
 type LlmsCategory = Pick<Category, "name" | "slug" | "providerCount" | "description">;
 
-export function llmsTxt(categories: LlmsCategory[]): string {
+/** Contact details from the admin settings; the fixed KaajVa ones fill any gap. */
+export interface LlmsContact {
+  support_email: string | null;
+  support_phone: string | null;
+  info_email: string | null;
+  office_address: string | null;
+}
+
+export function llmsTxt(categories: LlmsCategory[], contact?: LlmsContact): string {
   const link = (name: string, path: string, note?: string | null) => `- [${name}](${SITE_URL}${path})${note ? `: ${note}` : ""}`;
   const faq = FAQ_SECTIONS.flatMap((s) => s.items);
   const facts = KEY_QUESTIONS.map((q) => faq.find((f) => f.q === q))
@@ -31,6 +39,11 @@ export function llmsTxt(categories: LlmsCategory[]): string {
     .sort((a, b) => b.providerCount - a.providerCount)
     .map((c) => link(`${c.name} in Siliguri`, `/services/${c.slug}`, `${c.providerCount} ${c.providerCount === 1 ? "listing" : "listings"}`));
   const { streetAddress, addressLocality, addressRegion, postalCode } = BUSINESS.address;
+  const supportEmail = contact?.support_email || BUSINESS.supportEmail;
+  const infoEmail = contact?.info_email || BUSINESS.infoEmail;
+  const phone = contact?.support_phone || BUSINESS.phone;
+  const office = contact?.office_address?.replace(/\s*\n\s*/g, ", ").trim() || `${streetAddress}, ${addressLocality}, ${addressRegion} ${postalCode}, India`;
+  const emails = infoEmail === supportEmail ? `${supportEmail} (support)` : `${infoEmail}, ${supportEmail} (support)`;
   return [
     `# ${SITE_NAME}`,
     "",
@@ -38,8 +51,8 @@ export function llmsTxt(categories: LlmsCategory[]): string {
     "",
     "## Key facts",
     `- Coverage: Siliguri and nearby areas of North Bengal (Darjeeling and Jalpaiguri districts).`,
-    `- Contact: ${BUSINESS.infoEmail}, ${BUSINESS.supportEmail} (support), phone ${BUSINESS.phone}.`,
-    `- Office: ${streetAddress}, ${addressLocality}, ${addressRegion} ${postalCode}, India.`,
+    `- Contact: ${emails}, phone ${phone}.`,
+    `- Office: ${office.replace(/\.$/, "")}.`,
     ...facts,
     "",
     "## Main pages",

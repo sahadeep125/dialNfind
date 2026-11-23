@@ -58,6 +58,10 @@ describe("llms.txt", () => {
     for (const g of GUIDES) expect(text).toContain(`(https://kaajva.in/guides/${g.slug})`);
     expect(text).toContain("https://www.instagram.com/kaajvaofficial/");
     expect(llmsTxt([])).not.toContain("## Services in Siliguri");
+    expect(text).toContain("- Contact: info@kaajva.in, support@kaajva.in (support), phone +918906609532.");
+    const custom = llmsTxt([], { support_email: "help@x.in", support_phone: "+919000000000", info_email: "help@x.in", office_address: "2 Hill Cart Road\nSiliguri 734001" });
+    expect(custom).toContain("- Contact: help@x.in (support), phone +919000000000.");
+    expect(custom).toContain("- Office: 2 Hill Cart Road, Siliguri 734001.");
   });
   it("is served as plain text", async () => {
     const res = await (await import("@/app/llms.txt/route")).GET();

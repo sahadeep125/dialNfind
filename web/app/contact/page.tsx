@@ -2,15 +2,19 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import { Clock, Headphones, LifeBuoy, Mail, MapPin, Phone } from "lucide-react";
 import { getAppConfig } from "@/lib/app-config";
-import { BUSINESS, OFFICE_ADDRESS } from "@/lib/config";
 import { formatPhone, telHref } from "@/lib/format";
 import { ContactForm } from "@/components/site/contact-form";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Contact KaajVa, Siliguri",
-  description: "Contact KaajVa in Ghogomali, Siliguri: call +91 89066 09532 or email support@kaajva.in for help with a listing, feedback or business enquiries.",
-  path: "/contact",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getAppConfig();
+  const reach = [config.support_phone && `call ${formatPhone(config.support_phone)}`, config.support_email && `email ${config.support_email}`].filter(Boolean).join(" or ");
+  const place = config.office_address ? ` in ${config.office_address.split(/[,\n]/).slice(0, 2).map((s) => s.trim()).filter(Boolean).join(", ")}` : "";
+  return pageMetadata({
+    title: "Contact KaajVa, Siliguri",
+    description: `Contact KaajVa${place}${reach ? `: ${reach}` : ""} for help with a listing, feedback or business enquiries.`,
+    path: "/contact",
+  });
+}
 
 export const revalidate = 600;
 
@@ -19,10 +23,10 @@ export default async function ContactPage() {
   // Only the details the team has filled in under Settings are shown.
   const cards = [
     config.support_email && { icon: Mail, title: "Support email", body: config.support_email, href: `mailto:${config.support_email}` },
-    config.support_email !== BUSINESS.infoEmail && { icon: Mail, title: "General and business enquiries", body: BUSINESS.infoEmail, href: `mailto:${BUSINESS.infoEmail}` },
+    config.info_email && config.info_email !== config.support_email && { icon: Mail, title: "General and business enquiries", body: config.info_email, href: `mailto:${config.info_email}` },
     config.support_phone && { icon: Phone, title: "Phone", body: formatPhone(config.support_phone), href: telHref(config.support_phone) },
     config.support_hours && { icon: Clock, title: "Support hours", body: config.support_hours },
-    OFFICE_ADDRESS && { icon: MapPin, title: "Office", body: OFFICE_ADDRESS },
+    config.office_address && { icon: MapPin, title: "Office", body: config.office_address },
   ].filter((c): c is { icon: typeof Mail; title: string; body: string; href?: string } => !!c);
   return (
     <div className="container-page py-12 md:py-16">
@@ -48,7 +52,7 @@ export default async function ContactPage() {
                     {c.body}
                   </a>
                 ) : (
-                  <div className="font-semibold">{c.body}</div>
+                  <div className="whitespace-pre-line font-semibold">{c.body}</div>
                 )}
               </div>
             </div>

@@ -88,6 +88,14 @@ describe("other builders", () => {
     expect(fallback.address).toMatchObject({ addressLocality: "Siliguri", addressRegion: "West Bengal", postalCode: "734006", addressCountry: "IN" });
     expect((organizationJsonLd({ email: "help@x.in", phone: null }) as Ld).contactPoint[0].email).toBe("help@x.in");
   });
+  it("uses the enquiries email and office address from the admin settings", () => {
+    const same = organizationJsonLd({ email: null, phone: null, address: "Ghogomali, Siliguri, West Bengal, India 734006" }) as Ld;
+    expect(same.address).toMatchObject({ streetAddress: "Ghogomali", addressLocality: "Siliguri" });
+    const moved = organizationJsonLd({ email: null, phone: null, infoEmail: "hello@x.in", address: "2 Hill Cart Road\nSiliguri 734001" }) as Ld;
+    expect(moved.email).toBe("hello@x.in");
+    expect(moved.contactPoint[1].email).toBe("hello@x.in");
+    expect(moved.address).toEqual({ "@type": "PostalAddress", streetAddress: "2 Hill Cart Road, Siliguri 734001", postalCode: "734001", addressCountry: "IN" });
+  });
   it("lists the official social profiles as sameAs", () => {
     const org = organizationJsonLd({ email: null, phone: null }) as Ld;
     expect(org.sameAs).toEqual(

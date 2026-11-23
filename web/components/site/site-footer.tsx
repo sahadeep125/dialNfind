@@ -4,7 +4,7 @@ import { Logo } from "./logo";
 import { SocialIcon } from "./social-icons";
 import { publicApi } from "@/lib/api";
 import { getAppConfig } from "@/lib/app-config";
-import { BUSINESS, OFFICE_ADDRESS, OFFICIAL_SOCIAL_LINKS } from "@/lib/config";
+import { OFFICIAL_SOCIAL_LINKS } from "@/lib/config";
 import { formatPhone, telHref } from "@/lib/format";
 import type { Category } from "@/lib/types";
 
@@ -86,14 +86,14 @@ export async function SiteFooter() {
                 <Phone className="size-4" aria-hidden /> {formatPhone(config.support_phone)}
               </a>
             )}
-            {config.support_email !== BUSINESS.infoEmail && (
-              <a href={`mailto:${BUSINESS.infoEmail}`} className="flex items-center gap-2 transition-colors hover:text-white">
-                <Mail className="size-4" aria-hidden /> {BUSINESS.infoEmail}
+            {config.info_email && config.info_email !== config.support_email && (
+              <a href={`mailto:${config.info_email}`} className="flex items-center gap-2 transition-colors hover:text-white">
+                <Mail className="size-4" aria-hidden /> {config.info_email}
               </a>
             )}
-            {OFFICE_ADDRESS && (
-              <p className="flex items-start gap-2">
-                <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden /> {OFFICE_ADDRESS}
+            {config.office_address && (
+              <p className="flex items-start gap-2 whitespace-pre-line">
+                <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden /> {config.office_address}
               </p>
             )}
           </address>

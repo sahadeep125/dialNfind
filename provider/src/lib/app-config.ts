@@ -7,6 +7,8 @@ export interface AppConfig {
   support_email: string | null;
   support_phone: string | null;
   support_hours: string | null;
+  info_email: string | null;
+  office_address: string | null;
   terms_url: string | null;
   privacy_url: string | null;
 }

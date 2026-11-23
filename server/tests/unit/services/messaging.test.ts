@@ -4,6 +4,7 @@ import { env } from "../../../src/env.js";
 import { notify, notifyAndEmail } from "../../../src/services/notify.js";
 import { sendPush } from "../../../src/services/push.js";
 import { mailUser, sendMail } from "../../../src/services/mail.js";
+import { clearSettingsCache } from "../../../src/services/settings.js";
 import * as emails from "../../../src/services/emails.js";
 import { createUser } from "../../helpers/factories.js";
 import { json, mockFetch, sentMails, settle } from "../../helpers/app.js";
@@ -103,6 +104,21 @@ describe("mail", () => {
     expect(sentMails()[0]!.text).toContain("Go: https://x");
   });
 
+  it("signs off with the contact details from Settings", async () => {
+    await sendMail({ to: "a@b.co", subject: "x", lines: [] });
+    expect(sentMails()[0]!.text).toContain("support@kaajva.in · +918906609532 · Ghogomali, Siliguri, West Bengal, India 734006");
+    await prisma.setting.createMany({
+      data: [
+        { key: "support_email", value: "help@shop.in" },
+        { key: "support_phone", value: "+919000000000" },
+        { key: "office_address", value: "1 Hill Cart Road\nSiliguri 734001" },
+      ],
+    });
+    clearSettingsCache();
+    await sendMail({ to: "a@b.co", subject: "y", lines: [] });
+    expect(sentMails()[1]!.text).toContain("help@shop.in · +919000000000 · 1 Hill Cart Road, Siliguri 734001");
+  });
+
   it("sends through SMTP and logs failures", async () => {
     const nodemailer = (await import("nodemailer")).default;
     const sendMailFn = vi.fn().mockResolvedValueOnce({}).mockRejectedValueOnce(new Error("smtp down"));
@@ -118,6 +134,12 @@ describe("mail", () => {
       await sendMail({ to: "a@b.co", subject: "x", lines: [] });
       expect(sendMailFn.mock.calls[1]![0].replyTo).toBe(env.smtp.replyTo);
       expect(console.error).toHaveBeenCalledWith('[mail] could not send "x" to a@b.co', expect.any(Error));
+      // Once the team saves a support email in Settings, replies go there instead.
+      sendMailFn.mockResolvedValueOnce({});
+      await prisma.setting.create({ data: { key: "support_email", value: "help@shop.in" } });
+      clearSettingsCache();
+      await sendMail({ to: "a@b.co", subject: "z", lines: [] });
+      expect(sendMailFn.mock.calls[2]![0].replyTo).toBe("help@shop.in");
     } finally {
       Object.assign(env.smtp, saved);
     }

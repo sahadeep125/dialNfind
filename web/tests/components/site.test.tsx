@@ -207,6 +207,19 @@ describe("SiteFooter", () => {
     expect(rtl.screen.getByText("Ghogomali, Siliguri, West Bengal, India 734006")).toBeInTheDocument();
     expect(rtl.screen.getByText("info@kaajva.in")).toBeInTheDocument();
   });
+  it("shows the enquiries email and office address set in the admin console", async () => {
+    vi.resetModules();
+    const { SiteFooter: Footer } = await import("@/components/site/site-footer");
+    const rtl = await import("@testing-library/react");
+    mockApi({
+      "/app-config": { config: { support_email: "help@x.co", info_email: "hello@x.co", office_address: "2 Hill Cart Road, Siliguri" } },
+      "/categories": { categories: [] },
+    });
+    rtl.render(await Footer());
+    expect(rtl.screen.getByText("hello@x.co")).toBeInTheDocument();
+    expect(rtl.screen.getByText("2 Hill Cart Road, Siliguri")).toBeInTheDocument();
+    expect(rtl.screen.queryByText("info@kaajva.in")).toBeNull();
+  });
   it("still renders when the API is down", async () => {
     vi.resetModules();
     const { SiteFooter: Footer } = await import("@/components/site/site-footer");

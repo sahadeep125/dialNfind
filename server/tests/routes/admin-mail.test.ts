@@ -31,7 +31,7 @@ describe("admin email settings", () => {
     expect(res.body.config).toEqual({ host: "smtp.test", port: 587, user: "team@shop.in", from: env.smtp.from, replyTo: env.smtp.replyTo, hasPassword: true });
     expect(JSON.stringify(res.body)).not.toContain("secret");
     Object.assign(env.smtp, { pass: "" });
-    expect(mailConfig().hasPassword).toBe(false);
+    expect((await mailConfig()).hasPassword).toBe(false);
   });
 
   it("sends a test email and reports the server's answer or its error", async () => {

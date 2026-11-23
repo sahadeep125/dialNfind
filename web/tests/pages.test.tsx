@@ -163,9 +163,17 @@ describe("home and content pages", () => {
     vi.stubEnv("NEXT_PUBLIC_OFFICE_ADDRESS", "1 Office Road");
     mockApi({ "/app-config": { config: {} }, "/api/session": { user: null, unread: 0 } });
     const rtl = await import("@testing-library/react");
-    const contact = (await import("@/app/contact/page")).default;
+    const contactPage = await import("@/app/contact/page");
+    const contact = contactPage.default;
     const c = rtl.render(await contact());
     expect(rtl.screen.getByText("1 Office Road")).toBeInTheDocument();
+    expect((await contactPage.generateMetadata()).description).toBe(
+      "Contact KaajVa in 1 Office Road: call +91 89066 09532 or email support@kaajva.in for help with a listing, feedback or business enquiries.",
+    );
+    mockApi({ "/app-config": { config: { support_email: "help@x.co", support_phone: null, office_address: "2 Hill Cart Road, Siliguri, WB" } } });
+    vi.resetModules();
+    const fresh = await import("@/app/contact/page");
+    expect((await fresh.generateMetadata()).description).toBe("Contact KaajVa in 2 Hill Cart Road, Siliguri: call +91 89066 09532 or email help@x.co for help with a listing, feedback or business enquiries.");
     c.unmount();
     const help = (await import("@/app/help/page")).default;
     rtl.render(await help());

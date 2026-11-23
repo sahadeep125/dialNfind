@@ -1,6 +1,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { env } from "../env.js";
 import { prisma } from "../lib/prisma.js";
+import { getContactDetails, getSavedSetting, type ContactDetails } from "./settings.js";
 
 export interface MailMessage {
   to: string;
@@ -28,8 +29,23 @@ function transport(): Transporter {
 
 const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-function render({ subject, lines, code, action }: MailMessage) {
-  const text = [...lines, ...(code ? [`Your code: ${code}`] : []), ...(action ? [`${action.label}: ${action.url}`] : []), "", "KaajVa"].join("\n\n");
+/** "support@… · +91… · address" for the footer of every email, from Settings > General. */
+function contactLine(contact: ContactDetails): string {
+  return [contact.supportEmail, contact.supportPhone, contact.officeAddress?.replace(/\s*\n\s*/g, ", ")].filter(Boolean).join(" · ");
+}
+
+/** The admin's saved support email, else SUPPORT_EMAIL / the SMTP login from the environment. */
+async function defaultReplyTo(): Promise<string> {
+  return (await getSavedSetting("support_email").catch(() => null)) || env.smtp.replyTo;
+}
+
+async function loadContact(): Promise<ContactDetails | null> {
+  return getContactDetails().catch(() => null);
+}
+
+function render({ subject, lines, code, action }: MailMessage, contact: ContactDetails | null = null) {
+  const footer = contact ? contactLine(contact) : "";
+  const text = [...lines, ...(code ? [`Your code: ${code}`] : []), ...(action ? [`${action.label}: ${action.url}`] : []), "", contact?.siteName ?? "KaajVa", ...(footer ? [footer] : [])].join("\n\n");
   const html = `<!doctype html><html><body style="margin:0;background:#f4f6fb;font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f1a3a">
 <div style="max-width:520px;margin:0 auto;padding:32px 20px">
 <div style="margin-bottom:20px"><img src="${env.webUrl}/brand/kaajva-logo.png" width="148" height="36" alt="KaajVa" style="display:block;border:0;height:36px;width:148px;font-weight:700;font-size:18px;color:#042161"></div>
@@ -40,6 +56,7 @@ ${code ? `<p style="margin:20px 0 8px;text-align:center"><span style="display:in
 ${action ? `<p style="margin:24px 0 8px"><a href="${escape(action.url)}" style="display:inline-block;background:#042161;color:#fff;text-decoration:none;font-weight:600;padding:12px 20px;border-radius:10px;border-bottom:3px solid #fd8003">${escape(action.label)}</a></p><p style="font-size:12px;color:#5b6478;word-break:break-all;margin:12px 0 0">Or open this link: ${escape(action.url)}</p>` : ""}
 </div>
 <p style="font-size:12px;color:#5b6478;margin-top:16px">You received this email because you have an account on KaajVa.</p>
+${footer ? `<p style="font-size:12px;color:#5b6478;margin-top:4px">${escape(footer)}</p>` : ""}
 </div></body></html>`;
   return { text, html };
 }
@@ -49,13 +66,13 @@ ${action ? `<p style="margin:24px 0 8px"><a href="${escape(action.url)}" style="
  * Without SMTP_HOST (development) the message is printed to the console instead.
  */
 export async function sendMail(message: MailMessage): Promise<boolean> {
-  const { text, html } = render(message);
+  const { text, html } = render(message, await loadContact());
   if (!env.smtp.host) {
     console.info(`\n[mail] to ${message.to}: ${message.subject}\n${text}\n`);
     return true;
   }
   try {
-    await transport().sendMail({ from: env.smtp.from, replyTo: message.replyTo ?? env.smtp.replyTo, to: message.to, subject: message.subject, text, html });
+    await transport().sendMail({ from: env.smtp.from, replyTo: message.replyTo ?? (await defaultReplyTo()), to: message.to, subject: message.subject, text, html });
     return true;
   } catch (err) {
     console.error(`[mail] could not send "${message.subject}" to ${message.to}`, err);
@@ -64,8 +81,8 @@ export async function sendMail(message: MailMessage): Promise<boolean> {
 }
 
 /** Outgoing email settings without the password, for the admin console. */
-export function mailConfig() {
-  return { host: env.smtp.host, port: env.smtp.port, user: env.smtp.user, from: env.smtp.from, replyTo: env.smtp.replyTo, hasPassword: env.smtp.pass !== "" };
+export async function mailConfig() {
+  return { host: env.smtp.host, port: env.smtp.port, user: env.smtp.user, from: env.smtp.from, replyTo: await defaultReplyTo(), hasPassword: env.smtp.pass !== "" };
 }
 
 /**
@@ -79,9 +96,9 @@ export async function sendTestMail(to: string): Promise<{ response: string }> {
     subject: "KaajVa test email",
     lines: ["This is a test email from the KaajVa admin console.", "If you can read this, sign-up codes and password reset emails are being delivered."],
   };
-  const { text, html } = render(message);
+  const { text, html } = render(message, await loadContact());
   await transport().verify();
-  const info = await transport().sendMail({ from: env.smtp.from, replyTo: env.smtp.replyTo, to, subject: message.subject, text, html });
+  const info = await transport().sendMail({ from: env.smtp.from, replyTo: await defaultReplyTo(), to, subject: message.subject, text, html });
   return { response: String(info.response ?? "accepted") };
 }
 
