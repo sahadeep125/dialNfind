@@ -31,6 +31,8 @@ export const SETTING_GROUPS: SettingGroup[] = [
       { key: "support_email", label: "Support email", type: "email", default: "support@kaajva.in" },
       { key: "support_phone", label: "Support phone", type: "text", help: "Shown on the contact page, e.g. +918001234567", default: "+918906609532" },
       { key: "support_hours", label: "Support hours", type: "text", default: "Mon to Sat, 9 AM to 7 PM" },
+      { key: "info_email", label: "General enquiries email", type: "email", help: "For business and partnership enquiries.", default: "info@kaajva.in" },
+      { key: "office_address", label: "Office address", type: "textarea", help: "Shown in the website footer, contact page, apps and emails.", default: "Ghogomali, Siliguri, West Bengal, India 734006" },
     ],
   },
   {
@@ -100,6 +102,37 @@ export async function getSetting(key: string): Promise<string | null> {
   const value = row?.value ?? SETTING_FIELDS.get(key)?.default ?? null;
   cache.set(key, { value, at: Date.now() });
   return value;
+}
+
+/**
+ * The value the admin saved, ignoring the built-in default. For settings where an environment variable
+ * should win until the team fills the field in (the reply-to address of emails, for one).
+ */
+export async function getSavedSetting(key: string): Promise<string | null> {
+  const cacheKey = `saved:${key}`;
+  const hit = cache.get(cacheKey);
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
+  const row = await prisma.setting.findUnique({ where: { key } });
+  const value = row?.value?.trim() || null;
+  cache.set(cacheKey, { value, at: Date.now() });
+  return value;
+}
+
+export interface ContactDetails {
+  siteName: string;
+  supportEmail: string | null;
+  supportPhone: string | null;
+  supportHours: string | null;
+  infoEmail: string | null;
+  officeAddress: string | null;
+}
+
+/** Contact details from Settings > General, with the built-in defaults for any that were never saved. */
+export async function getContactDetails(): Promise<ContactDetails> {
+  const [siteName, supportEmail, supportPhone, supportHours, infoEmail, officeAddress] = await Promise.all(
+    ["site_name", "support_email", "support_phone", "support_hours", "info_email", "office_address"].map((k) => getSetting(k).then((v) => v?.trim() || null)),
+  );
+  return { siteName: siteName || "KaajVa", supportEmail, supportPhone, supportHours, infoEmail, officeAddress };
 }
 
 /** A numeric setting, or the fallback when it is unset or not a number. */

@@ -4,7 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ChevronDown, ChevronRight, Clock, FileText, Headset, LifeBuoy, Loader2, Mail, Paperclip, Phone, Plus, Send, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Clock, FileText, Headset, LifeBuoy, Loader2, Mail, MapPin, Paperclip, Phone, Plus, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
@@ -151,6 +151,11 @@ function ContactPanel() {
           {config?.support_hours && (
             <p className="flex items-center gap-2 text-muted-foreground">
               <Clock className="size-4" /> {config.support_hours}
+            </p>
+          )}
+          {config?.office_address && (
+            <p className="flex items-start gap-2 whitespace-pre-line text-muted-foreground">
+              <MapPin className="mt-0.5 size-4 shrink-0" /> {config.office_address}
             </p>
           )}
           {!email && !phone && <p className="text-muted-foreground">Send a request above and the team will reply here.</p>}

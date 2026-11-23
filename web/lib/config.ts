@@ -43,7 +43,7 @@ const EXTRA_SOCIAL_LINKS = (process.env.NEXT_PUBLIC_SOCIAL_LINKS ?? "")
   .filter((s) => /^https?:\/\//.test(s));
 /** Every profile URL, official ones first, without duplicates. */
 export const SOCIAL_LINKS: string[] = [...new Set([...OFFICIAL_SOCIAL_LINKS.map((l) => l.url), ...EXTRA_SOCIAL_LINKS])];
-/** Office shown on the contact page and footer; set the env vars to override. */
+/** Fallback office address while the admin setting (Settings > General > Office address) cannot be loaded. */
 export const OFFICE_ADDRESS = process.env.NEXT_PUBLIC_OFFICE_ADDRESS || "Ghogomali, Siliguri, West Bengal, India 734006";
 export const OFFICE_REGION = process.env.NEXT_PUBLIC_OFFICE_REGION || "Siliguri, West Bengal";
 /**

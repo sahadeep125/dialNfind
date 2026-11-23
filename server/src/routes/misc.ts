@@ -48,7 +48,7 @@ miscRouter.post("/contact", limits.contact, optionalAuth, async (req, res) => {
   res.status(201).json({ ok: true, id: ticket.id, reference: ticketRef(ticket.id) });
 });
 
-const PUBLIC_SETTINGS = ["site_name", "support_email", "support_phone", "support_hours", "terms_url", "privacy_url"] as const;
+const PUBLIC_SETTINGS = ["site_name", "support_email", "support_phone", "support_hours", "info_email", "office_address", "terms_url", "privacy_url"] as const;
 
 /** GET /app-config — public settings the apps show (support contacts, legal links), edited from the admin console. */
 miscRouter.get("/app-config", async (_req, res) => {

@@ -73,7 +73,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         >
           Skip to content
         </a>
-        <JsonLd data={[organizationJsonLd({ email: config.support_email, phone: config.support_phone }), websiteJsonLd()]} />
+        <JsonLd data={[organizationJsonLd({ email: config.support_email, phone: config.support_phone, infoEmail: config.info_email, address: config.office_address }), websiteJsonLd()]} />
         <SessionProvider>
           <SiteHeader />
           <main id="main" tabIndex={-1} className="flex-1 outline-none">

@@ -260,6 +260,11 @@ export default function HelpScreen() {
               />
             ) : null}
           </View>
+          {config?.office_address ? (
+            <AppText variant="micro" tone="secondary" accessibilityLabel={`Office address: ${config.office_address}`}>
+              {`Office: ${config.office_address.replace(/\s*\n\s*/g, ", ")}`}
+            </AppText>
+          ) : null}
         </View>
       </ScrollView>
     </Screen>

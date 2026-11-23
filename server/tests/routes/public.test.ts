@@ -239,7 +239,14 @@ describe("misc routes", () => {
   });
   it("serves app config, plans and stats", async () => {
     await prisma.setting.create({ data: { key: "support_phone", value: "+911234" } });
-    expect((await api().get("/api/v1/app-config")).body.config).toMatchObject({ site_name: "KaajVa", support_phone: "+911234", terms_url: null, min_review_length: 10 });
+    expect((await api().get("/api/v1/app-config")).body.config).toMatchObject({
+      site_name: "KaajVa",
+      support_phone: "+911234",
+      info_email: "info@kaajva.in",
+      office_address: "Ghogomali, Siliguri, West Bengal, India 734006",
+      terms_url: null,
+      min_review_length: 10,
+    });
     await seedPlans();
     expect((await api().get("/api/v1/plans")).body.plans.map((p: { code: string }) => p.code)).toEqual(["free", "pro", "business"]);
     await createCategory();

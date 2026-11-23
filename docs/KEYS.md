@@ -249,7 +249,7 @@ Sign in as the super admin and fill in **Settings**:
 | Google Search Console token | [search.google.com/search-console](https://search.google.com/search-console) → add property → HTML tag method → copy the `content` value | Web `GOOGLE_SITE_VERIFICATION` |
 | Hosted map tiles | OpenStreetMap's own tile servers are not for heavy traffic. Sign up with a tile service (MapTiler, Stadia Maps, Thunderforest) and copy its tile URL and attribution. | `NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_ATTRIBUTION` (Web); `VITE_MAP_TILE_URL` and `VITE_MAP_ATTRIBUTION` (Provider and Admin) |
 | Store links | After both apps are live | Web `NEXT_PUBLIC_APP_STORE_URL`, `NEXT_PUBLIC_PLAY_STORE_URL` |
-| Office address | Your office address | Web `NEXT_PUBLIC_OFFICE_ADDRESS`, `NEXT_PUBLIC_OFFICE_REGION` |
+| Office address | Your office address | Admin console, Settings > General > Office address (web `NEXT_PUBLIC_OFFICE_ADDRESS` is only the fallback while the API is unreachable) |
 
 ## Keep secret
 

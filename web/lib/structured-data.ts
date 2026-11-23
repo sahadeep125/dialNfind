@@ -10,9 +10,10 @@ export const absoluteUrl = (path: string) => (/^https?:\/\//.test(path) ? path :
  * The business itself, with its name, address and phone (NAP) so search engines can tie the site to its
  * Google Business Profile. `contact` is what the admin console sets; the fixed KaajVa details fill any gap.
  */
-export function organizationJsonLd(contact: { email: string | null; phone: string | null }): Thing {
+export function organizationJsonLd(contact: { email: string | null; phone: string | null; infoEmail?: string | null; address?: string | null }): Thing {
   const supportEmail = contact.email || BUSINESS.supportEmail;
   const phone = contact.phone || BUSINESS.phone;
+  const infoEmail = contact.infoEmail || BUSINESS.infoEmail;
   return {
     "@context": "https://schema.org",
     "@type": ["Organization", "LocalBusiness"],
@@ -25,17 +26,33 @@ export function organizationJsonLd(contact: { email: string | null; phone: strin
     // Google wants a square raster logo (at least 112px), so the 512px app icon.
     logo: absoluteUrl("/brand/icon-512.png"),
     image: absoluteUrl("/opengraph-image"),
-    email: BUSINESS.infoEmail,
+    email: infoEmail,
     telephone: phone,
-    address: { "@type": "PostalAddress", ...BUSINESS.address },
+    address: postalAddress(contact.address),
     areaServed: BUSINESS.areaServed.map((name) => ({ "@type": name === "West Bengal" ? "State" : "City", name })),
     knowsLanguage: ["en", "hi", "bn"],
     contactPoint: [
       { "@type": "ContactPoint", contactType: "customer support", email: supportEmail, telephone: phone, areaServed: "IN", availableLanguage: ["English", "Hindi", "Bengali"] },
-      { "@type": "ContactPoint", contactType: "sales", email: BUSINESS.infoEmail, telephone: phone, areaServed: "IN", availableLanguage: ["English", "Hindi", "Bengali"] },
+      { "@type": "ContactPoint", contactType: "sales", email: infoEmail, telephone: phone, areaServed: "IN", availableLanguage: ["English", "Hindi", "Bengali"] },
     ],
     sameAs: SOCIAL_LINKS,
   };
+}
+
+const flat = (s: string) => s.replace(/\s*\n\s*/g, ", ").replace(/\s+/g, " ").trim().toLowerCase();
+const DEFAULT_ADDRESS = (() => {
+  const { streetAddress, addressLocality, addressRegion, postalCode } = BUSINESS.address;
+  return `${streetAddress}, ${addressLocality}, ${addressRegion}, India ${postalCode}`;
+})();
+
+/**
+ * The structured KaajVa address while the admin's office address is the default one; once the team changes it,
+ * the whole text goes in streetAddress (schema.org accepts that) with the postcode picked out when present.
+ */
+function postalAddress(address: string | null | undefined): Thing {
+  if (!address || flat(address) === flat(DEFAULT_ADDRESS)) return { "@type": "PostalAddress", ...BUSINESS.address };
+  const postalCode = address.match(/\b\d{6}\b/)?.[0];
+  return { "@type": "PostalAddress", streetAddress: address.replace(/\s*\n\s*/g, ", ").trim(), ...(postalCode ? { postalCode } : {}), addressCountry: "IN" };
 }
 
 export function websiteJsonLd(): Thing {
