@@ -7,7 +7,7 @@ import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatRelative } from "@/lib/format";
 import { VERIFICATION_LABEL } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
-import { EmptyState, PageSkeleton } from "@/components/common";
+import { EmptyState, Pager, PageSkeleton, useClientPager } from "@/components/common";
 import { StatusBadge } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,7 @@ export function VerificationsPage() {
   const [status, setStatus] = useState("pending");
   const [rejecting, setRejecting] = useState<Verification | null>(null);
   const { data } = useQuery({ queryKey: ["verifications", status], queryFn: () => api<{ verifications: Verification[] }>(`/admin/verifications?status=${status}`) });
+  const { rows, pager } = useClientPager(data?.verifications, status);
   const decide = useMutation({
     mutationFn: ({ id, decision, notes }: { id: number; decision: "approved" | "rejected"; notes?: string }) => api(`/admin/verifications/${id}`, { method: "PATCH", json: { decision, notes } }),
     onSuccess: (_r, v) => {
@@ -61,7 +62,7 @@ export function VerificationsPage() {
         <EmptyState icon={BadgeCheck} title={status === "pending" ? "All documents checked" : "Nothing here yet"} text="New uploads from the provider app appear here." />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.verifications.map((v) => {
+          {rows.map((v) => {
             const isPdf = v.documentUrl && /\.pdf($|\?)/i.test(v.documentUrl);
             return (
               <div key={v.id} className="flex flex-col overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-soft)]">
@@ -105,6 +106,7 @@ export function VerificationsPage() {
           })}
         </div>
       )}
+      {data && <Pager {...pager} />}
       {rejecting && <RejectDialog v={rejecting} busy={decide.isPending} onClose={() => setRejecting(null)} onReject={(notes) => decide.mutate({ id: rejecting.id, decision: "rejected", notes })} />}
     </>
   );

@@ -4,7 +4,7 @@ import { csvLine, parseCsv } from "../../../src/lib/csv.js";
 import { financialYear, splitGst, stateCodeFor, stateName, GSTIN_PATTERN } from "../../../src/lib/gst.js";
 import { DAY_NAMES, formatHours, isOpenNow, localNow, localToday, todayHoursLabel, type HoursRow } from "../../../src/lib/hours.js";
 import { entitlementsFor, planCodeForEntitlements, planTier } from "../../../src/lib/plans.js";
-import { pageMeta, paginationSchema } from "../../../src/lib/pagination.js";
+import { adminPaginationSchema, pageMeta, paginationSchema } from "../../../src/lib/pagination.js";
 import { num, toPlain } from "../../../src/lib/serialize.js";
 import { idParam, parse } from "../../../src/lib/validate.js";
 import { z } from "zod";
@@ -125,6 +125,12 @@ describe("pagination", () => {
     expect(paginationSchema.parse({})).toEqual({ page: 1, pageSize: 12 });
     expect(pageMeta(2, 10, 0)).toEqual({ page: 2, pageSize: 10, total: 0, totalPages: 1 });
     expect(pageMeta(1, 10, 21).totalPages).toBe(3);
+  });
+
+  it("lets admin listings show up to 100 rows while public lists stay at 50", () => {
+    expect(adminPaginationSchema.parse({ pageSize: "100" }).pageSize).toBe(100);
+    expect(adminPaginationSchema.safeParse({ pageSize: "101" }).success).toBe(false);
+    expect(paginationSchema.safeParse({ pageSize: "100" }).success).toBe(false);
   });
 });
 

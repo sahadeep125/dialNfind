@@ -11,7 +11,7 @@ import { formatDate, formatPrice } from "@/lib/format";
 import { GATEWAY_LABEL, SOURCE_LABEL, type Badge, type Invoice, type Paged, type PaymentGateway, type Plan, type SubscriptionSource } from "@/lib/types";
 import { BillingOverviewTab, InvoicesTab, WebhooksTab } from "@/pages/billing-tabs";
 import { PageHeader } from "@/components/page-header";
-import { EmptyState, Pager, PageSkeleton } from "@/components/common";
+import { DEFAULT_PAGE_SIZE, EmptyState, Pager, PageSkeleton } from "@/components/common";
 import { ConfirmDialog, EmptyRow, FilterSelect, StatCard, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
 import { ExportButton } from "@/components/bulk";
 import { ProviderPicker } from "@/components/provider-picker";
@@ -387,11 +387,11 @@ interface Sub {
 
 function SubscribersTab() {
   const qc = useQueryClient();
-  const [f, setF] = useState({ status: "active", source: "", page: 1 });
+  const [f, setF] = useState({ status: "active", source: "", page: 1, pageSize: Number(DEFAULT_PAGE_SIZE) });
   const { data, isLoading } = useQuery({
     queryKey: ["subscriptions", f],
     queryFn: () =>
-      api<{ subscriptions: Sub[] } & Paged>(`/admin/subscriptions?page=${f.page}&pageSize=20${f.status ? `&status=${f.status}` : ""}${f.source ? `&source=${f.source}` : ""}`),
+      api<{ subscriptions: Sub[] } & Paged>(`/admin/subscriptions?page=${f.page}&pageSize=${f.pageSize}${f.status ? `&status=${f.status}` : ""}${f.source ? `&source=${f.source}` : ""}`),
   });
   const cancel = useMutation({
     mutationFn: (id: number) => api(`/admin/subscriptions/${id}`, { method: "PATCH", json: { status: "cancelled", autoRenew: false } }),
@@ -485,7 +485,7 @@ function SubscribersTab() {
           ))}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(page) => setF({ ...f, page })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(page) => setF({ ...f, page })} pageSize={f.pageSize} onPageSize={(pageSize) => setF({ ...f, pageSize, page: 1 })} />}
     </>
   );
 }
@@ -509,7 +509,7 @@ const TXN_TYPES: Record<string, string> = { subscription: "Plan", lead_fee: "Lea
 
 function PaymentsTab() {
   const qc = useQueryClient();
-  const [f, setF] = useState({ status: "", type: "", gateway: "", page: 1 });
+  const [f, setF] = useState({ status: "", type: "", gateway: "", page: 1, pageSize: Number(DEFAULT_PAGE_SIZE) });
   const [recording, setRecording] = useState(false);
   const issue = useMutation({
     mutationFn: (id: number) => api(`/admin/transactions/${id}/invoice`, { method: "POST" }),
@@ -533,7 +533,7 @@ function PaymentsTab() {
   });
   const qs = new URLSearchParams({
     page: String(f.page),
-    pageSize: "20",
+    pageSize: String(f.pageSize),
     ...(f.status ? { status: f.status } : {}),
     ...(f.type ? { type: f.type } : {}),
     ...(f.gateway ? { gateway: f.gateway } : {}),
@@ -672,7 +672,7 @@ function PaymentsTab() {
           ))}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(page) => setF({ ...f, page })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(page) => setF({ ...f, page })} pageSize={f.pageSize} onPageSize={(pageSize) => setF({ ...f, pageSize, page: 1 })} />}
     </>
   );
 }

@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, notFound } from "../../lib/errors.js";
-import { pageMeta, paginationSchema } from "../../lib/pagination.js";
+import { adminPaginationSchema, pageMeta } from "../../lib/pagination.js";
 import { num } from "../../lib/serialize.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
@@ -30,7 +30,7 @@ const DAY = 24 * 60 * 60 * 1000;
 
 // Leads ------------------------------------------------------------------------------------------
 
-export const leadsQuery = paginationSchema.extend({
+export const leadsQuery = adminPaginationSchema.extend({
   channel: z.enum(["call", "whatsapp"]).optional(),
   providerId: z.coerce.number().int().positive().optional(),
   days: z.coerce.number().int().min(1).max(365).optional(),
@@ -112,7 +112,7 @@ adminRecordsRouter.patch("/leads/:id/dispute", async (req, res) => {
 
 // Reviews ----------------------------------------------------------------------------------------
 
-export const reviewsQuery = paginationSchema.extend({
+export const reviewsQuery = adminPaginationSchema.extend({
   status: z.enum(["pending", "published", "flagged", "removed"]).optional(),
   rating: z.coerce.number().int().min(1).max(5).optional(),
   q: z.string().trim().max(100).optional(),
@@ -193,7 +193,7 @@ adminRecordsRouter.post("/reviews/bulk", async (req, res) => {
 
 // Payments ---------------------------------------------------------------------------------------
 
-export const transactionsQuery = paginationSchema.extend({
+export const transactionsQuery = adminPaginationSchema.extend({
   status: z.enum(["pending", "success", "failed", "refunded"]).optional(),
   type: z.enum(["subscription", "lead_fee", "sponsored_ad"]).optional(),
   gateway: z.enum(["manual", "razorpay", "app_store", "play_store"]).optional(),
@@ -283,7 +283,7 @@ adminRecordsRouter.patch("/transactions/:id", async (req, res) => {
 
 // Subscriptions ----------------------------------------------------------------------------------
 
-export const subscriptionsQuery = paginationSchema.extend({
+export const subscriptionsQuery = adminPaginationSchema.extend({
   status: z.enum(["pending", "active", "past_due", "expired", "cancelled"]).optional(),
   planId: z.coerce.number().int().positive().optional(),
   source: z.enum(["admin", "razorpay", "app_store", "play_store"]).optional(),

@@ -8,7 +8,7 @@ import { formatDate, formatRelative, initials } from "@/lib/format";
 import type { Paged } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
-import { Pager } from "@/components/common";
+import { DEFAULT_PAGE_SIZE, Pager, pageSizeOf } from "@/components/common";
 import { ConfirmDialog, EmptyRow, FilterSelect, SearchInput, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
@@ -33,8 +33,8 @@ const ROLE_LABEL: Record<UserRow["role"], string> = { super_admin: "Super admin"
 export function UsersPage() {
   const qc = useQueryClient();
   const { can } = useAuth();
-  const [f, setF] = useUrlState({ q: "", role: "", status: "", page: "1" });
-  const params = new URLSearchParams({ pageSize: "20", page: f.page });
+  const [f, setF] = useUrlState({ q: "", role: "", status: "", page: "1", pageSize: DEFAULT_PAGE_SIZE });
+  const params = new URLSearchParams({ pageSize: String(pageSizeOf(f.pageSize)), page: f.page });
   for (const k of ["q", "role", "status"] as const) if (f[k]) params.set(k, f[k]);
   const { data, isLoading } = useQuery({ queryKey: ["admin-users", params.toString()], queryFn: () => api<{ users: UserRow[] } & Paged>(`/admin/users?${params}`) });
   const [pending, setPending] = useState<{ user: UserRow; status: UserRow["status"] } | null>(null);
@@ -188,7 +188,7 @@ export function UsersPage() {
           })}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
       {pending && copy && (
         <ConfirmDialog
           open

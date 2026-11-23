@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatPrice, formatRelative } from "@/lib/format";
 import { GATEWAY_LABEL, SOURCE_LABEL, type Invoice, type Paged, type PaymentGateway, type SubscriptionSource } from "@/lib/types";
-import { Pager, PageSkeleton } from "@/components/common";
+import { DEFAULT_PAGE_SIZE, Pager, PageSkeleton } from "@/components/common";
 import { ConfirmDialog, EmptyRow, FilterSelect, SearchInput, StatCard, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar } from "@/components/admin-ui";
 import { BarList } from "@/components/charts";
 import { ExportButton } from "@/components/bulk";
@@ -91,10 +91,10 @@ type AdminInvoice = Invoice & { provider: { id: number; businessName: string }; 
 
 export function InvoicesTab() {
   const qc = useQueryClient();
-  const [f, setF] = useState({ q: "", status: "", from: "", to: "", page: 1 });
+  const [f, setF] = useState({ q: "", status: "", from: "", to: "", page: 1, pageSize: Number(DEFAULT_PAGE_SIZE) });
   const [voiding, setVoiding] = useState<AdminInvoice | null>(null);
   const [reason, setReason] = useState("");
-  const qs = new URLSearchParams(Object.entries({ ...f, page: String(f.page), pageSize: "20" }).filter(([, v]) => v));
+  const qs = new URLSearchParams(Object.entries({ ...f, page: String(f.page), pageSize: String(f.pageSize) }).filter(([, v]) => v));
   const { data, isLoading } = useQuery({
     queryKey: ["invoices", qs.toString()],
     queryFn: () => api<{ invoices: AdminInvoice[]; totals: { total: number; taxable: number; tax: number } } & Paged>(`/admin/invoices?${qs}`),
@@ -195,7 +195,7 @@ export function InvoicesTab() {
           ))}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(page) => setF({ ...f, page })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(page) => setF({ ...f, page })} pageSize={f.pageSize} onPageSize={(pageSize) => setF({ ...f, pageSize, page: 1 })} />}
       {voiding && (
         <ConfirmDialog
           open
@@ -234,9 +234,9 @@ interface WebhookEvent {
 /** Every Razorpay and RevenueCat event received, so a missed or failed payment update can be found and replayed. */
 export function WebhooksTab() {
   const qc = useQueryClient();
-  const [f, setF] = useState({ source: "", status: "", page: 1 });
+  const [f, setF] = useState({ source: "", status: "", page: 1, pageSize: Number(DEFAULT_PAGE_SIZE) });
   const [open, setOpen] = useState<number | null>(null);
-  const qs = new URLSearchParams(Object.entries({ ...f, page: String(f.page), pageSize: "25" }).filter(([, v]) => v));
+  const qs = new URLSearchParams(Object.entries({ ...f, page: String(f.page), pageSize: String(f.pageSize) }).filter(([, v]) => v));
   const { data, isLoading } = useQuery({ queryKey: ["webhooks", qs.toString()], queryFn: () => api<{ events: WebhookEvent[] } & Paged>(`/admin/webhooks?${qs}`) });
   const reprocess = useMutation({
     mutationFn: (id: number) => api(`/admin/webhooks/${id}/reprocess`, { method: "POST" }),
@@ -328,7 +328,7 @@ export function WebhooksTab() {
           ))}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(page) => setF({ ...f, page })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(page) => setF({ ...f, page })} pageSize={f.pageSize} onPageSize={(pageSize) => setF({ ...f, pageSize, page: 1 })} />}
       <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
         <Webhook className="size-3.5" /> Failed events are retried by the sender for a while; Retry runs one again now.
         <FileText className="ml-2 size-3.5" /> Click an event name to see what was received.

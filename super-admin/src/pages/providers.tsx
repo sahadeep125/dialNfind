@@ -8,7 +8,7 @@ import { WEB_URL } from "@/lib/config";
 import { formatDate, formatPhone, formatPrice, formatRelative } from "@/lib/format";
 import { type Badge as BadgeT, type Invoice, type Paged, type Plan, type ProviderRow, SOURCE_LABEL, type SubscriptionSource, VERIFICATION_LABEL } from "@/lib/types";
 import { PageHeader, Panel } from "@/components/page-header";
-import { Pager, PageSkeleton } from "@/components/common";
+import { DEFAULT_PAGE_SIZE, Pager, pageSizeOf, PageSkeleton } from "@/components/common";
 import { ConfirmDialog, EmptyRow, Facts, FilterSelect, SearchInput, StatCard, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
@@ -30,8 +30,8 @@ const STATUS_OPTIONS = [
 ];
 
 export function ProvidersPage() {
-  const [f, setF] = useUrlState({ q: "", status: "", verification: "", claimed: "", seo: "", sort: "", page: "1" });
-  const qs = new URLSearchParams({ ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)), pageSize: "20" });
+  const [f, setF] = useUrlState({ q: "", status: "", verification: "", claimed: "", seo: "", sort: "", page: "1", pageSize: DEFAULT_PAGE_SIZE });
+  const qs = new URLSearchParams({ ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)), pageSize: String(pageSizeOf(f.pageSize)) });
   const { data, isLoading } = useQuery({ queryKey: ["admin-providers", qs.toString()], queryFn: () => api<{ providers: ProviderRow[] } & Paged>(`/admin/providers?${qs}`) });
   const selection = useSelection(data?.providers.map((p) => p.id) ?? []);
   const [dialog, setDialog] = useState<"add" | "import" | null>(null);
@@ -194,7 +194,7 @@ export function ProvidersPage() {
           ))}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
       {!f.status && !f.verification && f.claimed !== "no" && <ProviderSignups key={f.q} q={f.q} />}
     </>
   );
@@ -243,7 +243,8 @@ interface SignupRow {
 /** Provider accounts that have not created a listing yet, including ones still to confirm their email. */
 function ProviderSignups({ q }: { q: string }) {
   const [page, setPage] = useState(1);
-  const qs = new URLSearchParams({ ...(q ? { q } : {}), page: String(page), pageSize: "20" });
+  const [pageSize, setPageSize] = useState(Number(DEFAULT_PAGE_SIZE));
+  const qs = new URLSearchParams({ ...(q ? { q } : {}), page: String(page), pageSize: String(pageSize) });
   const { data, isLoading } = useQuery({ queryKey: ["admin-provider-signups", qs.toString()], queryFn: () => api<{ users: SignupRow[] } & Paged>(`/admin/provider-signups?${qs}`) });
   if (!isLoading && !data?.total) return null;
 
@@ -288,7 +289,7 @@ function ProviderSignups({ q }: { q: string }) {
           ))}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={setPage} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={setPage} pageSize={pageSize} onPageSize={(n) => { setPageSize(n); setPage(1); }} />}
     </Panel>
   );
 }
