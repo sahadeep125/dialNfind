@@ -268,6 +268,25 @@ describe("admin operations", () => {
     expect(analytics.body.topProviders[0]).toMatchObject({ id: Number(provider.id), leads: 2 });
     expect((await c.get("/api/v1/admin/analytics")).body.days).toBe(30);
     expect((await c.get("/api/v1/admin/analytics").query({ days: 8 })).status).toBe(400);
+    const today = await c.get("/api/v1/admin/analytics").query({ days: 1 });
+    expect(today.body.series.leads).toHaveLength(1);
+    expect(today.body.totals).toMatchObject({ leads: 2, revenue: 599 });
+
+    const leads = await c.get("/api/v1/admin/analytics/details").query({ metric: "leads", days: 1 });
+    expect(leads.body).toMatchObject({ metric: "leads", days: 1, total: 2, previous: 0 });
+    expect(leads.body.breakdowns[0]).toEqual({ title: "By channel", items: expect.arrayContaining([{ label: "Phone call", value: 1 }, { label: "WhatsApp", value: 1 }]) });
+    expect(leads.body.recent).toHaveLength(2);
+    expect(leads.body.recent[0].to).toBe(`/providers/${provider.id}`);
+    const revenue = await c.get("/api/v1/admin/analytics/details").query({ metric: "revenue", days: 7 });
+    expect(revenue.body).toMatchObject({ total: 599, previous: 0 });
+    expect(revenue.body.breakdowns[0].items).toEqual([{ label: "Plans", value: 599 }]);
+    expect(revenue.body.recent[0]).toMatchObject({ value: 599 });
+    for (const metric of ["signups", "providers", "reviews", "tickets"]) {
+      const r = await c.get("/api/v1/admin/analytics/details").query({ metric, days: 30 });
+      expect(r.status).toBe(200);
+      expect(r.body.total).toBeGreaterThan(0);
+    }
+    expect((await c.get("/api/v1/admin/analytics/details").query({ metric: "nope" })).status).toBe(400);
     await prisma.transaction.deleteMany();
     expect((await (await authed(await createStaff())).get("/api/v1/admin/overview")).body.revenue30).toBe(0);
   });
