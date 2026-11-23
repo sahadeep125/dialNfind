@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatRelative, initials } from "@/lib/format";
@@ -12,6 +12,7 @@ import { Pager } from "@/components/common";
 import { ConfirmDialog, EmptyRow, FilterSelect, SearchInput, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface UserRow {
@@ -30,10 +31,111 @@ interface UserRow {
 
 const ROLE_LABEL: Record<UserRow["role"], string> = { super_admin: "Super admin", admin: "Team", provider: "Provider", customer: "Customer" };
 
+interface DeletedUserRow {
+  id: number;
+  name: string;
+  email: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+  deletedAt: string;
+  deletedBy: { type: "admin"; id: number; name: string } | { type: "self" };
+  _count: { leads: number; tickets: number };
+}
+
+type UsersFilters = { tab: string; q: string; role: string; status: string; page: string };
+
 export function UsersPage() {
+  const [f, setF] = useUrlState<UsersFilters>({ tab: "accounts", q: "", role: "", status: "", page: "1" });
+  const { tab, ...filters } = f;
+  return (
+    <>
+      <PageHeader
+        title="Users"
+        description="Customers and provider accounts. Team members are managed from Team."
+        actions={tab === "accounts" && <ExportButton entity="users" filters={filters} />}
+      />
+      <Tabs value={tab} onValueChange={(t) => setF({ tab: t, q: "", role: "", status: "", page: "1" })}>
+        <TabsList className="mb-2">
+          <TabsTrigger value="accounts">Accounts</TabsTrigger>
+          <TabsTrigger value="deleted">Deleted users</TabsTrigger>
+        </TabsList>
+        <TabsContent value="accounts">
+          <AccountsTab f={f} setF={setF} />
+        </TabsContent>
+        <TabsContent value="deleted">
+          <DeletedUsersTab f={f} setF={setF} />
+        </TabsContent>
+      </Tabs>
+    </>
+  );
+}
+
+/**
+ * Accounts that were deleted, by the person in their account settings or by a team member. The rows are
+ * anonymised when deleted, so only the account number, dates and the leads and tickets kept for records remain.
+ */
+function DeletedUsersTab({ f, setF }: { f: UsersFilters; setF: (p: Partial<UsersFilters>) => void }) {
+  const params = new URLSearchParams({ pageSize: "20", page: f.page });
+  if (f.q) params.set("q", f.q);
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-users-deleted", params.toString()],
+    queryFn: () => api<{ users: DeletedUserRow[] } & Paged>(`/admin/users/deleted?${params}`),
+  });
+  return (
+    <>
+      <Toolbar>
+        <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search by account number" />
+        {data && <span className="text-sm text-muted-foreground sm:ml-auto">{data.total.toLocaleString("en-IN")} deleted accounts</span>}
+      </Toolbar>
+      <p className="mb-3 text-sm text-muted-foreground">Names, emails, phone numbers, reviews and favourites are erased when an account is deleted. Contacts and support tickets are kept for records.</p>
+      <Table>
+        <thead>
+          <tr>
+            <Th>Account</Th>
+            <Th>Deleted</Th>
+            <Th>Deleted by</Th>
+            <Th>Kept records</Th>
+            <Th>Last sign in</Th>
+            <Th>Joined</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {isLoading && <TableSkeleton cols={6} />}
+          {data?.users.length === 0 && <EmptyRow cols={6} text={f.q ? "No deleted account has that number." : "No accounts have been deleted."} />}
+          {data?.users.map((u) => (
+            <tr key={u.id} className="hover:bg-muted/40">
+              <Td>
+                <Link to={`/users/${u.id}`} className="flex items-center gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <UserX className="size-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium hover:text-primary">{u.name}</span>
+                    <span className="block text-xs text-muted-foreground">Account #{u.id}</span>
+                  </span>
+                </Link>
+              </Td>
+              <Td className="whitespace-nowrap text-muted-foreground">
+                <span title={formatDate(u.deletedAt)}>{formatRelative(u.deletedAt)}</span>
+              </Td>
+              <Td className="whitespace-nowrap">{u.deletedBy.type === "admin" ? u.deletedBy.name : <span className="text-muted-foreground">The person themselves</span>}</Td>
+              <Td className="whitespace-nowrap text-muted-foreground">
+                {u._count.leads} contacts, {u._count.tickets} tickets
+              </Td>
+              <Td className="whitespace-nowrap text-muted-foreground">{u.lastLoginAt ? formatRelative(u.lastLoginAt) : "Never"}</Td>
+              <Td className="whitespace-nowrap text-muted-foreground">{formatDate(u.createdAt)}</Td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+    </>
+  );
+}
+
+function AccountsTab({ f, setF }: { f: UsersFilters; setF: (p: Partial<UsersFilters>) => void }) {
   const qc = useQueryClient();
   const { can } = useAuth();
-  const [f, setF] = useUrlState({ q: "", role: "", status: "", page: "1" });
   const params = new URLSearchParams({ pageSize: "20", page: f.page });
   for (const k of ["q", "role", "status"] as const) if (f[k]) params.set(k, f[k]);
   const { data, isLoading } = useQuery({ queryKey: ["admin-users", params.toString()], queryFn: () => api<{ users: UserRow[] } & Paged>(`/admin/users?${params}`) });
@@ -56,6 +158,7 @@ export function UsersPage() {
       toast.success(v.status === "active" ? "Account reactivated" : v.status === "suspended" ? "Account suspended" : "Account deleted");
       setPending(null);
       void qc.invalidateQueries({ queryKey: ["admin-users"] });
+      if (v.status === "deleted") void qc.invalidateQueries({ queryKey: ["admin-users-deleted"] });
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
@@ -72,7 +175,6 @@ export function UsersPage() {
 
   return (
     <>
-      <PageHeader title="Users" description="Customers and provider accounts. Team members are managed from Team." actions={<ExportButton entity="users" filters={f} />} />
       <Toolbar>
         <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search name, email or phone" />
         <FilterSelect
@@ -94,7 +196,6 @@ export function UsersPage() {
           options={[
             { value: "active", label: "Active" },
             { value: "suspended", label: "Suspended" },
-            { value: "deleted", label: "Deleted" },
           ]}
         />
         {data && <span className="text-sm text-muted-foreground sm:ml-auto">{data.total.toLocaleString("en-IN")} accounts</span>}

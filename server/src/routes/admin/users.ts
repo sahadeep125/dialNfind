@@ -24,7 +24,8 @@ export const usersQuery = paginationSchema.extend({
 export function userWhere(q: z.infer<typeof usersQuery>): Prisma.UserWhereInput {
   return {
     ...(q.role ? { role: q.role } : {}),
-    ...(q.status ? { status: q.status } : {}),
+    // Deleted (anonymised) accounts have their own list, so they only show here when asked for by status.
+    status: q.status ?? { not: "deleted" },
     ...(q.q
       ? { OR: [{ name: { contains: q.q, mode: "insensitive" as const } }, { email: { contains: q.q, mode: "insensitive" as const } }, { phone: { contains: q.q } }] }
       : {}),
@@ -58,6 +59,55 @@ adminUsersRouter.get("/users", async (req, res) => {
     prisma.user.count({ where }),
   ]);
   res.json({ users, ...pageMeta(q.page, q.pageSize, total) });
+});
+
+/**
+ * GET /admin/users/deleted — accounts that were deleted, newest first. The rows are anonymised, so this shows
+ * when each was deleted and by whom: a team member (from the activity log) or the person themselves.
+ */
+adminUsersRouter.get("/users/deleted", async (req, res) => {
+  const q = parse(paginationSchema.extend({ q: z.string().trim().optional() }), req.query);
+  const id = q.q?.replace(/^#/, "");
+  const where: Prisma.UserWhereInput = { status: "deleted", ...(id ? (/^\d{1,18}$/.test(id) ? { id: BigInt(id) } : { id: -1n }) : {}) };
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      skip: (q.page - 1) * q.pageSize,
+      take: q.pageSize,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+        lastLoginAt: true,
+        _count: { select: { leads: true, tickets: true } },
+      },
+    }),
+    prisma.user.count({ where }),
+  ]);
+  const logs = users.length
+    ? await prisma.adminActivityLog.findMany({
+        where: { action: "user.anonymise", targetType: "user", targetId: { in: users.map((u) => u.id) } },
+        orderBy: { createdAt: "desc" },
+        select: { targetId: true, createdAt: true, admin: { select: { id: true, name: true } } },
+      })
+    : [];
+  const byUser = new Map<bigint, (typeof logs)[number]>();
+  for (const l of logs) if (l.targetId !== null && !byUser.has(l.targetId)) byUser.set(l.targetId, l);
+  res.json({
+    users: users.map(({ updatedAt, ...u }) => {
+      const log = byUser.get(u.id);
+      return {
+        ...u,
+        // Anonymising is the last write to the row, so updatedAt is when it happened for self-service deletions.
+        deletedAt: log?.createdAt ?? updatedAt,
+        deletedBy: log ? { type: "admin" as const, id: log.admin.id, name: log.admin.name } : { type: "self" as const },
+      };
+    }),
+    ...pageMeta(q.page, q.pageSize, total),
+  });
 });
 
 /** Loads a customer or provider account the admin may change, refusing their own account and team members. */
