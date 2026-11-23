@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { temporaryPassword } from "../../lib/passwords.js";
 import bcrypt from "bcryptjs";
 import { Router } from "express";
 import { z } from "zod";
@@ -43,11 +43,6 @@ adminTeamRouter.get("/team", async (_req, res) => {
   });
   res.json({ members });
 });
-
-function temporaryPassword() {
-  // 12 characters, always with a letter and a digit so it passes the password rule.
-  return `${randomBytes(6).toString("base64url").replace(/[-_]/g, "x").slice(0, 8)}a${Math.floor(100 + Math.random() * 900)}`;
-}
 
 const inviteSchema = z.object({ name: personName, email, roleId: z.number().int().positive() });
 
