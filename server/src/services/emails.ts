@@ -156,3 +156,37 @@ export function sendStaffDigest(to: { email: string; name: string }, items: stri
     action: { label: "Open the admin panel", url: adminUrl },
   });
 }
+
+/**
+ * When the team claims a listing for its owner. A new account gets its sign-in email and generated
+ * password; an existing one is told the listing was added. Either way the listing details are included.
+ */
+export function sendListingClaimedForYou(
+  user: { email: string; name: string },
+  listing: { businessName: string; phone: string; addressLine: string | null; locality: string | null; city: string; state: string; pincode: string | null; slug: string; status: string },
+  password: string | null,
+) {
+  const address = [listing.addressLine, listing.locality, listing.city, listing.state, listing.pincode].filter(Boolean).join(", ");
+  return sendMail({
+    to: user.email,
+    subject: `${listing.businessName} is now yours on KaajVa`,
+    lines: [
+      `Hi ${firstName(user.name)},`,
+      `The KaajVa team checked your ownership documents and gave you ${listing.businessName}. You can now manage it from KaajVa for business.`,
+      ...(password
+        ? [
+            "We created an account for you. Sign in with:",
+            `Email: ${user.email}`,
+            `Password: ${password}`,
+            "Please change this password after you sign in, from Settings in the provider app.",
+          ]
+        : ["Sign in with your existing KaajVa account to manage it."]),
+      "Your listing:",
+      `Business: ${listing.businessName}`,
+      `Phone: ${listing.phone}`,
+      ...(address ? [`Address: ${address}`] : []),
+      ...(listing.status === "active" ? [`Public page: ${env.webUrl}/providers/${encodeURIComponent(listing.slug)}`] : []),
+    ],
+    action: { label: "Open the provider app", url: env.providerUrl },
+  });
+}
