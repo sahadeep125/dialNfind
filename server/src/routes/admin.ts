@@ -211,7 +211,9 @@ adminRouter.get("/activity-logs", async (req, res) => {
 
 adminRouter.get("/search-insights", async (req, res) => {
   const { days } = parse(z.object({ days: z.coerce.number().int().min(1).max(365).default(30) }), req.query);
-  const since = new Date(Date.now() - days * 864e5);
+  // Calendar days ending today, like /admin/analytics, so "Today" (days=1) starts at midnight.
+  const now = new Date();
+  const since = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - (days - 1) * 864e5);
   const [totals, topQueries, zeroResults, byCategory] = await Promise.all([
     prisma.searchQuery.aggregate({ where: { createdAt: { gte: since } }, _count: true, _avg: { resultsCount: true } }),
     prisma.$queryRaw<{ query: string; count: bigint; avg_results: number }[]>`

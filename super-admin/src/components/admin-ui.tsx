@@ -9,9 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-export function StatCard({ label, value, hint, icon: Icon, to, tone = "default" }: { label: string; value: React.ReactNode; hint?: React.ReactNode; icon?: React.ComponentType<{ className?: string }>; to?: string; tone?: "default" | "warning" | "success" }) {
+export function StatCard({ label, value, hint, icon: Icon, to, onClick, active, tone = "default" }: { label: string; value: React.ReactNode; hint?: React.ReactNode; icon?: React.ComponentType<{ className?: string }>; to?: string; onClick?: () => void; active?: boolean; tone?: "default" | "warning" | "success" }) {
   const body = (
-    <div className={cn("h-full rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)] transition-colors", to && "hover:border-primary/40")}>
+    <div className={cn("h-full rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)] transition-colors", (to || onClick) && "hover:border-primary/40", active && "border-primary/60")}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium text-muted-foreground">{label}</span>
         {Icon && (
@@ -24,6 +24,12 @@ export function StatCard({ label, value, hint, icon: Icon, to, tone = "default" 
       {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
     </div>
   );
+  if (onClick)
+    return (
+      <button type="button" onClick={onClick} className="block h-full w-full cursor-pointer rounded-2xl text-left focus-visible:outline-2 focus-visible:outline-primary">
+        {body}
+      </button>
+    );
   return to ? (
     <Link to={to} className="block">
       {body}
