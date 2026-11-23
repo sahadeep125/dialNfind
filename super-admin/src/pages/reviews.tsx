@@ -6,7 +6,7 @@ import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatRelative } from "@/lib/format";
 import type { Paged } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
-import { EmptyState, Pager, PageSkeleton, Stars } from "@/components/common";
+import { DEFAULT_PAGE_SIZE, EmptyState, Pager, pageSizeOf, PageSkeleton, Stars, useClientPager } from "@/components/common";
 import { FilterSelect, SearchInput, StatusBadge, Toolbar, useUrlState } from "@/components/admin-ui";
 import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ interface FlagRow {
 }
 
 export function ReviewsPage() {
-  const [f, setF] = useUrlState({ tab: "reviews", q: "", status: "", rating: "", page: "1", flagStatus: "open" });
+  const [f, setF] = useUrlState({ tab: "reviews", q: "", status: "", rating: "", page: "1", pageSize: DEFAULT_PAGE_SIZE, flagStatus: "open" });
   return (
     <>
       <PageHeader title="Reviews and reports" description="Moderate customer reviews and work through reports about reviews and listings." />
@@ -89,8 +89,8 @@ function useModerate() {
   });
 }
 
-function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page", string>; setF: (p: Partial<Record<"q" | "status" | "rating" | "page", string>>) => void }) {
-  const params = new URLSearchParams({ pageSize: "15", page: f.page });
+function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page" | "pageSize", string>; setF: (p: Partial<Record<"q" | "status" | "rating" | "page" | "pageSize", string>>) => void }) {
+  const params = new URLSearchParams({ pageSize: String(pageSizeOf(f.pageSize)), page: f.page });
   if (f.q) params.set("q", f.q);
   if (f.status) params.set("status", f.status);
   if (f.rating) params.set("rating", f.rating);
@@ -234,7 +234,7 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
           ))}
         </div>
       )}
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
     </>
   );
 }
@@ -242,6 +242,7 @@ function ReviewList({ f, setF }: { f: Record<"q" | "status" | "rating" | "page",
 function ReportList({ status, onStatus }: { status: string; onStatus: (s: string) => void }) {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["admin-flags", status], queryFn: () => api<{ flags: FlagRow[] }>(`/admin/flags?status=${status}`) });
+  const { rows, pager } = useClientPager(data?.flags, status);
   const moderate = useModerate();
   const close = useMutation({
     mutationFn: ({ id, status }: { id: number; status: "resolved" | "dismissed" }) => api(`/admin/flags/${id}`, { method: "PATCH", json: { status } }),
@@ -273,7 +274,7 @@ function ReportList({ status, onStatus }: { status: string; onStatus: (s: string
         <EmptyState icon={Flag} title={status === "open" ? "No open reports" : "Nothing here"} text={status === "open" ? "Reports from customers and providers land here." : "Try another status."} />
       ) : (
         <div className="space-y-3">
-          {data.flags.map((fl) => (
+          {rows.map((fl) => (
             <article key={fl.id} className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)]">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -330,6 +331,7 @@ function ReportList({ status, onStatus }: { status: string; onStatus: (s: string
           ))}
         </div>
       )}
+      {data && <Pager {...pager} />}
     </>
   );
 }

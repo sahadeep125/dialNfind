@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CloudOff, Loader2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -36,23 +38,105 @@ export function PageSkeleton() {
   );
 }
 
-export function Pager({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (p: number) => void }) {
-  if (totalPages <= 1) return null;
+/** The row counts the per-page dropdown offers on every admin listing. */
+export const PAGE_SIZES = [10, 25, 50, 100] as const;
+export const DEFAULT_PAGE_SIZE = "25";
+
+/** Reads a page size from URL or state, falling back to the default when it is missing or not one we offer. */
+export function pageSizeOf(value: string | number | undefined): number {
+  const n = Number(value);
+  return (PAGE_SIZES as readonly number[]).includes(n) ? n : Number(DEFAULT_PAGE_SIZE);
+}
+
+/**
+ * Previous/next paging under a table. Pass `pageSize` and `onPageSize` to also show a "Rows per page" dropdown;
+ * the caller should send the admin back to page 1 when it changes.
+ */
+export function Pager({
+  page,
+  totalPages,
+  onPage,
+  pageSize,
+  onPageSize,
+  total,
+}: {
+  page: number;
+  totalPages: number;
+  onPage: (p: number) => void;
+  pageSize?: number;
+  onPageSize?: (size: number) => void;
+  total?: number;
+}) {
+  const showSize = onPageSize !== undefined && pageSize !== undefined && (total === undefined || total > PAGE_SIZES[0]);
+  if (totalPages <= 1 && !showSize) return null;
   return (
-    <div className="mt-6 flex items-center justify-between">
-      <span className="text-sm text-muted-foreground">
-        Page {page} of {totalPages}
-      </span>
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-          <ChevronLeft /> Previous
-        </Button>
-        <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onPage(page + 1)}>
-          Next <ChevronRight />
-        </Button>
+    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+        <span>
+          Page {page} of {Math.max(1, totalPages)}
+          {total !== undefined && ` · ${total.toLocaleString("en-IN")} total`}
+        </span>
+        {showSize && (
+          <label className="flex items-center gap-2">
+            Rows per page
+            <Select value={String(pageSize)} onValueChange={(v) => onPageSize?.(Number(v))}>
+              <SelectTrigger size="sm" className="w-20" aria-label="Rows per page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZES.map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+        )}
       </div>
+      {totalPages > 1 && (
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+            <ChevronLeft /> Previous
+          </Button>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onPage(page + 1)}>
+            Next <ChevronRight />
+          </Button>
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * Pages a list the server returns in full (claims, verifications and similar), so it gets the same
+ * per-page dropdown as the server-paged tables. Returns the rows to show and the props for `<Pager>`.
+ */
+export function useClientPager<T>(items: T[] | undefined, resetKey?: unknown) {
+  const [pageSize, setPageSize] = useState(Number(DEFAULT_PAGE_SIZE));
+  const [rawPage, setPage] = useState(1);
+  const [key, setKey] = useState(resetKey);
+  if (key !== resetKey) {
+    setKey(resetKey);
+    setPage(1);
+  }
+  const all = items ?? [];
+  const totalPages = Math.max(1, Math.ceil(all.length / pageSize));
+  const page = Math.min(rawPage, totalPages);
+  return {
+    rows: all.slice((page - 1) * pageSize, page * pageSize),
+    pager: {
+      page,
+      totalPages,
+      total: all.length,
+      pageSize,
+      onPage: setPage,
+      onPageSize: (n: number) => {
+        setPageSize(n);
+        setPage(1);
+      },
+    },
+  };
 }
 
 /** Sticky footer with a save button, shown at the bottom of editor pages. */

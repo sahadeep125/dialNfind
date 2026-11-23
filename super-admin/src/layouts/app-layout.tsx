@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Award,
@@ -28,6 +28,7 @@ import { api } from "@/lib/api";
 import { useAuth, type Module } from "@/lib/auth";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { Logo } from "@/components/logo";
 import { NotificationBell } from "@/components/notifications";
 import { Button } from "@/components/ui/button";
@@ -204,9 +205,19 @@ export function AppLayout() {
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-          <Outlet />
+          <PageBoundary />
         </main>
       </div>
     </div>
+  );
+}
+
+/** Keeps a crash in one page inside the content area, and resets when the admin moves to another page. */
+function PageBoundary() {
+  const { pathname } = useLocation();
+  return (
+    <ErrorBoundary key={pathname}>
+      <Outlet />
+    </ErrorBoundary>
   );
 }

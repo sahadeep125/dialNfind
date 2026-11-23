@@ -100,8 +100,11 @@ adminOpsRouter.get("/overview", async (_req, res) => {
   });
 });
 
+/** The analytics ranges: today (1), or the last 7, 30 or 90 days, each ending today. */
+const analyticsDays = z.coerce.number().int().refine((d) => [1, 7, 30, 90].includes(d)).default(30);
+
 adminOpsRouter.get("/analytics", async (req, res) => {
-  const { days } = parse(z.object({ days: z.coerce.number().int().refine((d) => [7, 30, 90].includes(d)).default(30) }), req.query);
+  const { days } = parse(z.object({ days: analyticsDays }), req.query);
   const since = startOfDay(new Date(Date.now() - (days - 1) * DAY));
   const [signups, providers, leads, reviews, tickets, revenue, byChannel, topCategories, topCities, topProviders] = await Promise.all([
     dailySeries("users", since, days),
@@ -133,6 +136,157 @@ adminOpsRouter.get("/analytics", async (req, res) => {
   });
 });
 
+
+const METRICS = ["signups", "providers", "leads", "reviews", "tickets", "revenue"] as const;
+type Breakdown = { title: string; items: { label: string; value: number }[] };
+type RecentItem = { id: number; title: string; subtitle: string; value?: number; at: Date; to: string | null };
+const label = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ");
+const grouped = <T extends Record<string, unknown>>(rows: T[], key: keyof T, title: string, name: (v: string) => string = label, value?: (r: T) => number): Breakdown => ({
+  title,
+  items: rows
+    .map((r) => ({ label: name(String(r[key] ?? "Unknown")), value: value ? value(r) : Number((r as { _count?: unknown })._count ?? 0) }))
+    .sort((a, b) => b.value - a.value),
+});
+
+/** One stat card's detail for the analytics sidebar: the previous period, breakdowns and the latest records. */
+adminOpsRouter.get("/analytics/details", async (req, res) => {
+  const { metric, days } = parse(z.object({ metric: z.enum(METRICS), days: analyticsDays }), req.query);
+  const since = startOfDay(new Date(Date.now() - (days - 1) * DAY));
+  const prevSince = new Date(since.getTime() - days * DAY);
+  const range = { gte: since };
+  const prevRange = { gte: prevSince, lt: since };
+  const take = 15;
+  let total = 0;
+  let previous = 0;
+  let breakdowns: Breakdown[] = [];
+  let recent: RecentItem[] = [];
+
+  switch (metric) {
+    case "signups": {
+      const where = { createdAt: range };
+      const [t, p, byRole, byStatus, rows] = await Promise.all([
+        prisma.user.count({ where }),
+        prisma.user.count({ where: { createdAt: prevRange } }),
+        prisma.user.groupBy({ by: ["role"], where, _count: true }),
+        prisma.user.groupBy({ by: ["status"], where, _count: true }),
+        prisma.user.findMany({ where, orderBy: { createdAt: "desc" }, take, select: { id: true, name: true, email: true, role: true, createdAt: true } }),
+      ]);
+      total = t;
+      previous = p;
+      breakdowns = [grouped(byRole, "role", "By account type"), grouped(byStatus, "status", "By status")];
+      recent = rows.map((u) => ({ id: Number(u.id), title: u.name, subtitle: `${label(u.role)} · ${u.email}`, at: u.createdAt, to: `/users/${u.id}` }));
+      break;
+    }
+    case "providers": {
+      const where = { createdAt: range };
+      const [t, p, byStatus, byCity, rows] = await Promise.all([
+        prisma.provider.count({ where }),
+        prisma.provider.count({ where: { createdAt: prevRange } }),
+        prisma.provider.groupBy({ by: ["status"], where, _count: true }),
+        prisma.provider.groupBy({ by: ["city"], where, _count: true, orderBy: { _count: { city: "desc" } }, take: 8 }),
+        prisma.provider.findMany({ where, orderBy: { createdAt: "desc" }, take, select: { id: true, businessName: true, city: true, status: true, createdAt: true } }),
+      ]);
+      total = t;
+      previous = p;
+      breakdowns = [grouped(byStatus, "status", "By status"), grouped(byCity, "city", "By city", (v) => v)];
+      recent = rows.map((r) => ({ id: Number(r.id), title: r.businessName, subtitle: `${r.city} · ${label(r.status)}`, at: r.createdAt, to: `/providers/${r.id}` }));
+      break;
+    }
+    case "leads": {
+      const where = { createdAt: range };
+      const [t, p, byChannel, bySource, byStatus, rows] = await Promise.all([
+        prisma.lead.count({ where }),
+        prisma.lead.count({ where: { createdAt: prevRange } }),
+        prisma.lead.groupBy({ by: ["channel"], where, _count: true }),
+        prisma.lead.groupBy({ by: ["source"], where, _count: true }),
+        prisma.lead.groupBy({ by: ["providerStatus"], where, _count: true }),
+        prisma.lead.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          take,
+          select: { id: true, channel: true, createdAt: true, provider: { select: { id: true, businessName: true, city: true } }, user: { select: { name: true } }, category: { select: { name: true } } },
+        }),
+      ]);
+      total = t;
+      previous = p;
+      breakdowns = [
+        grouped(byChannel, "channel", "By channel", (v) => (v === "call" ? "Phone call" : "WhatsApp")),
+        grouped(bySource, "source", "Where it started", (v) => (v === "ai_match" ? "AI match" : label(v))),
+        grouped(byStatus, "providerStatus", "Provider follow-up"),
+      ];
+      recent = rows.map((l) => ({
+        id: Number(l.id),
+        title: l.provider.businessName,
+        subtitle: [l.user?.name ?? "Guest", l.channel === "call" ? "Phone call" : "WhatsApp", l.category?.name].filter(Boolean).join(" · "),
+        at: l.createdAt,
+        to: `/providers/${l.provider.id}`,
+      }));
+      break;
+    }
+    case "reviews": {
+      const where = { createdAt: range };
+      const [t, p, byRating, byStatus, avg, rows] = await Promise.all([
+        prisma.review.count({ where }),
+        prisma.review.count({ where: { createdAt: prevRange } }),
+        prisma.review.groupBy({ by: ["rating"], where, _count: true }),
+        prisma.review.groupBy({ by: ["status"], where, _count: true }),
+        prisma.review.aggregate({ where, _avg: { rating: true } }),
+        prisma.review.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          take,
+          select: { id: true, rating: true, status: true, createdAt: true, provider: { select: { id: true, businessName: true } }, user: { select: { name: true } } },
+        }),
+      ]);
+      total = t;
+      previous = p;
+      const ratings = grouped(byRating, "rating", "By rating", (v) => `${v} star${v === "1" ? "" : "s"}`);
+      ratings.items.sort((a, b) => b.label.localeCompare(a.label));
+      breakdowns = [
+        { title: `Average rating ${avg._avg.rating ? avg._avg.rating.toFixed(1) : "–"}`, items: ratings.items },
+        grouped(byStatus, "status", "By status"),
+      ];
+      recent = rows.map((r) => ({ id: Number(r.id), title: r.provider.businessName, subtitle: `${r.rating}★ by ${r.user.name} · ${label(r.status)}`, at: r.createdAt, to: `/providers/${r.provider.id}` }));
+      break;
+    }
+    case "tickets": {
+      const where = { createdAt: range };
+      const [t, p, byStatus, byPriority, byCategory, rows] = await Promise.all([
+        prisma.supportTicket.count({ where }),
+        prisma.supportTicket.count({ where: { createdAt: prevRange } }),
+        prisma.supportTicket.groupBy({ by: ["status"], where, _count: true }),
+        prisma.supportTicket.groupBy({ by: ["priority"], where, _count: true }),
+        prisma.supportTicket.groupBy({ by: ["category"], where, _count: true }),
+        prisma.supportTicket.findMany({ where, orderBy: { createdAt: "desc" }, take, select: { id: true, subject: true, name: true, status: true, priority: true, createdAt: true } }),
+      ]);
+      total = t;
+      previous = p;
+      breakdowns = [grouped(byStatus, "status", "By status"), grouped(byPriority, "priority", "By priority"), grouped(byCategory, "category", "By topic")];
+      recent = rows.map((r) => ({ id: Number(r.id), title: r.subject, subtitle: `${r.name} · ${label(r.status)} · ${label(r.priority)} priority`, at: r.createdAt, to: `/support/${r.id}` }));
+      break;
+    }
+    case "revenue": {
+      const where = { createdAt: range, status: "success" as const };
+      const [t, p, byType, byGateway, rows] = await Promise.all([
+        prisma.transaction.aggregate({ where, _sum: { amount: true }, _count: true }),
+        prisma.transaction.aggregate({ where: { createdAt: prevRange, status: "success" }, _sum: { amount: true } }),
+        prisma.transaction.groupBy({ by: ["type"], where, _sum: { amount: true } }),
+        prisma.transaction.groupBy({ by: ["gateway"], where, _sum: { amount: true } }),
+        prisma.transaction.findMany({ where, orderBy: { createdAt: "desc" }, take, select: { id: true, type: true, gateway: true, amount: true, createdAt: true, provider: { select: { id: true, businessName: true } } } }),
+      ]);
+      total = Number(t._sum.amount ?? 0);
+      previous = Number(p._sum.amount ?? 0);
+      const amount = (r: { _sum: { amount: Prisma.Decimal | null } }) => Number(r._sum.amount ?? 0);
+      breakdowns = [
+        grouped(byType, "type", `By source · ${t._count} payment${t._count === 1 ? "" : "s"}`, (v) => ({ subscription: "Plans", lead_fee: "Lead fees", sponsored_ad: "Promotions" })[v] ?? label(v), amount),
+        grouped(byGateway, "gateway", "By payment method", label, amount),
+      ];
+      recent = rows.map((r) => ({ id: Number(r.id), title: r.provider.businessName, subtitle: `${label(r.type)} · ${label(r.gateway)}`, value: Number(r.amount), at: r.createdAt, to: `/providers/${r.provider.id}` }));
+      break;
+    }
+  }
+  res.json({ metric, days, total, previous, breakdowns, recent });
+});
 
 
 // Provider detail ----------------------------------------------------------------------------------

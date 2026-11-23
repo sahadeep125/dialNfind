@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { badRequest, notFound } from "../lib/errors.js";
 import { removeReplaced } from "../storage/index.js";
-import { pageMeta, paginationSchema } from "../lib/pagination.js";
+import { adminPaginationSchema, pageMeta } from "../lib/pagination.js";
 import { currentUser } from "../middleware/auth.js";
 import { guardAdminPath, requireStaff } from "../lib/permissions.js";
 import { adminOpsRouter } from "./admin/operations.js";
@@ -192,7 +192,7 @@ adminRouter.post("/contact-messages/:id/ticket", async (req, res) => {
 // Activity log ----------------------------------------------------------------------------------
 
 adminRouter.get("/activity-logs", async (req, res) => {
-  const q = parse(paginationSchema.extend({ targetType: z.string().optional(), adminId: z.coerce.number().int().optional() }), req.query);
+  const q = parse(adminPaginationSchema.extend({ targetType: z.string().optional(), adminId: z.coerce.number().int().optional() }), req.query);
   const where = { ...(q.targetType ? { targetType: q.targetType } : {}), ...(q.adminId ? { adminId: BigInt(q.adminId) } : {}) };
   const [logs, total] = await Promise.all([
     prisma.adminActivityLog.findMany({
@@ -211,7 +211,9 @@ adminRouter.get("/activity-logs", async (req, res) => {
 
 adminRouter.get("/search-insights", async (req, res) => {
   const { days } = parse(z.object({ days: z.coerce.number().int().min(1).max(365).default(30) }), req.query);
-  const since = new Date(Date.now() - days * 864e5);
+  // Calendar days ending today, like /admin/analytics, so "Today" (days=1) starts at midnight.
+  const now = new Date();
+  const since = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - (days - 1) * 864e5);
   const [totals, topQueries, zeroResults, byCategory] = await Promise.all([
     prisma.searchQuery.aggregate({ where: { createdAt: { gte: since } }, _count: true, _avg: { resultsCount: true } }),
     prisma.$queryRaw<{ query: string; count: bigint; avg_results: number }[]>`

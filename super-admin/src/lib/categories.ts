@@ -9,11 +9,18 @@ export interface CategoryOption {
   subcategories: { id: number; name: string; slug: string; isActive: boolean }[];
 }
 
-/** Every category with its services, for pickers in the listing editors. */
+/**
+ * Every category with its services, for pickers in the listing editors.
+ *
+ * This shares the ["admin-categories"] cache entry with the Categories page, so the cached value
+ * must stay the raw `{ categories }` response. Unwrap it with `select`, never in `queryFn`:
+ * caching the bare array made the Categories page read `data.categories` of an array and crash.
+ */
 export function useCategoryOptions() {
   return useQuery({
     queryKey: ["admin-categories"],
-    queryFn: () => api<{ categories: CategoryOption[] }>("/admin/categories").then((r) => r.categories),
+    queryFn: () => api<{ categories: CategoryOption[] }>("/admin/categories"),
+    select: (r) => r.categories,
     staleTime: 5 * 60 * 1000,
   });
 }

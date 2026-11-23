@@ -8,7 +8,7 @@ import { formatDate, formatRelative, initials } from "@/lib/format";
 import type { Paged } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
-import { Pager } from "@/components/common";
+import { DEFAULT_PAGE_SIZE, Pager, pageSizeOf } from "@/components/common";
 import { ConfirmDialog, EmptyRow, FilterSelect, SearchInput, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
@@ -42,10 +42,10 @@ interface DeletedUserRow {
   _count: { leads: number; tickets: number };
 }
 
-type UsersFilters = { tab: string; q: string; role: string; status: string; page: string };
+type UsersFilters = { tab: string; q: string; role: string; status: string; page: string; pageSize: string };
 
 export function UsersPage() {
-  const [f, setF] = useUrlState<UsersFilters>({ tab: "accounts", q: "", role: "", status: "", page: "1" });
+  const [f, setF] = useUrlState<UsersFilters>({ tab: "accounts", q: "", role: "", status: "", page: "1", pageSize: DEFAULT_PAGE_SIZE });
   const { tab, ...filters } = f;
   return (
     <>
@@ -75,7 +75,7 @@ export function UsersPage() {
  * anonymised when deleted, so only the account number, dates and the leads and tickets kept for records remain.
  */
 function DeletedUsersTab({ f, setF }: { f: UsersFilters; setF: (p: Partial<UsersFilters>) => void }) {
-  const params = new URLSearchParams({ pageSize: "20", page: f.page });
+  const params = new URLSearchParams({ pageSize: String(pageSizeOf(f.pageSize)), page: f.page });
   if (f.q) params.set("q", f.q);
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users-deleted", params.toString()],
@@ -128,7 +128,7 @@ function DeletedUsersTab({ f, setF }: { f: UsersFilters; setF: (p: Partial<Users
           ))}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
     </>
   );
 }
@@ -136,7 +136,7 @@ function DeletedUsersTab({ f, setF }: { f: UsersFilters; setF: (p: Partial<Users
 function AccountsTab({ f, setF }: { f: UsersFilters; setF: (p: Partial<UsersFilters>) => void }) {
   const qc = useQueryClient();
   const { can } = useAuth();
-  const params = new URLSearchParams({ pageSize: "20", page: f.page });
+  const params = new URLSearchParams({ pageSize: String(pageSizeOf(f.pageSize)), page: f.page });
   for (const k of ["q", "role", "status"] as const) if (f[k]) params.set(k, f[k]);
   const { data, isLoading } = useQuery({ queryKey: ["admin-users", params.toString()], queryFn: () => api<{ users: UserRow[] } & Paged>(`/admin/users?${params}`) });
   const [pending, setPending] = useState<{ user: UserRow; status: UserRow["status"] } | null>(null);
@@ -289,7 +289,7 @@ function AccountsTab({ f, setF }: { f: UsersFilters; setF: (p: Partial<UsersFilt
           })}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
       {pending && copy && (
         <ConfirmDialog
           open

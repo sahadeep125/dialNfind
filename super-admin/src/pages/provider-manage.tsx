@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, MoreHorizontal, Plus, Star, Trash2, UserMinus, UserPlus } from "lucide-react";
+import { ArrowLeft, Loader2, MoreHorizontal, Plus, Search, Star, Trash2, UserMinus, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { useCategoryOptions } from "@/lib/categories";
@@ -20,26 +20,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FileUpload } from "@/components/file-upload";
 import { SeoEditor, type SeoFields } from "@/components/seo-editor";
 import type { SeoAnalysis } from "@/lib/seo";
 
 // Ownership --------------------------------------------------------------------------------------
 
-/** Give the listing to an account (or move it to another one), or make it unclaimed again. */
+interface OwnerCandidate {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: "customer" | "provider";
+  provider: { id: number; businessName: string } | null;
+}
+
+/**
+ * Claim the listing for a provider's account (or move it to another one), or make it unclaimed again.
+ * An unclaimed listing shows a "Claim for provider" button; an owned one keeps the actions in a menu.
+ */
 export function OwnerActions({ providerId, businessName, hasOwner, onDone }: { providerId: number; businessName: string; hasOwner: boolean; onDone: () => void }) {
   const [dialog, setDialog] = useState<"assign" | "remove" | null>(null);
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const assign = useMutation({
-    mutationFn: () => api(`/admin/providers/${providerId}/owner`, { method: "POST", json: { email: email.trim() } }),
-    onSuccess: () => {
-      toast.success(`${businessName} now belongs to ${email.trim()}`);
-      setDialog(null);
-      setEmail("");
-      onDone();
-    },
-    onError: (e) => setError(errorMessage(e)),
-  });
   const remove = useMutation({
     mutationFn: () => api(`/admin/providers/${providerId}/owner`, { method: "DELETE" }),
     onSuccess: () => {
@@ -51,52 +52,35 @@ export function OwnerActions({ providerId, businessName, hasOwner, onDone }: { p
   });
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="Owner actions">
-            <MoreHorizontal />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setDialog("assign")}>
-            <UserPlus /> {hasOwner ? "Move to another account" : "Give to an account"}
-          </DropdownMenuItem>
-          {hasOwner && (
+      {hasOwner ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Owner actions">
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setDialog("assign")}>
+              <UserPlus /> Move to another account
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setDialog("remove")} className="text-destructive">
               <UserMinus /> Remove owner
             </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <Dialog open={dialog === "assign"} onOpenChange={(o) => (setDialog(o ? "assign" : null), setError(null))}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{hasOwner ? "Move this listing" : "Give this listing to an account"}</DialogTitle>
-            <DialogDescription>The account must already exist. It becomes a business account and the owner is emailed. Use this after checking ownership outside the claim flow.</DialogDescription>
-          </DialogHeader>
-          <form
-            id="assign-owner"
-            noValidate
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError("Enter the owner's email address");
-              assign.mutate();
-            }}
-          >
-            <Field id="owner-email" label="Owner's email" error={error ?? undefined}>
-              <Input type="email" value={email} onChange={(e) => (setEmail(e.target.value), setError(null))} {...fieldA11y("owner-email", error ?? undefined)} />
-            </Field>
-          </form>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialog(null)}>
-              Cancel
-            </Button>
-            <Button type="submit" form="assign-owner" disabled={assign.isPending}>
-              {assign.isPending && <Loader2 className="animate-spin" />} Give listing
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <Button size="sm" variant="outline" onClick={() => setDialog("assign")}>
+          <UserPlus /> Claim for provider
+        </Button>
+      )}
+      <ClaimForProviderDialog
+        open={dialog === "assign"}
+        onOpenChange={(o) => setDialog(o ? "assign" : null)}
+        providerId={providerId}
+        businessName={businessName}
+        hasOwner={hasOwner}
+        onDone={onDone}
+      />
       <ConfirmDialog
         open={dialog === "remove"}
         onOpenChange={(o) => setDialog(o ? "remove" : null)}
@@ -108,6 +92,227 @@ export function OwnerActions({ providerId, businessName, hasOwner, onDone }: { p
         onConfirm={() => remove.mutate()}
       />
     </>
+  );
+}
+
+type Owner = { kind: "existing"; user: OwnerCandidate; claimed: boolean } | { kind: "new" };
+
+/**
+ * Claim the listing for its owner: pick their account (someone who asked to claim it, or any account
+ * found by search) or enter their details to create one, upload the ownership document, then confirm.
+ * A new account's generated password is emailed to the owner and shown here once.
+ */
+function ClaimForProviderDialog({ open, onOpenChange, providerId, businessName, hasOwner, onDone }: { open: boolean; onOpenChange: (open: boolean) => void; providerId: number; businessName: string; hasOwner: boolean; onDone: () => void }) {
+  const qc = useQueryClient();
+  const [q, setQ] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [owner, setOwner] = useState<Owner | null>(null);
+  const [fresh, setFresh] = useState({ name: "", email: "", phone: "" });
+  const [documentUrl, setDocumentUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [created, setCreated] = useState<{ email: string; password: string } | null>(null);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(q.trim()), 250);
+    return () => clearTimeout(t);
+  }, [q]);
+  useEffect(() => {
+    if (open) return;
+    setQ("");
+    setDebounced("");
+    setOwner(null);
+    setFresh({ name: "", email: "", phone: "" });
+    setDocumentUrl("");
+    setError(null);
+    setCreated(null);
+  }, [open]);
+  const { data, isFetching } = useQuery({
+    queryKey: ["owner-candidates", providerId, debounced],
+    queryFn: () => api<{ claims: { id: number; createdAt: string; user: OwnerCandidate }[]; users: OwnerCandidate[] }>(`/admin/providers/${providerId}/owner-candidates?q=${encodeURIComponent(debounced)}`),
+    enabled: open,
+    placeholderData: (prev) => prev,
+  });
+  const claimants = data?.claims ?? [];
+  const claimantIds = new Set(claimants.map((c) => c.user.id));
+  const results = debounced.length >= 2 ? (data?.users ?? []).filter((u) => !claimantIds.has(u.id)) : [];
+  const busyElsewhere = owner?.kind === "existing" && owner.user.provider && owner.user.provider.id !== providerId ? owner.user.provider.businessName : null;
+  // Someone who sent a claim already uploaded a document with it; everyone else needs one from the admin.
+  const needsDocument = !(owner?.kind === "existing" && owner.claimed);
+
+  const assign = useMutation({
+    mutationFn: () =>
+      api<{ ok: true; accountCreated: boolean; temporaryPassword?: string }>(`/admin/providers/${providerId}/owner`, {
+        method: "POST",
+        json: {
+          ...(owner?.kind === "existing" ? { userId: owner.user.id } : { name: fresh.name.trim(), email: fresh.email.trim(), phone: fresh.phone.trim() || null }),
+          ...(documentUrl ? { documentUrl } : {}),
+        },
+      }),
+    onSuccess: (r) => {
+      const to = owner?.kind === "existing" ? owner.user.name || owner.user.email : fresh.email.trim();
+      toast.success(`${businessName} now belongs to ${to}. They have been emailed the listing details.`);
+      void qc.invalidateQueries({ queryKey: ["claims"] });
+      void qc.invalidateQueries({ queryKey: ["admin-providers"] });
+      onDone();
+      if (r.temporaryPassword) setCreated({ email: fresh.email.trim(), password: r.temporaryPassword });
+      else onOpenChange(false);
+    },
+    onError: (e) => setError(errorMessage(e)),
+  });
+
+  function submit() {
+    setError(null);
+    if (!owner) return setError("Choose the owner's account or create one");
+    if (owner.kind === "new") {
+      if (fresh.name.trim().length < 2) return setError("Enter the owner's name");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fresh.email.trim())) return setError("Enter the owner's email address");
+      if (fresh.phone.trim() && !normalizePhone(fresh.phone)) return setError("Enter a valid 10-digit phone number");
+    }
+    if (needsDocument && !documentUrl) return setError("Upload the document that proves ownership");
+    assign.mutate();
+  }
+
+  const row = (u: OwnerCandidate, claimed: boolean) => (
+    <button
+      key={u.id}
+      type="button"
+      onClick={() => (setOwner({ kind: "existing", user: u, claimed }), setError(null))}
+      className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
+    >
+      <span className="min-w-0">
+        <span className="block truncate font-medium">{u.name || u.email}</span>
+        <span className="block truncate text-xs text-muted-foreground">
+          {u.email}
+          {u.phone ? ` · ${u.phone}` : ""}
+        </span>
+      </span>
+      <span className="shrink-0 text-xs text-muted-foreground">{claimed ? "Pending claim" : u.provider ? `Manages ${u.provider.businessName}` : u.role === "provider" ? "Business account" : "Customer account"}</span>
+    </button>
+  );
+
+  if (created) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Listing claimed</DialogTitle>
+            <DialogDescription>
+              We created a business account for {created.email} and emailed them this password with the listing details. Share it yourself if the email does not arrive. It is not shown again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border bg-muted/40 px-3 py-2 font-mono text-sm select-all">{created.password}</div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => void navigator.clipboard?.writeText(created.password).then(() => toast.success("Password copied"))}>
+              Copy password
+            </Button>
+            <Button onClick={() => onOpenChange(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{hasOwner ? "Move this listing" : "Claim for provider"}</DialogTitle>
+          <DialogDescription>
+            Choose the owner's account, or enter their details to create one, and upload the document you checked. {businessName} becomes theirs straight away and they are emailed the listing details.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          {owner?.kind === "existing" ? (
+            <div className="space-y-2">
+              <Label>Claim for</Label>
+              <div className="flex items-center gap-3 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+                <UserPlus className="size-4 shrink-0 text-primary" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{owner.user.name || owner.user.email}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{owner.user.email}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOwner(null);
+                    setError(null);
+                  }}
+                  className="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground"
+                  aria-label="Choose a different account"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <FormAlert message={busyElsewhere && `This account already manages ${busyElsewhere}. Move or remove that listing first.`} />
+            </div>
+          ) : owner?.kind === "new" ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>New account for the owner</Label>
+                <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setOwner(null)}>
+                  Find an existing account instead
+                </Button>
+              </div>
+              <Field id="claim-name" label="Owner's name">
+                <Input id="claim-name" value={fresh.name} onChange={(e) => setFresh({ ...fresh, name: e.target.value })} autoComplete="off" />
+              </Field>
+              <Field id="claim-email" label="Owner's email" hint="Their password is sent here">
+                <Input id="claim-email" type="email" value={fresh.email} onChange={(e) => setFresh({ ...fresh, email: e.target.value })} autoComplete="off" />
+              </Field>
+              <Field id="claim-phone" label="Owner's phone" optional>
+                <Input id="claim-phone" type="tel" value={fresh.phone} onChange={(e) => setFresh({ ...fresh, phone: e.target.value })} autoComplete="off" />
+              </Field>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {claimants.length > 0 && (
+                <div className="space-y-1">
+                  <Label>Asked to claim it</Label>
+                  <div className="rounded-lg border p-1">{claimants.map((c) => row(c.user, true))}</div>
+                </div>
+              )}
+              <Field id="owner-search" label="Find the owner's account">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="owner-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, email or phone" className="pl-9" autoComplete="off" autoFocus />
+                </div>
+              </Field>
+              {debounced.length >= 2 && (
+                <div className="max-h-56 overflow-y-auto rounded-lg border p-1">
+                  {results.length === 0 ? <p className="px-3 py-2 text-sm text-muted-foreground">{isFetching ? "Searching…" : "No active account matches."}</p> : results.map((u) => row(u, false))}
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setOwner({ kind: "new" });
+                  if (/@/.test(q)) setFresh((f) => ({ ...f, email: q.trim() }));
+                  setError(null);
+                }}
+              >
+                <Plus /> Create an account for the owner
+              </Button>
+            </div>
+          )}
+          {owner && (
+            <Field id="claim-document" label="Ownership document" optional={!needsDocument} hint={needsDocument ? "Trade licence, GST certificate, shop registration or similar. JPG, PNG, WebP or PDF." : "Optional: their claim already has a document. Upload one to replace it."}>
+              <FileUpload id="claim-document" purpose="document" value={documentUrl} onChange={setDocumentUrl} onUploadingChange={setUploading} />
+            </Field>
+          )}
+          <FormAlert message={error} />
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button disabled={!owner || !!busyElsewhere || uploading || assign.isPending} onClick={submit}>
+            {assign.isPending && <Loader2 className="animate-spin" />} {hasOwner ? "Move listing" : "Claim for provider"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

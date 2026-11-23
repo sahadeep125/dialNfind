@@ -1,15 +1,20 @@
 import { Router } from "express";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import type { Prisma, ProviderStatus, VerificationStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
+import { email, optionalPhone, personName } from "../../lib/rules.js";
+import { privateFileUrl } from "../../lib/private-files.js";
+import { temporaryPassword } from "../../lib/passwords.js";
 import { badRequest, conflict, notFound } from "../../lib/errors.js";
-import { pageMeta, paginationSchema } from "../../lib/pagination.js";
+import { adminPaginationSchema, pageMeta } from "../../lib/pagination.js";
 import { parseCsv } from "../../lib/csv.js";
 import { currentUser } from "../../middleware/auth.js";
 import { env } from "../../env.js";
 import { logAdmin } from "../../services/audit.js";
-import { notifyAndEmail } from "../../services/notify.js";
+import { notify, notifyAndEmail } from "../../services/notify.js";
+import { sendListingClaimedForYou } from "../../services/emails.js";
 import { recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
 import { adminListingProfileSchema, createListing, newListingSchema, updateListingProfile, type NewListing } from "../../services/listings.js";
 import { searchPlaces } from "../../services/geocode.js";
@@ -22,7 +27,7 @@ import { previewUrl, refreshProviderSlugs, refreshShared } from "../../services/
 /** Listing management in the admin console: list, status, edit, create, import, ownership and delete. */
 export const adminProvidersRouter = Router();
 
-export const providerQuery = paginationSchema.extend({
+export const providerQuery = adminPaginationSchema.extend({
   status: z.enum(["pending", "active", "rejected", "suspended"]).optional(),
   verification: z.enum(["none", "partial", "verified"]).optional(),
   claimed: z.enum(["yes", "no"]).optional(),
@@ -95,7 +100,7 @@ adminProvidersRouter.get("/providers", async (req, res) => {
 
 /** Provider accounts with no listing yet, including ones that never confirmed their email (onboarding needs it). */
 adminProvidersRouter.get("/provider-signups", async (req, res) => {
-  const q = parse(paginationSchema.extend({ q: z.string().trim().max(100).optional() }), req.query);
+  const q = parse(adminPaginationSchema.extend({ q: z.string().trim().max(100).optional() }), req.query);
   const where: Prisma.UserWhereInput = {
     role: "provider",
     provider: null,
@@ -261,22 +266,96 @@ adminProvidersRouter.put("/providers/:id/service-areas", async (req, res) => {
 
 // Ownership and delete ---------------------------------------------------------------------------
 
-/** POST /admin/providers/:id/owner — gives the listing to an account (moving it from the current owner, if any). */
+/**
+ * GET /admin/providers/:id/owner-candidates — accounts the listing can be claimed for. People with a
+ * pending claim on it come first; `q` searches the other customer and provider accounts by name,
+ * email or phone. Lives under providers so staff with the providers module can use it.
+ */
+adminProvidersRouter.get("/providers/:id/owner-candidates", async (req, res) => {
+  const provider = await findProvider(req.params.id as string);
+  const { q } = parse(z.object({ q: z.string().trim().max(100).optional() }), req.query);
+  const select = { id: true, name: true, email: true, phone: true, role: true, provider: { select: { id: true, businessName: true } } } as const;
+  const claims = await prisma.providerClaim.findMany({
+    where: { providerId: provider.id, status: "pending", user: { status: "active" } },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, createdAt: true, user: { select } },
+  });
+  const users =
+    q && q.length >= 2
+      ? await prisma.user.findMany({
+          where: {
+            status: "active",
+            role: { in: ["customer", "provider"] },
+            OR: [{ name: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }, { phone: { contains: q.replace(/\s+/g, "") } }],
+          },
+          orderBy: { createdAt: "desc" },
+          take: 8,
+          select,
+        })
+      : [];
+  res.json({ claims, users });
+});
+
+const ownerSchema = z
+  .object({
+    userId: z.coerce.number().int().positive().optional(),
+    email: email.optional(),
+    // Only used when no account has this email yet: the owner's account is created with them.
+    name: personName.optional(),
+    phone: optionalPhone,
+    documentUrl: privateFileUrl.optional(),
+  })
+  .refine((b) => b.userId !== undefined || b.email !== undefined, { message: "Choose the account to give this listing to", path: ["email"] });
+
+/**
+ * POST /admin/providers/:id/owner — claims the listing on behalf of its owner (moving it from the
+ * current owner, if any). The owner is an account picked by id, or an email: when no account has that
+ * email, a business account is created with a generated password. The ownership document the admin
+ * checked is kept on an approved claim (a pending claim from the same account is closed with it), and
+ * the owner is emailed the listing details, plus their sign-in details when the account is new.
+ */
 adminProvidersRouter.post("/providers/:id/owner", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
-  const { email } = parse(z.object({ email: z.string().trim().toLowerCase().email("Enter the new owner's email") }), req.body);
-  const user = await prisma.user.findUnique({ where: { email }, include: { provider: { select: { id: true, businessName: true } } } });
-  if (!user || user.status !== "active") throw notFound("No active account uses this email. Ask the owner to sign up first.");
-  if (user.role === "admin" || user.role === "super_admin") throw badRequest("Team accounts cannot own a listing");
-  if (user.provider && user.provider.id !== provider.id) throw conflict(`This account already manages ${user.provider.businessName}`);
-  await prisma.$transaction([
-    prisma.provider.update({ where: { id: provider.id }, data: { userId: user.id, claimedAt: new Date() } }),
-    prisma.user.update({ where: { id: user.id }, data: { role: "provider" } }),
-  ]);
-  await logAdmin(currentUser(req).id, "provider.owner", "provider", provider.id, { from: provider.userId ? Number(provider.userId) : null, to: Number(user.id), email });
+  const body = parse(ownerSchema, req.body);
+  const include = { provider: { select: { id: true, businessName: true } } } as const;
+  let user = await prisma.user.findUnique({ where: body.userId !== undefined ? { id: BigInt(body.userId) } : { email: body.email! }, include });
+  let password: string | null = null;
+  if (!user && body.userId === undefined) {
+    if (!body.name) throw badRequest("Enter the owner's name to create their account");
+    password = temporaryPassword();
+  } else {
+    if (!user || user.status !== "active") throw notFound("No active account matches. Enter an email to create one instead.");
+    if (user.role === "admin" || user.role === "super_admin") throw badRequest("Team accounts cannot own a listing");
+    if (user.provider && user.provider.id !== provider.id) throw conflict(`This account already manages ${user.provider.businessName}`);
+  }
+  const admin = currentUser(req);
+  const now = new Date();
+  user = await prisma.$transaction(async (tx) => {
+    const owner = user
+      ? await tx.user.update({ where: { id: user.id }, data: { role: "provider" }, include })
+      : await tx.user.create({
+          data: { name: body.name!, email: body.email!, phone: body.phone ?? null, role: "provider", passwordHash: await bcrypt.hash(password!, 10), emailVerifiedAt: now },
+          include,
+        });
+    await tx.provider.update({ where: { id: provider.id }, data: { userId: owner.id, claimedAt: now } });
+    const decided = { status: "approved" as const, reviewedBy: admin.id, reviewedAt: now };
+    const pending = await tx.providerClaim.findFirst({ where: { providerId: provider.id, userId: owner.id, status: "pending" }, orderBy: { createdAt: "desc" }, select: { id: true } });
+    if (pending) await tx.providerClaim.update({ where: { id: pending.id }, data: { ...decided, ...(body.documentUrl ? { documentUrl: body.documentUrl } : {}) } });
+    else if (body.documentUrl) await tx.providerClaim.create({ data: { providerId: provider.id, userId: owner.id, method: "document", documentUrl: body.documentUrl, ...decided } });
+    await tx.providerClaim.updateMany({ where: { providerId: provider.id, userId: owner.id, status: "pending" }, data: decided });
+    return owner;
+  });
+  await logAdmin(admin.id, "provider.owner", "provider", provider.id, {
+    from: provider.userId ? Number(provider.userId) : null,
+    to: Number(user.id),
+    email: user.email,
+    accountCreated: password !== null,
+    document: !!body.documentUrl,
+  });
   refreshProviderSlugs([provider.slug]);
-  void notifyAndEmail(user.id, "claim", `${provider.businessName} is now yours`, "The KaajVa team gave you access to this listing. Sign in to the provider app to manage it.", { providerId: Number(provider.id) }, { label: "Open the provider app", url: env.providerUrl });
-  res.json({ ok: true });
+  void notify(user.id, "claim", `${provider.businessName} is now yours`, "The KaajVa team gave you access to this listing. Sign in to the provider app to manage it.", { providerId: Number(provider.id) });
+  void sendListingClaimedForYou(user, provider, password);
+  res.json({ ok: true, accountCreated: password !== null, ...(password ? { temporaryPassword: password } : {}) });
 });
 
 /** DELETE /admin/providers/:id/owner — makes the listing unclaimed again; the account keeps working without it. */

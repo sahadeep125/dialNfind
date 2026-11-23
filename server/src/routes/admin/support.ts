@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, notFound } from "../../lib/errors.js";
-import { pageMeta, paginationSchema } from "../../lib/pagination.js";
+import { adminPaginationSchema, pageMeta } from "../../lib/pagination.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
 import { notify } from "../../services/notify.js";
@@ -15,7 +15,7 @@ import { privateFileUrl } from "../../lib/private-files.js";
 /** Staff side of the help desk. */
 export const adminSupportRouter = Router();
 
-const listQuery = paginationSchema.extend({
+const listQuery = adminPaginationSchema.extend({
   status: z.enum(["open", "pending", "resolved", "closed", "active"]).optional(),
   priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
   assignee: z.union([z.literal("me"), z.literal("none"), z.coerce.number().int().positive()]).optional(),

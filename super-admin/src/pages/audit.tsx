@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import type { Paged } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
-import { Pager } from "@/components/common";
+import { DEFAULT_PAGE_SIZE, Pager, pageSizeOf } from "@/components/common";
 import { EmptyRow, FilterSelect, humanize, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
 
 interface LogRow {
@@ -70,9 +70,9 @@ function describe(l: LogRow) {
 }
 
 export function AuditPage() {
-  const [f, setF] = useUrlState({ targetType: "", page: "1" });
+  const [f, setF] = useUrlState({ targetType: "", page: "1", pageSize: DEFAULT_PAGE_SIZE });
   const [open, setOpen] = useState<number | null>(null);
-  const params = new URLSearchParams({ pageSize: "30", page: f.page });
+  const params = new URLSearchParams({ pageSize: String(pageSizeOf(f.pageSize)), page: f.page });
   if (f.targetType) params.set("targetType", f.targetType);
   const { data, isLoading } = useQuery({ queryKey: ["admin-audit", params.toString()], queryFn: () => api<{ logs: LogRow[] } & Paged>(`/admin/activity-logs?${params}`) });
 
@@ -126,7 +126,7 @@ export function AuditPage() {
           })}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
     </>
   );
 }

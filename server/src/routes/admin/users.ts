@@ -4,7 +4,7 @@ import type { Prisma, UserStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, notFound } from "../../lib/errors.js";
-import { pageMeta, paginationSchema } from "../../lib/pagination.js";
+import { adminPaginationSchema, pageMeta } from "../../lib/pagination.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
 import { anonymiseUser } from "../../services/accounts.js";
@@ -15,7 +15,7 @@ import { ticketRef } from "../../services/tickets.js";
 /** Customer and provider accounts. Team members (admin, super admin) are managed from Team. */
 export const adminUsersRouter = Router();
 
-export const usersQuery = paginationSchema.extend({
+export const usersQuery = adminPaginationSchema.extend({
   q: z.string().trim().optional(),
   role: z.enum(["super_admin", "admin", "provider", "customer"]).optional(),
   status: z.enum(["active", "suspended", "deleted"]).optional(),
@@ -66,7 +66,7 @@ adminUsersRouter.get("/users", async (req, res) => {
  * when each was deleted and by whom: a team member (from the activity log) or the person themselves.
  */
 adminUsersRouter.get("/users/deleted", async (req, res) => {
-  const q = parse(paginationSchema.extend({ q: z.string().trim().optional() }), req.query);
+  const q = parse(adminPaginationSchema.extend({ q: z.string().trim().optional() }), req.query);
   const id = q.q?.replace(/^#/, "");
   const where: Prisma.UserWhereInput = { status: "deleted", ...(id ? (/^\d{1,18}$/.test(id) ? { id: BigInt(id) } : { id: -1n }) : {}) };
   const [users, total] = await Promise.all([
