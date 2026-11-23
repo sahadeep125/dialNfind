@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { idParam, parse } from "../lib/validate.js";
 import { badRequest, notFound } from "../lib/errors.js";
 import { removeReplaced } from "../storage/index.js";
-import { pageMeta, paginationSchema } from "../lib/pagination.js";
+import { adminPaginationSchema, pageMeta } from "../lib/pagination.js";
 import { currentUser } from "../middleware/auth.js";
 import { guardAdminPath, requireStaff } from "../lib/permissions.js";
 import { adminOpsRouter } from "./admin/operations.js";
@@ -192,7 +192,7 @@ adminRouter.post("/contact-messages/:id/ticket", async (req, res) => {
 // Activity log ----------------------------------------------------------------------------------
 
 adminRouter.get("/activity-logs", async (req, res) => {
-  const q = parse(paginationSchema.extend({ targetType: z.string().optional(), adminId: z.coerce.number().int().optional() }), req.query);
+  const q = parse(adminPaginationSchema.extend({ targetType: z.string().optional(), adminId: z.coerce.number().int().optional() }), req.query);
   const where = { ...(q.targetType ? { targetType: q.targetType } : {}), ...(q.adminId ? { adminId: BigInt(q.adminId) } : {}) };
   const [logs, total] = await Promise.all([
     prisma.adminActivityLog.findMany({

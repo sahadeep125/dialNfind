@@ -4,7 +4,7 @@ import type { Prisma, UserStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, notFound } from "../../lib/errors.js";
-import { pageMeta, paginationSchema } from "../../lib/pagination.js";
+import { adminPaginationSchema, pageMeta } from "../../lib/pagination.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
 import { anonymiseUser } from "../../services/accounts.js";
@@ -15,7 +15,7 @@ import { ticketRef } from "../../services/tickets.js";
 /** Customer and provider accounts. Team members (admin, super admin) are managed from Team. */
 export const adminUsersRouter = Router();
 
-export const usersQuery = paginationSchema.extend({
+export const usersQuery = adminPaginationSchema.extend({
   q: z.string().trim().optional(),
   role: z.enum(["super_admin", "admin", "provider", "customer"]).optional(),
   status: z.enum(["active", "suspended", "deleted"]).optional(),

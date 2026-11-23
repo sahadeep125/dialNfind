@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatRelative } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
-import { EmptyState, PageSkeleton } from "@/components/common";
+import { EmptyState, Pager, PageSkeleton, useClientPager } from "@/components/common";
 import { ConfirmDialog, StatusBadge } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +27,7 @@ export function ClaimsPage() {
   const [status, setStatus] = useState("pending");
   const [confirm, setConfirm] = useState<{ claim: Claim; decision: "approved" | "rejected" } | null>(null);
   const { data } = useQuery({ queryKey: ["claims", status], queryFn: () => api<{ claims: Claim[] }>(`/admin/claims?status=${status}`) });
+  const { rows, pager } = useClientPager(data?.claims, status);
   const decide = useMutation({
     mutationFn: ({ claim, decision }: { claim: Claim; decision: string }) => api(`/admin/claims/${claim.id}`, { method: "PATCH", json: { decision } }),
     onSuccess: (_r, v) => {
@@ -54,7 +55,7 @@ export function ClaimsPage() {
         <EmptyState icon={KeyRound} title={status === "pending" ? "No claims waiting" : "Nothing here yet"} text="Claims made from the provider app appear here." />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {data.claims.map((c) => (
+          {rows.map((c) => (
             <div key={c.id} className="flex flex-col rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)]">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -94,6 +95,7 @@ export function ClaimsPage() {
           ))}
         </div>
       )}
+      {data && <Pager {...pager} />}
       {confirm && (
         <ConfirmDialog
           open

@@ -10,6 +10,7 @@ import { api, errorMessage } from "@/lib/api";
 import { formatDate, formatPrice } from "@/lib/format";
 import type { CategoryOption } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
+import { Pager, useClientPager } from "@/components/common";
 import { EmptyRow, FilterSelect, StatCard, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar } from "@/components/admin-ui";
 import { Field, fieldA11y, FormAlert } from "@/components/form";
 import { ProviderPicker } from "@/components/provider-picker";
@@ -51,6 +52,7 @@ export function PromotionsPage() {
     onError: (e) => toast.error(errorMessage(e)),
   });
   const listings = data?.listings ?? [];
+  const { rows, pager } = useClientPager(data?.listings, status);
   const active = listings.filter((l) => l.status === "active");
   const spend = listings.reduce((a, l) => a + Number(l.amountSpent), 0);
   const clicks = listings.reduce((a, l) => a + l.clicks, 0);
@@ -101,7 +103,7 @@ export function PromotionsPage() {
         <tbody>
           {isLoading && <TableSkeleton cols={7} />}
           {data && listings.length === 0 && <EmptyRow cols={7} text="No promotions match." />}
-          {listings.map((l) => (
+          {rows.map((l) => (
             <tr key={l.id}>
               <Td>
                 <Link to={`/providers/${l.provider.id}`} className="font-medium hover:text-primary">
@@ -155,6 +157,7 @@ export function PromotionsPage() {
           ))}
         </tbody>
       </Table>
+      {data && <Pager {...pager} />}
       {creating && <PromotionDialog onClose={() => setCreating(false)} />}
       {editing && <PromotionDialog listing={editing} onClose={() => setEditing(null)} />}
     </>

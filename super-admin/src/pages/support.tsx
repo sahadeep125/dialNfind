@@ -10,7 +10,7 @@ import type { Paged } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "@/components/page-header";
-import { Pager, PageSkeleton } from "@/components/common";
+import { DEFAULT_PAGE_SIZE, Pager, pageSizeOf, PageSkeleton } from "@/components/common";
 import { EmptyRow, Facts, FilterSelect, humanize, SearchInput, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -44,8 +44,8 @@ const CATEGORIES = ["general", "account", "listing", "billing", "verification", 
 const SOURCES: Record<string, string> = { web: "Website", provider_app: "Provider app", contact_form: "Contact form", app: "App", email: "Email" };
 
 export function TicketsPage() {
-  const [f, setF] = useUrlState({ status: "active", priority: "", assignee: "", q: "", page: "1" });
-  const params = new URLSearchParams({ pageSize: "20", page: f.page });
+  const [f, setF] = useUrlState({ status: "active", priority: "", assignee: "", q: "", page: "1", pageSize: DEFAULT_PAGE_SIZE });
+  const params = new URLSearchParams({ pageSize: String(pageSizeOf(f.pageSize)), page: f.page });
   for (const k of ["status", "priority", "assignee", "q"] as const) if (f[k]) params.set(k, f[k]);
   const { data, isLoading } = useQuery({
     queryKey: ["admin-tickets", params.toString()],
@@ -134,7 +134,7 @@ export function TicketsPage() {
           ))}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
         </>
       )}
     </>

@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, notFound } from "../../lib/errors.js";
-import { pageMeta, paginationSchema } from "../../lib/pagination.js";
+import { adminPaginationSchema, pageMeta } from "../../lib/pagination.js";
 import { num } from "../../lib/serialize.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
@@ -131,7 +131,7 @@ adminBillingRouter.post("/plans/sync-razorpay", async (req, res) => {
 
 // Invoices ----------------------------------------------------------------------------------------
 
-export const invoicesQuery = paginationSchema.extend({
+export const invoicesQuery = adminPaginationSchema.extend({
   q: z.string().trim().max(100).optional(),
   status: z.enum(["issued", "void"]).optional(),
   from: z.coerce.date().optional(),
@@ -199,7 +199,7 @@ adminBillingRouter.post("/transactions/:id/invoice", async (req, res) => {
 
 // Webhook log -------------------------------------------------------------------------------------
 
-const webhooksQuery = paginationSchema.extend({
+const webhooksQuery = adminPaginationSchema.extend({
   source: z.enum(["razorpay", "revenuecat"]).optional(),
   status: z.enum(["processed", "failed"]).optional(),
 });

@@ -4,7 +4,7 @@ import type { Prisma, ProviderStatus, VerificationStatus } from "@prisma/client"
 import { prisma } from "../../lib/prisma.js";
 import { idParam, parse } from "../../lib/validate.js";
 import { badRequest, conflict, notFound } from "../../lib/errors.js";
-import { pageMeta, paginationSchema } from "../../lib/pagination.js";
+import { adminPaginationSchema, pageMeta } from "../../lib/pagination.js";
 import { parseCsv } from "../../lib/csv.js";
 import { currentUser } from "../../middleware/auth.js";
 import { env } from "../../env.js";
@@ -22,7 +22,7 @@ import { previewUrl, refreshProviderSlugs, refreshShared } from "../../services/
 /** Listing management in the admin console: list, status, edit, create, import, ownership and delete. */
 export const adminProvidersRouter = Router();
 
-export const providerQuery = paginationSchema.extend({
+export const providerQuery = adminPaginationSchema.extend({
   status: z.enum(["pending", "active", "rejected", "suspended"]).optional(),
   verification: z.enum(["none", "partial", "verified"]).optional(),
   claimed: z.enum(["yes", "no"]).optional(),
@@ -95,7 +95,7 @@ adminProvidersRouter.get("/providers", async (req, res) => {
 
 /** Provider accounts with no listing yet, including ones that never confirmed their email (onboarding needs it). */
 adminProvidersRouter.get("/provider-signups", async (req, res) => {
-  const q = parse(paginationSchema.extend({ q: z.string().trim().max(100).optional() }), req.query);
+  const q = parse(adminPaginationSchema.extend({ q: z.string().trim().max(100).optional() }), req.query);
   const where: Prisma.UserWhereInput = {
     role: "provider",
     provider: null,

@@ -7,7 +7,7 @@ import { api, errorMessage } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import type { Paged } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
-import { Pager } from "@/components/common";
+import { DEFAULT_PAGE_SIZE, Pager, pageSizeOf } from "@/components/common";
 import { ConfirmDialog, EmptyRow, FilterSelect, humanize, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
 import { ExportButton } from "@/components/bulk";
 import { Button } from "@/components/ui/button";
@@ -37,10 +37,10 @@ const DISPUTE_LABEL = { open: "Reported", accepted: "Report accepted", rejected:
 
 export function LeadsPage() {
   const qc = useQueryClient();
-  const [f, setF] = useUrlState({ tab: "all", channel: "", days: "30", providerId: "", providerName: "", page: "1" });
+  const [f, setF] = useUrlState({ tab: "all", channel: "", days: "30", providerId: "", providerName: "", page: "1", pageSize: DEFAULT_PAGE_SIZE });
   const disputes = f.tab === "disputes";
   const filters = disputes ? { dispute: "open", page: f.page } : { channel: f.channel, days: f.days, providerId: f.providerId, page: f.page };
-  const params = new URLSearchParams({ pageSize: "25", ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) });
+  const params = new URLSearchParams({ pageSize: String(pageSizeOf(f.pageSize)), ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)) });
   const { data, isLoading } = useQuery({ queryKey: ["admin-leads", params.toString()], queryFn: () => api<{ leads: LeadRow[]; openDisputes: number } & Paged>(`/admin/leads?${params}`) });
   const [deciding, setDeciding] = useState<{ lead: LeadRow; decision: "accepted" | "rejected" } | null>(null);
   const [note, setNote] = useState("");
@@ -114,7 +114,7 @@ export function LeadsPage() {
               ))}
             </tbody>
           </Table>
-          {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+          {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
           {deciding && (
             <ConfirmDialog
               open
@@ -224,7 +224,7 @@ export function LeadsPage() {
           ))}
         </tbody>
       </Table>
-      {data && <Pager page={data.page} totalPages={data.totalPages} onPage={(p) => setF({ page: String(p) })} />}
+      {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
         </>
       )}
     </>
