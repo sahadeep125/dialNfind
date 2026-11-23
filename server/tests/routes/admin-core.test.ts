@@ -404,6 +404,22 @@ describe("admin users", () => {
     expect((await c.post("/api/v1/admin/users/999/sign-out")).status).toBe(404);
     expect((await c.patch(`/api/v1/admin/users/${u.id}`).send({ status: "deleted" })).body.user.status).toBe("deleted");
   });
+  it("lists deleted accounts on their own, with who deleted them", async () => {
+    const staff = await createStaff(["users"]);
+    const c = await authed(staff);
+    const byAdmin = await createUser({ email: "gone@example.com" });
+    const bySelf = await createUser({ status: "deleted" });
+    await createUser();
+    await c.patch(`/api/v1/admin/users/${byAdmin.id}`).send({ status: "deleted" });
+    expect((await c.get("/api/v1/admin/users")).body.total).toBe(2);
+    expect((await c.get("/api/v1/admin/users").query({ status: "deleted" })).body.total).toBe(2);
+    const list = await c.get("/api/v1/admin/users/deleted");
+    expect(list.body.total).toBe(2);
+    expect(list.body.users[0]).toMatchObject({ id: Number(byAdmin.id), name: "Deleted user", deletedBy: { type: "admin", id: Number(staff.id) } });
+    expect(list.body.users[1]).toMatchObject({ id: Number(bySelf.id), deletedBy: { type: "self" }, deletedAt: expect.any(String) });
+    expect((await c.get("/api/v1/admin/users/deleted").query({ q: `#${bySelf.id}` })).body.users).toHaveLength(1);
+    expect((await c.get("/api/v1/admin/users/deleted").query({ q: "asha" })).body.total).toBe(0);
+  });
   it("resends confirmation or marks the address confirmed", async () => {
     const c = await authed(await createStaff(["users"]));
     const unconfirmed = await createUser({ verified: false });
