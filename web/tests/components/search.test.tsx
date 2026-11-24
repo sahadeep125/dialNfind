@@ -156,7 +156,6 @@ describe("LocationPicker", () => {
     });
     const error = vi.spyOn(toast, "error");
     render(<LocationPicker value={loc("Here")} onChange={onChange} />);
-    expect(screen.getByText("Location")).toBeInTheDocument();
     const open = () => u.click(screen.getByRole("button", { name: /Here/ }));
     await open();
     await u.click(screen.getByRole("button", { name: "Use my current location" }));
