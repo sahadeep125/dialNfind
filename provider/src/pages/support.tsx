@@ -56,7 +56,6 @@ const STATUS: Record<Status, { label: string; variant: "warning" | "secondary" |
 const CATEGORIES: { value: string; label: string }[] = [
   { value: "listing", label: "My listing" },
   { value: "account", label: "Account and sign in" },
-  { value: "billing", label: "Plans and payments" },
   { value: "verification", label: "Verification" },
   { value: "report", label: "Report a customer or review" },
   { value: "technical", label: "Something is not working" },
@@ -72,7 +71,7 @@ export function SupportPage() {
     <>
       <PageHeader
         title="Help and support"
-        description="Ask the KaajVa team about your listing, payments or anything else. We usually reply within one working day."
+        description="Ask the KaajVa team about your listing, your account or anything else. We usually reply within one working day."
         actions={
           <Button onClick={() => setCreating(true)}>
             <Plus /> New request

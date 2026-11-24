@@ -17,7 +17,6 @@ import {
   AppInput,
 } from "@/components/design-system";
 import { EmptyState, ErrorState, Screen, ScreenHeader } from "@/components/layout";
-import { PlanBanner } from "@/components/subscription/PlanBanner";
 import { LeadRow } from "@/components/leads/LeadRow";
 import { LeadRowSkeleton } from "@/components/leads/LeadRowSkeleton";
 import { ReportLeadSheet } from "@/components/leads/ReportLeadSheet";
@@ -105,7 +104,6 @@ export default function LeadsScreen() {
             lead={item}
             onCall={onCall}
             onWhatsApp={onWhatsApp}
-            onReport={setReporting}
             onManage={setManaging}
           />
         </View>
@@ -116,7 +114,6 @@ export default function LeadsScreen() {
 
   const header = (
     <View style={{ gap: theme.spacing[3], marginBottom: theme.spacing[3] }}>
-      <PlanBanner />
       <AppInput
         size="sm"
         value={search}

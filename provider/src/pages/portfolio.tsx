@@ -3,16 +3,13 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ImagePlus, Images, Loader2, Lock, Pencil, Star, Trash2 } from "lucide-react";
-import { Link } from "react-router";
+import { ArrowDown, ArrowUp, ImagePlus, Images, Loader2, Pencil, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import type { PortfolioItem, ProviderProfile } from "@/lib/types";
 import { useProfile } from "@/layouts/app-layout";
 import { PageHeader } from "@/components/page-header";
-import { LockedCard } from "@/components/plan";
-import { usePlan } from "@/lib/plan";
 import { EmptyState, PageSkeleton } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -36,7 +33,6 @@ export function PortfolioPage() {
   const { data: profile } = useProfile();
   const qc = useQueryClient();
   const [draft, setDraft] = useState<Draft | null>(null);
-  const plan = usePlan();
 
   const save = useMutation({
     mutationFn: (d: Draft) => {
@@ -92,8 +88,6 @@ export function PortfolioPage() {
 
   if (!profile) return <PageSkeleton />;
   const items = profile.portfolio;
-  const photoLimit = plan.limits.photos.limit;
-  const full = photoLimit !== null && items.length >= photoLimit;
   const move = (index: number, by: -1 | 1) => {
     const ids = items.map((i) => i.id);
     [ids[index], ids[index + by]] = [ids[index + by]!, ids[index]!];
@@ -105,24 +99,13 @@ export function PortfolioPage() {
     <>
       <PageHeader
         title="Photos"
-        description={`Show your shop, your team and finished jobs. Profiles with photos get noticeably more calls. The cover photo shows first on your listing.${
-          photoLimit !== null ? ` Your ${plan.plan.name} plan shows ${photoLimit} photos (${Math.min(items.length, photoLimit)} of ${photoLimit} used).` : ""
-        }`}
+        description="Show your shop, your team and finished jobs. Profiles with photos get noticeably more calls. The cover photo shows first on your listing."
         actions={
-          full ? (
-            <Button asChild variant="outline">
-              <Link to="/subscription">
-                <Lock /> Upgrade for more photos
-              </Link>
-            </Button>
-          ) : (
-            <Button onClick={() => setDraft(EMPTY)}>
-              <ImagePlus /> Add photo
-            </Button>
-          )
+          <Button onClick={() => setDraft(EMPTY)}>
+            <ImagePlus /> Add photo
+          </Button>
         }
       />
-      {full && <LockedCard feature="photos" compact className="mb-4" />}
       {items.length === 0 ? (
         <EmptyState icon={Images} title="No photos yet" text="Add a few photos of recent work so customers can judge the quality before they call.">
           <Button onClick={() => setDraft(EMPTY)}>

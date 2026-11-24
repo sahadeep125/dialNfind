@@ -25,10 +25,6 @@ export class ApiError extends Error {
   }
 }
 
-/** Fired when the server says the plan does not include a feature; the layout opens the upgrade dialog. */
-export const UPGRADE_EVENT = "kjv:upgrade";
-export type UpgradeDetail = { entitlement: string; feature: string; message: string };
-
 export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
   const { json, ...rest } = init;
   const headers = new Headers(rest.headers);
@@ -45,9 +41,6 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
     }
     if (res.status === 403 && body?.error?.code === "email_unverified" && window.location.pathname !== "/verify-email") {
       window.location.assign("/verify-email");
-    }
-    if (res.status === 402 && body?.error?.code === "upgrade_required") {
-      window.dispatchEvent(new CustomEvent<UpgradeDetail>(UPGRADE_EVENT, { detail: { ...body.error.details, message: body.error.message } }));
     }
     throw new ApiError(res.status, body?.error?.message ?? "Something went wrong", body?.error?.code, body?.error?.details);
   }

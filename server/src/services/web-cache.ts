@@ -6,7 +6,7 @@ import { signPreviewToken } from "../lib/jwt.js";
  * Cache tags used by the website's public pages (web/lib/api.ts publicApi). Every write that changes what
  * those pages show must refresh the matching tags, or visitors keep seeing the old data until it expires.
  */
-export type SharedTag = "providers" | "categories" | "app-config" | "plans" | "stats" | "reviews" | "sitemap";
+export type SharedTag = "providers" | "categories" | "app-config" | "stats" | "reviews" | "sitemap";
 
 const TIMEOUT_MS = 3000;
 

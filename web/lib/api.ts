@@ -74,14 +74,13 @@ export async function publicApi<T>(path: string, { query, revalidate = 300, tags
     if (path.includes("/reviews")) return { reviews: [], page: 1, totalPages: 0, totalCount: 0 } as unknown as T;
     if (path.includes("/categories")) return { categories: [] } as unknown as T;
     if (path.includes("/popular")) return { terms: [] } as unknown as T;
-    if (path.includes("/plans")) return { plans: [] } as unknown as T;
     if (path.includes("/app-config")) return { config: { min_review_length: 10 } } as unknown as T;
     if (path.includes("/similar")) return { results: [] } as unknown as T;
 
     return new Proxy({} as Record<string, unknown>, {
       get(_, prop: string) {
         if (typeof prop === "symbol" || prop === "then") return undefined;
-        if (["categories", "reviews", "terms", "plans", "results", "providers", "items"].includes(prop)) return [];
+        if (["categories", "reviews", "terms", "results", "providers", "items"].includes(prop)) return [];
         if (["config"].includes(prop)) return { min_review_length: 10 };
         if (["page", "pageSize", "totalPages", "totalCount", "cities", "count"].includes(prop)) return 0;
         return undefined;

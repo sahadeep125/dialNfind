@@ -48,7 +48,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How are providers ranked?",
-    a: "By how well they match your search, distance, ratings, reviews and how complete and responsive their profile is. Sponsored listings are labelled.",
+    a: "By how well they match your search, distance, ratings, reviews and how complete and responsive their profile is. Nobody can pay to rank higher.",
   },
   {
     q: "How do I change my area?",

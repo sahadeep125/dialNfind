@@ -39,7 +39,7 @@ export const env = {
   trustProxyHops: Number(process.env.TRUST_PROXY_HOPS ?? 1),
   corsOrigins: list(process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:5173,http://localhost:5174"),
   timezone: process.env.APP_TIMEZONE ?? "Asia/Kolkata",
-  /** Scheduled jobs (plan expiry, reminders, nightly ranking). Turn on in exactly one API instance. */
+  /** Scheduled jobs (digests, review prompts, nightly ranking, cleanup). Turn on in exactly one API instance. */
   runJobs: process.env.RUN_JOBS === "true",
   /** Where links in emails point. Password reset and email verification pages live on the website. */
   webUrl: (process.env.WEB_URL ?? "http://localhost:3000").replace(/\/$/, ""),
@@ -90,24 +90,6 @@ export const env = {
     applePrivateKey: (process.env.APPLE_PRIVATE_KEY ?? "").replace(/\\n/g, "\n"),
     /** App URL schemes the Android Apple sign-in callback may send people back to. */
     appRedirectSchemes: list(process.env.APPLE_APP_REDIRECT_SCHEMES ?? "kaajva,kaajva-business"),
-  },
-  /**
-   * Web payments (Razorpay Subscriptions). Checkout answers 501 until the keys are set. The webhook
-   * secret is the one entered on the Razorpay dashboard for POST /api/v1/webhooks/razorpay.
-   */
-  razorpay: {
-    keyId: process.env.RAZORPAY_KEY_ID ?? "",
-    keySecret: process.env.RAZORPAY_KEY_SECRET ?? "",
-    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET ?? "",
-  },
-  /**
-   * In-app purchases in the provider app, through RevenueCat. The secret key reads subscribers; the
-   * webhook auth value must match the Authorization header set on the RevenueCat webhook.
-   */
-  revenuecat: {
-    secretKey: process.env.REVENUECAT_SECRET_KEY ?? "",
-    webhookAuth: process.env.REVENUECAT_WEBHOOK_AUTH ?? "",
-    projectId: process.env.REVENUECAT_PROJECT_ID ?? "",
   },
   /**
    * Product analytics (PostHog). Off unless POSTHOG_KEY is set. The key is the project token shared with the

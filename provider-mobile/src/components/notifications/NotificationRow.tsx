@@ -2,7 +2,6 @@ import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   Bell,
-  CreditCard,
   LifeBuoy,
   MessageSquareText,
   PhoneIncoming,
@@ -19,7 +18,6 @@ const ICONS: Record<string, LucideIcon> = {
   lead: PhoneIncoming,
   review: MessageSquareText,
   review_reply: MessageSquareText,
-  subscription: CreditCard,
   listing: Store,
   support: LifeBuoy,
 };

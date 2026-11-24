@@ -196,26 +196,14 @@ export async function searchProviders(params: SearchParams) {
   const total = Number(countRows[0]?.count ?? 0);
   const ids = rows.map((r) => r.id);
 
-  const [providers, favorites, sponsored] = await Promise.all([
+  const [providers, favorites] = await Promise.all([
     prisma.provider.findMany({ where: { id: { in: ids } }, include: providerCardInclude }),
     params.userId && ids.length
       ? prisma.favorite.findMany({ where: { userId: params.userId, providerId: { in: ids } }, select: { providerId: true } })
       : Promise.resolve([]),
-    categoryId && ids.length
-      ? prisma.sponsoredListing.findMany({
-          where: { providerId: { in: ids }, categoryId, status: "active", startDate: { lte: new Date() }, endDate: { gte: new Date() } },
-          select: { id: true, providerId: true },
-        })
-      : Promise.resolve([]),
   ]);
   const byId = new Map(providers.map((p) => [p.id, p]));
   const favSet = new Set(favorites.map((f) => f.providerId));
-  const sponsoredSet = new Set(sponsored.map((s) => s.providerId));
-  if (sponsored.length) {
-    void prisma.sponsoredListing
-      .updateMany({ where: { id: { in: sponsored.map((s) => s.id) } }, data: { impressions: { increment: 1 } } })
-      .catch(() => undefined);
-  }
 
   const results = rows
     .map((r) => {
@@ -224,7 +212,6 @@ export async function searchProviders(params: SearchParams) {
       return toProviderCard(p, {
         distanceKm: r.distance_km === null ? null : Number(r.distance_km),
         isFavorite: favSet.has(p.id),
-        isSponsored: sponsoredSet.has(p.id),
       });
     })
     .filter((r) => r !== null);

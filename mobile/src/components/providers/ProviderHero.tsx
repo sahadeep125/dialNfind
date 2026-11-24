@@ -164,12 +164,6 @@ export function ProviderHero({ provider: p, topInset }: Props) {
             {p.verificationStatus === "verified" ? (
               <AppBadge icon={BadgeCheck} label="Verified" tone="brand" />
             ) : null}
-            {p.planTier ? (
-              <AppBadge
-                label={p.planTier === "business" ? "Business Partner" : "Pro Partner"}
-                tone="accent"
-              />
-            ) : null}
             {p.badges.map((b) => (
               <AppBadge key={b.id} label={b.name} tone="warning" />
             ))}

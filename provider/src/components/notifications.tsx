@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, Bell, CreditCard, LifeBuoy, Megaphone, MessageSquare, PhoneIncoming, Store } from "lucide-react";
+import { BadgeCheck, Bell, LifeBuoy, MessageSquare, PhoneIncoming, Store } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -23,8 +23,6 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   verification: BadgeCheck,
   claim: Store,
   listing: Store,
-  subscription: CreditCard,
-  sponsored: Megaphone,
   support: LifeBuoy,
 };
 

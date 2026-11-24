@@ -6,10 +6,9 @@ import { prisma } from "../../src/lib/prisma.js";
 import { clearSettingsCache } from "../../src/services/settings.js";
 import { env } from "../../src/env.js";
 import { uploadDir } from "../../src/storage/index.js";
-import { PRIVATE_FILES_URL, privateDir, signedLink, signFileUrl } from "../../src/lib/private-files.js";
-import { issueInvoice } from "../../src/services/invoices.js";
+import { PRIVATE_FILES_URL, privateDir, signFileUrl } from "../../src/lib/private-files.js";
 import { api, authed, json, mockFetch, sentMails, settle } from "../helpers/app.js";
-import { createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser, seedPlans, subscribe } from "../helpers/factories.js";
+import { createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser } from "../helpers/factories.js";
 
 const img = (w = 800, h = 800) => sharp({ create: { width: w, height: h, channels: 3, background: "#aa3300" } }).jpeg().toBuffer();
 const pub = (key: string) => `${env.publicUrl}/uploads/${key}`;
@@ -61,21 +60,6 @@ describe("app shell", () => {
     const escape = new URL(signFileUrl(`${PRIVATE_FILES_URL}..%2Fsecret`));
     expect((await api().get(`/api/v1/files/..%2Fsecret${escape.search}`)).status).toBe(403);
   });
-  it("serves invoice PDFs through signed links", async () => {
-    const p = await createProvider();
-    const txn = await prisma.transaction.create({ data: { providerId: p.id, type: "lead_fee", amount: 10, status: "success" } });
-    const inv = (await issueInvoice(txn.id, { email: false }))!;
-    const link = new URL(signedLink("/api/v1/invoice-files", `${inv.id}.pdf`));
-    const res = await api().get(`${link.pathname}${link.search}`).buffer(true);
-    expect(res.status).toBe(200);
-    expect(res.headers["content-type"]).toBe("application/pdf");
-    expect(res.headers["content-disposition"]).toContain(inv.number.replace(/\//g, "-"));
-    expect((await api().get(link.pathname)).status).toBe(403);
-    const bad = new URL(signedLink("/api/v1/invoice-files", "x.pdf"));
-    expect((await api().get(`/api/v1/invoice-files/x.pdf${bad.search}`)).status).toBe(403);
-    const none = new URL(signedLink("/api/v1/invoice-files", "999.pdf"));
-    expect((await api().get(`${none.pathname}${none.search}`)).status).toBe(404);
-  });
 });
 
 describe("categories", () => {
@@ -120,6 +104,7 @@ describe("categories", () => {
     const aid = attr2.body.attribute.id;
     expect((await c.patch(`/api/v1/categories/attributes/${aid}`).send({ options: ["A", "B"], subcategoryId: subId })).body.attribute.optionsJson).toEqual(["A", "B"]);
     expect((await c.patch(`/api/v1/categories/attributes/${aid}`).send({ subcategoryId: null, label: "Brand" })).body.attribute.subcategoryId).toBeNull();
+    expect((await c.patch(`/api/v1/categories/attributes/${aid}`).send({ label: "Brand name" })).body.attribute.label).toBe("Brand name");
     expect((await c.delete(`/api/v1/categories/attributes/${aid}`)).body).toEqual({ ok: true });
     expect((await c.delete(`/api/v1/categories/subcategories/${subId}`)).body).toEqual({ ok: true });
     expect((await c.delete(`/api/v1/categories/${id}`)).body).toEqual({ ok: true });
@@ -237,7 +222,7 @@ describe("misc routes", () => {
     expect(sentMails().filter((m) => m.subject.startsWith("We got your request"))).toHaveLength(3);
     expect((await api().post("/api/v1/contact").send({ name: "x" })).status).toBe(400);
   });
-  it("serves app config, plans and stats", async () => {
+  it("serves app config and stats", async () => {
     await prisma.setting.create({ data: { key: "support_phone", value: "+911234" } });
     expect((await api().get("/api/v1/app-config")).body.config).toMatchObject({
       site_name: "KaajVa",
@@ -247,8 +232,8 @@ describe("misc routes", () => {
       terms_url: null,
       min_review_length: 10,
     });
-    await seedPlans();
-    expect((await api().get("/api/v1/plans")).body.plans.map((p: { code: string }) => p.code)).toEqual(["free", "pro", "business"]);
+    // Plans were removed with payments: KaajVa is free.
+    expect((await api().get("/api/v1/plans")).status).toBe(404);
     await createCategory();
     const p = await createProvider();
     await createProvider({ city: "Pune" });
@@ -259,7 +244,6 @@ describe("misc routes", () => {
 
 describe("provider profiles", () => {
   async function profile() {
-    const plans = await seedPlans();
     const cat = await createCategory({ slug: "repairs" });
     const attr = await prisma.categoryAttribute.create({ data: { categoryId: cat.id, appliesTo: "provider", label: "Brands", fieldType: "multiselect" } });
     const p = await createProvider({ slug: "sharma", categoryId: cat.id, subcategoryId: cat.subcategories[0]!.id });
@@ -270,18 +254,18 @@ describe("provider profiles", () => {
     await prisma.providerServiceArea.create({ data: { providerId: p.id, areaName: "Andheri" } });
     for (let i = 0; i < 5; i++) await prisma.providerPortfolio.create({ data: { providerId: p.id, title: `P${i}`, imageUrl: pub(`p${i}.webp`), categoryId: i === 4 ? cat.id : null, isCover: i === 4 } });
     await prisma.verification.create({ data: { providerId: p.id, type: "business", status: "approved", verifiedAt: new Date() } });
-    return { plans, cat, p };
+    return { cat, p };
   }
 
-  it("shows the full profile with plan-limited photos", async () => {
-    const { plans, p } = await profile();
+  it("shows the full profile with every photo", async () => {
+    const { p } = await profile();
     const user = await createUser();
     await prisma.favorite.create({ data: { userId: user.id, providerId: p.id } });
     await createReview(p.id, user.id, { rating: 4, photos: { create: { photoUrl: pub("r.webp") } } });
     const res = await (await authed(user)).get("/api/v1/providers/sharma");
     const body = res.body.provider;
     expect(body).toMatchObject({ isFavorite: true, is24x7: false, portfolio: expect.any(Array), serviceDetails: [{ label: "Brands", value: "LG" }] });
-    expect(body.portfolio).toHaveLength(3);
+    expect(body.portfolio).toHaveLength(5);
     expect(body.portfolio[0].category).not.toBeNull();
     expect(body.hours).toHaveLength(7);
     expect(body.hours[1].label).toBe("9 AM - 6 PM");
@@ -291,7 +275,6 @@ describe("provider profiles", () => {
     await settle();
     expect((await prisma.providerDailyStat.findFirstOrThrow()).profileViews).toBe(1);
 
-    await subscribe(p.id, plans.business.id);
     await prisma.providerBusinessHour.create({ data: { providerId: p.id, dayOfWeek: 2, is24x7: true } });
     const guest = (await api().get("/api/v1/providers/sharma").query({ view: "false" })).body.provider;
     expect(guest.portfolio).toHaveLength(5);
@@ -302,10 +285,7 @@ describe("provider profiles", () => {
     await settle();
     expect((await prisma.providerDailyStat.findFirstOrThrow()).profileViews).toBe(1);
   });
-  it("shows everything when the free plan is missing", async () => {
-    const p = await createProvider({ slug: "nofree" });
-    for (let i = 0; i < 4; i++) await prisma.providerPortfolio.create({ data: { providerId: p.id, title: `P${i}`, imageUrl: pub(`p${i}.webp`) } });
-    expect((await api().get("/api/v1/providers/nofree")).body.provider.portfolio).toHaveLength(4);
+  it("hides listings that are not live", async () => {
     await createProvider({ slug: "pending", status: "pending" });
     expect((await api().get("/api/v1/providers/pending")).status).toBe(404);
     expect((await api().get("/api/v1/providers/none")).status).toBe(404);
@@ -362,7 +342,6 @@ describe("provider profiles", () => {
 
 describe("leads", () => {
   it("records calls and notifies the owner", async () => {
-    const plans = await seedPlans();
     const cat = await createCategory({ slug: "repairs" });
     const attr = await prisma.categoryAttribute.create({ data: { categoryId: cat.id, appliesTo: "lead", label: "Device", fieldType: "select", optionsJson: ["TV", "AC"] } });
     const optional = await prisma.categoryAttribute.create({ data: { categoryId: cat.id, appliesTo: "lead", label: "Notes", fieldType: "text" } });
@@ -379,8 +358,6 @@ describe("leads", () => {
     await settle();
     expect(await prisma.notification.findFirstOrThrow({ where: { userId: user.id } })).toMatchObject({ title: "New call from KaajVa" });
 
-    expect((await api().post("/api/v1/leads").send({ providerId: Number(provider.id), channel: "whatsapp" })).body.error.message).toBe("This business takes calls only");
-    await subscribe(provider.id, plans.pro.id);
     const wa = await api().post("/api/v1/leads").send({ providerId: Number(provider.id), channel: "whatsapp", subcategorySlug: cat.subcategories[0]!.slug });
     expect(wa.body.contact.number).toBe("+919999999999");
     await settle();
@@ -390,35 +367,8 @@ describe("leads", () => {
     expect((await api().post("/api/v1/leads").send({ providerId: Number(provider.id), channel: "call", details: [{ attributeId: 1, value: "x" }] })).body.error.message).toBe("Pick a service before adding details");
     expect((await api().post("/api/v1/leads").send({ providerId: Number(provider.id), channel: "call", categorySlug: "repairs", details: [{ attributeId: 999, value: "x" }] })).body.error.message).toBe("That detail does not apply to this service");
     const other = await createProvider();
-    await subscribe(other.id, plans.pro.id);
     const noWa = await api().post("/api/v1/leads").send({ providerId: Number(other.id), channel: "whatsapp", categorySlug: "missing" });
     expect(noWa.body.contact.number).toBe("+919876543210");
-  });
-  it("tells a free owner when the monthly limit is used up", async () => {
-    await seedPlans();
-    const { user, provider } = await createOwner();
-    for (let i = 0; i < 3; i++) await api().post("/api/v1/leads").send({ providerId: Number(provider.id), channel: "call" });
-    await settle(150);
-    const last = await prisma.notification.findFirstOrThrow({ where: { userId: user.id }, orderBy: { id: "desc" } });
-    expect(last.body).toContain("You have used the 2 leads in your Free plan this month");
-  });
-  it("charges promoted clicks against the campaign budget", async () => {
-    const cat = await createCategory({ slug: "repairs" });
-    const p = await createProvider();
-    const listing = await prisma.sponsoredListing.create({ data: { providerId: p.id, categoryId: cat.id, startDate: new Date(Date.now() - 86400000), endDate: new Date(Date.now() + 86400000), budget: 8 } });
-    await api().post("/api/v1/leads").send({ providerId: Number(p.id), channel: "call", categorySlug: "repairs" });
-    await settle();
-    await api().post("/api/v1/leads").send({ providerId: Number(p.id), channel: "call", categorySlug: "repairs" });
-    await settle();
-    const after = await prisma.sponsoredListing.findUniqueOrThrow({ where: { id: listing.id } });
-    expect(after).toMatchObject({ clicks: 2, status: "completed" });
-    expect(Number(after.amountSpent)).toBe(8);
-    const charges = (await prisma.lead.findMany({ orderBy: { id: "asc" } })).map((l) => Number(l.sponsoredCharge));
-    expect(charges).toEqual([5, 3]);
-    // Campaign finished: no more charges.
-    await api().post("/api/v1/leads").send({ providerId: Number(p.id), channel: "call", categorySlug: "repairs" });
-    await settle();
-    expect((await prisma.lead.findFirstOrThrow({ orderBy: { id: "desc" } })).sponsoredListingId).toBeNull();
   });
   it("records whether the business responded", async () => {
     const p = await createProvider();

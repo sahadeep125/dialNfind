@@ -23,11 +23,10 @@ const lead = (over: Record<string, unknown> = {}) => ({
   disputeReason: null,
   providerStatus: "new",
   providerNote: null,
-  locked: false,
   ...over,
 });
 
-const leadsPage = (leads: unknown[], over: Record<string, unknown> = {}) => ({ leads, leadLimit: null, page: 1, totalPages: 1, total: leads.length, ...over });
+const leadsPage = (leads: unknown[], over: Record<string, unknown> = {}) => ({ leads, page: 1, totalPages: 1, total: leads.length, ...over });
 const leadsCalls = (fetch: ReturnType<typeof mockApi>) => fetch.mock.calls.map(([u]) => String(u)).filter((u) => u.includes("/provider/leads?"));
 
 describe("leads", () => {
@@ -36,7 +35,6 @@ describe("leads", () => {
     await renderApp("/leads");
     expect(await screen.findByText("No leads yet")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Export CSV/ })).toBeDisabled();
-    expect(screen.queryByText("You are on the Free plan")).not.toBeInTheDocument();
   });
 
   it("shows every kind of lead", async () => {
@@ -45,12 +43,11 @@ describe("leads", () => {
       lead({ id: 2, channel: "whatsapp", service: null, source: "mystery", customerReportedResponse: true, disputeStatus: "open", providerNote: "Call back Monday", providerStatus: "won" }),
       lead({ id: 3, customerReportedResponse: false, disputeStatus: "accepted" }),
       lead({ id: 4, disputeStatus: "rejected", source: "ai_match" }),
-      lead({ id: 5, locked: true, customerName: "Hidden customer", createdAt: ago(40) }),
+      lead({ id: 5, customerName: "Older customer", createdAt: ago(40) }),
     ];
-    mockApi({ ...inApp(), "/provider/leads": leadsPage(leads, { leadLimit: 10, totalPages: 2, total: 20 }) });
+    mockApi({ ...inApp(), "/provider/leads": leadsPage(leads, { totalPages: 2, total: 20 }) });
     await renderApp("/leads");
     expect(await screen.findByText("not signed in")).toBeInTheDocument();
-    expect(screen.getByText("You are on the Free plan")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Call +91 98123 45678" })).toHaveAttribute("href", "tel:+919812345678");
     const wa = screen.getByRole("link", { name: "WhatsApp +91 98123 45678" });
     expect(wa).toHaveAttribute("href", "https://wa.me/919812345678");
@@ -69,10 +66,10 @@ describe("leads", () => {
     expect(screen.getByText("Report accepted, not counted")).toBeInTheDocument();
     expect(screen.getByText("Report not accepted")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Report$/ })).toHaveLength(1);
-    expect(screen.getByRole("link", { name: /Hidden customer/ })).toHaveAttribute("href", "/subscription");
-    expect(screen.getByText("Upgrade to track")).toBeInTheDocument();
+    expect(screen.getByText("Older customer")).toBeInTheDocument();
+    expect(screen.queryByText(/Upgrade/)).not.toBeInTheDocument();
     expect(screen.getByTitle("Call back Monday")).toHaveTextContent("Note");
-    expect(screen.getAllByRole("button", { name: /Add note/ })).toHaveLength(3);
+    expect(screen.getAllByRole("button", { name: /Add note/ })).toHaveLength(4);
   });
 
   it("filters, pages and clears filters", async () => {

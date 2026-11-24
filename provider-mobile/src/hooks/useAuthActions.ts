@@ -8,7 +8,6 @@ import {
   type GooglePayload,
 } from "@/services/socialAuth";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { resetPurchases } from "@/services/purchases";
 import { forgetPushToken, storedPushToken } from "@/services/push";
 import type { SessionUser } from "@/types";
 import { normalizePhone } from "@/utils/validation";
@@ -34,7 +33,6 @@ type SocialInput =
 
 interface DeleteResult {
   ok: boolean;
-  storeSubscription: "app_store" | "play_store" | null;
 }
 
 interface SocialResponse extends AuthResponse {
@@ -114,23 +112,20 @@ export function useAuthActions() {
     forgetPushToken();
     signOutStore();
     void socialSignOut();
-    void resetPurchases();
     qc.clear();
   };
 
   /**
-   * Deletes the business account: the listing leaves search, the plan stops renewing and the session
-   * ends. Returns the store a plan was bought in, which the person must cancel there.
+   * Deletes the business account: the listing leaves search and the session ends.
    */
   const deleteAccount = useMutation<DeleteResult, Error, { password?: string; confirm?: string }>({
     mutationFn: (input) => api<DeleteResult>("/auth/me", { method: "DELETE", body: input }),
-    onSuccess: ({ storeSubscription }) => {
-      track("account_deleted", { had_store_subscription: storeSubscription !== null });
+    onSuccess: () => {
+      track("account_deleted");
       // The server already ended the session; clear everything local without calling logout.
       forgetPushToken();
       signOutStore();
       void socialSignOut();
-      void resetPurchases();
       qc.clear();
     },
   });

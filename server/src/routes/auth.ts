@@ -248,12 +248,12 @@ authRouter.delete("/me", requireSignedIn, async (req, res) => {
   } else if (user.role === "provider" && body.confirm?.trim().toUpperCase() !== "DELETE") {
     throw badRequest("Type DELETE to confirm", [{ path: "confirm", message: "Type DELETE to confirm" }]);
   }
-  const { storeSubscription } = user.role === "provider" ? await closeBusinessAccount(user.id) : { storeSubscription: null };
+  if (user.role === "provider") await closeBusinessAccount(user.id);
   // The address is erased next, so the confirmation has to be sent first.
-  await sendAccountDeleted(user, storeSubscription);
+  await sendAccountDeleted(user);
   captureServer(user.id, "account_deleted", { role: user.role });
   await anonymiseUser(user.id);
-  res.json({ ok: true, storeSubscription });
+  res.json({ ok: true });
 });
 
 // Email verification and password reset -----------------------------------------------------------

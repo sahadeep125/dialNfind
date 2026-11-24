@@ -100,7 +100,7 @@ describe("SEO in the business dashboard", () => {
   });
 
   it("links dashboard suggestions without their own page to the SEO page, and waits for the profile", async () => {
-    const dashboard = { provider: { businessName: "Sharma TV Repair", avgRating: 0, totalReviews: 0, profileCompletenessPct: 60, verificationStatus: "none", responseSignal: null, favorites: 0, city: "Mumbai", status: "active" }, analyticsLocked: true, totals: { leads: 0, calls: 0, whatsapp: 0, views: null, impressions: null, leadsChangePct: null, viewsChangePct: null, conversionPct: null, unrepliedReviews: 0 }, ranking: null, series: [], checklist: [], recentLeads: [], recentReviews: [], subscription: null };
+    const dashboard = { provider: { businessName: "Sharma TV Repair", avgRating: 0, totalReviews: 0, profileCompletenessPct: 60, verificationStatus: "none", responseSignal: null, favorites: 0, city: "Mumbai", status: "active" }, totals: { leads: 0, calls: 0, whatsapp: 0, views: 0, impressions: 0, leadsChangePct: null, viewsChangePct: null, conversionPct: null, unrepliedReviews: 0 }, ranking: { position: 1, outOf: 1 }, series: [], checklist: [], recentLeads: [], recentReviews: [] };
     let release: (() => void) | undefined;
     const gate = new Promise<void>((r) => (release = r));
     mockApi({
@@ -119,7 +119,7 @@ describe("SEO in the business dashboard", () => {
   });
 
   it("hides the suggestion list once every check passes", async () => {
-    const dashboard = { provider: { businessName: "Sharma TV Repair", avgRating: 0, totalReviews: 0, profileCompletenessPct: 100, verificationStatus: "none", responseSignal: null, favorites: 0, city: "Mumbai", status: "active" }, analyticsLocked: true, totals: { leads: 0, calls: 0, whatsapp: 0, views: null, impressions: null, leadsChangePct: null, viewsChangePct: null, conversionPct: null, unrepliedReviews: 0 }, ranking: null, series: [], checklist: [], recentLeads: [], recentReviews: [], subscription: null };
+    const dashboard = { provider: { businessName: "Sharma TV Repair", avgRating: 0, totalReviews: 0, profileCompletenessPct: 100, verificationStatus: "none", responseSignal: null, favorites: 0, city: "Mumbai", status: "active" }, totals: { leads: 0, calls: 0, whatsapp: 0, views: 0, impressions: 0, leadsChangePct: null, viewsChangePct: null, conversionPct: null, unrepliedReviews: 0 }, ranking: { position: 1, outOf: 1 }, series: [], checklist: [], recentLeads: [], recentReviews: [] };
     mockApi({ ...inApp(), "/provider/dashboard": dashboard, "/provider/profile": { provider: profile({ seo: seoAnalysis({ score: 100, grade: "good", suggestions: [] }) }) } });
     await renderApp("/");
     expect(await screen.findByRole("img", { name: "SEO score 100 of 100, Good" })).toBeInTheDocument();

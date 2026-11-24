@@ -71,13 +71,6 @@ services:
       APPLE_KEY_ID: ${APPLE_KEY_ID:-}
       APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}
       APPLE_APP_REDIRECT_SCHEMES: ${APPLE_APP_REDIRECT_SCHEMES:-kaajva,kaajva-business}
-      # Payments: web (Razorpay) and in-app (RevenueCat). Each answers 501 until its keys are set.
-      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
-      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
-      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
-      REVENUECAT_PROJECT_ID: ${REVENUECAT_PROJECT_ID:-}
-      REVENUECAT_SECRET_KEY: ${REVENUECAT_SECRET_KEY:-}
-      REVENUECAT_WEBHOOK_AUTH: ${REVENUECAT_WEBHOOK_AUTH:-}
     volumes:
       - ./uploads:/app/uploads
     depends_on:

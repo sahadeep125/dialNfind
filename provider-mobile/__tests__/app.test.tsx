@@ -95,7 +95,7 @@ describeLive("KaajVa Business on Android", () => {
     await find("Needs a reply");
     fireEvent.press(screen.getAllByText("More").at(-1)!);
     await find("Business details");
-    await find("Plan and billing");
+    expect(screen.queryByText("Plan and billing")).toBeNull();
     await find("Sign out");
   });
 
@@ -106,8 +106,6 @@ describeLive("KaajVa Business on Android", () => {
     ["/areas", "Service areas"],
     ["/portfolio", "Photos"],
     ["/verification", "Verification"],
-    ["/promote", "Promote"],
-    ["/subscription", "Plan and billing"],
     ["/support", "Support requests"],
     ["/notifications", "Notifications"],
     ["/help", "Help and FAQ"],

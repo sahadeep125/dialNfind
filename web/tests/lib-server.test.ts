@@ -97,7 +97,6 @@ describe("publicApi when the API cannot be reached (builds without an API)", () 
     expect(await publicApi("/reviews/highlights")).toMatchObject({ reviews: [] });
     expect(await publicApi("/categories")).toEqual({ categories: [] });
     expect(await publicApi("/search/popular")).toEqual({ terms: [] });
-    expect(await publicApi("/plans")).toEqual({ plans: [] });
     expect(await publicApi("/app-config")).toEqual({ config: { min_review_length: 10 } });
     expect(await publicApi("/providers/x/similar")).toEqual({ results: [] });
     expect(await publicApiOrNull("/categories")).toEqual({ categories: [] });

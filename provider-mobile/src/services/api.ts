@@ -15,13 +15,6 @@ export class ApiError extends Error {
   }
 }
 
-let onUpgradeRequired: (feature: string) => void = () => undefined;
-
-/** Called when the server answers 402 upgrade_required; the app opens its paywall for that feature. */
-export function setUpgradeHandler(handler: (feature: string) => void): void {
-  onUpgradeRequired = handler;
-}
-
 type Query = Record<string, string | number | boolean | undefined | null>;
 
 interface RequestOptions {
@@ -79,10 +72,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     if (res.status === 401 && token) onUnauthorized();
     const details = body.error?.details;
     if (res.status === 403 && body.error?.code === "email_unverified") onUnverified();
-    if (res.status === 402 && body.error?.code === "upgrade_required") {
-      onUpgradeRequired((details as { feature?: string } | undefined)?.feature ?? "");
-    }
-    // Validation errors carry a list of fields; other errors may carry an object (e.g. the plan feature).
+    // Validation errors carry a list of fields; other errors may carry an object.
     const fieldErrors = Array.isArray(details) ? Object.fromEntries(details.map((d) => [d.path, d.message])) : {};
     const error = new ApiError(
       res.status,

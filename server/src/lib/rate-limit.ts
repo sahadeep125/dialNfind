@@ -42,8 +42,6 @@ export const limits = {
   tickets: limiter(60 * MINUTE, 10, "You have opened several tickets already. Please wait before opening another."),
   /** Ownership claims on listings. */
   claims: limiter(60 * MINUTE, 5, "You have sent several claims already. Please wait before sending another."),
-  /** Plan and promotion requests from providers. */
-  billing: limiter(60 * MINUTE, 10, "You have sent several requests already. Please wait before sending another."),
   /** Providers reporting spam or fake contacts. */
   disputes: limiter(60 * MINUTE, 30, "You have reported many contacts already. Please wait before reporting more."),
   /** New reviews and reports. */

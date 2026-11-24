@@ -18,12 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-/** Where a store-bought plan is cancelled; deleting the account cannot stop Apple or Google billing. */
-const STORE_MANAGE: Record<"app_store" | "play_store", { label: string; url: string }> = {
-  app_store: { label: "App Store subscriptions", url: "https://apps.apple.com/account/subscriptions" },
-  play_store: { label: "Google Play subscriptions", url: "https://play.google.com/store/account/subscriptions" },
-};
-
 export function AccountPage() {
   const { user } = useAuth();
   if (!user) return <PageSkeleton />;
@@ -146,7 +140,6 @@ function DeletePanel({ user }: { user: User }) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           <li>Your listing is removed from search straight away.</li>
-          <li>Your plan stops renewing and running promotions end.</li>
           <li>Your sign-in details are erased. This cannot be undone.</li>
         </ul>
         <Button variant="destructive" onClick={() => setOpen(true)}>
@@ -165,24 +158,16 @@ function DeleteDialog({ user, open, onClose }: { user: User; open: boolean; onCl
   const [problem, setProblem] = useState<string | null>(null);
   const del = useMutation({
     mutationFn: () =>
-      api<{ ok: boolean; storeSubscription: "app_store" | "play_store" | null }>("/auth/me", {
+      api<{ ok: boolean }>("/auth/me", {
         method: "DELETE",
         json: user.hasPassword ? { password: value } : { confirm: value },
       }),
-    onSuccess: ({ storeSubscription }) => {
-      const store = storeSubscription ? STORE_MANAGE[storeSubscription] : null;
-      track("account_deleted", { had_store_subscription: storeSubscription !== null });
+    onSuccess: () => {
+      track("account_deleted");
       // The session is already gone on the server; clear it here too.
       signOut();
       navigate("/login", { replace: true });
-      if (store) {
-        toast.warning("Your account is deleted. Your plan was bought in an app store: cancel it there so you are not charged again.", {
-          duration: 20_000,
-          action: { label: store.label, onClick: () => window.open(store.url, "_blank", "noopener") },
-        });
-      } else {
-        toast.success("Your account has been deleted.");
-      }
+      toast.success("Your account has been deleted.");
     },
     onError: (err) => setProblem(errorMessage(err)),
   });
@@ -199,7 +184,7 @@ function DeleteDialog({ user, open, onClose }: { user: User; open: boolean; onCl
             <AlertTriangle className="size-5 text-destructive" /> Delete your account?
           </DialogTitle>
           <DialogDescription>
-            Your listing leaves KaajVa, your plan stops renewing and running promotions end. Leads and reviews are kept only as anonymous records. This cannot be undone.
+            Your listing leaves KaajVa. Leads and reviews are kept only as anonymous records. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <form

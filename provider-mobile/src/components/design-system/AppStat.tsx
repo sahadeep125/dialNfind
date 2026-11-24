@@ -1,6 +1,6 @@
 import { Children, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { ArrowDownRight, ArrowUpRight, Lock, type LucideIcon } from "lucide-react-native";
+import { ArrowDownRight, ArrowUpRight, type LucideIcon } from "lucide-react-native";
 
 import { useTheme } from "@/hooks/useTheme";
 import { AppPressable } from "./AppPressable";
@@ -13,8 +13,6 @@ interface Props {
   hint?: string;
   /** Percent change against the previous period of the same length. */
   change?: number | null;
-  /** Shows a lock and "Pro" instead of the value; tapping calls onPress. */
-  locked?: boolean;
   onPress?: () => void;
 }
 
@@ -25,7 +23,6 @@ export function AppStat({
   icon: Icon,
   hint,
   change,
-  locked = false,
   onPress,
 }: Props) {
   const theme = useTheme();
@@ -39,19 +36,10 @@ export function AppStat({
         </AppText>
       </View>
       <View style={[styles.valueRow, { gap: theme.spacing[1.5] }]}>
-        {locked ? (
-          <View style={[styles.head, { gap: 4 }]}>
-            <Lock size={14} color={theme.colors.brand.primary} />
-            <AppText variant="section" tone="brand">
-              Pro
-            </AppText>
-          </View>
-        ) : (
-          <AppText variant="metric" numberOfLines={1} adjustsFontSizeToFit>
-            {value}
-          </AppText>
-        )}
-        {!locked && change !== undefined && change !== null ? (
+        <AppText variant="metric" numberOfLines={1} adjustsFontSizeToFit>
+          {value}
+        </AppText>
+        {change !== undefined && change !== null ? (
           <View
             style={styles.head}
             accessible
@@ -79,7 +67,7 @@ export function AppStat({
   return (
     <AppPressable
       accessibilityRole="button"
-      accessibilityLabel={`${label}: ${locked ? "locked" : value}`}
+      accessibilityLabel={`${label}: ${value}`}
       onPress={onPress}
       scale={false}
     >

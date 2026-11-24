@@ -10,7 +10,6 @@ import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { RecentLeadsCard } from "@/components/dashboard/RecentLeadsCard";
 import { RecentReviewsCard } from "@/components/dashboard/RecentReviewsCard";
-import { PlanBanner, usePlanNeedsNotice } from "@/components/subscription/PlanBanner";
 import { ErrorState, Screen, ScreenScroll } from "@/components/layout";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useLayout } from "@/hooks/useLayout";
@@ -24,7 +23,6 @@ const count = (n: number): string => n.toLocaleString("en-IN");
 
 /** At most one notice: the most urgent thing the provider should act on right now. */
 function Attention({ status, data }: { status: ProviderStatus; data?: Dashboard }) {
-  const planNotice = usePlanNeedsNotice();
   if (status === "pending")
     return (
       <AppNotice
@@ -45,7 +43,6 @@ function Attention({ status, data }: { status: ProviderStatus; data?: Dashboard 
         onPress={() => router.push("/support")}
       />
     );
-  if (planNotice) return <PlanBanner />;
   const unreplied = data?.totals.unrepliedReviews ?? 0;
   if (unreplied > 0)
     return (
@@ -82,10 +79,6 @@ export default function DashboardScreen() {
   }, [refetch, notifications]);
 
   const open = useCallback((path: string) => router.push(path as Href), []);
-  const unlock = useCallback(
-    () => router.push({ pathname: "/paywall", params: { feature: "analytics" } }),
-    [],
-  );
 
   return (
     <Screen>
@@ -108,7 +101,7 @@ export default function DashboardScreen() {
               leads={data.totals.leads}
               calls={data.totals.calls}
               whatsapp={data.totals.whatsapp}
-              change={data.analyticsLocked ? null : data.totals.leadsChangePct}
+              change={data.totals.leadsChangePct}
               isAvailable={status === "active" ? data.provider.isAvailable : null}
             />
 
@@ -116,23 +109,15 @@ export default function DashboardScreen() {
               <AppStat
                 label="Profile views"
                 icon={Eye}
-                value={data.totals.views !== null ? count(data.totals.views) : "-"}
+                value={count(data.totals.views)}
                 change={data.totals.viewsChangePct}
-                hint={
-                  data.totals.impressions !== null
-                    ? `${count(data.totals.impressions)} in search`
-                    : undefined
-                }
-                locked={data.totals.views === null}
-                onPress={data.totals.views === null ? unlock : undefined}
+                hint={`${count(data.totals.impressions)} in search`}
               />
               <AppStat
                 label="View to lead"
                 icon={Percent}
                 value={data.totals.conversionPct !== null ? `${data.totals.conversionPct}%` : "-"}
                 hint="Tapped Call or WhatsApp"
-                locked={data.analyticsLocked}
-                onPress={data.analyticsLocked ? unlock : undefined}
               />
               <AppStat
                 label="Rating"
@@ -144,12 +129,8 @@ export default function DashboardScreen() {
               <AppStat
                 label={`Rank in ${data.provider.city}`}
                 icon={Trophy}
-                value={data.ranking ? `#${data.ranking.position}` : "-"}
-                hint={
-                  data.ranking
-                    ? `of ${count(data.ranking.outOf)} in category`
-                    : "Complete your profile"
-                }
+                value={`#${data.ranking.position}`}
+                hint={`of ${count(data.ranking.outOf)} in category`}
               />
             </AppStatGrid>
 
@@ -159,7 +140,7 @@ export default function DashboardScreen() {
               onOpen={open}
             />
 
-            {data.analyticsLocked ? null : <ActivityChart series={data.series} days={days} />}
+            <ActivityChart series={data.series} days={days} />
 
             <RecentLeadsCard leads={data.recentLeads} onViewAll={() => router.push("/leads")} />
 

@@ -30,7 +30,6 @@ interface LeadRow {
   disputeStatus: "none" | "open" | "accepted" | "rejected";
   disputeReason: string | null;
   disputedAt: string | null;
-  sponsoredCharge: number | null;
 }
 
 const DISPUTE_LABEL = { open: "Reported", accepted: "Report accepted", rejected: "Report rejected" } as const;
@@ -45,9 +44,9 @@ export function LeadsPage() {
   const [deciding, setDeciding] = useState<{ lead: LeadRow; decision: "accepted" | "rejected" } | null>(null);
   const [note, setNote] = useState("");
   const decide = useMutation({
-    mutationFn: () => api<{ refund: number }>(`/admin/leads/${deciding!.lead.id}/dispute`, { method: "PATCH", json: { decision: deciding!.decision, note: note.trim() || undefined } }),
-    onSuccess: ({ refund }) => {
-      toast.success(deciding!.decision === "accepted" ? `Report accepted${refund ? `, Rs ${refund} refunded to the promotion` : ""}` : "Report rejected");
+    mutationFn: () => api<{ ok: true }>(`/admin/leads/${deciding!.lead.id}/dispute`, { method: "PATCH", json: { decision: deciding!.decision, note: note.trim() || undefined } }),
+    onSuccess: () => {
+      toast.success(deciding!.decision === "accepted" ? "Report accepted" : "Report rejected");
       setDeciding(null);
       setNote("");
       void qc.invalidateQueries({ queryKey: ["admin-leads"] });
@@ -71,7 +70,7 @@ export function LeadsPage() {
       {disputes ? (
         <>
           <p className="mb-4 text-sm text-muted-foreground">
-            Providers can report a contact as spam, fake or a wrong number within 30 days. Accepting a report takes the contact out of their numbers and refunds any promotion charge.
+            Providers can report a contact as spam, fake or a wrong number within 30 days. Accepting a report takes the contact out of their numbers.
           </p>
           <Table>
             <thead>
@@ -91,7 +90,6 @@ export function LeadsPage() {
                   <Td className="whitespace-nowrap">
                     {l.channel === "call" ? "Call" : "WhatsApp"}
                     <div className="text-xs text-muted-foreground">{formatDate(l.createdAt)}</div>
-                    {l.sponsoredCharge ? <div className="text-xs text-muted-foreground">Promotion charge Rs {l.sponsoredCharge}</div> : null}
                   </Td>
                   <Td>
                     <Link to={`/providers/${l.provider.id}`} className="font-medium hover:text-primary">
@@ -122,7 +120,7 @@ export function LeadsPage() {
               title={deciding.decision === "accepted" ? "Accept this report?" : "Reject this report?"}
               description={
                 deciding.decision === "accepted"
-                  ? `The contact stops counting for ${deciding.lead.provider.businessName}${deciding.lead.sponsoredCharge ? ` and Rs ${deciding.lead.sponsoredCharge} goes back to their promotion` : ""}.`
+                  ? `The contact stops counting for ${deciding.lead.provider.businessName}.`
                   : "The contact keeps counting. The provider is told the report was not accepted."
               }
               confirmLabel={deciding.decision === "accepted" ? "Accept report" : "Reject report"}

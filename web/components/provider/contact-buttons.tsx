@@ -61,7 +61,7 @@ export function ContactButtons({
     }
   }
 
-  // Free listings have no WhatsApp number, so the button only shows when there is one to open.
+  // The button only shows when the business takes WhatsApp messages and has a number to open.
   const whatsappNumber = provider.acceptsWhatsapp ? provider.whatsappNumber : null;
 
   function whatsapp(number: string) {

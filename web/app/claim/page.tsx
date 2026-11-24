@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
-import { BarChart3, BadgeCheck, Check, MessageSquareReply, PhoneCall, Sparkles, Store } from "lucide-react";
-import { publicApi } from "@/lib/api";
+import { BarChart3, BadgeCheck, Check, MessageSquareReply, PhoneCall, Store } from "lucide-react";
 import { PROVIDER_APP_URL } from "@/lib/config";
-import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { PhotoFrame } from "@/components/site/photo-frame";
 import { PROVIDER_IMAGE } from "@/lib/stock-images";
 import { ClaimSearch } from "@/components/site/claim-search";
-import { cn } from "@/lib/utils";
 
 export const revalidate = 600;
 
@@ -18,16 +15,16 @@ export const metadata: Metadata = pageMetadata({
   path: "/claim",
 });
 
-interface Plan {
-  id: number;
-  name: string;
-  price: number;
-  leadAccessLimit: number | null;
-  featuresJson: string[] | null;
-}
+const FREE_FEATURES = [
+  "Unlimited customer calls and WhatsApp messages",
+  "See every customer who contacted you",
+  "Profile views, search impressions and ranking insights",
+  "Unlimited photos of your work",
+  "Reply to reviews",
+  "Help from the KaajVa team when you need it",
+];
 
-export default async function ClaimPage() {
-  const { plans } = await publicApi<{ plans: Plan[] }>("/plans", { revalidate: 600, tags: ["plans"] });
+export default function ClaimPage() {
   return (
     <div>
       <section className="relative overflow-hidden border-b bg-card">
@@ -84,38 +81,21 @@ export default async function ClaimPage() {
 
       <section className="container-page">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="eyebrow">Plans</span>
-          <h2 className="mt-2 text-3xl font-bold text-brand-deep">Start free, upgrade when you grow</h2>
-          <p className="mt-3 text-muted-foreground">Paid plans add more leads and insights. They give a small ranking boost, never enough to outrank better-rated providers.</p>
+          <span className="eyebrow">Free for every business</span>
+          <h2 className="mt-2 text-3xl font-bold text-brand-deep">Everything is included, at no cost</h2>
+          <p className="mt-3 text-muted-foreground">There are no plans, fees or commission. Every listing gets the same tools, and ranking depends only on relevance, distance, reviews and profile quality.</p>
         </div>
-        <div className="mt-10 grid gap-5 md:grid-cols-3 lg:grid-cols-3">
-          {plans.map((plan) => {
-            const featured = plan.name === "Pro";
-            return (
-              <div key={plan.id} className={cn("relative flex flex-col rounded-xl border bg-card p-6 shadow-[var(--shadow-card)]", featured && "border-primary shadow-[var(--shadow-lift)] ring-1 ring-primary")}>
-                {featured && (
-                  <span className="absolute -top-3 left-6 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-                    <Sparkles className="size-3" /> Most popular
-                  </span>
-                )}
-                <div className="font-semibold">{plan.name}</div>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="font-display text-3xl font-bold">{plan.price ? formatPrice(plan.price) : "Free"}</span>
-                  {plan.price > 0 && <span className="text-sm text-muted-foreground">/ month</span>}
-                </div>
-                <ul className="mt-6 space-y-2.5 text-sm">
-                  {(plan.featuresJson ?? []).map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <Check className="mt-0.5 size-4 shrink-0 text-success" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Button asChild variant={featured ? "default" : "outline"} className="mt-auto w-full" style={{ marginTop: "1.5rem" }}>
-                  <a href={`${PROVIDER_APP_URL}/register`}>{plan.price ? `Choose ${plan.name}` : "Start free"}</a>
-                </Button>
-              </div>
-            );
-          })}
+        <div className="mx-auto mt-10 max-w-2xl rounded-xl border bg-card p-6 shadow-[var(--shadow-card)]">
+          <ul className="grid gap-2.5 text-sm sm:grid-cols-2">
+            {FREE_FEATURES.map((f) => (
+              <li key={f} className="flex items-start gap-2">
+                <Check className="mt-0.5 size-4 shrink-0 text-success" /> {f}
+              </li>
+            ))}
+          </ul>
+          <Button asChild className="mt-6 w-full">
+            <a href={`${PROVIDER_APP_URL}/register`}>Create a free listing</a>
+          </Button>
         </div>
       </section>
     </div>

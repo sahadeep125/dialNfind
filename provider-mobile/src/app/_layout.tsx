@@ -36,7 +36,6 @@ import {
   BrandSplash,
   ErrorState,
   OfflineBanner,
-  PurchasesSync,
   PushRegistrar,
   SessionRefresher,
   ToastPortal,
@@ -131,7 +130,6 @@ function RootLayout() {
           <StatusBar style={showSplash || theme.mode === "dark" ? "light" : "dark"} />
           <SessionRefresher />
           <AnalyticsSync />
-          <PurchasesSync />
           <PushRegistrar />
           <Stack
             screenOptions={{
@@ -145,7 +143,6 @@ function RootLayout() {
             <Stack.Screen name="login" options={{ animation: "fade" }} />
             <Stack.Screen name="start" options={{ animation: "fade" }} />
             <Stack.Screen name="register" options={{ animation: "fade" }} />
-            <Stack.Screen name="paywall" options={{ presentation: "modal", animation: "slide_from_bottom" }} />
             <Stack.Screen name="verify-email" options={{ animation: "fade", gestureEnabled: false }} />
           </Stack>
           <EmailVerificationGate />

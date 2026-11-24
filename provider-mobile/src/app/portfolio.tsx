@@ -1,12 +1,10 @@
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from "react-native";
-import { router } from "expo-router";
-import { ImagePlus, Images, Lock } from "lucide-react-native";
+import { ImagePlus, Images } from "lucide-react-native";
 
 import {
   AppButton,
   AppIconButton,
-  AppNotice,
   AppSkeleton,
   AppText,
 } from "@/components/design-system";
@@ -24,7 +22,6 @@ import {
   useSetCoverPhoto,
 } from "@/hooks/usePortfolio";
 import { useProfile } from "@/hooks/useProfile";
-import { usePlan } from "@/hooks/useSubscription";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { useUpload } from "@/hooks/useUpload";
@@ -39,7 +36,6 @@ export default function PortfolioScreen() {
   const toast = useToast();
   const { width } = useLayout();
   const profile = useProfile();
-  const plan = usePlan();
   const upload = useUpload("portfolio");
   const saveItem = useSavePortfolioItem();
   const deleteItem = useDeletePortfolioItem();
@@ -139,17 +135,7 @@ export default function PortfolioScreen() {
     [tileWidth, onEdit, onDelete, onArrange],
   );
 
-  const photoLimit = plan.limits.photos.limit;
-  const full = photoLimit !== null && items.length >= photoLimit;
-  const addButton = full ? (
-    <AppIconButton
-      accessibilityLabel="Upgrade for more photos"
-      variant="soft"
-      size="sm"
-      icon={<Lock size={16} color={theme.colors.brand.primary} />}
-      onPress={() => router.push({ pathname: "/paywall", params: { feature: "photos" } })}
-    />
-  ) : uploading ? (
+  const addButton = uploading ? (
     <View style={styles.spinner}>
       <ActivityIndicator color={theme.colors.brand.primary} />
     </View>
@@ -169,11 +155,7 @@ export default function PortfolioScreen() {
         <ScreenHeader
           title="Photos"
           subtitle={
-            profile.data
-              ? photoLimit !== null
-                ? `${items.length} of ${photoLimit} on ${plan.plan.name}`
-                : `${items.length} in your portfolio`
-              : undefined
+            profile.data ? `${items.length} in your portfolio` : undefined
           }
           right={profile.data ? addButton : undefined}
         />
@@ -196,22 +178,10 @@ export default function PortfolioScreen() {
             ListHeaderComponent={
               items.length ? (
                 <View style={{ gap: theme.spacing[3] }}>
-                  {full ? (
-                    <AppNotice
-                      tone="upgrade"
-                      title="Photo limit reached"
-                      text={`Upgrade to add more than ${photoLimit} photos.`}
-                      actionLabel="Upgrade"
-                      onPress={() =>
-                        router.push({ pathname: "/paywall", params: { feature: "photos" } })
-                      }
-                    />
-                  ) : (
-                    <AppText variant="meta">
-                      Show your shop, your team and finished jobs. Profiles with photos get more
-                      calls.
-                    </AppText>
-                  )}
+                  <AppText variant="meta">
+                    Show your shop, your team and finished jobs. Profiles with photos get more
+                    calls.
+                  </AppText>
                 </View>
               ) : null
             }

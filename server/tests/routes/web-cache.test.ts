@@ -40,7 +40,7 @@ describe("website cache refresh", () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     fetch.mockRejectedValueOnce(new TypeError("fetch failed")).mockResolvedValueOnce(new Response("", { status: 401 }));
     expect(() => revalidateWeb(["categories"])).not.toThrow();
-    expect(() => revalidateWeb(["plans"])).not.toThrow();
+    expect(() => revalidateWeb(["stats"])).not.toThrow();
     await settle();
     expect(console.warn).toHaveBeenCalledTimes(2);
   });

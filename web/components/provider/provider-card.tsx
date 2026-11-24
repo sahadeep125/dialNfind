@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { BadgeCheck, Briefcase, ChevronRight, MapPin, Megaphone, Trophy } from "lucide-react";
+import { BadgeCheck, Briefcase, ChevronRight, MapPin, Trophy } from "lucide-react";
 import type { ProviderCard as ProviderCardType } from "@/lib/types";
 import { formatDistance, formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ContactButtons } from "./contact-buttons";
 import { FavoriteButton } from "./favorite-button";
-import { PlanTierBadge } from "./plan-tier-badge";
 import { ProviderPhoto } from "./provider-photo";
 import { RatingInline } from "./rating";
 
@@ -63,17 +62,9 @@ export function ProviderCard({
             categorySlug={provider.primaryCategory?.slug}
             sizes="(min-width: 768px) 240px, 100vw"
           />
-          {(topMatch || provider.isSponsored) && (
+          {topMatch && (
             <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-white/95 px-2 py-1 text-xs font-semibold text-foreground shadow-sm">
-              {topMatch ? (
-                <>
-                  <Trophy className="size-3.5 text-cta-strong" /> Top match
-                </>
-              ) : (
-                <>
-                  <Megaphone className="size-3.5 text-muted-foreground" /> Sponsored
-                </>
-              )}
+              <Trophy className="size-3.5 text-cta-strong" /> Top match
             </span>
           )}
           <FavoriteButton providerId={provider.id} initial={provider.isFavorite} className="absolute right-2 top-2 z-10 size-8 border-0 bg-white/95 shadow-sm hover:bg-white" />
@@ -97,7 +88,6 @@ export function ProviderCard({
                 <Briefcase className="size-3.5" aria-hidden /> {provider.yearsExperience}+ yrs
               </span>
             ) : null}
-            {provider.planTier && <PlanTierBadge tier={provider.planTier} />}
           </div>
 
           {provider.shortDescription && <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-foreground/75">{provider.shortDescription}</p>}

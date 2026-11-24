@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownRight, ArrowUpRight, ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
-import { formatPrice, formatRelative } from "@/lib/format";
+import { formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "@/components/page-header";
 import { PageSkeleton } from "@/components/common";
@@ -16,8 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 type Series = { date: string; value: number }[];
 interface Analytics {
   days: number;
-  totals: { signups: number; providers: number; leads: number; reviews: number; tickets: number; revenue: number };
-  series: { signups: Series; providers: Series; leads: Series; reviews: Series; tickets: Series; revenue: Series };
+  totals: { signups: number; providers: number; leads: number; reviews: number; tickets: number };
+  series: { signups: Series; providers: Series; leads: Series; reviews: Series; tickets: Series };
   leadsByChannel: { channel: string; count: number }[];
   topCategories: { name: string; count: number }[];
   topCities: { city: string; count: number }[];
@@ -30,7 +30,7 @@ interface MetricDetails {
   total: number;
   previous: number;
   breakdowns: { title: string; items: { label: string; value: number }[] }[];
-  recent: { id: number; title: string; subtitle: string; value?: number; at: string; to: string | null }[];
+  recent: { id: number; title: string; subtitle: string; at: string; to: string | null }[];
 }
 
 const METRICS: { key: Metric; label: string; description: string; color?: string; recentTitle: string }[] = [
@@ -39,7 +39,6 @@ const METRICS: { key: Metric; label: string; description: string; color?: string
   { key: "leads", label: "Leads", description: "Customer calls and WhatsApp taps", recentTitle: "Latest leads" },
   { key: "reviews", label: "Reviews", description: "Ratings customers left", color: "var(--chart-3)", recentTitle: "Latest reviews" },
   { key: "tickets", label: "Tickets", description: "Support requests opened", color: "var(--chart-5)", recentTitle: "Latest tickets" },
-  { key: "revenue", label: "Revenue", description: "Successful payments from plans and promotions", color: "var(--chart-4)", recentTitle: "Latest payments" },
 ];
 
 const RANGE_LABEL: Record<string, string> = { "1": "today", "7": "the last 7 days", "30": "the last 30 days", "90": "the last 90 days" };
@@ -62,7 +61,7 @@ export function AnalyticsPage() {
     <>
       <PageHeader
         title="Analytics"
-        description="Growth, demand and revenue across the marketplace."
+        description="Growth and demand across the marketplace."
         actions={
           <Tabs value={days} onValueChange={setDays}>
             <TabsList>
@@ -78,13 +77,12 @@ export function AnalyticsPage() {
         <PageSkeleton />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-5">
             {METRICS.map((m) => (
               <StatCard
                 key={m.key}
                 label={m.label}
-                value={m.key === "revenue" ? formatPrice(data.totals.revenue) : data.totals[m.key].toLocaleString("en-IN")}
-                tone={m.key === "revenue" ? "success" : "default"}
+                value={data.totals[m.key].toLocaleString("en-IN")}
                 hint="View details"
                 active={open === m.key}
                 onClick={() => setOpen(m.key)}
@@ -96,8 +94,8 @@ export function AnalyticsPage() {
               <Panel title="Leads" description="Customer calls and WhatsApp taps">
                 <TrendChart id="a-leads" data={data.series.leads} />
               </Panel>
-              <Panel title="Revenue" description="Successful payments from plans and promotions">
-                <TrendChart id="a-rev" data={data.series.revenue} color="var(--chart-4)" format={(v) => formatPrice(v)} />
+              <Panel title="New listings" description="Businesses added to the directory">
+                <TrendChart id="a-providers" data={data.series.providers} color="var(--chart-4)" />
               </Panel>
               <Panel title="New accounts">
                 <TrendChart id="a-signups" data={data.series.signups} color="var(--chart-2)" />
@@ -145,7 +143,7 @@ function MetricSheet({ metric, days, series, onClose }: { metric: Metric | null;
     queryFn: () => api<MetricDetails>(`/admin/analytics/details?metric=${metric}&days=${days}`),
     enabled: !!metric,
   });
-  const fmt = (v: number) => (metric === "revenue" ? formatPrice(v) : v.toLocaleString("en-IN"));
+  const fmt = (v: number) => v.toLocaleString("en-IN");
   const change = data && data.previous > 0 ? ((data.total - data.previous) / data.previous) * 100 : null;
   const up = data ? data.total >= data.previous : true;
 
@@ -203,7 +201,6 @@ function MetricSheet({ metric, days, series, onClose }: { metric: Metric | null;
                           <div className="truncate text-xs text-muted-foreground">{r.subtitle}</div>
                         </div>
                         <div className="shrink-0 text-right">
-                          {r.value !== undefined && <div className="text-sm font-semibold tabular-nums">{formatPrice(r.value)}</div>}
                           <div className="text-xs text-muted-foreground">{formatRelative(r.at)}</div>
                         </div>
                         {r.to && <ChevronRight className="size-4 shrink-0 text-muted-foreground" />}

@@ -3,17 +3,15 @@ import { mkdir, stat, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "../../../src/lib/prisma.js";
 import { env } from "../../../src/env.js";
-import { completeCampaigns } from "../../../src/jobs/campaigns.js";
 import { cleanup } from "../../../src/jobs/cleanup.js";
 import { sweepOrphanFiles } from "../../../src/jobs/orphan-files.js";
 import { sendStaffDigests } from "../../../src/jobs/staff-digest.js";
 import { sendReviewPrompts } from "../../../src/jobs/review-prompts.js";
-import { expireSubscriptions, remindExpiringSubscriptions } from "../../../src/jobs/subscriptions.js";
 import { JOBS, runJob } from "../../../src/jobs/index.js";
 import { uploadDir } from "../../../src/storage/index.js";
 import { privateDir, PRIVATE_FILES_URL } from "../../../src/lib/private-files.js";
-import { createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser, seedPlans, subscribe } from "../../helpers/factories.js";
-import { json, mockFetch, sentMails, settle } from "../../helpers/app.js";
+import { createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser } from "../../helpers/factories.js";
+import { sentMails } from "../../helpers/app.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -27,57 +25,12 @@ async function agedFile(root: string, key: string, ageMs = 72 * 3600 * 1000) {
 }
 const gone = (file: string) => stat(file).then(() => false, () => true);
 
-describe("campaigns job", () => {
-  it("completes campaigns past their end date", async () => {
-    const cat = await createCategory();
-    const { user, provider } = await createOwner();
-    await prisma.sponsoredListing.create({ data: { providerId: provider.id, categoryId: cat.id, startDate: new Date(Date.now() - 10 * DAY), endDate: new Date(Date.now() - 3 * DAY), budget: 500, clicks: 4 } });
-    await prisma.sponsoredListing.create({ data: { providerId: provider.id, categoryId: cat.id, startDate: new Date(), endDate: new Date(Date.now() + 3 * DAY), budget: 500 } });
-    expect(await completeCampaigns()).toBe("1 completed");
-    await settle();
-    expect(await prisma.notification.findFirstOrThrow({ where: { userId: user.id } })).toMatchObject({ body: expect.stringContaining("reached 4 customers") });
-  });
-});
-
-describe("subscription jobs", () => {
-  it("expires overdue plans after checking the gateway and closes abandoned checkouts", async () => {
-    const plans = await seedPlans();
-    const a = await createOwner();
-    const b = await createOwner();
-    const c = await createOwner();
-    const d = await createOwner();
-    await subscribe(a.provider.id, plans.pro.id, { endDate: new Date(Date.now() - DAY) });
-    await subscribe(b.provider.id, plans.pro.id, { status: "past_due", graceUntil: new Date(Date.now() - 1000) , source: "razorpay", externalId: "sub_b" });
-    await subscribe(c.provider.id, plans.pro.id, { status: "past_due", graceUntil: null, endDate: new Date(Date.now() - DAY), source: "razorpay", externalId: "sub_c" });
-    const pending = await subscribe(d.provider.id, plans.pro.id, { status: "pending" });
-    await prisma.providerSubscription.update({ where: { id: pending.id }, data: { createdAt: new Date(Date.now() - 2 * DAY) } });
-    // sub_b really renewed; sub_c is cancelled at Razorpay.
-    mockFetch((url) =>
-      url.endsWith("sub_b")
-        ? json({ id: "sub_b", plan_id: "plan_pro_m", status: "active", current_end: Math.floor((Date.now() + 30 * DAY) / 1000), notes: {} })
-        : json({ id: "sub_c", plan_id: "plan_pro_m", status: "cancelled", current_end: null, notes: {} }),
-    );
-    expect(await expireSubscriptions()).toBe("2 expired, 1 abandoned checkouts closed");
-    const statuses = Object.fromEntries((await prisma.providerSubscription.findMany()).map((s) => [String(s.providerId), s.status]));
-    expect(statuses).toEqual({ [String(a.provider.id)]: "expired", [String(b.provider.id)]: "active", [String(c.provider.id)]: "expired", [String(d.provider.id)]: "cancelled" });
-  });
-  it("reminds plans that will not renew", async () => {
-    const plans = await seedPlans();
-    const a = await createOwner();
-    const b = await createOwner();
-    await subscribe(a.provider.id, plans.pro.id, { autoRenew: false, endDate: new Date(Date.now() + 2.5 * DAY) });
-    await subscribe(b.provider.id, plans.pro.id, { autoRenew: true, endDate: new Date(Date.now() + 2.5 * DAY) });
-    expect(await remindExpiringSubscriptions()).toBe("1 reminded");
-    expect(sentMails()[0]!.subject).toMatch(/^Your Pro plan ends on /);
-  });
-});
-
 describe("staff digest", () => {
   it("sends each staff member the queues they can open", async () => {
     expect(await sendStaffDigests()).toBe("nothing pending");
     const boss = await createStaff("super", { email: "boss@x.co" });
     const support = await createStaff(["support"], { email: "support@x.co" });
-    await createStaff(["plans"], { email: "finance@x.co" });
+    await createStaff(["analytics"], { email: "finance@x.co" });
     await prisma.adminRole.deleteMany({ where: { name: { contains: "never" } } });
     await createUser({ role: "admin", email: "norole@x.co" });
     await createProvider({ status: "pending" });
@@ -170,13 +123,13 @@ describe("cleanup job", () => {
 
 describe("job runner", () => {
   it("runs jobs by name and never throws", async () => {
-    expect(Object.keys(JOBS)).toEqual(["expire-subscriptions", "complete-campaigns", "remind-subscriptions", "staff-digest", "review-prompts", "recalculate-rankings", "cleanup"]);
+    expect(Object.keys(JOBS)).toEqual(["staff-digest", "review-prompts", "recalculate-rankings", "cleanup"]);
     expect(await runJob("recalculate-rankings")).toBe(true);
     expect(console.info).toHaveBeenCalledWith(expect.stringMatching(/^\[job\] recalculate-rankings: 0 providers \(\d+ ms\)$/));
     await expect(runJob("nope")).rejects.toThrow("Unknown job nope");
-    vi.spyOn(prisma.sponsoredListing, "findMany").mockRejectedValueOnce(new Error("db down"));
-    expect(await runJob("complete-campaigns")).toBe(false);
-    expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/^\[job\] complete-campaigns failed after/), expect.any(Error));
+    vi.spyOn(prisma.lead, "findMany").mockRejectedValueOnce(new Error("db down"));
+    expect(await runJob("review-prompts")).toBe(false);
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/^\[job\] review-prompts failed after/), expect.any(Error));
   });
   it("schedules jobs only when RUN_JOBS is set", async () => {
     const tasks: { name: string; fn: () => unknown; stop: ReturnType<typeof vi.fn> }[] = [];

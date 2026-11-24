@@ -46,10 +46,10 @@ export function trackScreen(pathname: string, params: Record<string, string | st
 }
 
 /** Ties this device to the account; the same id is used by the websites, the other app and the API. */
-export function identifyUser(user: SessionUser, plan?: string | null): void {
+export function identifyUser(user: SessionUser): void {
   if (!posthog) return;
   posthog.identify(String(user.id), {
-    $set: { email: user.email, name: user.name, role: user.role, provider_id: user.provider?.id ?? null, ...(plan ? { plan } : {}) },
+    $set: { email: user.email, name: user.name, role: user.role, provider_id: user.provider?.id ?? null },
     $set_once: { signed_up_at: user.createdAt },
   });
   void posthog.register({ user_type: user.role === "provider" ? "provider" : "customer" });

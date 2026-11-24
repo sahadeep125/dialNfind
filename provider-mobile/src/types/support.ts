@@ -5,7 +5,7 @@ import type { Paged } from "@/types";
 export type TicketStatus = "open" | "pending" | "resolved" | "closed";
 
 export type TicketCategory =
-  "general" | "account" | "listing" | "billing" | "verification" | "report" | "technical";
+  "general" | "account" | "listing" | "verification" | "report" | "technical";
 
 export interface Ticket {
   id: number;

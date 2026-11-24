@@ -35,10 +35,8 @@ export interface Lead {
   providerStatus: LeadStatus;
   /** Private to the provider. */
   providerNote: string | null;
-  /** Past the plan's monthly lead limit: details hidden until the provider upgrades. */
-  locked: boolean;
-  /** Signed-in customers only, and null while the lead is locked. */
+  /** Signed-in customers only. */
   customerPhone: string | null;
 }
 
-export type LeadsPage = Paged & { leads: Lead[]; leadLimit: number | null };
+export type LeadsPage = Paged & { leads: Lead[] };

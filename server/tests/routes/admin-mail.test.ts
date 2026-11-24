@@ -123,9 +123,9 @@ describe("preview tokens and page refresh edge cases", () => {
       refreshShared();
       expect(fetch).not.toHaveBeenCalled();
       fetch.mockRejectedValueOnce("offline");
-      revalidateWeb(["plans"]);
+      revalidateWeb(["stats"]);
       await settle();
-      expect(console.warn).toHaveBeenCalledWith("[web-cache] could not refresh plans:", "offline");
+      expect(console.warn).toHaveBeenCalledWith("[web-cache] could not refresh stats:", "offline");
     } finally {
       env.revalidateSecret = "";
       vi.unstubAllGlobals();

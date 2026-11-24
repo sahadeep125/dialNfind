@@ -62,15 +62,6 @@ miscRouter.get("/app-config", async (_req, res) => {
   });
 });
 
-miscRouter.get("/plans", async (_req, res) => {
-  const plans = await prisma.subscriptionPlan.findMany({
-    where: { isActive: true },
-    orderBy: { price: "asc" },
-    include: { badge: true },
-  });
-  res.json({ plans });
-});
-
 miscRouter.get("/stats", async (_req, res) => {
   const [providers, categories, cities, reviews] = await Promise.all([
     prisma.provider.count({ where: { status: "active" } }),

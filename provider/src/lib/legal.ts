@@ -18,7 +18,7 @@ export interface LegalDoc {
 export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
   terms: {
     title: "Terms for businesses",
-    updated: "September 2026",
+    updated: "November 2026",
     intro:
       "These terms apply when you list a business on KaajVa and use the KaajVa Business app and website. They are a general summary; the version published by KaajVa is the one that applies.",
     sections: [
@@ -39,12 +39,12 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
         body: "Customers can review your business. You can reply to reviews and report ones that break our guidelines, but you may not offer rewards for reviews, write reviews of your own business or pressure customers to change a review.",
       },
       {
-        heading: "Plans and promotion",
-        body: "Paid plans and sponsored campaigns are charged in advance for the period or budget you choose. Plans renew automatically until you turn off auto-renew; your plan then stays active until its end date. Sponsored placements are labelled as Sponsored. Unused campaign budget and plan fees are refunded only where the law requires it or where we say so.",
+        heading: "Fees",
+        body: "Listing your business on KaajVa and receiving leads is free. There are no plans, subscriptions or paid promotions, and no listing can pay to rank higher.",
       },
       {
         heading: "Suspension and closing your account",
-        body: "We may pause or remove a listing that breaks these terms, receives repeated genuine complaints or appears to be fraudulent. You can delete your business account at any time from your account settings. Deleting it removes your listing from search and stops any plan from renewing; it cannot be undone.",
+        body: "We may pause or remove a listing that breaks these terms, receives repeated genuine complaints or appears to be fraudulent. You can delete your business account at any time from your account settings. Deleting it removes your listing from search; it cannot be undone.",
       },
       {
         heading: "Liability",
@@ -58,25 +58,25 @@ export const LEGAL_DOCS: Record<LegalDocKey, LegalDoc> = {
   },
   privacy: {
     title: "Privacy for businesses",
-    updated: "September 2026",
+    updated: "November 2026",
     intro:
       "This explains what KaajVa collects when you run a business listing and how it is used. It is a general summary; the version published by KaajVa is the one that applies.",
     sections: [
       {
         heading: "What we collect",
-        body: "Your name, email address, phone number and password for sign in; your business details, photos, hours and service areas; verification documents you upload; support requests; and activity such as leads, profile views and campaign statistics.",
+        body: "Your name, email address, phone number and password for sign in; your business details, photos, hours and service areas; verification documents you upload; support requests; and activity such as leads and profile views.",
       },
       {
         heading: "What customers see",
-        body: "Your business name, logo, photos, description, services, prices, hours, service areas, contact numbers, rating and reviews are public. Your email address, verification documents and billing history are never shown to customers.",
+        body: "Your business name, logo, photos, description, services, prices, hours, service areas, contact numbers, rating and reviews are public. Your email address and verification documents are never shown to customers.",
       },
       {
         heading: "How we use it",
-        body: "To show your listing in search, send you leads, verify your business, run plans and campaigns, show you insights, answer support requests, prevent fraud and improve KaajVa.",
+        body: "To show your listing in search, send you leads, verify your business, show you insights, answer support requests, prevent fraud and improve KaajVa.",
       },
       {
         heading: "Who we share it with",
-        body: "Service providers that host our systems, send messages and process payments, under contracts that protect your data; and authorities when the law requires it. We do not sell your personal data.",
+        body: "Service providers that host our systems and send messages, under contracts that protect your data; and authorities when the law requires it. We do not sell your personal data.",
       },
       {
         heading: "How long we keep it",

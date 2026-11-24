@@ -7,7 +7,7 @@ import { uploadDir } from "../../src/storage/index.js";
 import { issueUserToken } from "../../src/services/user-tokens.js";
 import { getSetting } from "../../src/services/settings.js";
 import { api, authed, sentMails, settle, tokenFor } from "../helpers/app.js";
-import { createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser, seedPlans, subscribe } from "../helpers/factories.js";
+import { createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser } from "../helpers/factories.js";
 
 const pub = (key: string) => `${env.publicUrl}/uploads/${key}`;
 
@@ -18,7 +18,7 @@ describe("admin access", () => {
     const boss = await createStaff("super", { name: "Boss Person" });
     const me = await (await authed(boss)).get("/api/v1/admin/me");
     expect(me.body.permissions).toContain("team");
-    expect(me.body.modules.length).toBe(14);
+    expect(me.body.modules.length).toBe(12);
 
     const agent = await createStaff(["support", "team", "bogus"]);
     const a = await authed(agent);
@@ -139,7 +139,6 @@ describe("activity log and search insights", () => {
 
 describe("badges", () => {
   it("creates, edits, awards and removes badges", async () => {
-    const plans = await seedPlans();
     const boss = await authed(await createStaff());
     const { provider, user } = await createOwner();
     await writeFile(path.join(uploadDir, "b1.webp"), "x");
@@ -160,38 +159,7 @@ describe("badges", () => {
     // Awarded twice, notified twice.
     expect(await prisma.notification.count({ where: { userId: user.id } })).toBe(2);
     expect((await boss.delete(`/api/v1/admin/providers/${provider.id}/badges/${id}`)).body).toEqual({ ok: true });
-    expect((await boss.delete(`/api/v1/admin/badges/${plans.badges.pro.id}`)).body.error.message).toMatch(/granted by an active plan/);
     expect((await boss.delete(`/api/v1/admin/badges/${id}`)).body).toEqual({ ok: true });
-  });
-});
-
-describe("plans and promotions", () => {
-  it("creates and edits plans with their entitlements", async () => {
-    const plans = await seedPlans();
-    const boss = await authed(await createStaff(["plans"]));
-    const list = await boss.get("/api/v1/admin/plans");
-    expect(list.body.plans.map((p: { code: string; entitlements: string[] }) => [p.code, p.entitlements.length])).toEqual([["free", 0], ["pro", 1], ["business", 2]]);
-    const created = await boss.post("/api/v1/admin/plans").send({ code: "Gold_1", name: "Gold", price: 1999, badgeId: Number(plans.badges.pro.id), features: ["All"] });
-    expect(created.status).toBe(201);
-    expect(created.body.plan).toMatchObject({ code: "gold_1", featuresJson: ["All"] });
-    const edited = await boss.patch(`/api/v1/admin/plans/${created.body.plan.id}`).send({ code: "ignored", badgeId: null, name: "Gold Plus" });
-    expect(edited.body.plan).toMatchObject({ code: "gold_1", badgeId: null, name: "Gold Plus" });
-    expect((await boss.post("/api/v1/admin/plans").send({ code: "1bad", name: "x", price: 1 })).status).toBe(400);
-  });
-  it("creates and edits campaigns, recording offline payments", async () => {
-    const boss = await authed(await createStaff(["promotions"]));
-    const cat = await createCategory();
-    const p = await createProvider();
-    const base = { providerId: Number(p.id), categoryId: Number(cat.id), startDate: "2026-10-01", endDate: "2026-10-10", budget: 1000 };
-    expect((await boss.post("/api/v1/admin/sponsored").send({ ...base, endDate: "2026-09-01" })).body.error.message).toBe("End date must be after the start date");
-    const created = await boss.post("/api/v1/admin/sponsored").send({ ...base, payment: { amount: 1180, reference: "UPI123" } });
-    expect(created.status).toBe(201);
-    expect(await prisma.transaction.findFirstOrThrow()).toMatchObject({ type: "sponsored_ad", gateway: "manual", gatewayTxnId: "UPI123" });
-    await boss.post("/api/v1/admin/sponsored").send(base);
-    expect((await boss.get("/api/v1/admin/sponsored")).body.listings).toHaveLength(2);
-    const id = created.body.listing.id;
-    expect((await boss.patch(`/api/v1/admin/sponsored/${id}`).send({ status: "paused", budget: 2000 })).body.listing.status).toBe("paused");
-    expect((await boss.get("/api/v1/admin/sponsored").query({ status: "paused" })).body.listings).toHaveLength(1);
   });
 });
 
@@ -199,9 +167,11 @@ describe("team and roles", () => {
   it("invites, edits and removes team members", async () => {
     const boss = await createStaff("super", { name: "Boss Person" });
     const c = await authed(boss);
-    const role = (await c.post("/api/v1/admin/roles").send({ name: "Finance", permissions: ["plans"] })).body.role;
-    expect((await c.post("/api/v1/admin/roles").send({ name: "Finance", permissions: ["plans"] })).status).toBe(409);
+    const role = (await c.post("/api/v1/admin/roles").send({ name: "Finance", permissions: ["analytics"] })).body.role;
+    expect((await c.post("/api/v1/admin/roles").send({ name: "Finance", permissions: ["analytics"] })).status).toBe(409);
     expect((await c.post("/api/v1/admin/roles").send({ name: "Bad", permissions: ["team"] })).status).toBe(400);
+    // Plans and promotions were removed with payments.
+    expect((await c.post("/api/v1/admin/roles").send({ name: "Old", permissions: ["plans"] })).status).toBe(400);
     const invite = await c.post("/api/v1/admin/team").send({ name: "Asha Rao", email: "asha@example.com", roleId: role.id });
     expect(invite.status).toBe(201);
     expect(sentMails()[0]!.text).toContain("Boss Person added you to the KaajVa admin team as Finance");
@@ -244,7 +214,7 @@ describe("team and roles", () => {
     expect((await c.patch(`/api/v1/admin/roles/${role.id}`).send({ name: "Finance", description: null })).status).toBe(200);
     await c.post("/api/v1/admin/roles").send({ name: "Ops", permissions: ["providers"] });
     expect((await c.patch(`/api/v1/admin/roles/${role.id}`).send({ name: "Ops" })).status).toBe(409);
-    expect((await c.patch(`/api/v1/admin/roles/${role.id}`).send({ permissions: ["plans", "analytics"] })).body.role.permissions).toEqual(["plans", "analytics"]);
+    expect((await c.patch(`/api/v1/admin/roles/${role.id}`).send({ permissions: ["leads", "analytics"] })).body.role.permissions).toEqual(["leads", "analytics"]);
   });
   it("keeps team management with the super admin", async () => {
     const lead = await createStaff(["support"]);
@@ -264,7 +234,7 @@ describe("settings", () => {
     expect(got.body.other).toEqual([expect.objectContaining({ key: "legacy_key", value: "old" })]);
 
     const save = (values: Record<string, unknown>) => boss.put("/api/v1/admin/settings").send({ values });
-    expect((await save({ site_name: " Dial ", default_search_radius_km: 20, auto_approve_listings: true, support_email: "NEW@X.CO", terms_url: "https://x.co/terms", invoice_address: "Line", support_phone: null })).body).toEqual({ ok: true, saved: 7 });
+    expect((await save({ site_name: " Dial ", default_search_radius_km: 20, auto_approve_listings: true, support_email: "NEW@X.CO", terms_url: "https://x.co/terms", office_address: "Line", support_phone: null })).body).toEqual({ ok: true, saved: 7 });
     expect(await getSetting("support_email")).toBe("new@x.co");
     expect(await getSetting("default_search_radius_km")).toBe("20");
     expect(await prisma.setting.findUnique({ where: { key: "support_phone" } })).toBeNull();
@@ -280,8 +250,8 @@ describe("settings", () => {
     expect(await bad({ terms_url: "ftp://x" })).toMatch(/full link/);
     expect(await bad({ terms_url: "https://" })).toMatch(/full link/);
     expect(await bad({ site_name: "x".repeat(301) })).toMatch(/too long/);
-    expect((await save({ invoice_address: "x".repeat(4000) })).status).toBe(200);
-    expect(await bad({ invoice_address: "x".repeat(5001) })).toMatch(/too long/);
+    expect((await save({ office_address: "x".repeat(4000) })).status).toBe(200);
+    expect(await bad({ office_address: "x".repeat(5001) })).toMatch(/too long/);
   });
   it("checks select fields against their options", async () => {
     const { SETTING_FIELDS } = await import("../../src/services/settings.js");
@@ -443,15 +413,5 @@ describe("admin users", () => {
     expect((await c.post("/api/v1/admin/users/bulk").send({ ids, action: "suspend" })).body).toEqual({ updated: 2 });
     expect((await c.post("/api/v1/admin/users/bulk").send({ ids, action: "reactivate" })).body).toEqual({ updated: 2 });
     expect((await prisma.user.findUniqueOrThrow({ where: { id: a.id } })).status).toBe("active");
-  });
-});
-
-describe("helpers", () => {
-  it("has an idempotent plan seeder", async () => {
-    const a = await seedPlans();
-    const b = await seedPlans();
-    expect(b.pro.id).toBe(a.pro.id);
-    const p = await createProvider();
-    await subscribe(p.id, a.pro.id);
   });
 });

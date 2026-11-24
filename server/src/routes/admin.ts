@@ -19,10 +19,7 @@ import { logAdmin } from "../services/audit.js";
 import { notify, notifyAndEmail } from "../services/notify.js";
 import { env } from "../env.js";
 import { recalculateProvider } from "../services/ranking.js";
-import { offlinePaymentSchema, recordPayment } from "./admin/records.js";
 import { ticketRef } from "../services/tickets.js";
-import { adminBillingRouter } from "./admin/billing.js";
-import { entitlementsFor } from "../lib/plans.js";
 import { refreshProviderPages, refreshProviderSlugs, refreshShared } from "../services/web-cache.js";
 
 /**
@@ -31,7 +28,7 @@ import { refreshProviderPages, refreshProviderSlugs, refreshShared } from "../se
  */
 export const adminRouter = Router();
 adminRouter.use(requireStaff, guardAdminPath);
-adminRouter.use(adminTeamRouter, adminSupportRouter, adminSettingsRouter, adminOpsRouter, adminProvidersRouter, adminUsersRouter, adminRecordsRouter, adminExportRouter, adminBillingRouter);
+adminRouter.use(adminTeamRouter, adminSupportRouter, adminSettingsRouter, adminOpsRouter, adminProvidersRouter, adminUsersRouter, adminRecordsRouter, adminExportRouter);
 
 const queueQuery = z.object({ status: z.enum(["pending", "approved", "rejected"]).default("pending") });
 
@@ -272,8 +269,6 @@ adminRouter.patch("/badges/:id", async (req, res) => {
 
 adminRouter.delete("/badges/:id", async (req, res) => {
   const id = idParam(req.params.id as string);
-  const plans = await prisma.subscriptionPlan.count({ where: { badgeId: id, isActive: true } });
-  if (plans) throw badRequest("This badge is granted by an active plan. Change the plan first.");
   const badge = await prisma.badge.delete({ where: { id } });
   removeReplaced(badge.iconUrl, null);
   refreshShared("providers");
@@ -307,112 +302,4 @@ adminRouter.delete("/providers/:id/badges/:badgeId", async (req, res) => {
   void refreshProviderPages(providerId);
   await logAdmin(currentUser(req).id, "badge.revoke", "provider", providerId, { badgeId });
   res.json({ ok: true });
-});
-
-// Subscription plans and transactions ------------------------------------------------------------
-
-const planSchema = z.object({
-  // Decides the entitlements (src/lib/plans.ts); set once when the plan is created.
-  code: z.string().trim().toLowerCase().regex(/^[a-z][a-z0-9_]{1,30}$/, "Use lowercase letters, digits and _"),
-  name: z.string().trim().min(2).max(40),
-  price: z.number().min(0).max(1_000_000),
-  billingCycle: z.enum(["monthly", "yearly"]).default("monthly"),
-  leadAccessLimit: z.number().int().min(0).nullable().optional(),
-  photoLimit: z.number().int().min(0).nullable().optional(),
-  analyticsEnabled: z.boolean().optional(),
-  rankingBoost: z.number().min(0).max(0.2).optional(),
-  badgeId: z.number().int().positive().nullable().optional(),
-  features: z.array(z.string().trim().min(1).max(80)).max(12).optional(),
-  isActive: z.boolean().optional(),
-});
-
-function planData(body: Partial<z.infer<typeof planSchema>>) {
-  const { features, badgeId, ...rest } = body;
-  return {
-    ...rest,
-    ...(badgeId !== undefined ? { badgeId: badgeId === null ? null : BigInt(badgeId) } : {}),
-    ...(features !== undefined ? { featuresJson: features } : {}),
-  };
-}
-
-adminRouter.get("/plans", async (_req, res) => {
-  const plans = await prisma.subscriptionPlan.findMany({
-    orderBy: { price: "asc" },
-    include: {
-      badge: true,
-      prices: { orderBy: { billingCycle: "asc" } },
-      _count: { select: { subscriptions: { where: { status: { in: ["active", "past_due"] } } } } },
-    },
-  });
-  res.json({ plans: plans.map((p) => ({ ...p, entitlements: entitlementsFor(p.code) })) });
-});
-
-adminRouter.post("/plans", async (req, res) => {
-  const body = parse(planSchema, req.body);
-  const plan = await prisma.subscriptionPlan.create({ data: planData(body) as Parameters<typeof prisma.subscriptionPlan.create>[0]["data"] });
-  refreshShared("plans");
-  await logAdmin(currentUser(req).id, "plan.create", "subscription_plan", plan.id, body);
-  res.status(201).json({ plan });
-});
-
-/** Plans are never hard-deleted because subscriptions reference them; set isActive to false instead. */
-adminRouter.patch("/plans/:id", async (req, res) => {
-  const { code: _code, ...body } = parse(planSchema.partial(), req.body);
-  const id = idParam(req.params.id as string);
-  const plan = await prisma.subscriptionPlan.update({ where: { id }, data: planData(body) });
-  refreshShared("plans");
-  await logAdmin(currentUser(req).id, "plan.update", "subscription_plan", id, body);
-  res.json({ plan });
-});
-
-
-// Sponsored listings ----------------------------------------------------------------------------
-
-adminRouter.get("/sponsored", async (req, res) => {
-  const { status } = parse(z.object({ status: z.enum(["active", "paused", "completed"]).optional() }), req.query);
-  const listings = await prisma.sponsoredListing.findMany({
-    where: status ? { status } : {},
-    orderBy: { startDate: "desc" },
-    include: { provider: { select: { id: true, businessName: true, slug: true, city: true } }, category: { select: { id: true, name: true } } },
-  });
-  res.json({ listings });
-});
-
-const adminSponsoredSchema = z.object({
-  providerId: z.number().int().positive(),
-  categoryId: z.number().int().positive(),
-  targetLocation: z.string().trim().max(80).nullable().optional(),
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
-  budget: z.number().min(0).max(10_000_000),
-  /** Set when the provider paid for the campaign offline. */
-  payment: offlinePaymentSchema.optional(),
-});
-
-adminRouter.post("/sponsored", async (req, res) => {
-  const body = parse(adminSponsoredSchema, req.body);
-  if (body.endDate < body.startDate) throw badRequest("End date must be after the start date");
-  const { payment, ...campaign } = body;
-  const listing = await prisma.sponsoredListing.create({
-    data: { ...campaign, providerId: BigInt(body.providerId), categoryId: BigInt(body.categoryId) },
-  });
-  if (payment) await recordPayment(currentUser(req).id, listing.providerId, "sponsored_ad", payment);
-  await logAdmin(currentUser(req).id, "sponsored.create", "sponsored_listing", listing.id, body);
-  res.status(201).json({ listing });
-});
-
-adminRouter.patch("/sponsored/:id", async (req, res) => {
-  const body = parse(
-    z.object({
-      status: z.enum(["active", "paused", "completed"]).optional(),
-      endDate: z.coerce.date().optional(),
-      budget: z.number().min(0).optional(),
-      targetLocation: z.string().trim().max(80).nullable().optional(),
-    }),
-    req.body,
-  );
-  const id = idParam(req.params.id as string);
-  const listing = await prisma.sponsoredListing.update({ where: { id }, data: body });
-  await logAdmin(currentUser(req).id, "sponsored.update", "sponsored_listing", id, body);
-  res.json({ listing });
 });

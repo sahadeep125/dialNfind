@@ -13,7 +13,6 @@ import { LocationMap } from "@/components/provider/location-map";
 import { OpeningHours } from "@/components/provider/opening-hours";
 import { PhotoGallery } from "@/components/provider/photo-gallery";
 import { PhotoLightbox, PhotoTrigger } from "@/components/provider/photo-lightbox";
-import { PlanTierBadge } from "@/components/provider/plan-tier-badge";
 import { ProfileHeader } from "@/components/provider/profile-header";
 import { ProviderAvatar } from "@/components/provider/provider-avatar";
 import { OpenStatus, ProviderCard } from "@/components/provider/provider-card";
@@ -57,8 +56,6 @@ describe("rating and badges", () => {
         <RatingInline value={4.8} count={1} />
         <RatingInline value={4.8} count={20} short />
         <RatingInline value={0} count={0} />
-        <PlanTierBadge tier="pro" />
-        <PlanTierBadge tier="business" size="md" />
       </>,
     );
     expect(screen.getByLabelText("3.5 out of 5")).toBeInTheDocument();
@@ -66,7 +63,6 @@ describe("rating and badges", () => {
     expect(screen.getByText("1,200 reviews")).toBeInTheDocument();
     expect(screen.getAllByText("New listing")).toHaveLength(2);
     expect(screen.getByText("(20)")).toBeInTheDocument();
-    expect(screen.getByText("Business Partner")).toBeInTheDocument();
   });
   it("avatars and open status", () => {
     render(
@@ -165,18 +161,18 @@ describe("FavoriteButton", () => {
 
 describe("cards and tiles", () => {
   it("ProviderCard shows a full result", () => {
-    render(<ProviderCard provider={provider({ planTier: "pro", subcategories: ["TV Repair", "AC Repair", "Fridge", "Washer"] }) as never} highlight="Fridge" topMatch />);
+    render(<ProviderCard provider={provider({ subcategories: ["TV Repair", "AC Repair", "Fridge", "Washer"] }) as never} highlight="Fridge" topMatch />);
     expect(screen.getByText("Top match")).toBeInTheDocument();
     expect(screen.getByLabelText("Verified")).toBeInTheDocument();
     expect(screen.getByText("5+ yrs")).toBeInTheDocument();
     expect(screen.getByText("+1 more")).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Services" }).firstChild).toHaveTextContent("Fridge");
     expect(screen.getByText("per visit")).toBeInTheDocument();
-    expect(screen.getByText("Pro Partner")).toBeInTheDocument();
+    expect(screen.queryByText(/Partner|Sponsored/)).toBeNull();
   });
   it("ProviderCard shows a bare result", () => {
-    render(<ProviderCard provider={provider({ isSponsored: true, yearsExperience: null, shortDescription: "", subcategories: [], locality: null, distanceKm: null, startingPrice: null, priceUnit: null, verificationStatus: "none", primaryCategory: null, coverUrl: "https://x/c.png" }) as never} />);
-    expect(screen.getByText("Sponsored")).toBeInTheDocument();
+    render(<ProviderCard provider={provider({ yearsExperience: null, shortDescription: "", subcategories: [], locality: null, distanceKm: null, startingPrice: null, priceUnit: null, verificationStatus: "none", primaryCategory: null, coverUrl: "https://x/c.png" }) as never} />);
+    expect(screen.queryByText("Top match")).toBeNull();
     expect(screen.getByText("Price on request")).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: "Services" })).toBeNull();
   });
@@ -185,9 +181,6 @@ describe("cards and tiles", () => {
     expect(screen.queryByText("per visit")).toBeNull();
   });
   it("ProviderTile variants", () => {
-    const { unmount } = render(<ProviderTile provider={provider({ planTier: "business" }) as never} />);
-    expect(screen.getByText("Top partner")).toBeInTheDocument();
-    unmount();
     const second = render(<ProviderTile provider={provider() as never} source="category_browse" />);
     expect(screen.getByText("Verified")).toBeInTheDocument();
     second.unmount();
@@ -206,7 +199,7 @@ describe("profile sections", () => {
   it("ProfileHeader with every badge, and a bare one", () => {
     const { unmount } = render(
       <ProfileHeader
-        p={detail({ planTier: "pro", isSponsored: true, businessType: "company", badges: [{ id: 1, name: "Top Rated" }, { id: 2, name: "Pro Partner" }], totalReviews: 1 }) as never}
+        p={detail({ businessType: "company", badges: [{ id: 1, name: "Top Rated" }], totalReviews: 1 }) as never}
         chips={["TV Repair", "AC"]}
         extraChips={2}
         facts={[{ icon: Star, value: "5 yrs", label: "Experience" }]}

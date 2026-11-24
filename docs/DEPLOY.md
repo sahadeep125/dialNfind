@@ -1,6 +1,6 @@
 # Deploying KaajVa
 
-The hosting platform is not chosen yet, so this guide covers what every setup needs: the images, the release step, the settings for each app, and the one-time setup with Google, Apple, Razorpay, RevenueCat and the app stores. CI (`.github/workflows/ci.yml`) typechecks, lints, tests and runs the API smoke test on every push.
+The hosting platform is not chosen yet, so this guide covers what every setup needs: the images, the release step, the settings for each app, and the one-time setup with Google, Apple and the app stores. KaajVa is free for everyone, so there is no payment setup. CI (`.github/workflows/ci.yml`) typechecks, lints, tests and runs the API smoke test on every push.
 
 ## What runs where
 
@@ -33,7 +33,7 @@ docker run --rm --env-file api.env kaajva-api pnpm release
 # = prisma migrate deploy && tsx prisma/bootstrap.ts
 ```
 
-`bootstrap.ts` only adds what is missing: the Free, Pro and Business plans, default settings, the starting categories and admin roles, the first super admin, and the real provider listings bundled in `server/prisma/data/providers-*.json`. On the first deploy, set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` (10 or more characters). Sign in, change the password, then remove both variables.
+`bootstrap.ts` only adds what is missing: default settings, the starting categories and admin roles, the first super admin, and the real provider listings bundled in `server/prisma/data/providers-*.json`. On the first deploy, set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` (10 or more characters). Sign in, change the password, then remove both variables.
 
 The provider import runs on every release and only adds source records it has not seen before (tracked in `provider_sources`), so listings the team edited or deleted stay that way. A fresh install therefore ends with exactly one user (the super admin), the default categories and every bundled listing, all unclaimed. Set `BOOTSTRAP_IMPORT_PROVIDERS=false` to skip it.
 
@@ -57,7 +57,6 @@ Also set:
 - `RUN_JOBS=true`
 - `TRUST_PROXY_HOPS`
 - Social sign-in: `GOOGLE_CLIENT_IDS`, `APPLE_*` ([social-login.md](social-login.md))
-- Payments: `RAZORPAY_*`, `REVENUECAT_*` ([billing.md](billing.md))
 - Analytics: `POSTHOG_KEY`, `APP_ENV` ([ANALYTICS.md](ANALYTICS.md))
 
 ### Website
@@ -84,15 +83,11 @@ Build arguments:
 - `VITE_API_URL` (required; the build stops without it) and `VITE_WEB_URL`
 - Provider portal only: `VITE_GOOGLE_CLIENT_ID`, `VITE_APPLE_*`, `VITE_GTM_ID` and `VITE_POSTHOG_KEY` (PostHog go through `/ingest`, proxied by `deploy/spa-nginx.conf`)
 
-These apps keep the sign-in token in the browser. Before launch, add a Content-Security-Policy header at the proxy, in report-only mode first. It must allow Razorpay Checkout, Google Identity and Sign in with Apple, then be tightened.
+These apps keep the sign-in token in the browser. Before launch, add a Content-Security-Policy header at the proxy, in report-only mode first. It must allow Google Identity and Sign in with Apple, then be tightened.
 
 ## Outside services (one time)
 
-- **Webhooks:**
-  - Razorpay → `https://api.kaajva.in/api/v1/webhooks/razorpay`
-  - RevenueCat → `https://api.kaajva.in/api/v1/webhooks/revenuecat`
-  - Apple server notifications → `https://api.kaajva.in/api/v1/auth/apple/notifications`
-- **Razorpay:** live keys, then Admin → Plans and billing → Sync to Razorpay. Set the seller GSTIN and address under Settings → Invoicing before the first payment.
+- **Apple server notifications** → `https://api.kaajva.in/api/v1/auth/apple/notifications`
 - **Google and Apple:** follow the release checklist in [social-login.md](social-login.md).
 
 ## Mobile apps (`mobile/`, `provider-mobile/`)
@@ -103,14 +98,12 @@ Once per app:
 3. **Add the EAS environment variables** for `production` and `preview`:
    - `EXPO_PUBLIC_API_URL=https://api.kaajva.in/api/v1` and `EXPO_PUBLIC_WEB_URL`
    - the Google, Apple, Sentry and PostHog (`EXPO_PUBLIC_POSTHOG_KEY`) keys
-   - business app only: `EXPO_PUBLIC_PROVIDER_URL` and the RevenueCat keys
    - secret: `SENTRY_AUTH_TOKEN`. Leave Expo's enhanced push security off: the API sends pushes without an access token.
 4. **Fill in store submission.** Add `submit.production` in `eas.json`: `ascAppId` for iOS, and the Play service account and track for Android.
 5. **Fill in the store listings.**
-   - App Store Connect privacy label: account (name, email, phone), location (searches), photos (reviews and listings), crash data (Sentry), purchases (business app), product interaction and usage data (PostHog analytics and session replay, linked to the account, not used for tracking across other companies' apps).
+   - App Store Connect privacy label: account (name, email, phone), location (searches), photos (reviews and listings), crash data (Sentry), product interaction and usage data (PostHog analytics and session replay, linked to the account, not used for tracking across other companies' apps).
    - Play Data safety form: the same data.
    - iPad screenshots, because `supportsTablet` is on.
-6. **Business app only: have the purchase path ready.** Store purchases need the RevenueCat keys in the build. Without them the app has no way to buy a plan and only says upgrades are not available.
 
 The full list of keys and where to get each one is in [KEYS.md](KEYS.md).
 

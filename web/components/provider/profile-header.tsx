@@ -1,8 +1,7 @@
-import { BadgeCheck, MapPin, Megaphone } from "lucide-react";
+import { BadgeCheck, MapPin } from "lucide-react";
 import type { ProviderDetail } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { OpenStatus } from "./provider-card";
-import { PLAN_BADGES, PlanTierBadge } from "./plan-tier-badge";
 import { ProviderAvatar } from "./provider-avatar";
 import { RatingStars } from "./rating";
 
@@ -15,7 +14,6 @@ export interface ProfileFact {
 /** Name, trust badges, rating, main services and a row of key facts at the top of a profile. */
 export function ProfileHeader({ p, chips, extraChips, facts }: { p: ProviderDetail; chips: string[]; extraChips: number; facts: ProfileFact[] }) {
   const place = p.locality ? `${p.locality}, ${p.city}` : p.city;
-  const otherBadges = p.badges.filter((b) => !PLAN_BADGES.has(b.name));
   return (
     <div id="overview" className="scroll-mt-32">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
@@ -46,20 +44,14 @@ export function ProfileHeader({ p, chips, extraChips, facts }: { p: ProviderDeta
             <OpenStatus provider={p} className="text-[15px]" />
           </div>
 
-          {(p.verificationStatus === "verified" || p.planTier || p.isSponsored || otherBadges.length > 0) && (
+          {(p.verificationStatus === "verified" || p.badges.length > 0) && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {p.verificationStatus === "verified" && (
                 <Badge variant="success" className="gap-1 py-1">
                   <BadgeCheck /> Verified business
                 </Badge>
               )}
-              {p.planTier && <PlanTierBadge tier={p.planTier} size="md" className="rounded-md py-1" />}
-              {p.isSponsored && (
-                <Badge variant="muted" className="gap-1 py-1">
-                  <Megaphone /> Sponsored
-                </Badge>
-              )}
-              {otherBadges.map((b) => (
+              {p.badges.map((b) => (
                 <Badge key={b.id} variant="warning" className="py-1">
                   {b.name}
                 </Badge>

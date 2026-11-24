@@ -55,29 +55,6 @@ export const SETTING_GROUPS: SettingGroup[] = [
     ],
   },
   {
-    key: "monetisation",
-    title: "Promotions",
-    description: "What sponsored campaigns cost providers.",
-    fields: [
-      { key: "sponsored_cpc", label: "Promotion cost per contact (Rs)", type: "number", min: 1, max: 1000, default: "5" },
-      { key: "sponsored_min_budget", label: "Minimum promotion budget (Rs)", type: "number", min: 0, max: 1000000, default: "500" },
-    ],
-  },
-  {
-    key: "invoicing",
-    title: "Invoicing",
-    description: "Seller details printed on GST invoices for plan payments. Invoices already issued keep the details they were issued with.",
-    fields: [
-      { key: "invoice_legal_name", label: "Legal business name", type: "text", default: "KaajVa" },
-      { key: "invoice_gstin", label: "GSTIN", type: "text", help: "15 characters. Leave empty until registered; invoices then show no GSTIN." },
-      { key: "invoice_address", label: "Registered address", type: "textarea", default: "Ghogomali, Siliguri, West Bengal, India 734006" },
-      { key: "invoice_state_code", label: "GST state code", type: "text", default: "19", help: "Two digits, e.g. 19 for West Bengal. Decides CGST+SGST (same state) or IGST." },
-      { key: "invoice_sac", label: "SAC code", type: "text", default: "998365", help: "Service accounting code for the subscription." },
-      { key: "invoice_prefix", label: "Invoice number prefix", type: "text", default: "KJV" },
-      { key: "invoice_gst_rate", label: "GST rate (%)", type: "number", min: 0, max: 28, default: "18" },
-    ],
-  },
-  {
     key: "legal",
     title: "Legal links",
     description: "Linked from the footer and sign-up forms.",

@@ -1,12 +1,12 @@
 import { useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Award, BadgeCheck, CreditCard, ExternalLink, EyeOff, Loader2, Search, MapPin, Pencil, Phone, Plus, Star, Store, Upload, X } from "lucide-react";
+import { ArrowLeft, Award, BadgeCheck, ExternalLink, EyeOff, Search, MapPin, Pencil, Phone, Plus, Star, Store, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { WEB_URL } from "@/lib/config";
 import { formatDate, formatPhone, formatPrice, formatRelative } from "@/lib/format";
-import { type Badge as BadgeT, type Invoice, type Paged, type Plan, type ProviderRow, SOURCE_LABEL, type SubscriptionSource, VERIFICATION_LABEL } from "@/lib/types";
+import { type Badge as BadgeT, type Paged, type ProviderRow, VERIFICATION_LABEL } from "@/lib/types";
 import { PageHeader, Panel } from "@/components/page-header";
 import { DEFAULT_PAGE_SIZE, Pager, pageSizeOf, PageSkeleton } from "@/components/common";
 import { ConfirmDialog, EmptyRow, Facts, FilterSelect, SearchInput, StatCard, StatusBadge, Table, TableSkeleton, Td, Th, Toolbar, useUrlState } from "@/components/admin-ui";
@@ -14,13 +14,9 @@ import { Button } from "@/components/ui/button";
 import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
 import { AddListingDialog, ImportListingsDialog } from "./provider-create";
 import { DeleteListingPanel, OwnerActions } from "./provider-manage";
-import { emptyPayment, PaymentFields, paymentBody, paymentProblem, type PaymentValue } from "@/components/payment-fields";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { NotIndexedNote, SearchPreview, SeoCompletion, SeoReport, SeoScoreBadge, SeoScoreRing } from "@/components/seo";
 import type { SeoAnalysis } from "@/lib/seo";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Waiting for approval" },
@@ -327,26 +323,7 @@ interface ProviderDetail {
     services: { id: number; isPrimary: boolean; startingPrice: number | null; category: { name: string }; subcategory: { name: string } | null }[];
     verifications: { id: number; type: string; status: string; documentUrl: string | null; notes: string | null; createdAt: string }[];
     badges: { badge: BadgeT; awardedAt?: string }[];
-    subscriptions: {
-      id: number;
-      status: string;
-      source: SubscriptionSource;
-      billingCycle: "monthly" | "yearly";
-      autoRenew: boolean;
-      externalId: string | null;
-      externalUrl: string | null;
-      startDate: string;
-      endDate: string | null;
-      plan: { id: number; code: string; name: string; price: number };
-    }[];
-    invoices: Invoice[];
-    sponsoredListings: { id: number; status: string; budget: number; amountSpent: number; startDate: string; endDate: string; category: { name: string } }[];
     portfolio: { id: number; imageUrl: string; title: string }[];
-  };
-  plan: {
-    plan: { code: string; name: string };
-    entitlements: string[];
-    limits: { leads: { limit: number | null; used: number }; photos: { limit: number | null; used: number } };
   };
   stats: { leads30: number; leadsAll: number; openTickets: number };
   recentReviews: { id: number; rating: number; reviewText: string | null; status: string; createdAt: string; user: { name: string } }[];
@@ -384,8 +361,6 @@ export function ProviderDetailPage() {
   const { data: badgeData } = useQuery({ queryKey: ["badges"], queryFn: () => api<{ badges: BadgeT[] }>("/admin/badges") });
   const [pending, setPending] = useState<string | null>(null);
   const [badgeId, setBadgeId] = useState("");
-  const [grantOpen, setGrantOpen] = useState(false);
-  const [revokeOpen, setRevokeOpen] = useState(false);
 
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["admin-provider", id] });
@@ -419,21 +394,9 @@ export function ProviderDetailPage() {
     onError: (e) => toast.error(errorMessage(e)),
   });
 
-  const revokePlan = useMutation({
-    mutationFn: () => api(`/admin/providers/${id}/subscription`, { method: "DELETE", json: { note: "Revoked from the admin console" } }),
-    onSuccess: () => {
-      toast.success("Moved to Free");
-      setRevokeOpen(false);
-      invalidate();
-    },
-    onError: (e) => toast.error(errorMessage(e)),
-  });
-
   if (!data) return <PageSkeleton />;
   const p = data.provider;
   const owned = new Set(p.badges.map((b) => b.badge.id));
-  const activeSub = p.subscriptions.find((s) => s.status === "active" || s.status === "past_due");
-  const storeSub = activeSub && (activeSub.source === "app_store" || activeSub.source === "play_store");
   const actions = (["active", "suspended", "rejected", "pending"] as const).filter((s) => s !== p.status && !(p.status === "pending" && s === "pending"));
 
   return (
@@ -566,72 +529,6 @@ export function ProviderDetailPage() {
               <p className="text-sm text-muted-foreground">Nobody has claimed this listing yet.</p>
             )}
           </Panel>
-          <Panel
-            title="Plan"
-            actions={
-              !storeSub && (
-                <Button size="sm" variant="outline" onClick={() => setGrantOpen(true)}>
-                  <CreditCard /> Change plan
-                </Button>
-              )
-            }
-          >
-            <div className="text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold">{data.plan.plan.name}</span>
-                {activeSub && <StatusBadge status={activeSub.status} label={activeSub.status === "past_due" ? "Payment failed" : undefined} />}
-              </div>
-              {activeSub ? (
-                <div className="text-muted-foreground">
-                  {SOURCE_LABEL[activeSub.source]}, {activeSub.billingCycle} · {activeSub.autoRenew && activeSub.source !== "admin" ? "renews" : "ends"}{" "}
-                  {activeSub.endDate ? formatDate(activeSub.endDate) : "never"}
-                  {activeSub.externalUrl && (
-                    <a href={activeSub.externalUrl} target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-0.5 text-primary hover:underline">
-                      View <ExternalLink className="size-3" />
-                    </a>
-                  )}
-                </div>
-              ) : (
-                <div className="text-muted-foreground">No paid plan</div>
-              )}
-              <div className="mt-2 flex flex-wrap gap-1">
-                {data.plan.entitlements.length ? (
-                  data.plan.entitlements.map((e) => (
-                    <span key={e} className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-[11px] text-primary">
-                      {e}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-xs text-muted-foreground">No entitlements</span>
-                )}
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                Leads this month {data.plan.limits.leads.used}
-                {data.plan.limits.leads.limit !== null && ` (limit ${data.plan.limits.leads.limit} in full)`} · Photos {data.plan.limits.photos.used}
-                {data.plan.limits.photos.limit !== null && ` of ${data.plan.limits.photos.limit}`}
-              </div>
-              {storeSub && <p className="mt-2 text-xs text-muted-foreground">Billed by {activeSub.source === "app_store" ? "Apple" : "Google"}. Only the subscriber can change it, in the store.</p>}
-              {activeSub && !storeSub && (
-                <Button size="sm" variant="ghost" className="mt-2 h-7 px-2 text-xs text-destructive" onClick={() => setRevokeOpen(true)}>
-                  Move to Free now
-                </Button>
-              )}
-            </div>
-            {p.invoices.length > 0 && (
-              <ul className="mt-4 space-y-1.5 border-t pt-3 text-xs">
-                {p.invoices.slice(0, 5).map((i) => (
-                  <li key={i.id} className="flex items-center justify-between gap-2">
-                    <a href={i.pdfUrl} target="_blank" rel="noopener noreferrer" className="font-mono hover:text-primary">
-                      {i.number}
-                    </a>
-                    <span className="tabular-nums text-muted-foreground">
-                      {formatPrice(i.total)} {i.status === "void" && "(void)"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel>
           <Panel title="Verification">
             <ul className="space-y-2 text-sm">
               {p.verifications.length ? (
@@ -690,23 +587,6 @@ export function ProviderDetailPage() {
               </Button>
             </div>
           </Panel>
-          {p.sponsoredListings.length > 0 && (
-            <Panel title="Promotions">
-              <ul className="space-y-2 text-sm">
-                {p.sponsoredListings.map((s) => (
-                  <li key={s.id} className="flex items-center justify-between gap-2">
-                    <span>
-                      {s.category.name}
-                      <span className="block text-xs text-muted-foreground">
-                        {formatPrice(s.amountSpent)} of {formatPrice(s.budget)}
-                      </span>
-                    </span>
-                    <StatusBadge status={s.status} />
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          )}
           <Panel title="Contact">
             <Button asChild variant="outline" className="w-full">
               <a href={`tel:${p.phone}`}>
@@ -730,137 +610,6 @@ export function ProviderDetailPage() {
           onConfirm={() => update.mutate({ status: pending })}
         />
       )}
-      <GrantPlanDialog open={grantOpen} onOpenChange={setGrantOpen} providerId={p.id} onDone={invalidate} />
-      <ConfirmDialog
-        open={revokeOpen}
-        onOpenChange={setRevokeOpen}
-        title="Move this provider to Free now?"
-        description={
-          activeSub?.source === "razorpay"
-            ? "Their Razorpay subscription is cancelled straight away, so they are not charged again. Paid time left is not refunded automatically."
-            : "The plan granted by the team ends today. Their badge and ranking boost are removed."
-        }
-        confirmLabel="Move to Free"
-        destructive
-        busy={revokePlan.isPending}
-        onConfirm={() => revokePlan.mutate()}
-      />
     </>
-  );
-}
-
-function GrantPlanDialog({ open, onOpenChange, providerId, onDone }: { open: boolean; onOpenChange: (o: boolean) => void; providerId: number; onDone: () => void }) {
-  const { data } = useQuery({ queryKey: ["plans"], queryFn: () => api<{ plans: Plan[] }>("/admin/plans"), enabled: open });
-  const [planId, setPlanId] = useState("");
-  const [months, setMonths] = useState("1");
-  const [note, setNote] = useState("");
-  const [payment, setPayment] = useState<PaymentValue>(emptyPayment());
-  const [error, setError] = useState<string | null>(null);
-  const plan = data?.plans.find((pl) => String(pl.id) === planId);
-  const grant = useMutation({
-    mutationFn: () =>
-      api(`/admin/providers/${providerId}/subscription`, {
-        method: "POST",
-        json: { planId: Number(planId), months: Number(months), note: note.trim() || undefined, payment: paymentBody(payment) },
-      }),
-    onSuccess: () => {
-      toast.success("Plan updated");
-      onOpenChange(false);
-      onDone();
-    },
-    onError: (e) => setError(errorMessage(e)),
-  });
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Change plan</DialogTitle>
-          <DialogDescription>
-            Any current plan ends today; a web subscription stops charging. If the provider paid, record the payment here and a GST invoice is issued; leave it unticked for a free
-            launch offer or goodwill extension.
-          </DialogDescription>
-        </DialogHeader>
-        <form
-          noValidate
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!planId) return setError("Choose a plan");
-            const problem = paymentProblem(payment);
-            if (problem) return setError(problem);
-            grant.mutate();
-          }}
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="grant-plan">Plan</Label>
-              <Select
-                value={planId}
-                onValueChange={(v) => {
-                  setPlanId(v);
-                  setError(null);
-                  const price = Number(data?.plans.find((pl) => String(pl.id) === v)?.price ?? 0);
-                  setPayment((pm) => ({ ...pm, amount: price ? String(price * Number(months)) : "" }));
-                }}
-              >
-                <SelectTrigger id="grant-plan" className="w-full" aria-invalid={error === "Choose a plan" || undefined}>
-                  <SelectValue placeholder="Choose a plan" />
-                </SelectTrigger>
-                <SelectContent>
-                  {data?.plans
-                    .filter((pl) => pl.isActive && pl.code !== "free")
-                    .map((pl) => (
-                      <SelectItem key={pl.id} value={String(pl.id)}>
-                        {pl.name} ({formatPrice(pl.price)})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="grant-months">Length</Label>
-              <Select
-                value={months}
-                onValueChange={(m) => {
-                  setMonths(m);
-                  if (plan?.price) setPayment((pm) => ({ ...pm, amount: String(Number(plan.price) * Number(m)) }));
-                }}
-              >
-                <SelectTrigger id="grant-months" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 3, 6, 12].map((m) => (
-                    <SelectItem key={m} value={String(m)}>
-                      {m} month{m > 1 ? "s" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          {plan && plan.price > 0 && <PaymentFields id="grant-pay" value={payment} onChange={setPayment} />}
-          <div className="space-y-2">
-            <Label htmlFor="grant-note">
-              Reason <span className="font-normal text-muted-foreground">(optional, kept in the audit log)</span>
-            </Label>
-            <Textarea id="grant-note" rows={2} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
-          </div>
-          {error && (
-            <p role="alert" className="text-sm font-medium text-destructive">
-              {error}
-            </p>
-          )}
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={grant.isPending}>
-              {grant.isPending && <Loader2 className="animate-spin" />} Change plan
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }

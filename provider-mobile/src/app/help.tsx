@@ -39,12 +39,8 @@ const FAQ: { q: string; a: string }[] = [
     a: "Open Verification from the More tab and upload an identity document and, if you have one, a business document such as a GST certificate or shop licence. Our team checks them and updates your status. Documents are never shown to customers.",
   },
   {
-    q: "How does promotion work?",
-    a: "A sponsored campaign shows your listing with a Sponsored label when customers in your city search a category you offer. You set a budget and a duration of 7, 14 or 30 days, and you are charged only when a customer calls or messages you. You can pause and resume a campaign at any time.",
-  },
-  {
-    q: "What do the paid plans add?",
-    a: "Every plan keeps your listing free to find. Paid plans include more leads each month, profile analytics, a partner badge and a small ranking boost. You can change plan or turn off auto-renew under Plan and billing.",
+    q: "Does KaajVa cost anything?",
+    a: "No. KaajVa is free for businesses. Every listing gets all its leads with full contact details, profile analytics and ranking, the WhatsApp button and as many photos as you like. There are no plans, fees or paid promotions.",
   },
   {
     q: "My listing is in review. What now?",
@@ -52,7 +48,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How do I delete my business account?",
-    a: "Go to More, then Delete account. Your listing is removed from search, any plan stops renewing and running promotions end. This cannot be undone. A plan bought in the App Store or Google Play must also be cancelled in the store.",
+    a: "Go to More, then Delete account. Your listing is removed from search. This cannot be undone.",
   },
 ];
 

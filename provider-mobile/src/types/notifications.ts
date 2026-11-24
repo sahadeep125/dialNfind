@@ -5,7 +5,7 @@ export interface AppNotification {
   userId: number;
   title: string;
   body: string | null;
-  /** lead, review, review_reply, subscription, listing, support, ... */
+  /** lead, review, review_reply, listing, support, ... */
   type: string;
   isRead: boolean;
   dataJson: unknown;
