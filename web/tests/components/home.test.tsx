@@ -33,9 +33,9 @@ describe("home sections", () => {
     expect(screen.getByText("1 business")).toBeInTheDocument();
     expect(screen.queryByText("1,200 businesses")).toBeNull();
     expect(screen.getByText("1,200")).toBeInTheDocument();
-    expect(screen.getByText("1,500 local businesses listed")).toBeInTheDocument();
+    expect(screen.getByText("1,500 local pros")).toBeInTheDocument();
     expect(screen.getByText("20+ customer reviews")).toBeInTheDocument();
-    expect(screen.getAllByText("Popular:")).toHaveLength(1);
+    expect(screen.getAllByRole("heading", { name: "Popular searches" })).toHaveLength(1);
     expect(screen.getByText("Search a service and your area")).toBeInTheDocument();
     expect(screen.getByText("The rules every listing follows")).toBeInTheDocument();
   });

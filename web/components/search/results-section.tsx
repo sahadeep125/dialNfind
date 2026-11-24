@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SearchX } from "lucide-react";
-import type { Category, SearchResponse } from "@/lib/types";
+import type { Category, ProviderCard as ProviderCardType, SearchResponse } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ProviderCard } from "@/components/provider/provider-card";
 import { Pagination } from "@/components/pagination";
@@ -25,6 +25,7 @@ export function ResultsSection({
   lockedCategory,
   lockedSub,
   source,
+  alternatives = [],
 }: {
   data: SearchResponse;
   searchParams: SearchParamsRecord;
@@ -37,6 +38,8 @@ export function ResultsSection({
   /** On a subcategory page: its slug, which is part of the path rather than a filter. */
   lockedSub?: string;
   source: "search" | "category_browse";
+  /** Shown under an empty result: the nearest pros for the same service, further out. */
+  alternatives?: ProviderCardType[];
 }) {
   const view = one(searchParams.view) === "map" ? "map" : "list";
   const highlight = data.resolved.subcategory?.name;
@@ -80,7 +83,22 @@ export function ResultsSection({
                 <div className="min-w-0">{heading}</div>
                 <SortSelect />
               </div>
-              {empty ? <EmptyState basePath={basePath} /> : list}
+              {empty && alternatives.length > 0 ? (
+                <div>
+                  <p className="rounded-lg border bg-card px-4 py-3 text-sm text-foreground/80">
+                    Nobody matches within this distance. These are the nearest ones further out:
+                  </p>
+                  <div className="mt-4 space-y-4">
+                    {alternatives.map((p) => (
+                      <ProviderCard key={p.id} provider={p} source={source} highlight={highlight} />
+                    ))}
+                  </div>
+                </div>
+              ) : empty ? (
+                <EmptyState basePath={basePath} />
+              ) : (
+                list
+              )}
               <Pagination page={data.page} totalPages={data.totalPages} searchParams={searchParams} basePath={basePath} />
             </div>
             {!empty && (

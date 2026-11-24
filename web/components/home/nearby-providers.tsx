@@ -28,7 +28,7 @@ export function NearbyProviders() {
   if (providers && providers.length === 0) return null;
   const place = location ? location.city || location.name : null;
   return (
-    // Follows the categories section, so it only needs space below.
+    // Follows the "What needs fixing?" section, so it only needs space below.
     <section className="container-wide pb-16 md:pb-24">
       <SectionHeading
         title={place ? `Popular pros in ${place}` : "Popular pros near you"}

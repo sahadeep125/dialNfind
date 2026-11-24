@@ -34,34 +34,69 @@ export interface ResolvedTerm {
   subcategory: { id: bigint; name: string; slug: string; categoryId: bigint } | null;
 }
 
+/** Words that say where or how urgently, not what: "near me", "in Siliguri", "best". Dropped before matching. */
+const PLACE_NOISE = /\b(near\s*by|near\s+me|nearby|near|in\s+siliguri|siliguri|best|top|cheap|good|shops?|centres?|centers?|now|today|urgent(?:ly)?|24\s*x?\s*7|24\s*hours?)\b/gi;
+
+/** Words every service shares, so a fuzzy match on them alone ("… repair") says nothing about the service. */
+const GENERIC_WORDS = new Set([
+  "repair", "repairs", "repairing", "service", "services", "servicing", "and", "technician", "technicians", "mechanic",
+  "fix", "fixing", "install", "installation", "work", "works", "home", "at", "for", "my", "the", "of", "not", "working",
+]);
+
+/** The words of a query that name the thing itself: "mixer", "grinder" in "mixer grinder repair near me". */
+function coreWords(term: string): string[] {
+  return term
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 2 && !GENERIC_WORDS.has(w));
+}
+
+/**
+ * A fuzzy (trigram) match only counts when the query and the name share a real word, so "mixer grinder
+ * repair" never lands on "Geyser Repair" just because both end in "repair". Typos still match: words are
+ * compared on their first four letters.
+ */
+function sharesCoreWord(core: string[], ...names: (string | null)[]): boolean {
+  if (core.length === 0) return true;
+  const words = names.flatMap((n) => (n ?? "").toLowerCase().split(/[^a-z0-9]+/)).filter(Boolean);
+  return core.some((c) => words.some((w) => w.startsWith(c.slice(0, 4)) || c.startsWith(w.slice(0, 4))));
+}
+
+/** A substring or profession match scores 0.9 / 0.85; anything lower came from trigram similarity alone. */
+const FUZZY_BELOW = 0.85;
+
 /**
  * Maps free text like "tv not working" or "TV Repair" onto a subcategory or category, using
  * substring matches first and trigram similarity as a fallback.
  */
 export async function resolveTerm(q: string): Promise<ResolvedTerm> {
-  const term = q.trim();
-  if (!term) return { category: null, subcategory: null };
+  const raw = q.trim();
+  if (!raw) return { category: null, subcategory: null };
+  const term = raw.replace(PLACE_NOISE, " ").replace(/\s+/g, " ").trim() || raw;
+  const core = coreWords(term);
 
   // Profession names count too, so "plumber" finds Plumbing and "ac technician" finds AC Repair & Service.
-  const subs = await prisma.$queryRaw<{ id: bigint; name: string; slug: string; category_id: bigint; score: number }[]>`
-    SELECT id, name, slug, category_id,
+  const subs = await prisma.$queryRaw<{ id: bigint; name: string; slug: string; category_id: bigint; profession_name: string | null; score: number }[]>`
+    SELECT id, name, slug, category_id, profession_name,
       GREATEST(similarity(name, ${term}), CASE WHEN ${term} ILIKE '%' || name || '%' OR name ILIKE '%' || ${term} || '%' THEN 0.9 ELSE 0 END,
         CASE WHEN profession_name IS NULL THEN 0
              WHEN ${term} ILIKE '%' || profession_name || '%' OR profession_name ILIKE '%' || ${term} || '%' THEN 0.9
              ELSE similarity(profession_name, ${term}) END) AS score
     FROM subcategories WHERE is_active
-    ORDER BY score DESC LIMIT 1`;
-  const cats = await prisma.$queryRaw<{ id: bigint; name: string; slug: string; score: number }[]>`
-    SELECT id, name, slug,
+    ORDER BY score DESC LIMIT 5`;
+  const cats = await prisma.$queryRaw<{ id: bigint; name: string; slug: string; profession_name: string | null; score: number }[]>`
+    SELECT id, name, slug, profession_name,
       GREATEST(similarity(name, ${term}), CASE WHEN ${term} ILIKE '%' || name || '%' OR name ILIKE '%' || ${term} || '%' THEN 0.85 ELSE 0 END,
         CASE WHEN profession_name IS NULL THEN 0
              WHEN ${term} ILIKE '%' || profession_name || '%' OR profession_name ILIKE '%' || ${term} || '%' THEN 0.85
              ELSE similarity(profession_name, ${term}) END) AS score
     FROM categories WHERE is_active
-    ORDER BY score DESC LIMIT 1`;
+    ORDER BY score DESC LIMIT 5`;
 
-  const sub = subs[0] && subs[0].score >= 0.35 ? subs[0] : null;
-  const cat = cats[0] && cats[0].score >= 0.35 ? cats[0] : null;
+  const usable = <T extends { name: string; profession_name: string | null; score: number }>(rows: T[]) =>
+    rows.find((r) => r.score >= 0.35 && (r.score >= FUZZY_BELOW || sharesCoreWord(core, r.name, r.profession_name))) ?? null;
+  const sub = usable(subs);
+  const cat = usable(cats);
 
   if (sub && (!cat || sub.score >= cat.score)) {
     const parent = await prisma.category.findUnique({ where: { id: sub.category_id }, select: { id: true, name: true, slug: true } });

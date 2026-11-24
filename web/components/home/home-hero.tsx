@@ -4,7 +4,10 @@ import { SearchBar } from "@/components/search/search-bar";
 import { PROVIDER_IMAGE } from "@/lib/stock-images";
 import { HeroCity } from "./hero-city";
 
-/** First screen: what KaajVa is, one hard fact, the search, and a photograph of the work. */
+/**
+ * First screen: what Kaajva does in one line, the search (the page's one job), the searches people make most,
+ * and three hard facts. The photograph sits beside it on wide screens only, so phones get the search first.
+ */
 export function HomeHero({
   popular,
   stats,
@@ -12,51 +15,55 @@ export function HomeHero({
   popular: { label: string; href: string }[];
   stats: { providers: number; categories?: number; reviews: number };
 }) {
-  const listed = `${stats.providers.toLocaleString("en-IN")} local businesses listed`;
   const facts = [
-    stats.categories ? `${listed} across ${stats.categories} services` : listed,
+    `${stats.providers.toLocaleString("en-IN")} local pros${stats.categories ? ` in ${stats.categories} services` : ""}`,
     // Shown only once there are reviews: "0 customer reviews" reads as an empty site.
-    stats.reviews > 0 ? `${stats.reviews.toLocaleString("en-IN")}+ customer reviews` : "Free to use, no sign-up needed",
-    "No booking fees or commission",
+    stats.reviews > 0 ? `${stats.reviews.toLocaleString("en-IN")}+ customer reviews` : "Call or WhatsApp them directly",
+    "No booking fee, no commission",
   ];
   return (
     <section className="border-b bg-background">
-      <div className="container-wide grid items-center gap-10 py-10 md:py-14 xl:min-h-[calc(100svh-4rem)] xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] xl:gap-16 xl:py-12">
+      <div className="container-wide grid items-center gap-10 py-8 md:py-12 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] xl:gap-14 xl:py-14">
         <div className="hero-enter min-w-0">
-          <p className="text-sm font-medium text-muted-foreground">
-            Local services directory · <HeroCity />, West Bengal
-          </p>
-          <h1 className="mt-4 text-[2.5rem] font-bold leading-[1.04] tracking-[-0.03em] text-foreground sm:text-[3.25rem] lg:text-[4rem]">
-            Find a local pro in <HeroCity /> and call them directly.
+          <h1 className="text-[2.25rem] font-extrabold leading-[1.04] tracking-[-0.03em] text-foreground sm:text-[3rem] lg:text-[3.75rem]">
+            Something to fix? Find a local pro near you in <HeroCity />.
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-            Electricians, salons, tutors, mechanics and repair shops, with their phone numbers, opening hours and reviews in one place. You talk to the business, not to us.
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+            Appliance and mobile repair, electricians, plumbers, mechanics, salons and tutors. See who is nearest and open, then call or WhatsApp them yourself.
           </p>
 
-          <SearchBar variant="joined" className="mt-8 max-w-3xl" />
+          <SearchBar variant="joined" className="mt-7 max-w-3xl" />
 
           {popular.length > 0 && (
-            <p className="mt-5 flex flex-wrap items-baseline gap-x-4 gap-y-2 text-[15px]">
-              <span className="text-muted-foreground">Popular:</span>
-              {popular.map((p) => (
-                <Link key={p.href} href={p.href} className="link-draw font-medium text-foreground">
-                  {p.label}
-                </Link>
-              ))}
-            </p>
+            <div className="mt-5 max-w-3xl">
+              <h2 className="sr-only">Popular searches</h2>
+              <ul className="flex flex-wrap gap-2">
+                {popular.map((p) => (
+                  <li key={p.href}>
+                    <Link
+                      href={p.href}
+                      className="inline-flex h-9 items-center rounded-full border border-input bg-card px-3.5 text-sm font-medium text-foreground/85 transition-colors hover:border-primary/40 hover:bg-secondary hover:text-primary"
+                    >
+                      {p.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
-          <ul className="mt-10 grid gap-3 border-t pt-6 text-sm text-foreground sm:grid-cols-3 sm:gap-6">
+          <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 border-t pt-5 text-sm font-medium text-foreground/80">
             {facts.map((f) => (
-              <li key={f} className="border-l-2 border-cta pl-3 font-medium leading-snug">
+              <li key={f} className="flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-cta" aria-hidden />
                 {f}
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="hero-enter hero-enter-late relative aspect-[4/3] overflow-hidden rounded-lg bg-muted sm:aspect-[16/9] xl:aspect-[4/5] xl:max-h-[calc(100svh-9rem)]">
-          <Image src={PROVIDER_IMAGE.src} alt={PROVIDER_IMAGE.alt} fill priority sizes="(min-width: 1280px) 34rem, 100vw" className="object-cover object-[62%_center]" />
+        <div className="hero-enter hero-enter-late relative hidden aspect-[4/5] max-h-[38rem] overflow-hidden rounded-lg bg-muted xl:block">
+          <Image src={PROVIDER_IMAGE.src} alt={PROVIDER_IMAGE.alt} fill priority sizes="34rem" className="object-cover object-[62%_center]" />
         </div>
       </div>
     </section>

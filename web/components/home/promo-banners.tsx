@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/config";
 import { AUTH_IMAGE } from "@/lib/stock-images";
 
 const PROVIDER_PERKS = [
@@ -11,9 +10,8 @@ const PROVIDER_PERKS = [
   { title: "Your own dashboard", text: "Reply to reviews and see who contacted you." },
 ];
 
-/** "For businesses" with a photo, then a slim "Get the app" strip when a store link is configured. */
+/** "For businesses": list or claim a listing. The app has its own band (app-promo.tsx). */
 export function PromoBanners() {
-  const hasApp = Boolean(APP_STORE_URL || PLAY_STORE_URL);
   return (
     <div className="space-y-5">
       <div className="grid overflow-hidden rounded-lg bg-primary text-white lg:grid-cols-2">
@@ -46,30 +44,10 @@ export function PromoBanners() {
         </div>
       </div>
 
-      {hasApp && (
-        <div className="flex flex-col items-start justify-between gap-5 rounded-lg border bg-card p-6 sm:flex-row sm:items-center sm:p-8">
-          <div>
-            <h2 className="text-xl font-bold">Get the KaajVa app</h2>
-            <p className="mt-1 text-[15px] text-muted-foreground">Find and call local businesses on the go, and keep your saved ones in one place.</p>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-3">
-            {APP_STORE_URL && (
-              <StoreBadge href={APP_STORE_URL} caption="Download on the" name="App Store">
-                <AppleLogo />
-              </StoreBadge>
-            )}
-            {PLAY_STORE_URL && (
-              <StoreBadge href={PLAY_STORE_URL} caption="GET IT ON" name="Google Play">
-                <PlayLogo />
-              </StoreBadge>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-function StoreBadge({ href, caption, name, children }: { href: string; caption: string; name: string; children: React.ReactNode }) {
+export function StoreBadge({ href, caption, name, children }: { href: string; caption: string; name: string; children: React.ReactNode }) {
   return (
     <a
       href={href}
@@ -87,7 +65,7 @@ function StoreBadge({ href, caption, name, children }: { href: string; caption: 
   );
 }
 
-function AppleLogo() {
+export function AppleLogo() {
   return (
     <svg viewBox="0 0 24 24" className="size-7 fill-white" aria-hidden>
       <path d="M16.37 12.64c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.28-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.96-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.51 1.25-2.58-.03-.01-2.4-.92-2.42-3.65ZM14.1 5.9c.63-.77 1.06-1.83.94-2.9-.91.04-2.02.61-2.67 1.37-.58.67-1.1 1.76-.96 2.8 1.02.08 2.06-.52 2.69-1.27Z" />
@@ -95,7 +73,7 @@ function AppleLogo() {
   );
 }
 
-function PlayLogo() {
+export function PlayLogo() {
   return (
     <svg viewBox="0 0 24 24" className="size-7" aria-hidden>
       <path d="M3.6 2.3c-.2.2-.3.6-.3 1v17.4c0 .4.1.8.3 1l9.6-9.7-9.6-9.7Z" fill="#00d7fe" />

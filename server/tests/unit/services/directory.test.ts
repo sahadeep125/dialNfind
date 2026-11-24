@@ -338,6 +338,19 @@ describe("search", () => {
     expect(await resolveTerm("zzzzqqq")).toEqual({ category: null, subcategory: null });
   });
 
+  it("ignores place words and never matches a service on the word \"repair\" alone", async () => {
+    const { cat, tv } = await directory();
+    const wm = (await prisma.subcategory.findFirstOrThrow({ where: { slug: { contains: "washing" } } })).id;
+    expect(await resolveTerm("best tv repair shop in Siliguri")).toMatchObject({ subcategory: { id: tv.id } });
+    expect(await resolveTerm("washing machine repair near me")).toMatchObject({ category: { id: cat.id }, subcategory: { id: wm } });
+    // Typos still land: words are compared on their first letters.
+    expect(await resolveTerm("washng machne")).toMatchObject({ subcategory: { id: wm } });
+    // Only "repair" in common with "TV Repair" or "Appliance Repair": no service, so search falls back to text.
+    expect(await resolveTerm("mixer grinder repair")).toEqual({ category: null, subcategory: null });
+    // A query of nothing but place words still searches as typed.
+    expect(await resolveTerm("near me")).toEqual({ category: null, subcategory: null });
+  });
+
   it("counts a listing that offers the whole category as offering each of its services", async () => {
     const { cat, tv, near, plumbing } = await directory();
     const general = await createProvider({ businessName: "City Appliance Care", categoryId: cat.id, subcategoryId: null });
