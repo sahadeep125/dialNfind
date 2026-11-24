@@ -1,7 +1,7 @@
 import { useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Award, BadgeCheck, Building2, ExternalLink, EyeOff, Search, MapPin, Pencil, Phone, Plus, Star, Store, Trash2, Upload, UserRound, X } from "lucide-react";
+import { ArrowLeft, Award, BadgeCheck, Building2, ExternalLink, EyeOff, FileUp, Search, MapPin, Pencil, Phone, Plus, Star, Store, Trash2, Upload, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -14,6 +14,7 @@ import { ConfirmDialog, EmptyRow, Facts, FilterSelect, SearchInput, StatCard, St
 import { Button } from "@/components/ui/button";
 import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
 import { AddListingDialog, ImportListingsDialog } from "./provider-create";
+import { BulkUpdateListingsDialog } from "./provider-bulk-update";
 import { DeleteListingDialog, DeleteListingPanel, OwnerActions } from "./provider-manage";
 import { AccountTypeFilterTabs } from "@/components/account-type";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,7 +33,7 @@ export function ProvidersPage() {
   const qs = new URLSearchParams({ ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)), pageSize: String(pageSizeOf(f.pageSize)) });
   const { data, isLoading } = useQuery({ queryKey: ["admin-providers", qs.toString()], queryFn: () => api<{ providers: ProviderRow[] } & Paged>(`/admin/providers?${qs}`) });
   const selection = useSelection(data?.providers.map((p) => p.id) ?? []);
-  const [dialog, setDialog] = useState<"add" | "import" | null>(null);
+  const [dialog, setDialog] = useState<"add" | "import" | "update" | null>(null);
   const [deleting, setDeleting] = useState<{ id: number; businessName: string } | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const { user } = useAuth();
@@ -69,6 +70,11 @@ export function ProvidersPage() {
             <Button variant="outline" size="sm" onClick={() => setDialog("import")}>
               <Upload /> Import CSV
             </Button>
+            {isSuperAdmin && (
+              <Button variant="outline" size="sm" onClick={() => setDialog("update")}>
+                <FileUp /> Bulk update
+              </Button>
+            )}
             <Button size="sm" onClick={() => setDialog("add")}>
               <Plus /> Add listing
             </Button>
@@ -77,6 +83,7 @@ export function ProvidersPage() {
       />
       <AddListingDialog open={dialog === "add"} onOpenChange={(o) => setDialog(o ? "add" : null)} />
       <ImportListingsDialog open={dialog === "import"} onOpenChange={(o) => setDialog(o ? "import" : null)} />
+      {isSuperAdmin && <BulkUpdateListingsDialog open={dialog === "update"} onOpenChange={(o) => setDialog(o ? "update" : null)} filters={f} />}
       <Toolbar>
         <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search name or phone" />
         <AccountTypeFilterTabs value={f.type} onChange={(type) => setF({ type, page: "1" })} />

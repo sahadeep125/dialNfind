@@ -24,6 +24,7 @@ import { checkSeoDraft, seoDraftSchema } from "../../services/seo.js";
 import { previewUrl, refreshProviderSlugs, refreshShared } from "../../services/web-cache.js";
 import { assertCanOwnAnother } from "../../services/professions.js";
 import { deleteListings } from "../../services/listing-removal.js";
+import { bulkUpdateListings } from "../../services/listing-bulk-update.js";
 
 /** Listing management in the admin console: list, status, edit, create, import, ownership and delete. */
 export const adminProvidersRouter = Router();
@@ -537,4 +538,15 @@ adminProvidersRouter.post("/providers/import", async (req, res) => {
     created,
     rows: rows.map(({ listing: _l, ...r }) => r),
   });
+});
+
+/**
+ * POST /admin/providers/bulk-update — updates existing listings from a CSV (see bulkUpdateListings). With
+ * dryRun, every row is matched and checked and the changes are listed without saving. Super admins only.
+ */
+adminProvidersRouter.post("/providers/bulk-update", async (req, res) => {
+  const user = currentUser(req);
+  if (user.role !== "super_admin") throw forbidden("Only a super admin can update listings in bulk");
+  const body = parse(z.object({ csv: z.string().min(1, "Choose a CSV file").max(2_000_000, "The file is too large"), dryRun: z.boolean().default(true) }), req.body);
+  res.json(await bulkUpdateListings(body.csv, { dryRun: body.dryRun, adminId: user.id }));
 });
