@@ -191,15 +191,15 @@
   width: 100%;
   max-width: 96rem;
   margin-inline: auto;
-  padding-inline: 1.25rem;
+  padding-inline: 2rem;
   @media (width >= 40rem) {
-    padding-inline: 2rem;
-  }
-  @media (width >= 64rem) {
     padding-inline: 3rem;
   }
+  @media (width >= 64rem) {
+    padding-inline: 6rem;
+  }
   @media (width >= 96rem) {
-    padding-inline: 4rem;
+    padding-inline: 7rem;
   }
 }
 

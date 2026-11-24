@@ -2,7 +2,6 @@ import Link from "next/link";
 import { BadgeCheck, Clock, MapPin } from "lucide-react";
 import type { ProviderDetail } from "@/lib/types";
 import { isIndividual, listingParts } from "@/lib/account-type";
-import { AccountTypeBadge } from "./account-type-badge";
 import { Badge } from "@/components/ui/badge";
 import { DistanceFromYou } from "./distance-from-you";
 import { OpenStatus } from "./provider-card";
@@ -72,12 +71,11 @@ export function ProfileHeader({
                 className="size-16 border-0 bg-white text-xl text-board ring-4 ring-white/10 sm:size-24 md:text-4xl"
               />
               <div className="min-w-0 flex-1">
-                <h1 className="text-[2rem] font-extrabold leading-[1.02] tracking-[-0.035em] text-white text-balance md:text-5xl xl:text-[3.5rem]">{p.businessName}</h1>
+                <h1 className="text-[2rem] font-bold leading-[1.02] tracking-[-0.035em] text-white text-balance">{p.businessName}</h1>
                 <p className="mt-2 text-base text-board-muted md:text-lg">
                   <span className="font-semibold text-white">{middle ?? "Local services"}</span> in {place}
                 </p>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <AccountTypeBadge type={p.businessType} size="md" />
+                <div className="mt-3 flex flex-wrap items-center gap-2"> 
                   {p.verificationStatus === "verified" && (
                     <Badge variant="success" className="gap-1">
                       <BadgeCheck /> {individual ? "Verified professional" : "Verified business"}

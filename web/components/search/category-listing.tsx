@@ -188,7 +188,6 @@ export async function CategoryListing({
             </div>
           )}
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CategoryIcon slug={category.slug} className="size-8 rounded-md" iconClassName="size-4" />
             {category.providerCount.toLocaleString("en-IN")} {category.name.toLowerCase()} {category.providerCount === 1 ? "professional" : "professionals"} listed
           </p>
         </div>

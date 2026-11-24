@@ -53,8 +53,7 @@ const PRICE_UNIT_LABEL: Record<string, string> = { per_visit: "per visit", per_h
 export function ProviderCard({
   provider,
   source = "search",
-  highlight,
-  topMatch = false,
+  highlight, 
   className,
 }: {
   provider: ProviderCardType;
@@ -91,11 +90,6 @@ export function ProviderCard({
           )}
 
           <div className="min-w-0 flex-1 pr-9 @2xl:pr-0">
-            {topMatch && (
-              <span className="mb-1 inline-flex items-center gap-1 text-xs font-semibold text-cta-strong">
-                <Trophy className="size-3.5" aria-hidden /> Top match
-              </span>
-            )}
             <div className="flex items-center gap-1.5">
               <h3 className="min-w-0 text-lg font-semibold leading-snug">
                 <Link href={href} className="line-clamp-1 decoration-1 underline-offset-4 after:absolute after:inset-0 after:content-[''] group-hover:underline">
@@ -105,7 +99,6 @@ export function ProviderCard({
               {verified && <BadgeCheck className="size-5 shrink-0 fill-success text-white" aria-label="Verified" />}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-              <AccountTypeBadge type={provider.businessType} />
               <p className="min-w-0 truncate text-sm text-foreground/80">
                 {middle && <span>{middle}</span>}
                 {middle && area && <span className="text-muted-foreground"> – </span>}

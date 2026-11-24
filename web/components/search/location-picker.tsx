@@ -86,7 +86,6 @@ export function LocationPicker({
         >
           <MapPin className="size-5 shrink-0 text-cta-strong" />
           <span className="min-w-0 flex-1">
-            <span className={cn("block text-xs font-medium text-muted-foreground", hideLabel && "sr-only")}>Location</span>
             <span className={cn("block truncate", hideLabel ? "text-[15px]" : "mt-0.5 text-base")}>{value.label}</span>
           </span>
           <ChevronDown className="size-4 shrink-0 text-muted-foreground" />

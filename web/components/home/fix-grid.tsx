@@ -13,7 +13,6 @@ import {
   Refrigerator,
   Scissors,
   Smartphone,
-  Truck,
   Tv,
   WashingMachine,
   Wrench,
@@ -40,7 +39,6 @@ const NEEDS = [
   { problem: "Car making a noise", service: "Car mechanic", icon: Wrench, href: serviceHref("vehicle-repair", "car-service") },
   { problem: "Haircut or bridal makeup", service: "Beauty parlour", icon: Scissors, href: serviceHref("beauty-salon") },
   { problem: "Child needs a tutor", service: "Home tutor", icon: GraduationCap, href: serviceHref("tutors") },
-  { problem: "Shifting house", service: "Packers & movers", icon: Truck, href: serviceHref("packers-movers") },
 ];
 
 /** A quiet list (two columns, three on wide screens): soft icon, the problem, the service in small type, and an arrow. No boxes. */

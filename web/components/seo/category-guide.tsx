@@ -117,7 +117,7 @@ export function CategoryGuide({ g }: { g: CategoryGuideData }) {
   const noun = g.noun;
   const businesses = g.individuals !== null ? g.total - g.individuals : null;
   return (
-    <section aria-labelledby="guide-title" className="border-t bg-card">
+    <section aria-labelledby="guide-title" className="bg-card">
       <div className="container-wide py-12 md:py-16">
         <p className="text-sm font-semibold text-cta-strong">Guide</p>
         <h2 id="guide-title" className="mt-1 text-2xl font-bold text-foreground md:text-[2rem]">

@@ -10,12 +10,12 @@ const count = (n: number) => `${n.toLocaleString("en-IN")} ${n === 1 ? "business
  * The services on the home page: photo tiles for the busiest categories that have their own photograph,
  * then every category as a plain index with its sub-services, so each service page is one click from home.
  */
-export function CategoryGrid({ categories, featured = 8 }: { categories: Category[]; featured?: number }) {
+export function CategoryGrid({ categories, featured = 12 }: { categories: Category[]; featured?: number }) {
   const withPhoto = [...categories].filter((c) => hasCategoryImage(c.slug)).sort((a, b) => b.providerCount - a.providerCount).slice(0, featured);
   return (
     <>
       {withPhoto.length > 0 && (
-        <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-5 lg:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6 xl:grid-cols-6">
           {withPhoto.map((c) => {
             const photo = categoryImage(c.slug);
             return (

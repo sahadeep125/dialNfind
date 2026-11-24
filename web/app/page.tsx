@@ -77,13 +77,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* For pros: listing is free. High on the page, so businesses find it without scrolling to the end. */}
-      <section className="bg-surface py-14 md:py-20">
-        <div className="container-wide">
-          <PromoBanners />
-        </div>
-      </section>
-
       {/* Loads in the browser, since it depends on the visitor's location. */}
       <NearbyProviders />
 
@@ -104,6 +97,13 @@ export default async function HomePage() {
       <section className="section-y">
         <div className="container-wide">
           <AppPromo />
+        </div>
+      </section>
+
+            {/* For pros: listing is free. High on the page, so businesses find it without scrolling to the end. */}
+      <section className="bg-surface py-14 md:py-20">
+        <div className="container-wide">
+          <PromoBanners />
         </div>
       </section>
 

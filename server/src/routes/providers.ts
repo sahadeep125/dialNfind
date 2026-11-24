@@ -258,7 +258,7 @@ providersRouter.get("/:slug/similar", optionalAuth, async (req, res) => {
     pageSize: 5,
     userId: req.user?.id,
   });
-  res.json({ results: results.filter((r) => r.id !== id).slice(0, 4) });
+  res.json({ results: results.filter((r) => r.id !== id).slice(0, 6) });
 });
 
 const reportSchema = z.object({ reason: z.string().trim().min(5).max(500) });
