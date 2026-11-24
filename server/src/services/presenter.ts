@@ -60,6 +60,8 @@ export function toProviderCard(
     isClaimed: p.userId !== null,
     isOpenNow: p.isAvailable && isOpenNow(p.businessHours),
     todayHours: todayHoursLabel(p.businessHours),
+    // False when the listing has no opening hours at all, so apps can say "Hours not listed" instead of "Closed".
+    hasHours: p.businessHours.length > 0,
     primaryCategory: primary ? { id: primary.category.id, name: primary.category.name, slug: primary.category.slug } : null,
     subcategories,
     startingPrice: prices.length ? Math.min(...prices) : null,

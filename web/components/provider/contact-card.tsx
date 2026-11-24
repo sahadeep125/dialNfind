@@ -28,7 +28,7 @@ export function ContactCard({ p }: { p: ProviderDetail }) {
         ) : (
           <div className="text-base font-semibold">Price on request</div>
         )}
-        {p.isAvailable && <OpenStatus provider={p} className="mt-1 [&>span:last-child]:hidden" />}
+        {p.isAvailable && <OpenStatus provider={p} compact className="mt-1" />}
       </div>
 
       <ContactButtons provider={p} source="profile" categorySlug={p.primaryCategory?.slug} size="lg" layout="stack" variant="profile" className="mt-5 hidden lg:flex" />

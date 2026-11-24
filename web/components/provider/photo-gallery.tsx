@@ -1,22 +1,13 @@
 import Image from "next/image";
 import { Grid2x2 } from "lucide-react";
 import { isOptimizableImage } from "@/lib/image-hosts";
-import { categoryImage } from "@/lib/stock-images";
 import { cn } from "@/lib/utils";
 import { PhotoTrigger, type LightboxPhoto } from "./photo-lightbox";
 
-/** Profile banner: one large photo plus up to four thumbnails, each opening the photo viewer. Without photos, a labelled stock photo of the trade. */
-export function PhotoGallery({ photos, businessName, categorySlug }: { photos: LightboxPhoto[]; businessName: string; categorySlug?: string | null }) {
-  if (photos.length === 0) {
-    const stock = categoryImage(categorySlug);
-    return (
-      <div className="relative h-44 overflow-hidden rounded-lg bg-muted sm:h-56 md:h-64">
-        <Image src={stock.src} alt={stock.alt} fill priority sizes="(min-width: 1536px) 92rem, 100vw" className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
-        <span className="absolute bottom-3 right-3 rounded-md bg-black/55 px-2 py-1 text-xs text-white/90">Representative photo</span>
-      </div>
-    );
-  }
+/** Profile banner: one large photo plus up to four thumbnails, each opening the photo viewer. Nothing without photos. */
+export function PhotoGallery({ photos, businessName }: { photos: LightboxPhoto[]; businessName: string; categorySlug?: string | null }) {
+  // No photos of their own: show none, rather than a stock picture that could pass for this business.
+  if (photos.length === 0) return null;
 
   const [main, ...rest] = photos;
   const thumbs = rest.slice(0, 4);

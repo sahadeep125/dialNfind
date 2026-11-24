@@ -5,7 +5,7 @@ import { SideCard } from "./section-card";
 
 export function OpeningHours({ p }: { p: ProviderDetail }) {
   return (
-    <SideCard title="Opening hours" action={p.isAvailable ? <OpenStatus provider={p} className="[&>span:last-child]:hidden" /> : undefined}>
+    <SideCard title="Opening hours" action={p.isAvailable ? <OpenStatus provider={p} compact /> : undefined}>
       {/* Imported listings often have no hours yet; seven "Closed" rows would tell visitors the business is shut. */}
       {!p.is24x7 && p.hours.every((h) => !h.openTime) ? (
         <p className="text-sm text-muted-foreground">Hours not added yet. Call to check when they are open.</p>

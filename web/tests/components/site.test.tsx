@@ -31,9 +31,9 @@ async function withSession(ui: React.ReactElement, session: { user: unknown; unr
 
 describe("small site pieces", () => {
   it("category icons, logo, photo frame and headings", () => {
-    expect(categoryTone("plumbing").bg).toContain("210");
-    expect(categoryTone(null).bg).toBe("bg-accent");
-    expect(categoryTone("nope").bg).toBe("bg-accent");
+    // One brand tint for every category.
+    expect(categoryTone("plumbing").bg).toBe("bg-secondary");
+    expect(categoryTone(null)).toEqual(categoryTone("tutors"));
     expect(categoryIconComponent("plumbing").displayName).toBeDefined();
     expect(categoryIconComponent(undefined)).toBe(categoryIconComponent("nope"));
     const { container } = render(

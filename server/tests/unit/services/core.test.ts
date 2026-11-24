@@ -236,7 +236,7 @@ describe("presenter", () => {
 
     const card = toProviderCard(await load());
     // WhatsApp falls back to the phone number when no separate number is set.
-    expect(card).toMatchObject({ acceptsWhatsapp: true, whatsappNumber: "+919876543210", distanceKm: null, startingPrice: 300, isOpenNow: true, isClaimed: false, isFavorite: false });
+    expect(card).toMatchObject({ acceptsWhatsapp: true, whatsappNumber: "+919876543210", distanceKm: null, startingPrice: 300, isOpenNow: true, hasHours: true, isClaimed: false, isFavorite: false });
     expect(card).not.toHaveProperty("planTier");
     expect(card).not.toHaveProperty("isSponsored");
     expect(card.shortDescription).toHaveLength(160);
@@ -250,8 +250,9 @@ describe("presenter", () => {
 
     await prisma.provider.update({ where: { id: p.id }, data: { whatsappNumber: "+919999999999", description: null, isAvailable: false } });
     await prisma.providerService.deleteMany({ where: { providerId: p.id } });
+    await prisma.providerBusinessHour.deleteMany({ where: { providerId: p.id } });
     const bare = toProviderCard(await load(), { distanceKm: null });
-    expect(bare).toMatchObject({ whatsappNumber: "+919999999999", shortDescription: "", primaryCategory: null, priceUnit: null, startingPrice: null, isOpenNow: false });
+    expect(bare).toMatchObject({ whatsappNumber: "+919999999999", shortDescription: "", primaryCategory: null, priceUnit: null, startingPrice: null, isOpenNow: false, hasHours: false });
   });
 });
 
