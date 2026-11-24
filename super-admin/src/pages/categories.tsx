@@ -3,7 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, FolderTree, ListChecks, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, FileText, FolderTree, ListChecks, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,8 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CategorySeoDialog } from "./category-seo-dialog";
+import { pageContentGaps, type CategoryPageContent } from "@/lib/category-page";
 
 interface Sub {
   id: number;
@@ -40,7 +42,7 @@ interface Attr {
   isRequired: boolean;
   displayOrder: number;
 }
-interface Category {
+interface Category extends CategoryPageContent {
   id: number;
   name: string;
   /** What an individual in it is called ("Plumber"): their title and a choice when they list. */
@@ -119,6 +121,8 @@ function CategoryCard({ category: c, expanded, onToggle, onEdit }: { category: C
   const [editSub, setEditSub] = useState<Sub | "new" | null>(null);
   const [editAttr, setEditAttr] = useState<Attr | "new" | null>(null);
   const [deleteAttr, setDeleteAttr] = useState<Attr | null>(null);
+  const [editPage, setEditPage] = useState(false);
+  const gaps = pageContentGaps(c);
   const invalidate = useInvalidate();
   const removeAttr = useMutation({
     mutationFn: (id: number) => api(`/categories/attributes/${id}`, { method: "DELETE" }),
@@ -145,9 +149,19 @@ function CategoryCard({ category: c, expanded, onToggle, onEdit }: { category: C
             <span className="block text-xs text-muted-foreground">
               {c.subcategories.filter((s) => s.isActive).length} services, {c.providerCount} live providers, {c._count.leads.toLocaleString("en-IN")} leads
             </span>
+            <span className={cn("mt-0.5 flex items-center gap-1 text-xs", gaps.length ? "text-[oklch(0.5_0.12_60)]" : "text-success")}>
+              {gaps.length ? `Page needs: ${gaps.join(", ")}` : (
+                <>
+                  <CheckCircle2 className="size-3.5" /> Page content complete
+                </>
+              )}
+            </span>
           </span>
           <ChevronDown className={cn("ml-auto size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} />
         </button>
+        <Button variant="outline" size="sm" onClick={() => setEditPage(true)} aria-label={`Edit the ${c.name} page: photo, text and questions`}>
+          <FileText /> <span className="hidden sm:inline">Page &amp; SEO</span>
+        </Button>
         <Button variant="ghost" size="icon-sm" onClick={onEdit} aria-label={`Edit ${c.name}`}>
           <Pencil />
         </Button>
@@ -207,6 +221,7 @@ function CategoryCard({ category: c, expanded, onToggle, onEdit }: { category: C
           </div>
         </div>
       )}
+      {editPage && <CategorySeoDialog category={c} onClose={() => setEditPage(false)} />}
       {editSub && <SubDialog categoryId={c.id} sub={editSub === "new" ? null : editSub} onClose={() => setEditSub(null)} />}
       {editAttr && <AttrDialog category={c} attr={editAttr === "new" ? null : editAttr} onClose={() => setEditAttr(null)} />}
       {deleteAttr && (

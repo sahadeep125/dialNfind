@@ -28,6 +28,40 @@ interface CategoryData {
 // The default directory, shared with kaajva-provider-discovery (which maps what it finds onto these slugs).
 const CATEGORIES: CategoryData[] = JSON.parse(readFileSync(`${DATA_DIR}/categories.json`, "utf8"));
 
+/** Written search content for each default category page (title, description, heading, text, questions). */
+interface CategoryPageData {
+  slug: string;
+  seoTitle: string;
+  seoDescription: string;
+  seoHeading: string;
+  imageAlt: string;
+  seoContent: string;
+  faqs: { q: string; a: string }[];
+  /** The suggested photo to upload in the admin console (Unsplash License); not written by bootstrap. */
+  photo?: { source: string; photographer: string; license: string };
+}
+const CATEGORY_PAGES: CategoryPageData[] = JSON.parse(readFileSync(`${DATA_DIR}/category-pages.json`, "utf8"));
+
+/**
+ * Fills the page content of categories whose page has never been written, so a deploy gives every default
+ * category a full page. A category with any of title, description or text already set (written in the admin
+ * console) is left alone. Photos are uploaded in the admin console.
+ */
+async function fillCategoryPages() {
+  let filled = 0;
+  for (const page of CATEGORY_PAGES) {
+    const { slug, seoTitle, seoDescription, seoHeading, seoContent, faqs } = page;
+    const { count } = await prisma.category.updateMany({
+      where: { slug, seoTitle: null, seoDescription: null, seoContent: null },
+      data: { seoTitle, seoDescription, seoHeading, seoContent, faqs },
+    });
+    // The photo description is only useful once a photo is uploaded; keep it ready without overwriting one.
+    if (count) await prisma.category.updateMany({ where: { slug, imageAlt: null }, data: { imageAlt: page.imageAlt } });
+    filled += count;
+  }
+  return filled ? `${filled} category pages` : null;
+}
+
 const BADGES = [
   { name: "Top Rated", criteriaDescription: "Average rating of 4.5 or higher from at least 10 reviews" },
   { name: "Verified Pro", criteriaDescription: "Phone and business documents verified by KaajVa" },
@@ -118,6 +152,8 @@ async function main() {
     const added = await addProfessions();
     if (added) log.push(added);
   }
+  const pages = await fillCategoryPages();
+  if (pages) log.push(pages);
 
   if ((await prisma.user.count({ where: { role: "super_admin" } })) === 0) {
     const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();

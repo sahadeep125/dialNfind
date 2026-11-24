@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, Briefcase, MapPin, Trophy } from "lucide-react";
+import { BadgeCheck, Briefcase, MapPin } from "lucide-react";
 import type { ProviderCard as ProviderCardType } from "@/lib/types";
 import { formatDistance, formatKm, formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,6 @@ import { FavoriteButton } from "./favorite-button";
 import { ProviderAvatar } from "./provider-avatar";
 import { ProviderPhoto } from "./provider-photo";
 import { RatingInline } from "./rating";
-import { AccountTypeBadge } from "./account-type-badge";
 import { listingParts } from "@/lib/account-type";
 
 export function OpenStatus({

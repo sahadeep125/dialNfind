@@ -31,6 +31,16 @@ export interface Category {
   uiTemplate: string;
   providerCount: number;
   subcategories: Subcategory[];
+  /** Page content written in the admin console; empty values fall back to content/seo/categories.ts. */
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoHeading?: string | null;
+  /** Paragraphs separated by a blank line. Only on GET /categories/:slug. */
+  seoContent?: string | null;
+  /** Only on GET /categories/:slug. */
+  faqs?: { q: string; a: string }[] | null;
 }
 
 export interface ProviderCard {
