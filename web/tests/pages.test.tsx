@@ -112,14 +112,14 @@ describe("home and content pages", () => {
       "/locations/category-areas": { areas: [{ category: "beauty-salon", categoryName: "Beauty & Salon", area: "Matigara", slug: "matigara", city: "Siliguri", providers: 12 }] },
     });
     const { unmount } = await renderAsync(await Home());
-    expect(screen.getByRole("link", { name: "Beauty & Salon in Matigara" })).toHaveAttribute("href", "/services/beauty-salon/in/matigara");
+    // The para band and the popular searches both link the neighbourhood page.
+    expect(screen.getAllByRole("link", { name: "Beauty & Salon in Matigara" }).every((a) => a.getAttribute("href") === "/services/beauty-salon/in/matigara")).toBe(true);
     expect(screen.getAllByRole("link", { name: "Bike service" })[0]).toHaveAttribute("href", "/services/vehicle-repair/bike-service");
     // The example people search for most: a hero shortcut, a "What needs fixing?" tile and a popular search.
     expect(screen.getAllByRole("link", { name: /Mixer grinder repair/ }).every((a) => a.getAttribute("href") === "/services/home-appliances/mixer-grinder-repair")).toBe(true);
     expect(screen.getByRole("link", { name: "TV Repair" })).toBeInTheDocument();
-    expect(screen.getByText("10 local pros in 2 services")).toBeInTheDocument();
+    expect(screen.getByText(/^10 repair shops, technicians and local pros across Siliguri/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Get the KaajVa app" })).toBeInTheDocument();
-    expect(screen.getByText("3+ customer reviews")).toBeInTheDocument();
     unmount();
     mockApi({ "/categories": { categories: [] }, "/stats": { providers: 0, categories: 0, cities: 0, reviews: 0 }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
     await renderAsync(await Home());

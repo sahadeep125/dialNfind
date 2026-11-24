@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Hanken_Grotesk, Schibsted_Grotesk } from "next/font/google";
+import { Bricolage_Grotesque, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -10,8 +10,9 @@ import { getAppConfig } from "@/lib/app-config";
 import { SITE_NAME, SITE_URL } from "@/lib/config";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/structured-data";
 
-const body = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-body", display: "swap" });
-const heading = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-heading", display: "swap", weight: ["500", "600", "700", "800"] });
+// "Para Board" type (DESIGN.md): Bricolage Grotesque for the signboard voice, Instrument Sans for everything you read.
+const body = Instrument_Sans({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+const heading = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-heading", display: "swap" });
 
 const TITLE = "KaajVa: Local Services & Businesses in Siliguri";
 const DESCRIPTION =

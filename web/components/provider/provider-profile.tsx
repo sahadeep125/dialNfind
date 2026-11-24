@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { TrackView } from "@/components/site/track-view";
 import { Button } from "@/components/ui/button";
 import { ContactButtons } from "@/components/provider/contact-buttons";
-import { ContactCard, SECONDARY_ACTION, directionsHref } from "@/components/provider/contact-card";
+import { ContactCard, directionsHref } from "@/components/provider/contact-card";
 import { LocationAndHours } from "@/components/provider/location-hours";
 import { ProfileHeader, type ProfileFact } from "@/components/provider/profile-header";
 import { ReviewsList } from "@/components/provider/reviews-list";
@@ -42,6 +42,10 @@ import { StickyColumn } from "@/components/provider/sticky-column";
 import { JsonLd } from "@/components/json-ld";
 import { serviceHref } from "@/lib/service-href";
 import { breadcrumbJsonLd, providerJsonLd } from "@/lib/structured-data";
+
+/** A secondary action painted on the navy signboard. */
+const BOARD_ACTION =
+  "flex h-11 flex-1 items-center justify-center gap-2 rounded-md border-[1.5px] border-white/60 px-3 text-sm font-semibold text-white transition-colors hover:border-white hover:bg-white/10";
 
 /** Reviews shown in the sidebar before "Show more reviews". */
 export const REVIEWS_PAGE = 3;
@@ -110,16 +114,16 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
   // Phones: the bottom bar carries Call and WhatsApp, so the header row holds the next most useful actions.
   const mobileActions = (
     <div className="mt-5 flex flex-wrap gap-2 lg:hidden">
-      <a href={directionsHref(p)} target="_blank" rel="noopener noreferrer" className={SECONDARY_ACTION}>
+      <a href={directionsHref(p)} target="_blank" rel="noopener noreferrer" className={BOARD_ACTION}>
         <Navigation className="size-4" aria-hidden /> Directions
       </a>
       {p.website && (
-        <a href={p.website} target="_blank" rel="noopener noreferrer" className={SECONDARY_ACTION}>
+        <a href={p.website} target="_blank" rel="noopener noreferrer" className={BOARD_ACTION}>
           <Globe className="size-4" aria-hidden /> Website
         </a>
       )}
       {p.email && (
-        <a href={`mailto:${p.email}`} className={SECONDARY_ACTION}>
+        <a href={`mailto:${p.email}`} className={BOARD_ACTION}>
           <Mail className="size-4" aria-hidden /> Email
         </a>
       )}
@@ -152,50 +156,58 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
         </>
       )}
       <PhotoLightbox photos={photos} businessName={p.businessName}>
-        <div className="container-wide pt-3">
-          {/* Breadcrumb and page actions */}
-          <div className="flex items-center gap-3 text-sm">
-            <BackButton />
-            <span className="hidden h-5 w-px bg-border sm:block" />
-            <nav className="hidden min-w-0 flex-1 items-center gap-2 text-muted-foreground sm:flex" aria-label="Breadcrumb">
-              <Link href="/" className="shrink-0 hover:text-foreground">
-                Home
-              </Link>
-              {p.primaryCategory && (
-                <>
-                  <span aria-hidden>/</span>
-                  <Link href={`/services/${p.primaryCategory.slug}`} className="shrink-0 hover:text-foreground">
-                    {p.primaryCategory.name}
-                  </Link>
-                </>
-              )}
-              {p.primaryCategory && primarySub && (
-                <>
-                  <span aria-hidden>/</span>
-                  <Link href={serviceHref(p.primaryCategory.slug, primarySub.slug)} className="shrink-0 hover:text-foreground">
-                    {primarySub.name}
-                  </Link>
-                </>
-              )}
-              <span aria-hidden>/</span>
-              <span aria-current="page" className="truncate font-medium text-foreground">
-                {p.businessName}
-              </span>
-            </nav>
-            <div className="ml-auto flex items-center gap-1">
-              <ShareButton title={p.businessName} withLabel />
-              <ProfileFavoriteButton providerId={p.id} className="h-9 rounded-md border-0 bg-transparent px-2.5 text-foreground/80 hover:bg-muted" />
+        <ProfileHeader
+          p={p}
+          chips={[...(leadChip ? [leadChip] : []), ...visibleChips]}
+          extraChips={extraChips}
+          facts={shownFacts}
+          actions={mobileActions}
+          top={
+            // Breadcrumb and page actions, on the board.
+            <div className="flex items-center gap-3 text-sm text-board-muted">
+              <BackButton className="text-board-muted hover:bg-white/10 hover:text-white" />
+              <span className="hidden h-5 w-px bg-board-rule sm:block" />
+              <nav className="hidden min-w-0 flex-1 items-center gap-2 sm:flex" aria-label="Breadcrumb">
+                <Link href="/" className="shrink-0 hover:text-white">
+                  Home
+                </Link>
+                {p.primaryCategory && (
+                  <>
+                    <span aria-hidden>/</span>
+                    <Link href={`/services/${p.primaryCategory.slug}`} className="shrink-0 hover:text-white">
+                      {p.primaryCategory.name}
+                    </Link>
+                  </>
+                )}
+                {p.primaryCategory && primarySub && (
+                  <>
+                    <span aria-hidden>/</span>
+                    <Link href={serviceHref(p.primaryCategory.slug, primarySub.slug)} className="shrink-0 hover:text-white">
+                      {primarySub.name}
+                    </Link>
+                  </>
+                )}
+                <span aria-hidden>/</span>
+                <span aria-current="page" className="truncate font-medium text-white">
+                  {p.businessName}
+                </span>
+              </nav>
+              <div className="ml-auto flex items-center gap-1 text-white">
+                <ShareButton title={p.businessName} withLabel className="text-white hover:bg-white/10" />
+                <ProfileFavoriteButton providerId={p.id} className="h-9 rounded-md border-0 bg-transparent px-2.5 text-white hover:bg-white/10" />
+              </div>
             </div>
-          </div>
-
-          <div className="mt-3">
-            <PhotoGallery photos={photos} businessName={p.businessName} categorySlug={p.primaryCategory?.slug} />
-          </div>
-
-          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-12">
+          }
+        />
+        <div className="container-wide">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-12">
             {/* Main column */}
             <div className="min-w-0">
-              <ProfileHeader p={p} chips={[...(leadChip ? [leadChip] : []), ...visibleChips]} extraChips={extraChips} facts={shownFacts} actions={mobileActions} />
+              {photos.length > 0 && (
+                <div className="mt-8">
+                  <PhotoGallery photos={photos} businessName={p.businessName} categorySlug={p.primaryCategory?.slug} />
+                </div>
+              )}
 
               <div className="mt-8">
                 <SectionNav reviewCount={p.totalReviews} photoCount={p.portfolio.length} hidden={hiddenSections} />
@@ -286,6 +298,7 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
 
               {similar.length > 0 && (
                 <ProfileSection
+                  eyebrow="If they don't pick up"
                   title={`More ${(primarySub?.name ?? p.primaryCategory?.name ?? "professionals").toLowerCase()} near ${p.locality ?? p.city}`}
                   id="similar"
                   action={
@@ -326,7 +339,7 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
             </div>
 
             {/* Sidebar */}
-            <StickyColumn as="aside" className="hidden lg:block">
+            <StickyColumn as="aside" className="relative z-10 hidden lg:-mt-56 lg:block">
               <ContactCard p={p} />
             </StickyColumn>
           </div>

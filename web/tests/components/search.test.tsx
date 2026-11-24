@@ -15,7 +15,6 @@ import { SearchHero } from "@/components/search/search-hero";
 import { CategoryListing, getCategory, listingMetadata } from "@/components/search/category-listing";
 import { useSubcategory } from "@/components/search/use-url-params";
 import { DEFAULT_LOCATION } from "@/lib/default-location";
-import { HERO_IMAGE } from "@/lib/stock-images";
 import { nav } from "../next-state";
 import { json, mockApi, provider } from "../helpers";
 
@@ -51,7 +50,7 @@ describe("SearchBar", () => {
             }),
     });
     render(<SearchBar variant="joined" initialLocation={loc("Andheri")} />);
-    const input = screen.getByRole("combobox", { name: "What do you need?" });
+    const input = screen.getByRole("combobox", { name: "What needs fixing?" });
     await u.type(input, "t");
     expect(screen.queryByRole("listbox")).toBeNull();
     await u.type(input, "v");
@@ -453,14 +452,14 @@ describe("ResultsSection and the map", () => {
 });
 
 describe("SearchHero", () => {
-  it("renders the search box with popular links, or the page's own controls with an image", () => {
+  it("renders the search box with popular links, or the page's own controls, and no stock photo", () => {
     const { unmount } = render(<SearchHero title="Find" subtitle="Sub" size="lg" popular={[{ label: "TV", href: "/tv" }]} />);
     expect(screen.getByText("Popular:")).toBeInTheDocument();
     unmount();
-    render(<SearchHero title="Cat" image={HERO_IMAGE} above={<p>crumbs</p>}><p>controls</p></SearchHero>);
+    render(<SearchHero title="Cat" above={<p>crumbs</p>}><p>controls</p></SearchHero>);
     expect(screen.getByText("controls")).toBeInTheDocument();
     expect(screen.queryByText("Popular:")).toBeNull();
-    expect(screen.getByAltText(HERO_IMAGE.alt)).toBeInTheDocument();
+    expect(screen.queryByRole("img")).toBeNull();
   });
 });
 

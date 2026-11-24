@@ -11,7 +11,6 @@ import { SearchHero } from "@/components/search/search-hero";
 import { ServiceContent } from "@/components/seo/service-content";
 import { JsonLd } from "@/components/json-ld";
 import { CATEGORY_SEO } from "@/content/seo/categories";
-import { categoryImage } from "@/lib/stock-images";
 import { SUBCATEGORY_SEO } from "@/content/seo/subcategories";
 import { guidesForCategory, guidesForSubcategory } from "@/lib/guides";
 import { resolveLocation } from "@/lib/location";
@@ -177,7 +176,6 @@ export async function CategoryListing({
         }
         title={copy.h1}
         subtitle={category.description}
-        image={categoryImage(category.slug)}
       >
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           {!area && (
@@ -258,8 +256,8 @@ function SubLink({ href, active, sp, children }: { href: string; active: boolean
       aria-current={active ? "page" : undefined}
       className={
         active
-          ? "shrink-0 rounded-md bg-primary px-3.5 py-1.5 text-sm font-semibold text-primary-foreground"
-          : "shrink-0 rounded-md border bg-background px-3.5 py-1.5 text-sm text-foreground/80 transition-colors hover:border-foreground/25 hover:text-foreground"
+          ? "shrink-0 rounded-full bg-primary px-3.5 py-1.5 text-sm font-semibold text-primary-foreground"
+          : "shrink-0 rounded-full border border-input bg-card px-3.5 py-1.5 text-sm font-medium text-foreground/80 transition-colors hover:border-ink-rule hover:text-foreground"
       }
     >
       {children}

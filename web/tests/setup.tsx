@@ -33,8 +33,8 @@ vi.mock("next/headers", () => ({
 vi.mock("next/cache", () => ({ updateTag: vi.fn(), revalidateTag: vi.fn(), revalidatePath: vi.fn() }));
 
 vi.mock("next/font/google", () => ({
-  Hanken_Grotesk: () => ({ className: "font-body", variable: "--font-body", style: {} }),
-  Schibsted_Grotesk: () => ({ className: "font-heading", variable: "--font-heading", style: {} }),
+  Instrument_Sans: () => ({ className: "font-body", variable: "--font-body", style: {} }),
+  Bricolage_Grotesque: () => ({ className: "font-heading", variable: "--font-heading", style: {} }),
 }));
 
 // Social images: render the element to markup (running every component in it) instead of drawing a PNG.

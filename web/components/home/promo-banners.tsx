@@ -1,8 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AUTH_IMAGE } from "@/lib/stock-images";
 
 const PROVIDER_PERKS = [
   { title: "Free listing", text: "No sign-up fee and no commission on the jobs you take." },
@@ -10,40 +8,34 @@ const PROVIDER_PERKS = [
   { title: "Your own dashboard", text: "Reply to reviews and see who contacted you." },
 ];
 
-/** "For businesses": list or claim a listing. The app has its own band (app-promo.tsx). */
+/** "For businesses": a plain orange board, so owners can tell at a glance this part is for them. */
 export function PromoBanners() {
   return (
-    <div className="space-y-5">
-      <div className="grid overflow-hidden rounded-lg bg-primary text-white lg:grid-cols-2">
-        <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-14">
-          <h2 className="text-3xl font-bold leading-tight text-white md:text-[2.5rem]">List your business on KaajVa for free</h2>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-white/75">
-            Already in our directory? Claim the listing and keep your phone number, hours and prices up to date. New here? Add your business in a few minutes.
-          </p>
-          <dl className="mt-8 grid gap-5 border-t border-white/15 pt-6 sm:grid-cols-3">
-            {PROVIDER_PERKS.map((perk) => (
-              <div key={perk.title}>
-                <dt className="text-[15px] font-semibold text-white">{perk.title}</dt>
-                <dd className="mt-1 text-sm leading-relaxed text-white/70">{perk.text}</dd>
-              </div>
-            ))}
-          </dl>
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Button asChild variant="cta" size="lg" className="w-full sm:w-auto">
-              <Link href="/claim">
-                List your business <ArrowRight />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="ghost" className="w-full text-white ring-1 ring-white/30 hover:bg-white/10 hover:text-white sm:w-auto">
-              <Link href="/about#providers">See how listing works</Link>
-            </Button>
-          </div>
-        </div>
-        <div className="relative min-h-72 overflow-hidden lg:min-h-[34rem]">
-          <Image src={AUTH_IMAGE.src} alt={AUTH_IMAGE.alt} fill sizes="(min-width: 1024px) 40rem, 100vw" className="object-cover object-[50%_40%]" />
-        </div>
+    <div className="flex h-full flex-col justify-between rounded-lg bg-cta p-7 text-cta-foreground sm:p-10">
+      <div>
+        <h2 className="text-3xl font-extrabold leading-[1.02] tracking-[-0.03em] md:text-[2.5rem]">Fix things for a living? Get found for free.</h2>
+        <p className="mt-4 max-w-md text-base leading-relaxed text-cta-foreground/85">
+          Already in our directory? Claim your listing and keep your number, hours and prices right. New here? Add your shop in a few minutes.
+        </p>
+        <dl className="mt-7 grid gap-4 border-t border-cta-foreground/20 pt-6 sm:grid-cols-3">
+          {PROVIDER_PERKS.map((perk) => (
+            <div key={perk.title}>
+              <dt className="text-[15px] font-bold">{perk.title}</dt>
+              <dd className="mt-1 text-sm leading-relaxed text-cta-foreground/80">{perk.text}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
-
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <Button asChild size="lg" className="w-full sm:w-auto">
+          <Link href="/claim">
+            List your business <ArrowRight />
+          </Link>
+        </Button>
+        <Button asChild size="lg" variant="ghost" className="w-full ring-[1.5px] ring-cta-foreground/40 hover:bg-cta-foreground/10 hover:text-cta-foreground sm:w-auto">
+          <Link href="/about#providers">How listing works</Link>
+        </Button>
+      </div>
     </div>
   );
 }

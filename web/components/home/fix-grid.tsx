@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   AirVent,
+  ArrowRight,
   Bike,
   Blender,
   CookingPot,
@@ -24,37 +25,39 @@ import { serviceHref } from "@/lib/service-href";
  * names. Each links to the service page that ranks for that search.
  */
 const NEEDS = [
-  { label: "Mixer grinder repair", icon: Blender, href: serviceHref("home-appliances", "mixer-grinder-repair") },
-  { label: "AC repair & service", icon: AirVent, href: serviceHref("home-appliances", "ac-repair-and-service") },
-  { label: "Fridge repair", icon: Refrigerator, href: serviceHref("home-appliances", "refrigerator-repair") },
-  { label: "Washing machine repair", icon: WashingMachine, href: serviceHref("home-appliances", "washing-machine-repair") },
-  { label: "Chimney & gas stove", icon: CookingPot, href: serviceHref("home-appliances", "kitchen-chimney-service") },
-  { label: "Geyser repair", icon: Heater, href: serviceHref("home-appliances", "geyser-repair") },
-  { label: "Mobile repair", icon: Smartphone, href: serviceHref("electronics-repair", "mobile-phone-repair") },
-  { label: "TV repair", icon: Tv, href: serviceHref("electronics-repair", "tv-repair") },
-  { label: "Laptop repair", icon: Laptop, href: serviceHref("electronics-repair", "laptop-and-computer-repair") },
-  { label: "Electrician", icon: PlugZap, href: serviceHref("electricians") },
-  { label: "Plumber", icon: Droplets, href: serviceHref("plumbing") },
-  { label: "Bike service", icon: Bike, href: serviceHref("vehicle-repair", "bike-service") },
-  { label: "Car mechanic", icon: Wrench, href: serviceHref("vehicle-repair", "car-service") },
-  { label: "Beauty parlour", icon: Scissors, href: serviceHref("beauty-salon") },
-  { label: "Home tutor", icon: GraduationCap, href: serviceHref("tutors") },
-  { label: "Packers & movers", icon: Truck, href: serviceHref("packers-movers") },
+  { problem: "Mixer grinder stopped running", service: "Mixer grinder repair", icon: Blender, href: serviceHref("home-appliances", "mixer-grinder-repair") },
+  { problem: "AC not cooling", service: "AC repair & service", icon: AirVent, href: serviceHref("home-appliances", "ac-repair-and-service") },
+  { problem: "Fridge warm inside", service: "Refrigerator repair", icon: Refrigerator, href: serviceHref("home-appliances", "refrigerator-repair") },
+  { problem: "Washing machine won't spin", service: "Washing machine repair", icon: WashingMachine, href: serviceHref("home-appliances", "washing-machine-repair") },
+  { problem: "Chimney or gas stove trouble", service: "Kitchen chimney service", icon: CookingPot, href: serviceHref("home-appliances", "kitchen-chimney-service") },
+  { problem: "No hot water", service: "Geyser repair", icon: Heater, href: serviceHref("home-appliances", "geyser-repair") },
+  { problem: "Cracked phone screen", service: "Mobile repair", icon: Smartphone, href: serviceHref("electronics-repair", "mobile-phone-repair") },
+  { problem: "TV has sound, no picture", service: "TV repair", icon: Tv, href: serviceHref("electronics-repair", "tv-repair") },
+  { problem: "Laptop slow or won't start", service: "Laptop repair", icon: Laptop, href: serviceHref("electronics-repair", "laptop-and-computer-repair") },
+  { problem: "Power cut in one room", service: "Electrician", icon: PlugZap, href: serviceHref("electricians") },
+  { problem: "Tap or pipe leaking", service: "Plumber", icon: Droplets, href: serviceHref("plumbing") },
+  { problem: "Bike due for service", service: "Bike service", icon: Bike, href: serviceHref("vehicle-repair", "bike-service") },
+  { problem: "Car making a noise", service: "Car mechanic", icon: Wrench, href: serviceHref("vehicle-repair", "car-service") },
+  { problem: "Haircut or bridal makeup", service: "Beauty parlour", icon: Scissors, href: serviceHref("beauty-salon") },
+  { problem: "Child needs a tutor", service: "Home tutor", icon: GraduationCap, href: serviceHref("tutors") },
+  { problem: "Shifting house", service: "Packers & movers", icon: Truck, href: serviceHref("packers-movers") },
 ];
 
+/** The problem index: a ruled, two-column list of everyday problems, each leading to the people who fix it. */
 export function FixGrid() {
   return (
-    <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+    <ul className="grid border-t border-ink-rule/80 md:grid-cols-2 md:gap-x-10 xl:gap-x-16">
       {NEEDS.map((n) => (
-        <li key={n.href}>
-          <Link
-            href={n.href}
-            className="group flex h-full items-center gap-3 rounded-lg border bg-card px-3.5 py-3 text-[15px] font-semibold leading-snug transition-[border-color,box-shadow] duration-200 hover:border-primary/30 hover:shadow-[var(--shadow-lift)]"
-          >
-            <span className="icon-tile size-10 text-primary transition-colors group-hover:bg-cta group-hover:text-cta-foreground">
+        <li key={n.href} className="border-b">
+          <Link href={n.href} className="group grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-4 py-4 transition-colors md:py-5">
+            <span className="flex size-10 items-center justify-center rounded-md bg-card text-primary ring-1 ring-border transition-colors group-hover:bg-cta group-hover:text-cta-foreground group-hover:ring-cta">
               <n.icon className="size-5" strokeWidth={1.75} aria-hidden />
             </span>
-            <span className="min-w-0">{n.label}</span>
+            <span className="min-w-0">
+              <span className="block font-display text-lg font-semibold leading-snug tracking-[-0.01em] md:text-xl">{n.problem}</span>
+              <span className="mt-0.5 block text-sm text-muted-foreground">{n.service}</span>
+            </span>
+            <ArrowRight className="size-5 text-foreground/40 transition-[transform,color] group-hover:translate-x-1 group-hover:text-foreground" aria-hidden />
           </Link>
         </li>
       ))}

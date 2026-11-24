@@ -166,7 +166,7 @@ export function FiltersSheet(props: FilterProps & { activeCount: number }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" className="h-9 shrink-0 px-3 text-sm font-semibold">
+        <Button variant="outline" className="h-9 shrink-0 rounded-full border-ink-rule px-3.5 text-sm font-semibold">
           <SlidersHorizontal /> All filters
           {props.activeCount > 0 && <span className="flex size-5 items-center justify-center rounded-full bg-cta text-[11px] text-cta-foreground">{props.activeCount}</span>}
         </Button>

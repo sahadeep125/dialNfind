@@ -237,7 +237,10 @@ describe("cards and tiles", () => {
   it("SimilarProviders", () => {
     render(<SimilarProviders providers={[provider(), provider({ id: 2, slug: "b", distanceKm: null }), provider({ id: 3, slug: "c", distanceKm: null, locality: null, primaryCategory: null })] as never} />);
     expect(screen.getAllByRole("link")).toHaveLength(3);
-    expect(screen.getByText(/1\.2 km away/)).toBeInTheDocument();
+    // On the distance rail: the nearest stop shows its distance, the others say it is not known.
+    expect(screen.getByText("1.2")).toBeInTheDocument();
+    expect(screen.getByText("km away")).toBeInTheDocument();
+    expect(screen.getAllByText("Distance not known")).toHaveLength(2);
     expect(screen.getAllByRole("button", { name: /Call/ }).length).toBe(3);
   });
 });
@@ -270,7 +273,8 @@ describe("profile sections", () => {
       />,
     );
     expect(screen.getAllByText("Individual professional").length).toBeGreaterThan(0);
-    expect(screen.getByText("Plumber")).toBeInTheDocument();
+    // The trade is on the name plate and in the line under the name.
+    expect(screen.getAllByText("Plumber").length).toBeGreaterThan(0);
     expect(screen.getByText("Verified professional")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Electrician" })).toHaveAttribute("href", "/providers/me-electrician");
     expect(screen.getByRole("link", { name: "Another profession" })).toBeInTheDocument();
