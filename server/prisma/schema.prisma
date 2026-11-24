@@ -1242,3 +1242,15 @@ model GeocodeCache {
   @@index([createdAt])
   @@map("geocode_cache")
 }
+
+/// The address of a listing the team deleted. Its old page sends visitors and search engines on to the
+/// listing's category (a permanent redirect) instead of a 404. A new listing that later takes the same
+/// slug wins, because live listings are looked up first.
+model RemovedListing {
+  slug       String   @id
+  /// The deleted listing's main category. No foreign key: if the category goes too, the redirect falls back to /services.
+  categoryId BigInt?  @map("category_id")
+  deletedAt  DateTime @default(now()) @map("deleted_at")
+
+  @@map("removed_listings")
+}

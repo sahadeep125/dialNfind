@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Award, BadgeCheck, Building2, ExternalLink, EyeOff, Search, MapPin, Pencil, Phone, Plus, Star, Store, Trash2, Upload, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { WEB_URL } from "@/lib/config";
 import { formatDate, formatPhone, formatPrice, formatRelative } from "@/lib/format";
 import { type Badge as BadgeT, type Paged, type ProviderRow, VERIFICATION_LABEL } from "@/lib/types";
@@ -33,12 +34,25 @@ export function ProvidersPage() {
   const selection = useSelection(data?.providers.map((p) => p.id) ?? []);
   const [dialog, setDialog] = useState<"add" | "import" | null>(null);
   const [deleting, setDeleting] = useState<{ id: number; businessName: string } | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "super_admin";
   const qc = useQueryClient();
   const bulk = useMutation({
     mutationFn: (action: "approve" | "suspend" | "reject" | "verify" | "hide_from_search" | "show_in_search") => api<{ updated: number }>("/admin/providers/bulk", { method: "POST", json: { ids: selection.selected, action } }),
     onSuccess: ({ updated }) => {
       toast.success(`${updated} listing${updated === 1 ? "" : "s"} updated`);
       selection.clear();
+      void qc.invalidateQueries({ queryKey: ["admin-providers"] });
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  });
+  const bulkDelete = useMutation({
+    mutationFn: () => api<{ deleted: number }>("/admin/providers/bulk-delete", { method: "POST", json: { ids: selection.selected } }),
+    onSuccess: ({ deleted }) => {
+      toast.success(`${deleted} listing${deleted === 1 ? "" : "s"} deleted`);
+      selection.clear();
+      setBulkDeleting(false);
       void qc.invalidateQueries({ queryKey: ["admin-providers"] });
     },
     onError: (err) => toast.error(errorMessage(err)),
@@ -127,7 +141,22 @@ export function ProvidersPage() {
             {label}
           </Button>
         ))}
+        {isSuperAdmin && (
+          <Button size="sm" variant="destructive" disabled={bulkDelete.isPending} onClick={() => setBulkDeleting(true)}>
+            <Trash2 /> Delete
+          </Button>
+        )}
       </BulkBar>
+      <ConfirmDialog
+        open={bulkDeleting}
+        onOpenChange={setBulkDeleting}
+        title={`Delete ${selection.count} listing${selection.count === 1 ? "" : "s"}?`}
+        description="They are removed for good with their leads, reviews, claims and photos. Their old pages redirect to their category, so search engines don't find a 404."
+        confirmLabel={bulkDelete.isPending ? "Deleting…" : "Delete for good"}
+        destructive
+        busy={bulkDelete.isPending}
+        onConfirm={() => bulkDelete.mutate()}
+      />
       <Table>
         <thead>
           <tr>

@@ -321,6 +321,7 @@ describe("search and service pages", () => {
 describe("provider profile page", () => {
   const routes = (p: Record<string, unknown> | null, extra: Record<string, unknown> = {}) => ({
     "/providers/shop": p ? { provider: detail({ slug: "shop", ...p }) } : json({}, 404),
+    "/providers/removed/shop": json({}, 404),
     "/providers/shop/reviews": { reviews: [review()], page: 1, pageSize: 3, total: 1, totalPages: 1 },
     "/providers/shop/similar": { results: [provider({ id: 9, slug: "other" })] },
     "/app-config": { config: { min_review_length: 10 } },
@@ -405,6 +406,15 @@ describe("provider profile page", () => {
     expect(screen.queryByRole("heading", { name: "Similar pros nearby" })).toBeNull();
     mockApi(routes(null));
     await expect(Page({ params: sp({ slug: "shop" }) })).rejects.toBeInstanceOf(NotFoundError);
+  });
+  it("sends a deleted listing's old address to its category with a permanent redirect", async () => {
+    const page = await import("@/app/providers/[slug]/page");
+    mockApi(routes(null, { "/providers/removed/shop": { path: "/services/tv-repair" } }));
+    await expect(page.default({ params: sp({ slug: "shop" }) })).rejects.toMatchObject({ url: "/services/tv-repair" });
+    await expect(page.generateMetadata({ params: sp({ slug: "shop" }) })).rejects.toBeInstanceOf(RedirectError);
+    // Only a path on this site is followed.
+    mockApi(routes(null, { "/providers/removed/shop": { path: "https://evil.test/" } }));
+    await expect(page.default({ params: sp({ slug: "shop" }) })).rejects.toBeInstanceOf(NotFoundError);
   });
   it("profile with a category but no main subcategory, and similar pros without a category link", async () => {
     const { default: Page } = await import("@/app/providers/[slug]/page");
