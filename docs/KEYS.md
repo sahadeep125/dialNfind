@@ -2,11 +2,9 @@
 
 Everything KaajVa needs from outside services before it can go live: what each key is, where to get it, and which app it goes into. Work down the checklist; the sections after it explain each item.
 
-Two docs go further for two of the services:
-- [social-login.md](social-login.md) covers Google and Apple sign-in step by step.
-- [billing.md](billing.md) covers Razorpay and RevenueCat step by step.
+[social-login.md](social-login.md) covers Google and Apple sign-in step by step. This doc tells you what to collect, and points there for the detailed setup.
 
-This doc tells you what to collect, and points to those two for the detailed setup.
+KaajVa is free for everyone, so there is no payment gateway, in-app purchase or invoicing setup.
 
 **Where values go:**
 - **API**: `server/.env`, or your host's secret settings.
@@ -28,12 +26,10 @@ This doc tells you what to collect, and points to those two for the detailed set
 | 8 | Expo (EAS) account and project ids | Building apps, push notifications | Apps |
 | 9 | Google sign-in client IDs | Google sign-in (optional; the button is hidden without it) | API, Web, Provider, Apps |
 | 10 | Sign in with Apple IDs and key | Apple sign-in (required on iOS when Google sign-in is offered) | API, Web, Provider, Apps |
-| 11 | Razorpay keys | Plan and promotion payments on the website | API |
-| 12 | RevenueCat keys | Plan purchases in the business app | API, business app |
-| 13 | Sentry DSNs and token | Crash and error reports (optional, strongly advised) | Web, Apps |
-| 14 | Android signing fingerprint | Links on the website opening the Android app | Web |
-| 15 | Seller and support details | GST invoices, support contacts, legal links | Admin console → Settings (not a key) |
-| 16 | Optional extras | Search Console, map tiles, store links | Web, Provider, Admin |
+| 11 | Sentry DSNs and token | Crash and error reports (optional, strongly advised) | Web, Apps |
+| 12 | Android signing fingerprint | Links on the website opening the Android app | Web |
+| 13 | Support details | Support contacts, legal links | Admin console → Settings (not a key) |
+| 14 | Optional extras | Search Console, map tiles, store links | Web, Provider, Admin |
 
 ---
 
@@ -109,14 +105,12 @@ Without these, nobody can finish signing up, because the confirmation code is em
    - KaajVa, bundle `com.kaajva.app`
    - KaajVa Business, bundle `com.kaajva.business`
 4. For each app, open **App Information** and copy the numeric **Apple ID**. It goes into `submit.production.ios.ascAppId` in that app's `eas.json`.
-5. Accept the **Paid Apps agreement** and add bank and tax details under Agreements. Without them, in-app purchases do not work.
 
 ## 7. Google Play Console account
 
 1. Sign up at [play.google.com/console](https://play.google.com/console). The fee is USD 25, once. It asks for identity verification and, for an organisation, a D-U-N-S number.
 2. Create two apps, with packages `com.kaajva.app` and `com.kaajva.business`.
-3. Set up a merchant (payments) profile. The business app sells subscriptions, so it needs one.
-4. Create a **service account** for uploading builds:
+3. Create a **service account** for uploading builds:
    1. Google Cloud Console → IAM → Service accounts → create one, then Keys → add a JSON key.
    2. Play Console → Users and permissions → invite the service account's email, with release permissions.
    3. Save the JSON file. Its path goes into `submit.production.android.serviceAccountKeyPath` in `eas.json`. Keep the file out of git.
@@ -163,50 +157,7 @@ Full steps are in [social-login.md](social-login.md) § 2. All of this is done a
 
 App Review checks that deleting an account revokes Apple access. That only works when `APPLE_PRIVATE_KEY` is set.
 
-## 11. Razorpay (payments on the website)
-
-Full steps are in [billing.md](billing.md), "Razorpay (web)".
-
-1. Sign up at [razorpay.com](https://razorpay.com) and complete KYC. You need a business PAN, GSTIN, bank account and website. Live keys only work after KYC is approved.
-2. Turn on **Subscriptions** in the dashboard.
-3. Under Settings → API Keys, generate the keys. Use test mode first (`rzp_test_…`), and switch to live keys at launch.
-
-| Value | How to get it | Setting |
-|---|---|---|
-| Key ID | Settings → API Keys | API `RAZORPAY_KEY_ID` |
-| Key Secret | Shown once when the key is generated | API `RAZORPAY_KEY_SECRET` |
-| Webhook secret | A long random string you make up (`openssl rand -hex 32`). Enter it when you add the webhook `https://api.kaajva.in/api/v1/webhooks/razorpay` with the events listed in billing.md. | API `RAZORPAY_WEBHOOK_SECRET` |
-
-After the API is live, go to Admin console → Plans and billing → **Sync to Razorpay**.
-
-## 12. RevenueCat (purchases in the business app)
-
-Full steps are in [billing.md](billing.md), "RevenueCat (business app)". Do sections 6 and 7 first: RevenueCat needs both store accounts.
-
-1. **Create the subscription products in both stores.** Use these product ids:
-   - Pro: `kjv_pro_monthly`, `kjv_pro_yearly`
-   - Business: `kjv_business_monthly`, `kjv_business_yearly`
-   - On Android, the format is `kjv_pro:monthly`, and so on.
-2. **Create a RevenueCat project** at [revenuecat.com](https://www.revenuecat.com) and add both apps.
-3. **Give RevenueCat store access:**
-   - App Store: an **In-App Purchase key**. In App Store Connect → Users and Access → Integrations → In-App Purchase, create it and upload the `.p8` to RevenueCat.
-   - Google Play: a **service account** JSON with financial permissions, uploaded to RevenueCat.
-4. **Set up entitlements and an offering:**
-   - Entitlement `provider_pro`: all four products.
-   - Entitlement `provider_business`: the two Business products.
-   - One current offering that contains all four packages.
-
-| Value | Where | Setting |
-|---|---|---|
-| iOS public SDK key (`appl_…`) | Project → API keys | Business app `EXPO_PUBLIC_REVENUECAT_IOS_KEY` |
-| Android public SDK key (`goog_…`) | Project → API keys | Business app `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` |
-| Secret API key, v1 (`sk_…`) | Project → API keys → new secret key | API `REVENUECAT_SECRET_KEY` |
-| Webhook authorization | A long random string you make up. Enter it as the Authorization header on the webhook `https://api.kaajva.in/api/v1/webhooks/revenuecat`. | API `REVENUECAT_WEBHOOK_AUTH` |
-| Project ID | In the dashboard URL | API `REVENUECAT_PROJECT_ID` (only for links from the admin console) |
-
-Without the two public keys, the business app cannot sell plans.
-
-## 13. Sentry (error reports)
+## 11. Sentry (error reports)
 
 Optional, but without it you won't hear about crashes. The free tier is enough to start.
 
@@ -221,7 +172,7 @@ Optional, but without it you won't hear about crashes. The free tier is enough t
 
 The API, provider portal and admin console do not report to Sentry yet.
 
-## 14. Android signing fingerprint: `ANDROID_SHA256_CERT_FINGERPRINTS` (Web)
+## 12. Android signing fingerprint: `ANDROID_SHA256_CERT_FINGERPRINTS` (Web)
 
 This lets links to `kaajva.in/providers/...` open the Android app.
 
@@ -231,18 +182,14 @@ This lets links to `kaajva.in/providers/...` open the Android app.
 4. Put it in Web `ANDROID_SHA256_CERT_FINGERPRINTS`. If there are several, separate them with commas.
 5. The **SHA-1** from the same page goes into the Google Android OAuth client (section 9).
 
-## 15. Set in the admin console, not as keys
+## 13. Set in the admin console, not as keys
 
 Sign in as the super admin and fill in **Settings**:
 
-- **Invoicing:**
-  - legal business name, GSTIN, address and state code
-  - SAC code, invoice number prefix and GST rate
-- Do this before the first Razorpay payment. Invoices keep the details they were issued with.
 - **Support:** support email, **support phone** (the apps show a placeholder number until it is set) and support hours.
 - **Legal:** links to your published Terms and Privacy pages. The app stores require a privacy policy URL.
 
-## 16. Optional
+## 14. Optional
 
 | What | How to get it | Setting |
 |---|---|---|
@@ -255,8 +202,6 @@ Sign in as the super admin and fill in **Settings**:
 
 Never put these in the apps or in git:
 - `JWT_SECRET`, `DATABASE_URL`, `SMTP_PASS`
-- `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
-- `REVENUECAT_SECRET_KEY`, `REVENUECAT_WEBHOOK_AUTH`
 - `APPLE_PRIVATE_KEY`, `SENTRY_AUTH_TOKEN`
 - the Google Play service account JSON
 

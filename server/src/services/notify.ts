@@ -64,7 +64,7 @@ export async function notify(userId: bigint | null | undefined, type: Notificati
   }
 }
 
-/** For events people should not miss (listing decisions, plan changes, support replies): in-app plus an email. */
+/** For events people should not miss (listing decisions, support replies): in-app plus an email. */
 export async function notifyAndEmail(
   userId: bigint | null | undefined,
   type: NotificationType,

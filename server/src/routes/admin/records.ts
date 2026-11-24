@@ -58,7 +58,7 @@ adminRecordsRouter.get("/leads", async (req, res) => {
 
 /**
  * PATCH /admin/leads/:id/dispute — decides a provider's report about a contact. Accepting removes it
- * from the provider's numbers and gives back what it cost their promotion.
+ * from the provider's numbers.
  */
 adminRecordsRouter.patch("/leads/:id/dispute", async (req, res) => {
   const { decision, note } = parse(z.object({ decision: z.enum(["accepted", "rejected"]), note: z.string().trim().max(500).optional() }), req.body);

@@ -66,7 +66,7 @@ Support email, phone and hours, and links to published terms and privacy pages, 
 
 Public pages (profiles, categories, the home page, the sitemap) are served from Next's cache, so they stay fast and cheap under load. They still show changes straight away because the API tells the website what changed:
 
-1. Every public fetch in `web/` is tagged (`publicApi` in `web/lib/api.ts`): `provider:<slug>`, `providers` (every profile), `categories`, `app-config`, `plans`, `stats`, `reviews`, `sitemap`.
+1. Every public fetch in `web/` is tagged (`publicApi` in `web/lib/api.ts`): `provider:<slug>`, `providers` (every profile), `categories`, `app-config`, `stats`, `reviews`, `sitemap`.
 2. After a write, the API calls `POST <WEB_INTERNAL_URL>/api/revalidate` with the matching tags (`server/src/services/web-cache.ts`). The website expires those tags at once, and the next visit renders fresh data.
 3. Most profile changes go through `recalculateProvider`, which already refreshes the profile. **A new write that changes something public must call `refreshProviderPages`, `refreshProviderSlugs` or `refreshShared`**, or the change waits for the cache timer (5 minutes for profiles, up to an hour for stats and the sitemap).
 
@@ -85,7 +85,7 @@ To clear the cache by hand (for example in `pnpm dev`, which also keeps fetched 
 There is no demo data. A new database (local or production) gets what `pnpm --filter server db:bootstrap` adds, and deploys run the same step through `pnpm release`:
 
 - one super admin from `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` (first run only);
-- plans, badges, settings and admin roles;
+- badges, settings and admin roles;
 - the default categories and subcategories from `server/prisma/data/categories.json`;
 - the real provider listings in `server/prisma/data/providers-*.json`: unclaimed, unverified and live. Many have no email; the business adds one after claiming.
 
@@ -95,25 +95,24 @@ For the smoke test and the mobile/web walkthroughs, `server/scripts/smoke-fixtur
 
 Claiming a listing needs an ownership document (trade licence, GST certificate, shop registration); the admin team approves it under Listing claims.
 
-In development, emails (sign-up confirmation, password reset, decisions on listings and claims, plan reminders, support replies) are printed in the API's console instead of being sent. Set the `SMTP_*` variables in `server/.env` to send real email.
+In development, emails (sign-up confirmation, password reset, decisions on listings and claims, support replies) are printed in the API's console instead of being sent. Set the `SMTP_*` variables in `server/.env` to send real email.
 
 ## Admin console
 
 `super-admin/` is for the KaajVa team only. Customer and provider accounts are refused at sign-in. It covers:
 
-- **Marketplace**: providers (add a listing, import listings from CSV, edit every part of a listing, approve, suspend, verify in bulk, badges, change plan, give a listing to an account or remove its owner, delete), listing claims, verification documents, categories with subcategories and attributes, badges, reviews (bulk publish or hide) and reports.
-- **Revenue**: subscription plans with their features, subscribers and payments; payments received outside the app (UPI, bank transfer) are recorded with a reference, and can be marked refunded or failed; promotions (sponsored listings) with budgets.
+- **Marketplace**: providers (add a listing, import listings from CSV, edit every part of a listing, approve, suspend, verify in bulk, badges, give a listing to an account or remove its owner, delete), listing claims, verification documents, categories with subcategories and attributes, badges, reviews (bulk publish or hide) and reports.
 - **People**: customer and provider accounts (detail page with activity and signed-in devices, suspend, sign out everywhere, resend the email confirmation, delete, bulk suspend), leads with provider reports of spam contacts, support tickets (plus old contact form messages), announcements.
 - **System**: settings, team and roles, audit log. The dashboard and analytics pages show growth, leads, top categories and cities.
-- **CSV export**: providers, users, leads, reviews, payments and subscribers download with the filters on screen (up to 50,000 rows).
+- **CSV export**: providers, users, leads and reviews download with the filters on screen (up to 50,000 rows).
 
-**Team and permissions.** `super_admin` can open everything. Everyone else has the `admin` role plus an admin role (Operations, Support agent, Finance, or any role the super admin creates) that lists the sections they can open. The API enforces this on every `/admin` path (`server/src/lib/permissions.ts`); the console hides what a member cannot open. Only the super admin can manage Team, so no one can widen their own access. Adding a member returns a temporary password once; the member can change it, or use "Forgot password" on the website.
+**Team and permissions.** `super_admin` can open everything. Everyone else has the `admin` role plus an admin role (Operations, Support agent, or any role the super admin creates) that lists the sections they can open. The API enforces this on every `/admin` path (`server/src/lib/permissions.ts`); the console hides what a member cannot open. Only the super admin can manage Team, so no one can widen their own access. Adding a member returns a temporary password once; the member can change it, or use "Forgot password" on the website.
 
 **Support tickets.** Customers raise tickets from the website (Dashboard, Help and support, or the contact form) and providers from the provider portal. Staff reply from the console; customers see replies as "KaajVa Support", and internal notes are never shown to them. References look like `KJV-000123`.
 
-**Plans and promotions.** Providers pay for plans online: Razorpay on the provider website and the App Store or Google Play (through RevenueCat) in the business app; see [docs/billing.md](docs/billing.md). Promotions can be paid online on the website, or requested with "Request campaign", which opens a billing ticket. The team can also grant a plan after an offline payment with Change plan on the provider page, or start a promotion with New promotion, ticking "The provider paid" to record the amount and reference.
+**Free for everyone.** KaajVa charges nothing. There are no plans, subscriptions, payments or paid promotions: every business gets all its leads with contact details, analytics, ranking, the WhatsApp button and unlimited photos, and ranking never depends on payment.
 
-**Lead reports.** Providers can report a contact as spam, fake or a wrong number within 30 days (Leads, Report). Accepted reports stop counting in the provider's numbers and refund any promotion charge for that contact.
+**Lead reports.** Providers can report a contact as spam, fake or a wrong number within 30 days (Leads, Report). Accepted reports stop counting in the provider's numbers.
 
 The console runs on port 5174, which is already in the API's default `CORS_ORIGINS`.
 
@@ -147,8 +146,8 @@ On a real phone, point `EXPO_PUBLIC_API_URL` at your computer's LAN address (for
 `provider-mobile/` is KaajVa Business, the provider portal as an Android and iOS app on the same `/provider` API. Signing in leads to the dashboard when the account has a business, and to setup (add a new listing or claim an existing one) when it does not.
 
 - **Tabs**: Dashboard (period stats, daily chart, profile checklist), Leads (channel filter, call or WhatsApp back), Reviews (filter and reply), More.
-- **Screens**: Sign in, Create account, Start, Claim a listing (search, then an ownership document), Add your business (step by step), Edit profile, Services, Hours, Service areas, Portfolio, Verification, Promote, Plan, Support tickets and chat, Notifications, Help, Terms and Privacy.
-- **Account**: Delete account (More tab, or on the setup screen for an account without a business) takes the listing out of search, stops plan renewals and ends promotions, then erases the sign-in details. A plan bought in a store has to be cancelled there; the app says so after deleting.
+- **Screens**: Sign in, Create account, Start, Claim a listing (search, then an ownership document), Add your business (step by step), Edit profile, Services, Hours, Service areas, Portfolio, Verification, Support tickets and chat, Notifications, Help, Terms and Privacy.
+- **Account**: Delete account (More tab, or on the setup screen for an account without a business) takes the listing out of search, then erases the sign-in details.
 - **Design system**: the same token files and `App*` components as `mobile/`, plus form parts in `src/components/forms` (select sheet, segmented control, switch row, progress bar, image and document upload fields).
 
 ```bash
@@ -166,7 +165,7 @@ The walkthrough signs in as the smoke-fixture accounts: set `E2E_PASSWORD` (it s
 
 - **Email** is sent by the API over SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` in `server/.env`; links point at `WEB_URL` and `PROVIDER_URL`). New accounts get a confirmation code by email and must enter it before using their account (the API answers `email_unverified` until then). "Forgot password" on the website, provider portal, admin console and both mobile apps emails a one-hour reset link to `/reset-password` on the website. Links are single-use and only their SHA-256 hash is stored.
 - **Sessions**: every sign-in is a row in `auth_sessions` and the token carries its id, so signing out ends it on the server. Customers and providers stay signed in for `SESSION_DAYS` (30); team members for `STAFF_SESSION_HOURS` (12). Changing or resetting a password, suspension, deletion and removal from the team sign the person out everywhere.
-- **Rate limits** (`server/src/lib/rate-limit.ts`): sign-in, sign-up and password reset allow 10 attempts per 15 minutes per address and email; there are separate limits for contacts, the contact form, tickets, claims, billing requests, lead reports, reviews and reports, uploads and search, plus 600 requests per 15 minutes overall. `RATE_LIMIT_MULTIPLIER` scales them. Counters are kept in memory, so move them to Redis before running more than one API instance.
+- **Rate limits** (`server/src/lib/rate-limit.ts`): sign-in, sign-up and password reset allow 10 attempts per 15 minutes per address and email; there are separate limits for contacts, the contact form, tickets, claims, lead reports, reviews and reports, uploads and search, plus 600 requests per 15 minutes overall. `RATE_LIMIT_MULTIPLIER` scales them. Counters are kept in memory, so move them to Redis before running more than one API instance.
 - **Documents** (ID proofs, ownership papers, support attachments) are stored in `UPLOAD_PRIVATE_DIR`, never served publicly. The API returns them as signed links that work for an hour; `GET /api/v1/files/...` refuses anything unsigned, expired or tampered with. `pnpm --filter server move-documents` moves documents uploaded before this change.
 
 ## Scheduled jobs
@@ -175,9 +174,6 @@ The API runs these itself when `RUN_JOBS=true` (set it in exactly one instance),
 
 | Job | When | What it does |
 | --- | --- | --- |
-| `expire-subscriptions` | Hourly | Plans past their end date become expired; the ranking boost goes and the provider is emailed |
-| `complete-campaigns` | Hourly | Promotions past their last day are marked completed |
-| `remind-subscriptions` | 09:00 daily | Emails providers whose plan ends in 3 days |
 | `recalculate-rankings` | 02:00 daily | Recalculates every provider's ranking score |
 | `staff-digest` | 09:00 daily | Emails each team member what is waiting in the sections they can open |
 | `cleanup` | 03:30 daily | Removes old sessions, used email links and cached map lookups, and uploaded files no record uses (older than 48 hours; `DRY_RUN=1` only reports) |
@@ -211,7 +207,7 @@ All forms validate in the browser with the same rules the API enforces (`server/
 | `pnpm build` | Builds all apps |
 | `pnpm typecheck` | Type-checks all apps |
 | `pnpm --filter server db:migrate` | Creates a new migration after schema changes |
-| `pnpm --filter server db:bootstrap` | Adds the plans, settings, categories, first super admin and the bundled provider listings; safe to run on every deploy |
+| `pnpm --filter server db:bootstrap` | Adds the settings, categories, first super admin and the bundled provider listings; safe to run on every deploy |
 | `pnpm --filter server db:import-providers` | Imports only the provider bundles in `server/prisma/data/` (new source records only) |
 | `pnpm --filter server smoke` | Calls every API endpoint as each role against the running server. Test databases only: run `tsx scripts/smoke-fixtures.ts` first and set `SMOKE_PASSWORD` (restart the API first if you ran it recently, since it signs in often) |
 | `pnpm --filter server job <name>` | Runs one scheduled job now |

@@ -32,9 +32,9 @@ The root is a pnpm workspace so `pnpm install` once installs all four, but each 
 
 Follows the brief table-for-table (users, oauth accounts, addresses, providers, hours, service
 areas, portfolio, verifications, badges, categories, subcategories, category attributes, provider
-services, attribute values, search queries, leads, reviews, review photos, favorites, plans,
-subscriptions, transactions, sponsored listings, notifications, admin logs,
-reports/flags, settings). `BIGSERIAL` ids, `snake_case` columns via Prisma `@map`.
+services, attribute values, search queries, leads, reviews, review photos, favorites, notifications, admin logs,
+reports/flags, settings). KaajVa is free, so the earlier plan, subscription, transaction, invoice
+and sponsored-listing tables are kept only for historic records; no code reads or writes them. `BIGSERIAL` ids, `snake_case` columns via Prisma `@map`.
 
 Small additions the pages need, which the brief does not cover:
 
@@ -63,7 +63,7 @@ reset links sent over SMTP.
 - **providers**: public profile by slug (hours with open and close times, open-now, areas, services, portfolio, badges, rating breakdown), reviews (paged), similar providers, report a listing
   - `GET /providers/sitemap?page=` lists every active listing's slug and last change for the website's sitemap
   - profile views: `GET /providers/:slug?view=false` skips counting (the website renders profiles from a shared cache) and `POST /providers/:slug/visit` counts one view per visit and returns the visitor's favorite and review
-- **leads**: create call/WhatsApp lead (guest or user) with optional answers to the category's lead questions, "did they respond?" follow-up; a contact in a promoted category counts as a sponsored click
+- **leads**: create call/WhatsApp lead (guest or user) with optional answers to the category's lead questions, "did they respond?" follow-up
 - **reviews**: create, edit own, delete own; provider reply; report. Only signed-in customers with a
   confirmed email who contacted the business through KaajVa can review it, once they said it responded or
   after `review_min_contact_hours` (default 4); the profile's `reviewEligibility` says whether to show "Write a
@@ -74,15 +74,15 @@ reset links sent over SMTP.
   1 to 3 days after a contact the customer said was answered (`server/src/services/review-trust.ts`,
   `server/src/jobs/review-prompts.ts`)
 - **me**: overview, favorites (all, or paged with `page`), addresses, my reviews, recent contacts (paged), notifications (with unread count, mark some or all read), push tokens
-- **provider (role=provider, own rows only)**: onboarding (create listing), claim search + claim with an ownership document, profile, hours, service areas, services, portfolio, verification submissions, service details (category attribute values, asked once per category), leads, reviews + reply, dashboard stats, plans, plan and campaign requests (they open billing tickets; there is no online payment), campaigns (pause, resume), lead reports
+- **provider (role=provider, own rows only)**: onboarding (create listing), claim search + claim with an ownership document, profile, hours, service areas, services, portfolio, verification submissions, service details (category attribute values, asked once per category), leads, reviews + reply, dashboard stats, lead reports
 - **support (signed in)**: my tickets, open a ticket, reply, close
-- **admin (super_admin, or admin with the section on their role)**: me and permissions, team and roles, support tickets (filter, assign, reply, internal notes), overview and analytics, leads, providers (create, CSV import, edit, owner, delete, bulk status) and detail, change plan with an offline payment, claims, verifications, reviews moderation (single and bulk), report flags (resolve, dismiss), users (detail, suspend, sign out, anonymise, bulk), lead disputes, activity log, search insights, badges (CRUD, award, revoke), subscription plans, transactions (record, refund), subscriptions, sponsored listings, CSV exports, announcements, settings; subcategory and attribute edit/delete under **categories**
-- **notifications** are created for new leads and reviews, review replies, support replies, claim and verification decisions, listing status changes, badges and plan changes, and are pushed to every device the person registered (Expo push, `server/src/services/push.ts`)
-- **contact**, **plans**, **stats**, **app-config** (support contacts and legal links from Settings), **health**
-- **billing**: Razorpay subscriptions on the web and App Store / Google Play through RevenueCat for providers; see [billing.md](billing.md)
+- **admin (super_admin, or admin with the section on their role)**: me and permissions, team and roles, support tickets (filter, assign, reply, internal notes), overview and analytics, leads, providers (create, CSV import, edit, owner, delete, bulk status) and detail, claims, verifications, reviews moderation (single and bulk), report flags (resolve, dismiss), users (detail, suspend, sign out, anonymise, bulk), lead disputes, activity log, search insights, badges (CRUD, award, revoke), CSV exports, announcements, settings; subcategory and attribute edit/delete under **categories**
+- **notifications** are created for new leads and reviews, review replies, support replies, claim and verification decisions, listing status changes and badges, and are pushed to every device the person registered (Expo push, `server/src/services/push.ts`)
+- **contact**, **stats**, **app-config** (support contacts and legal links from Settings), **health**
+- **no billing**: KaajVa is free for everyone; there are no plans, payments, webhooks or paid promotions
 
 Ranking: `ranking_score` = Bayesian-smoothed rating + review volume + profile completeness +
-verification + response signal + a small plan boost. `self_reported_completed_jobs` is excluded,
+verification + response signal. `self_reported_completed_jobs` is excluded,
 as the brief says. Recalculated on review/profile changes and by `pnpm --filter server rank`.
 
 SEO: each provider page has a 0-100 `seo_score` with 23 checks (title, meta description, focus keyword,
@@ -98,7 +98,7 @@ page out of search engines and the sitemap. Live checks: `POST /provider/seo/che
 ## 3. Starting data
 
 No demo data. `pnpm --filter server db:bootstrap` (run by `pnpm release` on every deploy) adds one
-super admin, plans, settings, 12 categories with 57 subcategories and attributes
+super admin, settings, 12 categories with 57 subcategories and attributes
 (`server/prisma/data/categories.json`), and the real Siliguri listings found by
 `kaajva-provider-discovery` (`server/prisma/data/providers-siliguri.json`), all unclaimed.
 
@@ -149,15 +149,14 @@ Pages: Login/Register, Get started (claim existing vs create new), Claim flow (f
 upload an ownership document for the admin team to review), Onboarding
 wizard (business, services, location + areas, hours, contact preferences), Dashboard (leads,
 views, rating, completeness, ranking tips, Google visibility, chart), Leads, Reviews (reply), Services, Profile,
-Hours, Service areas, Portfolio, Search and Google (SEO score, checklist and search text), Verification, Promote (sponsored campaigns), Subscription, and a
+Hours, Service areas, Portfolio, Search and Google (SEO score, checklist and search text), Verification, Support, and a
 notifications bell.
 
 ## 6. Super admin (React + Vite)
 
 Only `super_admin` and `admin` accounts can sign in. Sections: Dashboard (queues and trends),
-Analytics, Providers (detail, status, badges, grant plan), Listing claims, Verification,
-Categories (subcategories, attributes, icons), Badges, Reviews and reports, Leads, Plans and
-billing (plans, subscribers, payments), Promotions, Users, Support tickets, Announcements,
+Analytics, Providers (detail, status, badges), Listing claims, Verification,
+Categories (subcategories, attributes, icons), Badges, Reviews and reports, Leads, Users, Support tickets, Announcements,
 Settings, Team and roles, Audit log, My account. Lists export to CSV; providers, users and reviews support bulk actions. The sidebar only shows the sections
 the member's role allows, and the API checks the same permission on every `/admin` path.
 
@@ -181,16 +180,16 @@ preview and production builds.
 
 KaajVa Business: the provider portal as a native app on the same `/provider` endpoints.
 Sign in, then setup (new listing or claim) or the tabs Dashboard, Leads, Reviews, More. Listing
-editors (profile, services, hours, areas, portfolio, verification), Promote, Plan, Support,
-Notifications, Help and legal pages, push alerts for new leads, and account deletion. Plans can be
-bought in the app through RevenueCat. Standalone npm project in `provider-mobile/`.
+editors (profile, services, hours, areas, portfolio, verification), Support,
+Notifications, Help and legal pages, push alerts for new leads, and account deletion. Everything is
+free; there are no in-app purchases. Standalone npm project in `provider-mobile/`.
 
 ## Not built on purpose
 
 SMS and WhatsApp alerts: email and push notifications are the outgoing channels. Product analytics
 (page and event tracking) is not set up; Sentry covers errors only. The customer app is English
-only; translations are planned for later. Plan limits are enforced by the server
-([billing.md](billing.md)).
+only; translations are planned for later. Payments: KaajVa is free for every business and
+customer, with no plans, subscriptions or paid promotions.
 
 File uploads are live: images are stored on the API server's disk and documents in a private folder served only through signed links, behind a `Storage` interface
 (`server/src/storage`) so an S3 implementation can replace it without touching routes or apps.

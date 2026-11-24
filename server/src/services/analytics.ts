@@ -3,7 +3,7 @@ import { env } from "../env.js";
 
 /**
  * Product analytics from the API (PostHog). The apps capture what people try to do; the server captures what
- * actually happened (a lead recorded, a subscription paid), which ad blockers and closed apps cannot skip.
+ * actually happened (a lead recorded, a review posted), which ad blockers and closed apps cannot skip.
  * Events are only sent for signed-in users, whose PostHog distinct id is their account id in every app.
  */
 const client = env.posthog.key

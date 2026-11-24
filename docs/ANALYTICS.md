@@ -49,15 +49,14 @@ The website and the provider portal also load one **Google Tag Manager** contain
 | `submit_review` | `review_submitted` | `provider_id`, `rating` | |
 | `provider_sign_up` | `signed_up` (provider) | `method` | yes (secondary) |
 | `listing_complete` | `onboarding_completed`, `claim_submitted` | `listing_type` (`new`, `claim`) | yes |
-| `purchase` | `subscription_purchased`, `promotion_purchased` | `value`, `currency` (INR), `item_category` (`plan`, `promotion`), `item_name` | yes |
 
 To send another event to GA4: add a case to `toGtmEvent` in both `gtm.ts` files, add its name to the trigger's regex in GTM, and add any new parameter as a Data Layer Variable plus a row on the GA4 event tag. Each push clears every known parameter first, so values never carry over from one event to the next. Never map phone numbers, names or emails.
 
 ## Identity
 
 - **distinct id:** the account's database id (`String(user.id)`), in every app and the API. Customers and providers share one `users` table, and a customer who starts a business keeps their id, so one person is one PostHog person.
-- **Identify** runs whenever a signed-in account is loaded (sign-in, sign-up, session restore). It runs again when the role, name, email or plan changes, for example after onboarding.
-  - Person properties: `email`, `name`, `role`, `provider_id`, `plan` (provider apps) and `signed_up_at` (set once).
+- **Identify** runs whenever a signed-in account is loaded (sign-in, sign-up, session restore). It runs again when the role, name or email changes, for example after onboarding.
+  - Person properties: `email`, `name`, `role`, `provider_id` and `signed_up_at` (set once).
   - Phone numbers are never sent.
 - **Reset** runs on sign-out, on account deletion and when a session expires (401). The next person on the device starts as a new anonymous visitor.
 - **Before sign-in**, activity is anonymous and is merged into the person on identify.
@@ -102,7 +101,7 @@ Client events describe what someone did. Server events (`source: "server"`) desc
 | `signed_up` | `method` (`password`, `google`, `apple`), `role` |
 | `logged_in` | `method` |
 | `logged_out` | none |
-| `account_deleted` | `had_store_subscription` (provider apps) |
+| `account_deleted` | none |
 | `user_signed_up` (server) | `role`, `method` |
 | `account_deleted` (server) | `role` |
 
@@ -139,22 +138,11 @@ Client events describe what someone did. Server events (`source: "server"`) desc
 | `portfolio_photo_added` / `_updated` / `_removed`, `portfolio_cover_set`, `portfolio_reordered` | none |
 | `verification_submitted` | `verification_type` |
 | `availability_toggled` | `is_available` (app) |
-| `lead_received` (server) | the same as `lead_created`, plus `over_limit`, sent as the business owner |
+| `lead_received` (server) | the same as `lead_created`, sent as the business owner |
 | `lead_updated` | `lead_id`, `status`, `has_note` |
 | `lead_contacted` | `channel` (call-back from the leads list) |
 | `lead_reported` | `lead_id` |
 | `review_replied` / `review_reply_removed` / `review_reported` | `review_id` |
-
-### Plans and promotion (provider apps and server)
-
-| Event | Properties |
-|---|---|
-| `checkout_started` → `subscription_purchased`, or `checkout_dismissed` / `checkout_failed` | web: `plan`, `billing_cycle`, `payment_source: razorpay`; app: `product_id`, `package_type`, `price`, `currency`, `payment_source` (`app_store`, `play_store`), `is_plan_change` |
-| `plan_changed`, `subscription_cancelled`, `subscription_resumed`, `purchases_restored` | self-serve plan management |
-| `subscription_activated` / `subscription_plan_changed` / `subscription_ended` (server) | `plan_before`, `plan_after`, `billing_cycle`, `payment_source`, `end_status`. Sent from `applySubscriptionChange`, so admin grants and both gateways' webhooks are covered |
-| `subscription_payment_failed` (server) | a renewal went past due |
-| `promotion_requested`, `promotion_checkout_started` → `promotion_purchased`, or `promotion_checkout_dismissed` / `promotion_checkout_failed`, `promotion_toggled` | `category_id`, `days`, `budget`, `amount` |
-| `sponsored_order_paid` (server) | `campaign_id`, `category`, `days`, `amount` |
 
 ### Everywhere
 
