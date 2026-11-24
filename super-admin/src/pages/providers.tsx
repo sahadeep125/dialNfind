@@ -1,7 +1,7 @@
 import { useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Award, BadgeCheck, Building2, ExternalLink, EyeOff, Search, MapPin, Pencil, Phone, Plus, Star, Store, Upload, UserRound, X } from "lucide-react";
+import { ArrowLeft, Award, BadgeCheck, Building2, ExternalLink, EyeOff, Search, MapPin, Pencil, Phone, Plus, Star, Store, Trash2, Upload, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { WEB_URL } from "@/lib/config";
@@ -13,7 +13,8 @@ import { ConfirmDialog, EmptyRow, Facts, FilterSelect, SearchInput, StatCard, St
 import { Button } from "@/components/ui/button";
 import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
 import { AddListingDialog, ImportListingsDialog } from "./provider-create";
-import { DeleteListingPanel, OwnerActions } from "./provider-manage";
+import { DeleteListingDialog, DeleteListingPanel, OwnerActions } from "./provider-manage";
+import { AccountTypeFilterTabs } from "@/components/account-type";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NotIndexedNote, SearchPreview, SeoCompletion, SeoReport, SeoScoreBadge, SeoScoreRing } from "@/components/seo";
 import type { SeoAnalysis } from "@/lib/seo";
@@ -31,6 +32,7 @@ export function ProvidersPage() {
   const { data, isLoading } = useQuery({ queryKey: ["admin-providers", qs.toString()], queryFn: () => api<{ providers: ProviderRow[] } & Paged>(`/admin/providers?${qs}`) });
   const selection = useSelection(data?.providers.map((p) => p.id) ?? []);
   const [dialog, setDialog] = useState<"add" | "import" | null>(null);
+  const [deleting, setDeleting] = useState<{ id: number; businessName: string } | null>(null);
   const qc = useQueryClient();
   const bulk = useMutation({
     mutationFn: (action: "approve" | "suspend" | "reject" | "verify" | "hide_from_search" | "show_in_search") => api<{ updated: number }>("/admin/providers/bulk", { method: "POST", json: { ids: selection.selected, action } }),
@@ -63,16 +65,7 @@ export function ProvidersPage() {
       <ImportListingsDialog open={dialog === "import"} onOpenChange={(o) => setDialog(o ? "import" : null)} />
       <Toolbar>
         <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search name or phone" />
-        <FilterSelect
-          label="Account type"
-          allLabel="Individuals and businesses"
-          value={f.type}
-          onChange={(type) => setF({ type, page: "1" })}
-          options={[
-            { value: "individual", label: "Individual professionals" },
-            { value: "business", label: "Businesses" },
-          ]}
-        />
+        <AccountTypeFilterTabs value={f.type} onChange={(type) => setF({ type, page: "1" })} />
         <FilterSelect label="Status" allLabel="Any status" value={f.status} onChange={(status) => setF({ status, page: "1" })} options={STATUS_OPTIONS} />
         <FilterSelect
           label="Verification"
@@ -148,11 +141,14 @@ export function ProvidersPage() {
             <Th>SEO</Th>
             <Th>Status</Th>
             <Th>Added</Th>
+            <Th className="w-12">
+              <span className="sr-only">Actions</span>
+            </Th>
           </tr>
         </thead>
         <tbody>
-          {isLoading && <TableSkeleton cols={8} />}
-          {data?.providers.length === 0 && <EmptyRow cols={8} text="No providers match these filters." />}
+          {isLoading && <TableSkeleton cols={9} />}
+          {data?.providers.length === 0 && <EmptyRow cols={9} text="No providers match these filters." />}
           {data?.providers.map((p) => (
             <tr key={p.id} className="hover:bg-muted/40">
               <Td>
@@ -201,10 +197,32 @@ export function ProvidersPage() {
                 <StatusBadge status={p.status} label={p.status === "active" ? "Live" : undefined} />
               </Td>
               <Td className="whitespace-nowrap text-muted-foreground">{formatDate(p.createdAt)}</Td>
+              <Td>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  aria-label={`Delete ${p.businessName}`}
+                  title="Delete listing"
+                  onClick={() => setDeleting({ id: p.id, businessName: p.businessName })}
+                >
+                  <Trash2 />
+                </Button>
+              </Td>
             </tr>
           ))}
         </tbody>
       </Table>
+      {deleting && (
+        <DeleteListingDialog
+          key={deleting.id}
+          providerId={deleting.id}
+          businessName={deleting.businessName}
+          open
+          onOpenChange={(o) => !o && setDeleting(null)}
+          onDeleted={() => selection.clear()}
+        />
+      )}
       {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
       {!f.status && !f.verification && f.claimed !== "no" && <ProviderSignups key={f.q} q={f.q} />}
     </>

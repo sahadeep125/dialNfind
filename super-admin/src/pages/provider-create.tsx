@@ -7,6 +7,7 @@ import { api, errorMessage } from "@/lib/api";
 import { useCategoryOptions } from "@/lib/categories";
 import { normalizePhone } from "@/lib/validation";
 import { Field, fieldA11y, FormAlert } from "@/components/form";
+import { AccountTypeTabs, type BusinessType } from "@/components/account-type";
 import { LocationEditor, locationProblems, type LocationErrors, type LocationValue } from "@/components/location-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,7 @@ export function AddListingDialog({ open, onOpenChange }: { open: boolean; onOpen
   const qc = useQueryClient();
   const { data: categories = [] } = useCategoryOptions();
   const [name, setName] = useState("");
-  const [businessType, setBusinessType] = useState<"individual" | "company">("company");
+  const [businessType, setBusinessType] = useState<BusinessType>("individual");
   const [phone, setPhone] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
@@ -73,15 +74,7 @@ export function AddListingDialog({ open, onOpenChange }: { open: boolean; onOpen
           <FormAlert message={save.error ? errorMessage(save.error) : null} />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id="new-type" label="Account type" className="sm:col-span-2">
-              <Select value={businessType} onValueChange={(t) => setBusinessType(t as "individual" | "company")}>
-                <SelectTrigger id="new-type" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="individual">Individual professional (listed under their own name)</SelectItem>
-                  <SelectItem value="company">Business</SelectItem>
-                </SelectContent>
-              </Select>
+              <AccountTypeTabs id="new-type" value={businessType} onChange={setBusinessType} />
             </Field>
             <Field id="new-name" label={businessType === "individual" ? "Full name" : "Business name"} required error={errors.name} className="sm:col-span-2">
               <Input value={name} maxLength={100} onChange={(e) => setName(e.target.value)} {...fieldA11y("new-name", errors.name)} />

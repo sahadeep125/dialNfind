@@ -11,6 +11,7 @@ import { PageHeader, Panel } from "@/components/page-header";
 import { PageSkeleton, SaveBar } from "@/components/common";
 import { ConfirmDialog } from "@/components/admin-ui";
 import { Field, fieldA11y, FormAlert } from "@/components/form";
+import { AccountTypeTabs } from "@/components/account-type";
 import { LocationEditor, locationProblems, type LocationErrors, type LocationValue } from "@/components/location-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -316,40 +317,72 @@ function ClaimForProviderDialog({ open, onOpenChange, providerId, businessName, 
   );
 }
 
-export function DeleteListingPanel({ providerId, businessName }: { providerId: number; businessName: string }) {
-  const navigate = useNavigate();
+/**
+ * Asks the admin to type the listing's name, then deletes it for good with its leads, reviews,
+ * claims and photos (the same hard delete everywhere; the audit log keeps a snapshot).
+ */
+export function DeleteListingDialog({
+  providerId,
+  businessName,
+  open,
+  onOpenChange,
+  onDeleted,
+}: {
+  providerId: number;
+  businessName: string;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onDeleted?: () => void;
+}) {
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const del = useMutation({
     mutationFn: () => api(`/admin/providers/${providerId}`, { method: "DELETE", json: { confirmName: typed } }),
     onSuccess: () => {
       toast.success(`${businessName} was deleted`);
       void qc.invalidateQueries({ queryKey: ["admin-providers"] });
-      navigate("/providers", { replace: true });
+      setTyped("");
+      onOpenChange(false);
+      onDeleted?.();
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
+  const matches = typed.trim().toLowerCase() === businessName.trim().toLowerCase();
+  return (
+    <ConfirmDialog
+      open={open}
+      onOpenChange={(o) => (onOpenChange(o), setTyped(""))}
+      title={`Delete ${businessName}?`}
+      description="This removes the listing with its leads, reviews, claims and photos, and cannot be undone. The audit log keeps the name, phone and city. Suspend it instead if it may come back."
+      confirmLabel={del.isPending ? "Deleting…" : "Delete for good"}
+      destructive
+      busy={del.isPending || !matches}
+      onConfirm={() => del.mutate()}
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (matches && !del.isPending) del.mutate();
+        }}
+      >
+        <Field id={`confirm-name-${providerId}`} label={`Type "${businessName}" to confirm`}>
+          <Input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoFocus {...fieldA11y(`confirm-name-${providerId}`)} />
+        </Field>
+      </form>
+    </ConfirmDialog>
+  );
+}
+
+export function DeleteListingPanel({ providerId, businessName }: { providerId: number; businessName: string }) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
   return (
     <Panel title="Delete listing">
       <p className="text-sm text-muted-foreground">Removes the listing with its leads, reviews and photos. Suspend it instead if it may come back.</p>
       <Button variant="outline" className="mt-4 w-full text-destructive" onClick={() => setOpen(true)}>
         <Trash2 /> Delete listing
       </Button>
-      <ConfirmDialog
-        open={open}
-        onOpenChange={(o) => (setOpen(o), setTyped(""))}
-        title={`Delete ${businessName}?`}
-        description="This cannot be undone. The audit log keeps the name, phone and city."
-        confirmLabel="Delete for good"
-        destructive
-        busy={del.isPending || typed.trim().toLowerCase() !== businessName.trim().toLowerCase()}
-        onConfirm={() => del.mutate()}
-      >
-        <Field id="confirm-name" label={`Type "${businessName}" to confirm`}>
-          <Input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" {...fieldA11y("confirm-name")} />
-        </Field>
-      </ConfirmDialog>
+      <DeleteListingDialog providerId={providerId} businessName={businessName} open={open} onOpenChange={setOpen} onDeleted={() => navigate("/providers", { replace: true })} />
     </Panel>
   );
 }
@@ -546,15 +579,7 @@ function DetailsSection({ id, profile, onSaved }: SectionProps) {
           <Input value={v.website ?? ""} placeholder="https://" onChange={(e) => set({ website: e.target.value || null })} {...fieldA11y("e-web", errors.website)} />
         </Field>
         <Field id="e-type" label="Account type">
-          <Select value={v.businessType} onValueChange={(t) => set({ businessType: t as Details["businessType"] })}>
-            <SelectTrigger id="e-type" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="individual">Individual professional</SelectItem>
-              <SelectItem value="company">Business</SelectItem>
-            </SelectContent>
-          </Select>
+          <AccountTypeTabs id="e-type" value={v.businessType} onChange={(businessType) => set({ businessType })} />
         </Field>
         {v.businessType === "individual" && (
           <Field id="e-profession" label="Profession title" optional hint="Shown after the name. Leave empty to use the main service's profession.">
