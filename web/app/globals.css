@@ -71,7 +71,7 @@
   --board-rule: rgb(255 255 255 / 0.16);
   --ink-rule: #cfd5df;
   /* The quiet band between white sections. */
-  --surface: #f7f9fc;
+  --surface: #eef2f8;
 }
 
 @theme inline {

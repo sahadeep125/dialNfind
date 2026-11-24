@@ -43,10 +43,10 @@ const NEEDS = [
   { problem: "Shifting house", service: "Packers & movers", icon: Truck, href: serviceHref("packers-movers") },
 ];
 
-/** A quiet two-column list: soft icon, the problem, the service in small type, and an arrow. No boxes. */
+/** A quiet list (two columns, three on wide screens): soft icon, the problem, the service in small type, and an arrow. No boxes. */
 export function FixGrid() {
   return (
-    <ul className="grid gap-x-12 sm:grid-cols-2">
+    <ul className="grid gap-x-10 sm:grid-cols-2 xl:grid-cols-3">
       {NEEDS.map((n) => (
         <li key={n.href} className="border-b border-border">
           <Link href={n.href} className="group flex items-center gap-4 py-3.5">

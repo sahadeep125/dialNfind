@@ -20,8 +20,10 @@ export function HomeHero({
     "No booking fee, no commission",
   ];
   return (
-    <section className="relative overflow-hidden border-b bg-[radial-gradient(70rem_28rem_at_50%_-6rem,var(--secondary),transparent_70%)]">
-      <div className="container-page flex flex-col items-center py-14 text-center md:py-20 lg:py-24">
+    <section className="relative overflow-hidden border-b border-[#dbe4f5] bg-[radial-gradient(40rem_22rem_at_88%_0%,rgb(253_128_3/0.14),transparent_70%),radial-gradient(48rem_26rem_at_8%_100%,rgb(4_33_97/0.10),transparent_70%),linear-gradient(180deg,#e2eafa_0%,#eef3fc_100%)]">
+      {/* A faint dot grid over the tint, so the band has texture without a photo. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgb(4_33_97/0.08)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(180deg,black,transparent_85%)]" />
+      <div className="container-page relative flex flex-col items-center py-14 text-center md:py-20 lg:py-24">
         <div className="hero-enter w-full">
           <h1 className="mx-auto max-w-4xl text-balance text-[2.25rem] font-extrabold leading-[1.06] tracking-[-0.03em] text-foreground sm:text-[3rem] lg:text-[3.5rem]">
             Something to fix? Find a local pro near you in <HeroCity />.

@@ -19,7 +19,7 @@ export async function Testimonials() {
   const reviews = await highlights();
   if (reviews.length === 0) return null;
   return (
-    <section className="section-y border-y bg-card">
+    <section className="section-y border-y bg-surface">
       <div className="container-wide">
         <SectionHeading eyebrow="Customer reviews" title="What people say about local pros" />
         <ul className="mt-8 grid gap-5 md:grid-cols-3">
