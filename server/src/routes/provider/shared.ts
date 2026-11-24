@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { pincode } from "../../lib/rules.js";
 import { badRequest } from "../../lib/errors.js";
+import { assertOneProfession } from "../../services/professions.js";
 
 type Tx = Prisma.TransactionClient;
 
@@ -56,6 +57,8 @@ export async function replaceHours(tx: Tx, providerId: bigint, hours: z.infer<ty
 
 /** Providers may only link to existing, active, super-admin-owned categories. */
 export async function replaceServices(tx: Tx, providerId: bigint, services: z.infer<typeof serviceSchema>[]) {
+  const owner = await tx.provider.findUniqueOrThrow({ where: { id: providerId }, select: { businessType: true } });
+  assertOneProfession(owner.businessType, services);
   const categoryIds = [...new Set(services.map((s) => BigInt(s.categoryId)))];
   const subIds = [...new Set(services.filter((s) => s.subcategoryId).map((s) => BigInt(s.subcategoryId!)))];
   const [cats, subs] = await Promise.all([

@@ -2,12 +2,19 @@
 import {
   AirVent,
   Briefcase,
+  BrickWall,
   Bug,
+  Camera,
   Car,
+  CarFront,
+  Dumbbell,
+  Flame,
   GraduationCap,
   Hammer,
+  KeyRound,
   PaintRoller,
   Scissors,
+  Shirt,
   Sparkles,
   Truck,
   Tv,
@@ -87,6 +94,46 @@ export const CATEGORY_STYLES: Record<string, CategoryStyle> = {
     icon: Car,
     light: { bg: "#E4ECF5", fg: "#3A4E68" },
     dark: { bg: "#252F3A", fg: "#A7B9D1" },
+  },
+  locksmith: {
+    icon: KeyRound,
+    light: { bg: "#F7F0DC", fg: "#6E5A12" },
+    dark: { bg: "#3A3115", fg: "#D9C27A" },
+  },
+  tailoring: {
+    icon: Scissors,
+    light: { bg: "#F8E9F6", fg: "#88397E" },
+    dark: { bg: "#3A2338", fg: "#E39AD6" },
+  },
+  drivers: {
+    icon: CarFront,
+    light: { bg: "#E3F0F8", fg: "#2D5E7C" },
+    dark: { bg: "#1E3140", fg: "#94C1DF" },
+  },
+  masonry: {
+    icon: BrickWall,
+    light: { bg: "#FBE9E4", fg: "#8E3F2C" },
+    dark: { bg: "#3F241D", fg: "#EEA48F" },
+  },
+  welding: {
+    icon: Flame,
+    light: { bg: "#FCEBDF", fg: "#8C4719" },
+    dark: { bg: "#40291A", fg: "#EDAA7E" },
+  },
+  photography: {
+    icon: Camera,
+    light: { bg: "#ECEBFB", fg: "#4F4AA3" },
+    dark: { bg: "#29283F", fg: "#ADA8F2" },
+  },
+  "fitness-yoga": {
+    icon: Dumbbell,
+    light: { bg: "#E0F4E8", fg: "#2A6B46" },
+    dark: { bg: "#183324", fg: "#89CFA4" },
+  },
+  laundry: {
+    icon: Shirt,
+    light: { bg: "#DEF2F5", fg: "#256872" },
+    dark: { bg: "#163237", fg: "#86C9D2" },
   },
 };
 

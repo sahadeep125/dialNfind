@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { CATEGORY_SEO } from "@/content/seo/categories";
+import { PROFESSION_CATEGORY_SEO } from "@/content/seo/professions";
 import { SUBCATEGORY_SEO } from "@/content/seo/subcategories";
 import { GUIDES, guidesForSubcategory, readingMinutes } from "@/lib/guides";
 import { FAQ, FAQ_SECTIONS } from "@/lib/faq";
@@ -44,7 +45,8 @@ describe("service page copy", () => {
 describe("guides", () => {
   it("has unique slugs, two per seeded category", () => {
     expect(new Set(GUIDES.map((g) => g.slug)).size).toBe(GUIDES.length);
-    for (const category of Object.keys(SEEDED)) expect(GUIDES.filter((g) => g.category === category)).toHaveLength(2);
+    // The profession categories added for individual professionals do not have guides yet.
+    for (const category of Object.keys(SEEDED)) expect(GUIDES.filter((g) => g.category === category)).toHaveLength(category in PROFESSION_CATEGORY_SEO ? 0 : 2);
   });
 
   it.each(GUIDES.map((g) => [g.slug, g] as const))("%s is complete and points at real pages", (_slug, g) => {

@@ -397,5 +397,9 @@ export function fallbackDescription(p: ProviderDetail): string {
   const names = Array.from(new Set(p.services.map((s) => s.subcategory?.name ?? s.category.name))).slice(0, 4);
   const offers = names.length ? ` Services listed include ${names.join(", ").toLowerCase()}.` : "";
   const where = p.addressLine ? ` You can find them at ${p.addressLine}.` : "";
-  return `${p.businessName} is a ${category} business in ${place}.${offers}${where} Call or WhatsApp ${p.businessName} directly from this page to ask about prices and availability; KaajVa adds no booking fee.`;
+  const who =
+    p.businessType === "individual"
+      ? `${p.businessName} is an independent ${(p.profession ?? category).toLowerCase()} working in ${place}.`
+      : `${p.businessName} is a ${category} business in ${place}.`;
+  return `${who}${offers}${where} Call or WhatsApp ${p.businessName} directly from this page to ask about prices and availability; KaajVa adds no booking fee.`;
 }

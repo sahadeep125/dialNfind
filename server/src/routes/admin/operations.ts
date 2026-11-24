@@ -310,12 +310,12 @@ const broadcastSchema = z.object({
 });
 
 function audienceWhere(a: z.infer<typeof broadcastSchema>): Prisma.UserWhereInput {
-  const city = a.city ? { provider: { city: { equals: a.city, mode: "insensitive" as const } } } : {};
+  const city = a.city ? { providers: { some: { city: { equals: a.city, mode: "insensitive" as const } } } } : {};
   switch (a.audience) {
     case "providers":
       return { role: "provider", status: "active", ...city };
     case "unverified_providers":
-      return { role: "provider", status: "active", provider: { verificationStatus: { not: "verified" }, ...(a.city ? { city: { equals: a.city, mode: "insensitive" as const } } : {}) } };
+      return { role: "provider", status: "active", providers: { some: { verificationStatus: { not: "verified" }, ...(a.city ? { city: { equals: a.city, mode: "insensitive" as const } } : {}) } } };
     case "customers":
       return { role: "customer", status: "active" };
     default:

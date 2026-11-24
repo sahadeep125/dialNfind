@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { Navigate, useNavigate, useSearchParams } from "react-router";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, ArrowRight, Building2, Check, Loader2, Search, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Hours, ProviderService, ServiceArea } from "@/lib/types";
+import type { Hours, Profession, ProviderProfile, ProviderService, ServiceArea } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft";
 import { Button } from "@/components/ui/button";
@@ -16,17 +17,31 @@ import { normalizePhone, optionalEmail, optionalInt, optionalPhone, optionalUrl,
 import { Field, FormAlert, fieldA11y } from "@/components/form";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { AreasEditor, DEFAULT_HOURS, HoursEditor, ServicesEditor, validateHours, validateServices } from "@/components/editors";
+import { AreasEditor, DEFAULT_HOURS, HoursEditor, normalizeHours, ServicesEditor, useProfessions, validateHours, validateServices } from "@/components/editors";
+import { ACCOUNT_TYPES, AccountTypeBadge } from "@/components/account-type";
 import { LocationFields, validateLocation, type LocationErrors, type LocationValue } from "@/components/location-fields";
 
-const STEPS = ["Business", "Services", "Location", "Hours", "Contact"];
+/** Steps of a first listing. Adding another profession skips "Account type": the account is already an individual's. */
+const ALL_STEPS = ["Account type", "About", "Services", "Location", "Hours", "Contact"];
 
-const businessSchema = z.object({
-  businessName: z.string().trim().min(2, "Enter your business name").max(100, "Keep the name under 100 characters"),
-  businessType: z.enum(["individual", "company"]),
-  yearsExperience: optionalInt(0, 80, "Years of experience"),
-  description: z.string().trim().max(2000, "Keep the description under 2,000 characters"),
-});
+const businessSchema = z
+  .object({
+    businessName: z.string().trim().max(100, "Keep the name under 100 characters"),
+    businessType: z.enum(["individual", "company"]),
+    profession: z.string().trim().max(80, "Keep the title under 80 characters"),
+    professionKey: z.string(),
+    yearsExperience: optionalInt(0, 80, "Years of experience"),
+    description: z.string().trim().max(2000, "Keep the description under 2,000 characters"),
+  })
+  .superRefine((b, ctx) => {
+    if (b.businessName.length < 2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["businessName"], message: b.businessType === "individual" ? "Enter your full name" : "Enter your business name" });
+    }
+    if (b.businessType === "individual" && !b.professionKey) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["professionKey"], message: "Pick your profession" });
+  });
+
+/** A profession's key in the picker: its category and service. */
+const professionKey = (p: Pick<Profession, "categoryId" | "subcategoryId">) => `${p.categoryId}:${p.subcategoryId ?? ""}`;
 
 const contactSchema = z
   .object({
@@ -49,7 +64,16 @@ function collect(result: z.SafeParseReturnType<unknown, unknown>): Errors {
 
 interface Draft {
   step: number;
-  business: { businessName: string; businessType: "individual" | "company"; yearsExperience: string; description: string };
+  business: {
+    businessName: string;
+    businessType: "individual" | "company";
+    /** The picked profession (professionKey), individuals only. */
+    professionKey: string;
+    /** An optional title of their own, "Master Plumber". */
+    profession: string;
+    yearsExperience: string;
+    description: string;
+  };
   services: ProviderService[];
   location: LocationValue;
   areas: ServiceArea[];
@@ -58,15 +82,26 @@ interface Draft {
 }
 
 export function OnboardingPage() {
-  const { user, providerState, signIn, refresh } = useAuth();
+  const { user, providerState, signIn, refresh, switchListing } = useAuth();
   const navigate = useNavigate();
-  const draftKey = `kjv_onboarding_${user?.id ?? "anon"}`;
+  const [params] = useSearchParams();
+  // An individual professional adding another profession: a new listing under the same account.
+  const adding = params.get("add") === "1" && !!providerState?.provider && providerState.provider.businessType === "individual" && !!providerState.canAddListing;
+  const STEPS = adding ? ALL_STEPS.slice(1) : ALL_STEPS;
+  const draftKey = `kjv_onboarding_${user?.id ?? "anon"}${adding ? "_add" : ""}`;
   // Picks up where the person left off if they refreshed or came back later.
   const [draft] = useState(() => loadDraft<Draft>(draftKey));
   const [step, setStep] = useState(draft?.step ?? 0);
   const [saving, setSaving] = useState(false);
+  const { data: professions = [] } = useProfessions();
 
-  const [business, setBusiness] = useState<Draft["business"]>(draft?.business ?? { businessName: "", businessType: "individual", yearsExperience: "", description: "" });
+  const [business, setBusiness] = useState<Draft["business"]>(
+    draft?.business ?? { businessName: adding ? (providerState?.provider?.businessName ?? "") : (user?.name ?? ""), businessType: "individual", professionKey: "", profession: "", yearsExperience: "", description: "" },
+  );
+  const individual = adding || business.businessType === "individual";
+  const picked = professions.find((p) => professionKey(p) === business.professionKey) ?? null;
+  // The step's name decides what it shows, so the numbering can skip "Account type".
+  const current = STEPS[step] ?? STEPS[0]!;
   const [services, setServices] = useState<ProviderService[]>(draft?.services ?? []);
   const [location, setLocation] = useState<LocationValue>(draft?.location ?? {
     addressLine: "",
@@ -93,27 +128,76 @@ export function OnboardingPage() {
     return () => clearTimeout(t);
   }, [draftKey, step, business, services, location, areas, hours, contact]);
 
-  if (providerState?.provider) return <Navigate to="/" replace />;
+  // A new profession starts from the current listing's location, hours and contact details.
+  const { data: current0 } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => api<{ provider: ProviderProfile }>("/provider/profile").then((r) => r.provider),
+    enabled: adding && !draft,
+  });
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    if (!current0 || prefilled || draft) return;
+    setPrefilled(true);
+    setBusiness((b) => ({ ...b, businessName: current0.businessName, yearsExperience: current0.yearsExperience?.toString() ?? "" }));
+    setLocation({
+      addressLine: current0.addressLine ?? "",
+      locality: current0.locality ?? "",
+      city: current0.city,
+      state: current0.state,
+      pincode: current0.pincode ?? "",
+      latitude: current0.latitude,
+      longitude: current0.longitude,
+      serviceRadiusKm: current0.serviceRadiusKm,
+    });
+    setAreas(current0.serviceAreas.map(({ areaName, pincode, latitude, longitude }) => ({ areaName, pincode, latitude, longitude })));
+    if (current0.businessHours.length) setHours(normalizeHours(current0.businessHours));
+    setContact({
+      phone: current0.phone,
+      whatsappNumber: current0.whatsappNumber ?? "",
+      email: current0.email ?? "",
+      website: current0.website ?? "",
+      acceptsCalls: current0.acceptsCalls,
+      acceptsWhatsapp: current0.acceptsWhatsapp,
+    });
+  }, [current0, prefilled, draft]);
+
+  if (providerState?.provider && !adding) return <Navigate to="/" replace />;
+
+  /** Picking a profession sets the listing's main service; the Services step adds more from that category. */
+  function pickProfession(p: Profession) {
+    setBusiness({ ...business, professionKey: professionKey(p) });
+    clear("professionKey");
+    const keep = services.filter((s) => s.categoryId === p.categoryId && s.subcategoryId !== p.subcategoryId).map((s) => ({ ...s, isPrimary: false }));
+    setServices([{ categoryId: p.categoryId, subcategoryId: p.subcategoryId, startingPrice: null, priceUnit: "per_visit", isPrimary: true }, ...keep]);
+  }
+
+  function pickType(t: "individual" | "company") {
+    setBusiness({ ...business, businessType: t });
+    // A business may cover several categories; an individual's listing is one profession.
+    if (t === "individual" && picked) setServices(services.filter((s) => s.categoryId === picked.categoryId));
+  }
 
   /** Validates the current step, shows its errors inline, and returns true when it can move on. */
   function validate(): boolean {
     setFormError(null);
-    if (step === 0) {
-      const e = collect(businessSchema.safeParse(business));
+    if (current === "Account type") return true;
+    if (current === "About") {
+      const e = collect(businessSchema.safeParse({ ...business, businessType: individual ? "individual" : "company" }));
       setErrors(e);
       return !Object.keys(e).length;
     }
-    if (step === 1) {
-      const msg = validateServices(services);
+    if (current === "Services") {
+      let msg = validateServices(services);
+      if (!msg && individual && new Set(services.map((s) => s.categoryId)).size > 1) msg = "This listing is for one profession. Add other professions as separate listings later.";
       setErrors(msg ? { services: msg } : {});
       return !msg;
     }
-    if (step === 2) {
+    if (current === "Location") {
       const e = validateLocation(location);
       setLocationErrors(e);
       return !e;
     }
-    if (step === 3) {
+    if (current === "Hours") {
       const bad = validateHours(hours);
       setErrors(bad ? { hours: "Fix the highlighted days" } : {});
       return !bad;
@@ -133,11 +217,13 @@ export function OnboardingPage() {
   async function submit() {
     setSaving(true);
     try {
-      const res = await api<{ token: string | null }>("/provider/onboarding", {
+      const type = individual ? "individual" : "company";
+      const res = await api<{ token: string | null; provider: { id: number } }>("/provider/onboarding", {
         method: "POST",
         json: {
           businessName: business.businessName.trim(),
-          businessType: business.businessType,
+          businessType: type,
+          profession: individual ? business.profession.trim() || null : null,
           yearsExperience: business.yearsExperience.trim() === "" ? null : Number(business.yearsExperience),
           description: business.description.trim() || undefined,
           ...location,
@@ -156,10 +242,11 @@ export function OnboardingPage() {
         },
       });
       clearDraft(draftKey);
-      track("onboarding_completed", { service_count: services.length, area_count: areas.length, business_type: business.businessType });
+      track("onboarding_completed", { service_count: services.length, area_count: areas.length, business_type: type, added_profession: adding });
       if (res.token) await signIn(res.token);
-      else await refresh();
-      toast.success("Your business is live on KaajVa");
+      if (adding) await switchListing(res.provider.id);
+      else if (!res.token) await refresh();
+      toast.success(adding ? "Your new profession is listed" : individual ? "You are listed on KaajVa" : "Your business is listed on KaajVa");
       navigate("/", { replace: true });
     } catch (err) {
       setFormError(errorMessage(err));
@@ -170,8 +257,12 @@ export function OnboardingPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-3xl font-bold text-brand-deep">Set up your business</h1>
-      <p className="mt-2 text-muted-foreground">Five quick steps. You can change everything later from your dashboard.</p>
+      <h1 className="text-3xl font-bold text-brand-deep">{adding ? "Add another profession" : "Create your listing"}</h1>
+      <p className="mt-2 text-muted-foreground">
+        {adding
+          ? "Each profession gets its own listing under your name, so customers find you for each one. Your contact details and location are filled in from your current listing."
+          : "A few quick steps. No business registration needed, and you can change everything later from your dashboard."}
+      </p>
 
       <ol className="mt-8 flex items-center gap-2">
         {STEPS.map((s, i) => (
@@ -193,38 +284,99 @@ export function OnboardingPage() {
       </ol>
 
       <div className="mt-8 rounded-2xl border bg-card p-6 shadow-[var(--shadow-soft)] md:p-8">
-        {step === 0 && (
+        {current === "Account type" && (
           <div className="space-y-5">
-            <StepTitle title="Tell us about your business" subtitle="This is what customers see first." />
-            <Field id="businessName" label="Business name" error={errors.businessName} required>
+            <StepTitle title="How do you work?" subtitle="This decides how your listing looks to customers. Most people on KaajVa work for themselves." />
+            <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Account type">
+              {(["individual", "company"] as const).map((t) => {
+                const Icon = t === "individual" ? UserRound : Building2;
+                const on = business.businessType === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => pickType(t)}
+                    className={cn("flex cursor-pointer flex-col gap-3 rounded-2xl border p-5 text-left transition-colors", on ? "border-primary bg-accent" : "hover:bg-muted")}
+                  >
+                    <span className={cn("flex size-11 items-center justify-center rounded-xl", t === "individual" ? "bg-brand-accent-soft text-brand-accent-strong" : "bg-accent text-primary")}>
+                      <Icon className="size-5" />
+                    </span>
+                    <span>
+                      <span className="flex items-center gap-2 font-semibold">
+                        {ACCOUNT_TYPES[t].label}
+                        {t === "individual" && <span className="rounded-full bg-success-soft px-2 py-0.5 text-[11px] font-semibold text-success">Most popular</span>}
+                      </span>
+                      <span className="mt-1 block text-sm text-muted-foreground">
+                        {t === "individual"
+                          ? "You offer services yourself: plumber, electrician, tutor, driver, photographer... Listed under your own name, one listing per profession."
+                          : "A shop, service centre, agency or team. Listed under the business name, with all its categories."}
+                      </span>
+                      <span className="mt-2 block text-xs font-medium text-foreground/70">
+                        Shown as: {t === "individual" ? "Deep Saha – Plumber – Ghoraguli" : "ABC Services – Plumbing & Electrical – Siliguri"}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {current === "About" && (
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <StepTitle
+                title={individual ? "About you" : "Tell us about your business"}
+                subtitle={individual ? "Customers see your name and profession first." : "This is what customers see first."}
+              />
+              <AccountTypeBadge type={individual ? "individual" : "company"} />
+            </div>
+            <Field id="businessName" label={ACCOUNT_TYPES[individual ? "individual" : "company"].nameLabel} error={errors.businessName} required>
               <Input
                 {...fieldA11y("businessName", errors.businessName)}
                 maxLength={100}
                 value={business.businessName}
+                readOnly={adding}
                 onChange={(e) => {
                   setBusiness({ ...business, businessName: e.target.value });
                   clear("businessName");
                 }}
-                placeholder="e.g. Sharma TV & Electronics Care"
-                autoFocus
+                placeholder={ACCOUNT_TYPES[individual ? "individual" : "company"].namePlaceholder}
+                autoFocus={!adding}
               />
             </Field>
-            <div className="space-y-2">
-              <Label>You are</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {(["individual", "company"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setBusiness({ ...business, businessType: t })}
-                    className={cn("cursor-pointer rounded-xl border p-4 text-left transition-colors", business.businessType === t ? "border-primary bg-accent" : "hover:bg-muted")}
-                  >
-                    <div className="font-medium">{t === "individual" ? "An individual professional" : "A company or shop"}</div>
-                    <div className="text-xs text-muted-foreground">{t === "individual" ? "Freelancer, technician, tutor" : "Team, service centre, agency"}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {adding && <p className="-mt-3 text-xs text-muted-foreground">Your name is shared by all your listings. Change it from Profile details.</p>}
+            {individual && (
+              <>
+                <ProfessionPicker
+                  professions={professions}
+                  value={business.professionKey}
+                  taken={adding ? (providerState?.listings ?? []).map((l) => l.professionLabel?.toLowerCase() ?? "") : []}
+                  error={errors.professionKey}
+                  onPick={pickProfession}
+                />
+                <Field
+                  id="profession"
+                  label="Your title"
+                  error={errors.profession}
+                  hint={`Shown after your name. Leave empty to use "${picked?.label ?? "your profession"}".`}
+                  optional
+                >
+                  <Input
+                    {...fieldA11y("profession", errors.profession, true)}
+                    maxLength={80}
+                    value={business.profession}
+                    onChange={(e) => {
+                      setBusiness({ ...business, profession: e.target.value });
+                      clear("profession");
+                    }}
+                    placeholder={picked ? `e.g. Senior ${picked.label}` : "e.g. Senior Plumber"}
+                  />
+                </Field>
+              </>
+            )}
             <Field id="years" label="Years of experience" error={errors.yearsExperience} optional>
               <Input
                 {...fieldA11y("years", errors.yearsExperience)}
@@ -239,7 +391,7 @@ export function OnboardingPage() {
             </Field>
             <Field
               id="description"
-              label="Description"
+              label={individual ? "About your work" : "Description"}
               error={errors.description}
               hint={`${business.description.length} of 2,000 characters. 80 or more helps you rank higher.`}
               optional
@@ -253,16 +405,24 @@ export function OnboardingPage() {
                   setBusiness({ ...business, description: e.target.value });
                   clear("description");
                 }}
-                placeholder="What do you fix or offer, which brands, what makes you reliable, warranty..."
+                placeholder={
+                  individual
+                    ? "What jobs you take on, the brands or areas you know, how quickly you can come..."
+                    : "What do you fix or offer, which brands, what makes you reliable, warranty..."
+                }
               />
             </Field>
           </div>
         )}
 
-        {step === 1 && (
+        {current === "Services" && (
           <div className="space-y-5">
-            <StepTitle title="What services do you offer?" subtitle="Customers find you through these. Add a starting price so they know what to expect." />
+            <StepTitle
+              title={individual ? `Your services as ${business.profession.trim() || picked?.label || "a professional"}` : "What services do you offer?"}
+              subtitle="Customers find you through these. Add a starting price so they know what to expect."
+            />
             <ServicesEditor
+              lockCategoryId={individual ? (picked?.categoryId ?? null) : null}
               value={services}
               onChange={(v) => {
                 setServices(v);
@@ -277,7 +437,7 @@ export function OnboardingPage() {
           </div>
         )}
 
-        {step === 2 && (
+        {current === "Location" && (
           <div className="space-y-8">
             <StepTitle title="Where are you based?" subtitle="We show you to customers within your travel distance." />
             <LocationFields
@@ -295,7 +455,7 @@ export function OnboardingPage() {
           </div>
         )}
 
-        {step === 3 && (
+        {current === "Hours" && (
           <div className="space-y-5">
             <StepTitle title="When can customers call you?" subtitle="We show an Open now label during these hours." />
             <HoursEditor value={hours} onChange={setHours} />
@@ -307,11 +467,11 @@ export function OnboardingPage() {
           </div>
         )}
 
-        {step === 4 && (
+        {current === "Contact" && (
           <div className="space-y-5">
             <StepTitle title="How should customers reach you?" subtitle="Your number is shown on your profile so customers can call directly." />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field id="phone" label="Business phone" error={errors.phone} required>
+              <Field id="phone" label={individual ? "Phone number" : "Business phone"} error={errors.phone} required>
                 <Input
                   {...fieldA11y("phone", errors.phone)}
                   type="tel"
@@ -326,7 +486,7 @@ export function OnboardingPage() {
                   placeholder="98xxx xxxxx"
                 />
               </Field>
-              <Field id="whatsapp" label="WhatsApp number" error={errors.whatsappNumber} hint="Leave empty to use your business phone" optional>
+              <Field id="whatsapp" label="WhatsApp number" error={errors.whatsappNumber} hint="Leave empty to use the phone number above" optional>
                 <Input
                   {...fieldA11y("whatsapp", errors.whatsappNumber, true)}
                   type="tel"
@@ -340,7 +500,7 @@ export function OnboardingPage() {
                   placeholder="Same as phone"
                 />
               </Field>
-              <Field id="email" label="Business email" error={errors.email} optional>
+              <Field id="email" label={individual ? "Email" : "Business email"} error={errors.email} optional>
                 <Input
                   {...fieldA11y("email", errors.email)}
                   type="email"
@@ -398,8 +558,10 @@ export function OnboardingPage() {
             <div className="rounded-xl bg-accent p-4 text-sm">
               <div className="font-semibold text-accent-foreground">Ready to go live</div>
               <p className="mt-1 text-muted-foreground">
-                {business.businessName || "Your business"} · {services.length} services · {location.locality ? `${location.locality}, ` : ""}
-                {location.city} · {location.serviceRadiusKm} km radius
+                {[business.businessName || (individual ? "You" : "Your business"), individual ? business.profession.trim() || picked?.label : null, location.locality || location.city]
+                  .filter(Boolean)
+                  .join(" – ")}{" "}
+                · {services.length} services · {location.serviceRadiusKm} km radius
               </p>
             </div>
           </div>
@@ -416,7 +578,7 @@ export function OnboardingPage() {
             onClick={() => {
               setErrors({});
               setFormError(null);
-              if (step === 0) navigate("/start");
+              if (step === 0) navigate(adding ? "/" : "/start");
               else setStep(step - 1);
             }}
           >
@@ -428,6 +590,66 @@ export function OnboardingPage() {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** The professions an individual can list under, searchable. Professions the account already lists are marked. */
+function ProfessionPicker({
+  professions,
+  value,
+  taken,
+  error,
+  onPick,
+}: {
+  professions: Profession[];
+  value: string;
+  taken: string[];
+  error?: string;
+  onPick: (p: Profession) => void;
+}) {
+  const [q, setQ] = useState("");
+  const term = q.trim().toLowerCase();
+  const shown = term ? professions.filter((p) => `${p.label} ${p.categoryName} ${p.subcategoryName ?? ""}`.toLowerCase().includes(term)) : professions;
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="profession-search">
+        Your profession <span className="text-destructive">*</span>
+      </Label>
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input id="profession-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search: plumber, electrician, tutor..." className="pl-9" />
+      </div>
+      <div role="radiogroup" aria-label="Professions" aria-invalid={!!error || undefined} className="flex max-h-64 flex-wrap gap-2 overflow-y-auto pt-1">
+        {shown.map((p) => {
+          const key = professionKey(p);
+          const on = key === value;
+          const already = taken.includes(p.label.toLowerCase());
+          return (
+            <button
+              key={key}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              disabled={already}
+              title={already ? "You already have a listing for this profession" : p.categoryName}
+              onClick={() => onPick(p)}
+              className={cn(
+                "cursor-pointer rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                on ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:border-primary/40",
+              )}
+            >
+              {p.label}
+            </button>
+          );
+        })}
+        {shown.length === 0 && <p className="text-sm text-muted-foreground">No profession matches. Try another word, or pick the closest one and type your own title below.</p>}
+      </div>
+      {error && (
+        <p role="alert" className="text-sm font-medium text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

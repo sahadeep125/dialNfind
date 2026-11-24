@@ -8,11 +8,14 @@ import { FavoriteButton } from "./favorite-button";
 import { OpenStatus } from "./provider-card";
 import { ProviderPhoto } from "./provider-photo";
 import { RatingInline } from "./rating";
+import { AccountTypeBadge } from "./account-type-badge";
+import { listingParts } from "@/lib/account-type";
 
 /** A compact vertical provider card for carousels and grids: photo, rating, a few services, and call buttons. */
 export function ProviderTile({ provider, source = "search", className }: { provider: ProviderCardType; source?: "search" | "category_browse"; className?: string }) {
   const verified = provider.verificationStatus === "verified";
   const price = formatPrice(provider.startingPrice);
+  const { middle } = listingParts(provider);
   return (
     <article
       className={cn(
@@ -37,12 +40,13 @@ export function ProviderTile({ provider, source = "search", className }: { provi
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        {provider.primaryCategory && <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{provider.primaryCategory.name}</p>}
-        <h3 className="mt-1 truncate text-base font-bold">
+        <AccountTypeBadge type={provider.businessType} />
+        <h3 className="mt-1.5 truncate text-base font-bold">
           <Link href={`/providers/${provider.slug}`} className="after:absolute after:inset-0 after:content-[''] group-hover:text-primary group-hover:underline decoration-1 underline-offset-2">
             {provider.businessName}
           </Link>
         </h3>
+        {middle && <p className="truncate text-sm font-medium text-foreground/80">{middle}</p>}
         <RatingInline value={provider.avgRating} count={provider.totalReviews} className="mt-1" />
         <div className="mt-3 space-y-1.5 text-sm">
           <div className="flex min-w-0 items-center gap-1.5 text-foreground/80">

@@ -51,12 +51,15 @@ function useListEditor<T>(select: (p: ProviderProfile) => T, endpoint: string, k
 
 export function ServicesPage() {
   const e = useListEditor<ProviderService[]>((p) => p.services, "/provider/services", "services");
+  const { data: profile } = useProfile();
   if (!e.value || !e.initial) return <PageSkeleton />;
+  // An individual's listing stays within its profession's category.
+  const lock = profile?.businessType === "individual" ? (e.initial[0]?.categoryId ?? null) : null;
   return (
     <>
       <PageHeader title="Services and prices" description="Customers search by service. A starting price makes you far more likely to get the call." />
       <Panel>
-        <ServicesEditor value={e.value} onChange={e.setValue} />
+        <ServicesEditor value={e.value} onChange={e.setValue} lockCategoryId={lock} />
       </Panel>
       {!e.dirty && <ServiceDetails />}
       <SaveBar

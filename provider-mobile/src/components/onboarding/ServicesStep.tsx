@@ -15,6 +15,10 @@ interface Props {
   value: ServiceDraft[];
   errors: StepErrors;
   onChange: (services: ServiceDraft[]) => void;
+  /** An individual's listing is one profession: only its category is offered. */
+  lockCategoryId?: number | null;
+  /** "Your services as Plumber". */
+  title?: string;
 }
 
 function serviceName(categories: Category[], s: ServiceDraft): string {
@@ -27,11 +31,13 @@ function serviceName(categories: Category[], s: ServiceDraft): string {
 }
 
 /** Step 2: pick a category, tick the services offered, then add starting prices. */
-export function ServicesStep({ value, errors, onChange }: Props) {
+export function ServicesStep({ value, errors, onChange, lockCategoryId, title }: Props) {
   const theme = useTheme();
   const categories = useCategories();
   const list = categories.data ?? [];
-  const [categoryId, setCategoryId] = useState<number | null>(value[0]?.categoryId ?? null);
+  const locked = lockCategoryId !== undefined && lockCategoryId !== null;
+  const [chosenId, setCategoryId] = useState<number | null>(value[0]?.categoryId ?? null);
+  const categoryId = locked ? lockCategoryId : chosenId;
   const category = list.find((c) => c.id === categoryId);
   const isSelected = (subId: number): boolean => value.some((s) => s.subcategoryId === subId);
 
@@ -68,11 +74,19 @@ export function ServicesStep({ value, errors, onChange }: Props) {
   return (
     <View style={{ gap: theme.layout.sectionGap }}>
       <StepTitle
-        title="What services do you offer?"
+        title={title ?? "What services do you offer?"}
         subtitle="Customers find you through these. Add a starting price so they know what to expect."
       />
 
-      <View style={{ gap: theme.spacing[2] }}>
+      {locked && categories.isError ? (
+        <ErrorState error={categories.error} onRetry={() => void categories.refetch()} />
+      ) : locked ? (
+        <AppText variant="meta">
+          {`This listing is for one profession, so its services come from ${category?.name ?? "one category"}. Offer something else? Add another profession from the More tab once you are listed.`}
+        </AppText>
+      ) : null}
+
+      <View style={{ gap: theme.spacing[2], display: locked ? "none" : "flex" }}>
         <AppText variant="caption" tone="secondary" weight="semibold">
           Category
         </AppText>

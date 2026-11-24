@@ -363,6 +363,8 @@ interface Profile {
   businessName: string;
   description: string | null;
   businessType: "individual" | "company";
+  /** An individual's title; null uses their main service's profession name. */
+  profession: string | null;
   yearsExperience: number | null;
   phone: string;
   whatsappNumber: string | null;
@@ -390,7 +392,7 @@ interface Profile {
   seo: SeoAnalysis;
 }
 
-type Details = Pick<Profile, "businessName" | "description" | "businessType" | "yearsExperience" | "phone" | "whatsappNumber" | "email" | "website" | "acceptsCalls" | "acceptsWhatsapp" | "isAvailable">;
+type Details = Pick<Profile, "businessName" | "description" | "businessType" | "profession" | "yearsExperience" | "phone" | "whatsappNumber" | "email" | "website" | "acceptsCalls" | "acceptsWhatsapp" | "isAvailable">;
 
 function useSection<T>(initial: T | undefined) {
   const [value, setValue] = useState<T | undefined>(initial);
@@ -492,6 +494,7 @@ function DetailsSection({ id, profile, onSaved }: SectionProps) {
     businessName: p.businessName,
     description: p.description,
     businessType: p.businessType,
+    profession: p.profession ?? null,
     yearsExperience: p.yearsExperience,
     phone: p.phone,
     whatsappNumber: p.whatsappNumber,
@@ -505,14 +508,14 @@ function DetailsSection({ id, profile, onSaved }: SectionProps) {
   const s = useSection<Details>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof Details, string>>>({});
   const save = useMutation({
-    mutationFn: (v: Details) => api<{ provider: Profile }>(`/admin/providers/${id}/profile`, { method: "PATCH", json: { ...v, email: v.email ?? "", website: v.website || null, whatsappNumber: v.whatsappNumber ?? "" } }),
+    mutationFn: (v: Details) => api<{ provider: Profile }>(`/admin/providers/${id}/profile`, { method: "PATCH", json: { ...v, profession: v.businessType === "individual" ? v.profession?.trim() || null : null, email: v.email ?? "", website: v.website || null, whatsappNumber: v.whatsappNumber ?? "" } }),
     onSuccess: onSaved,
   });
   const v = s.value!;
   const set = (patch: Partial<Details>) => s.set({ ...v, ...patch });
   function submit() {
     const next: typeof errors = {};
-    if (v.businessName.trim().length < 2) next.businessName = "Enter the business name";
+    if (v.businessName.trim().length < 2) next.businessName = v.businessType === "individual" ? "Enter the person's full name" : "Enter the business name";
     if (!normalizePhone(v.phone)) next.phone = "Enter a valid 10-digit Indian phone number";
     if (v.whatsappNumber && !normalizePhone(v.whatsappNumber)) next.whatsappNumber = "Enter a valid number or leave it empty";
     if (v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) next.email = "Enter a valid email or leave it empty";
@@ -524,7 +527,7 @@ function DetailsSection({ id, profile, onSaved }: SectionProps) {
     <Panel title="Business details">
       <FormAlert message={save.error ? errorMessage(save.error) : null} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="e-name" label="Business name" required error={errors.businessName} className="sm:col-span-2">
+        <Field id="e-name" label={v.businessType === "individual" ? "Full name" : "Business name"} required error={errors.businessName} className="sm:col-span-2">
           <Input value={v.businessName} maxLength={100} onChange={(e) => set({ businessName: e.target.value })} {...fieldA11y("e-name", errors.businessName)} />
         </Field>
         <Field id="e-desc" label="About" optional className="sm:col-span-2">
@@ -542,17 +545,22 @@ function DetailsSection({ id, profile, onSaved }: SectionProps) {
         <Field id="e-web" label="Website" optional error={errors.website}>
           <Input value={v.website ?? ""} placeholder="https://" onChange={(e) => set({ website: e.target.value || null })} {...fieldA11y("e-web", errors.website)} />
         </Field>
-        <Field id="e-type" label="Type">
+        <Field id="e-type" label="Account type">
           <Select value={v.businessType} onValueChange={(t) => set({ businessType: t as Details["businessType"] })}>
             <SelectTrigger id="e-type" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="individual">Individual</SelectItem>
-              <SelectItem value="company">Company or shop</SelectItem>
+              <SelectItem value="individual">Individual professional</SelectItem>
+              <SelectItem value="company">Business</SelectItem>
             </SelectContent>
           </Select>
         </Field>
+        {v.businessType === "individual" && (
+          <Field id="e-profession" label="Profession title" optional hint="Shown after the name. Leave empty to use the main service's profession.">
+            <Input value={v.profession ?? ""} maxLength={80} placeholder="e.g. AC Technician" onChange={(e) => set({ profession: e.target.value || null })} {...fieldA11y("e-profession")} />
+          </Field>
+        )}
         <Field id="e-years" label="Years of experience" optional>
           <Input inputMode="numeric" value={v.yearsExperience ?? ""} onChange={(e) => set({ yearsExperience: e.target.value ? Math.min(80, Number(e.target.value.replace(/\D/g, ""))) : null })} {...fieldA11y("e-years")} />
         </Field>

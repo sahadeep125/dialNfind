@@ -8,6 +8,8 @@ import { ContactButtons } from "./contact-buttons";
 import { FavoriteButton } from "./favorite-button";
 import { ProviderPhoto } from "./provider-photo";
 import { RatingInline } from "./rating";
+import { AccountTypeBadge } from "./account-type-badge";
+import { listingParts } from "@/lib/account-type";
 
 export function OpenStatus({ provider, className }: { provider: Pick<ProviderCardType, "isOpenNow" | "isAvailable" | "todayHours">; className?: string }) {
   if (!provider.isAvailable) {
@@ -45,6 +47,8 @@ export function ProviderCard({
   const tags = highlight ? [highlight, ...provider.subcategories.filter((s) => s !== highlight)] : provider.subcategories;
   const verified = provider.verificationStatus === "verified";
   const place = provider.locality ? `${provider.locality}, ${provider.city}` : provider.city;
+  // "Deep Saha – Plumber – Ghoraguli" or "ABC Services – Plumbing & Electrical – Siliguri".
+  const { middle, area } = listingParts(provider);
   return (
     <article
       className={cn(
@@ -79,6 +83,14 @@ export function ProviderCard({
               </Link>
             </h3>
             {verified && <BadgeCheck className="size-5 shrink-0 fill-success text-white" aria-label="Verified" />}
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <AccountTypeBadge type={provider.businessType} />
+            <p className="min-w-0 truncate text-sm font-medium text-foreground/85">
+              {middle && <span>{middle}</span>}
+              {middle && area && <span className="text-muted-foreground"> – </span>}
+              <span className="text-muted-foreground">{area}</span>
+            </p>
           </div>
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">

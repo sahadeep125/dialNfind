@@ -21,6 +21,8 @@ export interface SearchParams {
   minRating?: number;
   openNow?: boolean;
   verified?: boolean;
+  /** Only individual professionals, or only businesses. */
+  type?: "individual" | "business";
   sort: SortKey;
   page: number;
   pageSize: number;
@@ -40,14 +42,21 @@ export async function resolveTerm(q: string): Promise<ResolvedTerm> {
   const term = q.trim();
   if (!term) return { category: null, subcategory: null };
 
+  // Profession names count too, so "plumber" finds Plumbing and "ac technician" finds AC Repair & Service.
   const subs = await prisma.$queryRaw<{ id: bigint; name: string; slug: string; category_id: bigint; score: number }[]>`
     SELECT id, name, slug, category_id,
-      GREATEST(similarity(name, ${term}), CASE WHEN ${term} ILIKE '%' || name || '%' OR name ILIKE '%' || ${term} || '%' THEN 0.9 ELSE 0 END) AS score
+      GREATEST(similarity(name, ${term}), CASE WHEN ${term} ILIKE '%' || name || '%' OR name ILIKE '%' || ${term} || '%' THEN 0.9 ELSE 0 END,
+        CASE WHEN profession_name IS NULL THEN 0
+             WHEN ${term} ILIKE '%' || profession_name || '%' OR profession_name ILIKE '%' || ${term} || '%' THEN 0.9
+             ELSE similarity(profession_name, ${term}) END) AS score
     FROM subcategories WHERE is_active
     ORDER BY score DESC LIMIT 1`;
   const cats = await prisma.$queryRaw<{ id: bigint; name: string; slug: string; score: number }[]>`
     SELECT id, name, slug,
-      GREATEST(similarity(name, ${term}), CASE WHEN ${term} ILIKE '%' || name || '%' OR name ILIKE '%' || ${term} || '%' THEN 0.85 ELSE 0 END) AS score
+      GREATEST(similarity(name, ${term}), CASE WHEN ${term} ILIKE '%' || name || '%' OR name ILIKE '%' || ${term} || '%' THEN 0.85 ELSE 0 END,
+        CASE WHEN profession_name IS NULL THEN 0
+             WHEN ${term} ILIKE '%' || profession_name || '%' OR profession_name ILIKE '%' || ${term} || '%' THEN 0.85
+             ELSE similarity(profession_name, ${term}) END) AS score
     FROM categories WHERE is_active
     ORDER BY score DESC LIMIT 1`;
 
@@ -122,7 +131,7 @@ export async function searchProviders(params: SearchParams) {
   if (applyTextFilter) {
     const like = `%${q}%`;
     where.push(Prisma.sql`(
-      p.business_name ILIKE ${like} OR p.description ILIKE ${like} OR similarity(p.business_name, ${q}) > 0.3
+      p.business_name ILIKE ${like} OR p.description ILIKE ${like} OR similarity(p.business_name, ${q}) > 0.3 OR p.profession ILIKE ${like}
       OR EXISTS (
         SELECT 1 FROM provider_services ps
         JOIN categories c ON c.id = ps.category_id
@@ -152,6 +161,7 @@ export async function searchProviders(params: SearchParams) {
     const like = `%${params.area}%`;
     where.push(Prisma.sql`(p.locality ILIKE ${like} OR EXISTS (SELECT 1 FROM provider_service_areas a WHERE a.provider_id = p.id AND a.area_name ILIKE ${like}))`);
   }
+  if (params.type) where.push(params.type === "individual" ? Prisma.sql`p.business_type = 'individual'` : Prisma.sql`p.business_type = 'company'`);
   if (params.minRating) where.push(Prisma.sql`p.avg_rating >= ${params.minRating}`);
   if (params.verified) where.push(Prisma.sql`p.verification_status = 'verified'`);
   if (params.openNow) {

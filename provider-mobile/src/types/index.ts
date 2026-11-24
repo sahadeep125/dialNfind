@@ -22,7 +22,23 @@ export interface SessionUser {
 export type ProviderStatus = "pending" | "active" | "rejected" | "suspended";
 export type VerificationStatus = "none" | "partial" | "verified";
 
-/** GET /provider/me: the signed-in person's business, if any, and their listing claims. */
+/** One of the account's listings, as GET /provider/me lists them. */
+export interface OwnListing {
+  id: number;
+  slug: string;
+  businessName: string;
+  businessType: "individual" | "company";
+  /** "Plumber": the title after an individual's name. Null for a business. */
+  professionLabel: string | null;
+  primaryCategory: { id: number; name: string } | null;
+  locality: string | null;
+  city: string;
+  status: ProviderStatus;
+  profileCompletenessPct: number;
+  verificationStatus: VerificationStatus;
+}
+
+/** GET /provider/me: the listing being worked on, every listing the account owns, and its claims. */
 export interface ProviderState {
   provider: {
     id: number;
@@ -32,12 +48,26 @@ export interface ProviderState {
     profileCompletenessPct: number;
     verificationStatus: VerificationStatus;
   } | null;
+  /** An individual professional has one listing per profession. Missing from older API versions. */
+  listings?: OwnListing[];
+  accountType?: "individual" | "business" | null;
+  canAddListing?: boolean;
   claims: {
     id: number;
     status: string;
     method: string;
     provider: { id: number; businessName: string; city: string };
   }[];
+}
+
+/** GET /categories/professions: what an individual can list as, and the service it starts from. */
+export interface Profession {
+  label: string;
+  categoryId: number;
+  categoryName: string;
+  categorySlug: string;
+  subcategoryId: number | null;
+  subcategoryName: string | null;
 }
 
 export interface Subcategory {
@@ -108,6 +138,8 @@ export interface ProviderProfile {
   businessName: string;
   description: string | null;
   businessType: "individual" | "company";
+  /** The title an individual typed ("Senior AC Technician"); null uses their main service's. */
+  profession?: string | null;
   yearsExperience: number | null;
   selfReportedCompletedJobs: number | null;
   phone: string;

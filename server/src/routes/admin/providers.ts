@@ -23,6 +23,7 @@ import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, servic
 import { loadProfile } from "../provider/profile.js";
 import { checkSeoDraft, seoDraftSchema } from "../../services/seo.js";
 import { previewUrl, refreshProviderSlugs, refreshShared } from "../../services/web-cache.js";
+import { assertCanOwnAnother } from "../../services/professions.js";
 
 /** Listing management in the admin console: list, status, edit, create, import, ownership and delete. */
 export const adminProvidersRouter = Router();
@@ -31,6 +32,8 @@ export const providerQuery = adminPaginationSchema.extend({
   status: z.enum(["pending", "active", "rejected", "suspended"]).optional(),
   verification: z.enum(["none", "partial", "verified"]).optional(),
   claimed: z.enum(["yes", "no"]).optional(),
+  /** Individual professionals or businesses. */
+  type: z.enum(["individual", "business"]).optional(),
   city: z.string().trim().max(60).optional(),
   q: z.string().trim().max(100).optional(),
   /** SEO score band: good 80+, fair 50-79, poor under 50; "noindex" lists pages hidden from search. */
@@ -57,6 +60,7 @@ export function providerWhere(q: z.infer<typeof providerQuery>): Prisma.Provider
     ...(q.status ? { status: q.status } : {}),
     ...(q.verification ? { verificationStatus: q.verification } : {}),
     ...(q.claimed ? { userId: q.claimed === "yes" ? { not: null } : null } : {}),
+    ...(q.type ? { businessType: q.type === "individual" ? ("individual" as const) : ("company" as const) } : {}),
     ...(q.city ? { city: { equals: q.city, mode: "insensitive" as const } } : {}),
     ...(q.q ? { OR: [{ businessName: { contains: q.q, mode: "insensitive" as const } }, { phone: { contains: q.q } }] } : {}),
     ...(q.seo ? SEO_BANDS[q.seo] : {}),
@@ -76,6 +80,8 @@ adminProvidersRouter.get("/providers", async (req, res) => {
         id: true,
         slug: true,
         businessName: true,
+        businessType: true,
+        profession: true,
         city: true,
         locality: true,
         phone: true,
@@ -103,7 +109,7 @@ adminProvidersRouter.get("/provider-signups", async (req, res) => {
   const q = parse(adminPaginationSchema.extend({ q: z.string().trim().max(100).optional() }), req.query);
   const where: Prisma.UserWhereInput = {
     role: "provider",
-    provider: null,
+    providers: { none: {} },
     status: { not: "deleted" },
     ...(q.q ? { OR: [{ name: { contains: q.q, mode: "insensitive" as const } }, { email: { contains: q.q, mode: "insensitive" as const } }, { phone: { contains: q.q } }] } : {}),
   };
@@ -274,7 +280,14 @@ adminProvidersRouter.put("/providers/:id/service-areas", async (req, res) => {
 adminProvidersRouter.get("/providers/:id/owner-candidates", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
   const { q } = parse(z.object({ q: z.string().trim().max(100).optional() }), req.query);
-  const select = { id: true, name: true, email: true, phone: true, role: true, provider: { select: { id: true, businessName: true } } } as const;
+  const select = {
+    id: true,
+    name: true,
+    email: true,
+    phone: true,
+    role: true,
+    providers: { select: { id: true, businessName: true, businessType: true }, orderBy: { id: "asc" } },
+  } satisfies Prisma.UserSelect;
   const claims = await prisma.providerClaim.findMany({
     where: { providerId: provider.id, status: "pending", user: { status: "active" } },
     orderBy: { createdAt: "asc" },
@@ -293,7 +306,9 @@ adminProvidersRouter.get("/providers/:id/owner-candidates", async (req, res) => 
           select,
         })
       : [];
-  res.json({ claims, users });
+  // `provider` (the first listing) is kept for older admin builds.
+  const withFirst = <T extends { providers: unknown[] }>(u: T) => ({ ...u, provider: u.providers[0] ?? null });
+  res.json({ claims: claims.map((c) => ({ ...c, user: withFirst(c.user) })), users: users.map(withFirst) });
 });
 
 const ownerSchema = z
@@ -317,7 +332,7 @@ const ownerSchema = z
 adminProvidersRouter.post("/providers/:id/owner", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
   const body = parse(ownerSchema, req.body);
-  const include = { provider: { select: { id: true, businessName: true } } } as const;
+  const include = { providers: { select: { id: true, businessName: true } } } as const;
   let user = await prisma.user.findUnique({ where: body.userId !== undefined ? { id: BigInt(body.userId) } : { email: body.email! }, include });
   let password: string | null = null;
   if (!user && body.userId === undefined) {
@@ -326,7 +341,10 @@ adminProvidersRouter.post("/providers/:id/owner", async (req, res) => {
   } else {
     if (!user || user.status !== "active") throw notFound("No active account matches. Enter an email to create one instead.");
     if (user.role === "admin" || user.role === "super_admin") throw badRequest("Team accounts cannot own a listing");
-    if (user.provider && user.provider.id !== provider.id) throw conflict(`This account already manages ${user.provider.businessName}`);
+    if (!user.providers.some((p) => p.id === provider.id)) {
+      const primary = await prisma.providerService.findFirst({ where: { providerId: provider.id }, orderBy: [{ isPrimary: "desc" }, { id: "asc" }], select: { categoryId: true, subcategoryId: true } });
+      await assertCanOwnAnother(user.id, { businessType: provider.businessType, profession: provider.profession, primary }, provider.id);
+    }
   }
   const admin = currentUser(req);
   const now = new Date();
@@ -418,6 +436,9 @@ export const IMPORT_COLUMNS = [
   "website",
   "description",
   "service_radius_km",
+  // "individual" (an independent professional, business_name is their name) or "business" (the default).
+  "account_type",
+  "profession",
 ] as const;
 const REQUIRED = ["business_name", "phone", "category", "city", "state"];
 const MAX_ROWS = 500;
@@ -475,8 +496,12 @@ adminProvidersRouter.post("/providers/import", async (req, res) => {
       } else errors.push("Add latitude and longitude; the address could not be found on the map");
     }
 
+    const accountType = get("account_type").toLowerCase();
+    if (accountType && !["individual", "business", "company"].includes(accountType)) errors.push(`Account type must be "individual" or "business", not "${get("account_type")}"`);
     const candidate = {
       businessName: get("business_name"),
+      businessType: accountType === "individual" ? ("individual" as const) : ("company" as const),
+      profession: accountType === "individual" ? get("profession") : null,
       description: get("description") || undefined,
       phone: get("phone"),
       whatsappNumber: get("whatsapp"),

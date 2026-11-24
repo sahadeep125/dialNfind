@@ -30,10 +30,15 @@ export interface StartClaimResponse {
 
 export type BusinessType = "individual" | "company";
 
-/** Step 1 form state. Numbers stay as text until they are sent. */
+/** Account type and About steps. Numbers stay as text until they are sent. */
 export interface BusinessDraft {
+  /** An individual's full name, or the business name. */
   businessName: string;
   businessType: BusinessType;
+  /** The picked profession (category:subcategory), individuals only. */
+  professionKey: string;
+  /** Optional title shown after an individual's name; empty uses the picked profession's. */
+  profession: string;
   yearsExperience: string;
   description: string;
   logoUrl: string | null;
@@ -87,6 +92,8 @@ export type StepErrors = Record<string, string>;
 export interface OnboardingPayload {
   businessName: string;
   businessType: BusinessType;
+  /** Individuals only; null uses the main service's profession name. */
+  profession: string | null;
   yearsExperience: number | null;
   description?: string;
   phone: string;

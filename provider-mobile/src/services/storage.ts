@@ -41,6 +41,8 @@ export const STORAGE_KEYS = {
   themePreference: "prefs.theme",
   onboardingDraft: "onboarding.draft",
   pushToken: "push.token",
+  /** The listing being worked on, for accounts with one listing per profession. */
+  listingId: "listing.id",
 } as const;
 
 const SECURE_TOKEN_KEY = "kaajva.authToken";

@@ -29,7 +29,7 @@ const CONTACT_TOPICS: Record<string, string> = {
 /** The public contact form opens a support ticket so the team answers it from the help desk. */
 miscRouter.post("/contact", limits.contact, optionalAuth, async (req, res) => {
   const body = parse(contactSchema, req.body);
-  const provider = req.user ? await prisma.provider.findUnique({ where: { userId: req.user.id }, select: { id: true } }) : null;
+  const provider = req.user ? await prisma.provider.findFirst({ where: { userId: req.user.id }, orderBy: { id: "asc" }, select: { id: true } }) : null;
   const ticket = await prisma.supportTicket.create({
     data: {
       userId: req.user?.id ?? null,

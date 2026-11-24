@@ -26,6 +26,8 @@ const searchSchema = z.object({
   minRating: z.coerce.number().min(0).max(5).optional(),
   openNow: bool,
   verified: bool,
+  /** "individual" for independent professionals only, "business" for businesses only. */
+  type: z.enum(["individual", "business"]).optional(),
   sort: z.enum(["relevance", "distance", "rating", "reviews"]).default("relevance"),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(12),
@@ -59,7 +61,7 @@ searchRouter.get("/providers", optionalAuth, async (req, res) => {
 
 const suggestSchema = z.object({ q: z.string().trim().min(1).max(80) });
 
-/** GET /search/suggest — autocomplete across subcategories, categories and business names. */
+/** GET /search/suggest — autocomplete across services, categories (and their profession names) and listing names. */
 searchRouter.get("/suggest", async (req, res) => {
   const { q } = parse(suggestSchema, req.query);
   const like = `%${q}%`;
@@ -67,14 +69,14 @@ searchRouter.get("/suggest", async (req, res) => {
     prisma.$queryRaw<{ name: string; slug: string; category_slug: string; category_name: string }[]>`
       SELECT s.name, s.slug, c.slug AS category_slug, c.name AS category_name
       FROM subcategories s JOIN categories c ON c.id = s.category_id
-      WHERE s.is_active AND c.is_active AND (s.name ILIKE ${like} OR similarity(s.name, ${q}) > 0.25)
+      WHERE s.is_active AND c.is_active AND (s.name ILIKE ${like} OR similarity(s.name, ${q}) > 0.25 OR s.profession_name ILIKE ${like})
       ORDER BY (s.name ILIKE ${q + "%"}) DESC, similarity(s.name, ${q}) DESC LIMIT 6`,
     prisma.$queryRaw<{ name: string; slug: string }[]>`
       SELECT name, slug FROM categories
-      WHERE is_active AND (name ILIKE ${like} OR similarity(name, ${q}) > 0.25)
+      WHERE is_active AND (name ILIKE ${like} OR similarity(name, ${q}) > 0.25 OR profession_name ILIKE ${like})
       ORDER BY similarity(name, ${q}) DESC LIMIT 4`,
-    prisma.$queryRaw<{ business_name: string; slug: string; city: string }[]>`
-      SELECT business_name, slug, city FROM providers
+    prisma.$queryRaw<{ business_name: string; slug: string; city: string; business_type: string }[]>`
+      SELECT business_name, slug, city, business_type::text FROM providers
       WHERE status = 'active' AND (business_name ILIKE ${like} OR similarity(business_name, ${q}) > 0.3)
       ORDER BY similarity(business_name, ${q}) DESC, ranking_score DESC LIMIT 5`,
   ]);
@@ -82,7 +84,13 @@ searchRouter.get("/suggest", async (req, res) => {
     suggestions: [
       ...subcategories.map((s) => ({ type: "service" as const, label: s.name, slug: s.slug, categorySlug: s.category_slug, context: s.category_name })),
       ...categories.map((c) => ({ type: "category" as const, label: c.name, slug: c.slug })),
-      ...providers.map((p) => ({ type: "provider" as const, label: p.business_name, slug: p.slug, context: p.city })),
+      ...providers.map((p) => ({
+        type: "provider" as const,
+        label: p.business_name,
+        slug: p.slug,
+        context: p.city,
+        accountType: p.business_type === "individual" ? ("individual" as const) : ("business" as const),
+      })),
     ],
   });
 });

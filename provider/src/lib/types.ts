@@ -28,6 +28,16 @@ export interface Category {
   subcategories: Subcategory[];
 }
 
+/** A profession an individual can pick; it maps onto a category and, sometimes, one of its services. */
+export interface Profession {
+  label: string;
+  categoryId: number;
+  categoryName: string;
+  categorySlug: string;
+  subcategoryId: number | null;
+  subcategoryName: string | null;
+}
+
 export interface Hours {
   dayOfWeek: number;
   openTime: string | null;
@@ -67,6 +77,8 @@ export interface ProviderProfile {
   businessName: string;
   description: string | null;
   businessType: "individual" | "company";
+  /** The title after an individual's name ("Plumber"); null means the main service gives it. */
+  profession: string | null;
   yearsExperience: number | null;
   selfReportedCompletedJobs: number | null;
   phone: string;

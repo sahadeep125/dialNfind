@@ -12,6 +12,7 @@ export function toFormValues(p: ProviderProfile): ProfileFormValues {
   return {
     businessName: p.businessName,
     businessType: p.businessType,
+    profession: p.profession ?? "",
     description: p.description ?? "",
     yearsExperience: p.yearsExperience?.toString() ?? "",
     selfReportedCompletedJobs: p.selfReportedCompletedJobs?.toString() ?? "",
@@ -58,10 +59,13 @@ export function validateProfile(v: ProfileFormValues): ProfileFormErrors {
   return {
     businessName:
       name.length < 2
-        ? "Enter your business name"
+        ? v.businessType === "individual"
+          ? "Enter your full name"
+          : "Enter your business name"
         : name.length > 100
           ? "Keep it under 100 characters"
           : null,
+    profession: maxError(v.profession, 80, "title"),
     description: maxError(v.description, DESCRIPTION_MAX, "description"),
     yearsExperience: intError(v.yearsExperience, 80, "Years in business"),
     selfReportedCompletedJobs: intError(v.selfReportedCompletedJobs, 1_000_000, "Jobs completed"),
@@ -90,6 +94,8 @@ export function toProfileBody(v: ProfileFormValues): ProfileUpdateBody {
   return {
     businessName: v.businessName.trim(),
     businessType: v.businessType,
+    // A business has no profession title; the API clears it too.
+    profession: v.businessType === "individual" ? orNull(v.profession) : null,
     description: orNull(v.description),
     yearsExperience: v.yearsExperience.trim() ? Number(v.yearsExperience) : null,
     selfReportedCompletedJobs: v.selfReportedCompletedJobs.trim()

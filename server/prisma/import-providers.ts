@@ -77,6 +77,8 @@ export function toListing(record: BundleRecord, categories: Categories) {
 
   const input: Record<string, unknown> = {
     businessName: record.businessName,
+    // Shops and agencies found by the discovery tool: businesses, not individual professionals.
+    businessType: "company",
     description: record.description ?? undefined,
     phone: record.phone,
     whatsappNumber: record.whatsappNumber ?? null,

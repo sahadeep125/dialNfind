@@ -52,13 +52,14 @@ adminUsersRouter.get("/users", async (req, res) => {
         createdAt: true,
         lastLoginAt: true,
         profilePhotoUrl: true,
-        provider: { select: { id: true, businessName: true, slug: true } },
+        providers: { select: { id: true, businessName: true, slug: true, businessType: true }, orderBy: { id: "asc" } },
         _count: { select: { reviews: true, leads: true } },
       },
     }),
     prisma.user.count({ where }),
   ]);
-  res.json({ users, ...pageMeta(q.page, q.pageSize, total) });
+  // `provider` (the first listing) is kept for older admin builds; `providers` lists them all.
+  res.json({ users: users.map((u) => ({ ...u, provider: u.providers[0] ?? null })), ...pageMeta(q.page, q.pageSize, total) });
 });
 
 /**
@@ -146,7 +147,7 @@ adminUsersRouter.get("/users/:id", async (req, res) => {
       profilePhotoUrl: true,
       createdAt: true,
       lastLoginAt: true,
-      provider: { select: { id: true, businessName: true, slug: true, status: true, city: true } },
+      providers: { select: { id: true, businessName: true, slug: true, status: true, city: true, businessType: true, profession: true }, orderBy: { id: "asc" } },
       _count: { select: { reviews: true, leads: true, favorites: true, tickets: true } },
     },
   });
@@ -164,7 +165,7 @@ adminUsersRouter.get("/users/:id", async (req, res) => {
     }),
   ]);
   res.json({
-    user,
+    user: { ...user, provider: user.providers[0] ?? null },
     reviews,
     leads,
     favorites: favorites.map((f) => f.provider),

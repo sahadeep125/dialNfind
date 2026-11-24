@@ -8,15 +8,18 @@
     "subcategories": [
       {
         "name": "TV Repair",
-        "slug": "tv-repair"
+        "slug": "tv-repair",
+        "professionName": "TV Repairer"
       },
       {
         "name": "Mobile Phone Repair",
-        "slug": "mobile-phone-repair"
+        "slug": "mobile-phone-repair",
+        "professionName": "Mobile Repair Technician"
       },
       {
         "name": "Laptop & Computer Repair",
-        "slug": "laptop-and-computer-repair"
+        "slug": "laptop-and-computer-repair",
+        "professionName": "Computer Technician"
       },
       {
         "name": "Home Theatre & Audio Repair",
@@ -24,7 +27,8 @@
       },
       {
         "name": "CCTV Installation",
-        "slug": "cctv-installation"
+        "slug": "cctv-installation",
+        "professionName": "CCTV Technician"
       }
     ],
     "attributes": [
@@ -54,7 +58,8 @@
           "Panasonic"
         ]
       }
-    ]
+    ],
+    "professionName": "Electronics Technician"
   },
   {
     "name": "Home Appliances",
@@ -65,27 +70,33 @@
     "subcategories": [
       {
         "name": "AC Repair & Service",
-        "slug": "ac-repair-and-service"
+        "slug": "ac-repair-and-service",
+        "professionName": "AC Technician"
       },
       {
         "name": "Refrigerator Repair",
-        "slug": "refrigerator-repair"
+        "slug": "refrigerator-repair",
+        "professionName": "Refrigerator Repair Technician"
       },
       {
         "name": "Washing Machine Repair",
-        "slug": "washing-machine-repair"
+        "slug": "washing-machine-repair",
+        "professionName": "Washing Machine Repair Technician"
       },
       {
         "name": "Microwave Repair",
-        "slug": "microwave-repair"
+        "slug": "microwave-repair",
+        "professionName": "Microwave Repair Technician"
       },
       {
         "name": "Water Purifier Service",
-        "slug": "water-purifier-service"
+        "slug": "water-purifier-service",
+        "professionName": "RO Water Purifier Technician"
       },
       {
         "name": "Geyser Repair",
-        "slug": "geyser-repair"
+        "slug": "geyser-repair",
+        "professionName": "Geyser Repair Technician"
       }
     ],
     "attributes": [
@@ -108,7 +119,8 @@
         "appliesTo": "provider",
         "fieldType": "boolean"
       }
-    ]
+    ],
+    "professionName": "Appliance Repair Technician"
   },
   {
     "name": "Electricians",
@@ -144,7 +156,8 @@
         "appliesTo": "provider",
         "fieldType": "text"
       }
-    ]
+    ],
+    "professionName": "Electrician"
   },
   {
     "name": "Plumbing",
@@ -171,7 +184,8 @@
       },
       {
         "name": "Motor & Pump Repair",
-        "slug": "motor-and-pump-repair"
+        "slug": "motor-and-pump-repair",
+        "professionName": "Motor & Pump Repair Technician"
       }
     ],
     "attributes": [
@@ -187,7 +201,8 @@
           "Motor"
         ]
       }
-    ]
+    ],
+    "professionName": "Plumber"
   },
   {
     "name": "Carpentry",
@@ -213,7 +228,8 @@
         "slug": "custom-furniture"
       }
     ],
-    "attributes": []
+    "attributes": [],
+    "professionName": "Carpenter"
   },
   {
     "name": "Cleaning Services",
@@ -256,7 +272,8 @@
           "Office"
         ]
       }
-    ]
+    ],
+    "professionName": "Cleaning Professional"
   },
   {
     "name": "Pest Control",
@@ -286,7 +303,8 @@
         "slug": "rodent-control"
       }
     ],
-    "attributes": []
+    "attributes": [],
+    "professionName": "Pest Control Technician"
   },
   {
     "name": "Painting",
@@ -312,7 +330,8 @@
         "slug": "texture-and-wallpaper"
       }
     ],
-    "attributes": []
+    "attributes": [],
+    "professionName": "Painter"
   },
   {
     "name": "Packers & Movers",
@@ -361,7 +380,8 @@
       },
       {
         "name": "Music Teacher",
-        "slug": "music-teacher"
+        "slug": "music-teacher",
+        "professionName": "Music Teacher"
       },
       {
         "name": "Competitive Exam Coaching",
@@ -395,7 +415,8 @@
           "Adult"
         ]
       }
-    ]
+    ],
+    "professionName": "Home Tutor"
   },
   {
     "name": "Beauty & Salon",
@@ -414,14 +435,16 @@
       },
       {
         "name": "Bridal Makeup",
-        "slug": "bridal-makeup"
+        "slug": "bridal-makeup",
+        "professionName": "Makeup Artist"
       },
       {
         "name": "Spa & Massage",
         "slug": "spa-and-massage"
       }
     ],
-    "attributes": []
+    "attributes": [],
+    "professionName": "Beautician"
   },
   {
     "name": "Vehicle Repair",
@@ -432,11 +455,13 @@
     "subcategories": [
       {
         "name": "Car Service",
-        "slug": "car-service"
+        "slug": "car-service",
+        "professionName": "Car Mechanic"
       },
       {
         "name": "Bike Service",
-        "slug": "bike-service"
+        "slug": "bike-service",
+        "professionName": "Bike Mechanic"
       },
       {
         "name": "Car Wash & Detailing",
@@ -465,5 +490,192 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Locksmith",
+    "slug": "locksmith",
+    "description": "Key making, lock repair and fitting, and help when you are locked out.",
+    "icon": "key-round",
+    "uiTemplate": "default",
+    "professionName": "Locksmith",
+    "subcategories": [
+      {
+        "name": "Key Duplication",
+        "slug": "key-duplication"
+      },
+      {
+        "name": "Lock Repair & Installation",
+        "slug": "lock-repair-and-installation"
+      },
+      {
+        "name": "Emergency Lock Opening",
+        "slug": "emergency-lock-opening"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Tailoring",
+    "slug": "tailoring",
+    "description": "Stitching, alterations and custom clothes by local tailors.",
+    "icon": "scissors",
+    "uiTemplate": "default",
+    "professionName": "Tailor",
+    "subcategories": [
+      {
+        "name": "Blouse & Dress Stitching",
+        "slug": "blouse-and-dress-stitching"
+      },
+      {
+        "name": "Men's Tailoring",
+        "slug": "mens-tailoring"
+      },
+      {
+        "name": "Alterations",
+        "slug": "clothing-alterations"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Drivers",
+    "slug": "drivers",
+    "description": "Personal, outstation and on-call drivers for your own car.",
+    "icon": "car-front",
+    "uiTemplate": "default",
+    "professionName": "Driver",
+    "subcategories": [
+      {
+        "name": "Personal Driver",
+        "slug": "personal-driver"
+      },
+      {
+        "name": "Outstation Driver",
+        "slug": "outstation-driver"
+      },
+      {
+        "name": "Driver on Call",
+        "slug": "driver-on-call"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Masonry & Civil Work",
+    "slug": "masonry",
+    "description": "Brick work, plastering, tiling and small construction repairs.",
+    "icon": "brick-wall",
+    "uiTemplate": "default",
+    "professionName": "Mason",
+    "subcategories": [
+      {
+        "name": "Brick & Plaster Work",
+        "slug": "brick-and-plaster-work"
+      },
+      {
+        "name": "Tiling & Flooring",
+        "slug": "tiling-and-flooring"
+      },
+      {
+        "name": "Wall & Floor Repairs",
+        "slug": "wall-and-floor-repairs"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Welding & Fabrication",
+    "slug": "welding",
+    "description": "Gates, grills, shutters and metal repairs.",
+    "icon": "flame",
+    "uiTemplate": "default",
+    "professionName": "Welder",
+    "subcategories": [
+      {
+        "name": "Gate & Grill Work",
+        "slug": "gate-and-grill-work"
+      },
+      {
+        "name": "Shutter Repair",
+        "slug": "shutter-repair"
+      },
+      {
+        "name": "Welding Repairs",
+        "slug": "welding-repairs"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Photography",
+    "slug": "photography",
+    "description": "Wedding, event, portrait and product photographers.",
+    "icon": "camera",
+    "uiTemplate": "default",
+    "professionName": "Photographer",
+    "subcategories": [
+      {
+        "name": "Wedding Photography",
+        "slug": "wedding-photography"
+      },
+      {
+        "name": "Event Photography",
+        "slug": "event-photography"
+      },
+      {
+        "name": "Portrait & Product Shoots",
+        "slug": "portrait-and-product-shoots"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Fitness & Yoga",
+    "slug": "fitness-yoga",
+    "description": "Yoga instructors and personal fitness trainers, at home or online.",
+    "icon": "dumbbell",
+    "uiTemplate": "default",
+    "professionName": "Fitness Trainer",
+    "subcategories": [
+      {
+        "name": "Yoga Classes",
+        "slug": "yoga-classes",
+        "professionName": "Yoga Instructor"
+      },
+      {
+        "name": "Personal Training",
+        "slug": "personal-training",
+        "professionName": "Fitness Trainer"
+      },
+      {
+        "name": "Zumba & Dance Fitness",
+        "slug": "zumba-and-dance-fitness",
+        "professionName": "Zumba Instructor"
+      }
+    ],
+    "attributes": []
+  },
+  {
+    "name": "Laundry & Ironing",
+    "slug": "laundry",
+    "description": "Washing, ironing and dry cleaning with pickup and drop.",
+    "icon": "shirt",
+    "uiTemplate": "default",
+    "professionName": "Laundry Professional",
+    "subcategories": [
+      {
+        "name": "Wash & Iron",
+        "slug": "wash-and-iron"
+      },
+      {
+        "name": "Ironing",
+        "slug": "ironing"
+      },
+      {
+        "name": "Dry Cleaning",
+        "slug": "dry-cleaning"
+      }
+    ],
+    "attributes": []
   }
 ]

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { MapPin, Building2, UserRound } from "lucide-react";
 import type { ProviderCard } from "@/lib/types";
 import { formatDistance } from "@/lib/format";
 import { ProviderPhoto } from "./provider-photo";
@@ -22,6 +22,10 @@ export function SimilarProviders({ providers }: { providers: ProviderCard[] }) {
               </div>
               <div className="p-3">
                 <div className="truncate text-sm font-bold group-hover:text-primary group-hover:underline">{s.businessName}</div>
+                <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-foreground/75">
+                  {s.businessType === "individual" ? <UserRound className="size-3 shrink-0 text-cta-strong" aria-label="Individual professional" /> : <Building2 className="size-3 shrink-0 text-primary" aria-label="Business" />}
+                  <span className="truncate">{(s.businessType === "individual" ? s.profession : s.categoryLabel) ?? s.primaryCategory?.name}</span>
+                </div>
                 <RatingInline value={s.avgRating} count={s.totalReviews} short className="mt-1 text-xs [&>svg]:size-3.5" />
                 <div className="mt-1 flex items-center gap-1 truncate text-xs text-muted-foreground">
                   <MapPin className="size-3 shrink-0" aria-hidden /> {distance ?? s.locality ?? s.city}

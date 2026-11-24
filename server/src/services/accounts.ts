@@ -11,10 +11,11 @@ import { refreshProviderPages } from "./web-cache.js";
  */
 export async function closeBusinessAccount(userId: bigint): Promise<void> {
   await prisma.pushToken.deleteMany({ where: { userId } });
-  const provider = await prisma.provider.findUnique({ where: { userId }, select: { id: true } });
-  if (!provider) return;
-  await prisma.provider.update({ where: { id: provider.id }, data: { status: "suspended", isAvailable: false } });
-  void refreshProviderPages(provider.id, ["providers"]);
+  // An individual professional may have several listings, one per profession: all of them close.
+  const listings = await prisma.provider.findMany({ where: { userId }, select: { id: true } });
+  if (!listings.length) return;
+  await prisma.provider.updateMany({ where: { userId }, data: { status: "suspended", isAvailable: false } });
+  for (const provider of listings) void refreshProviderPages(provider.id, ["providers"]);
 }
 
 /**

@@ -125,8 +125,18 @@ describeLive("KaajVa Business on Android", () => {
     signInAs(NEW_OWNER);
     await launch();
     await find(/^Welcome/);
-    fireEvent.press(screen.getByText("Add a new business"));
-    await find("Tell us about your business");
+    fireEvent.press(screen.getByText("Create your listing"));
+    // Individual professionals come first: the account type step, then name and profession.
+    await find("How do you work?");
+    expect(screen.getByRole("radio", { name: /^Individual professional/ })).toBeChecked();
+    fireEvent.press(screen.getByText("Continue"));
+    await find("Tell us about yourself");
+    await find("Plumber");
+    fireEvent.press(screen.getByText("Continue"));
+    await find("Pick your profession");
+    fireEvent.press(screen.getAllByText("Plumber")[0]);
+    fireEvent.press(screen.getByText("Continue"));
+    await find("Your services as Plumber");
     act(() => router.back());
     await find(/^Welcome/);
     fireEvent.press(screen.getByText("Claim my existing listing"));

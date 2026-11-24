@@ -12,6 +12,8 @@ import { previewIfNotLive, publicProfileUrl } from "@/lib/public-profile";
 import type { ProviderProfile } from "@/lib/types";
 import { normalizePhone, optionalEmail, optionalInt, optionalPhone, optionalUrl, orNull, phone } from "@/lib/validation";
 import { useProfile } from "@/layouts/app-layout";
+import { useAuth } from "@/lib/auth";
+import { ACCOUNT_TYPES } from "@/components/account-type";
 import { PageHeader, Panel } from "@/components/page-header";
 import { PageSkeleton, SaveBar } from "@/components/common";
 import { Field, fieldA11y } from "@/components/form";
@@ -26,8 +28,9 @@ import { Textarea } from "@/components/ui/textarea";
 
 const profileSchema = z
   .object({
-    businessName: z.string().trim().min(2, "Enter your business name").max(100, "Keep it under 100 characters"),
+    businessName: z.string().trim().min(2, "Enter the name customers see").max(100, "Keep it under 100 characters"),
     businessType: z.enum(["individual", "company"]),
+    profession: z.string().trim().max(80, "Keep the title under 80 characters"),
     description: z.string().trim().max(2000, "Keep the description under 2000 characters"),
     yearsExperience: optionalInt(0, 80, "Years in business"),
     selfReportedCompletedJobs: optionalInt(0, 1_000_000, "Jobs completed"),
@@ -49,6 +52,7 @@ function toValues(p: ProviderProfile): ProfileValues {
   return {
     businessName: p.businessName,
     businessType: p.businessType,
+    profession: p.profession ?? "",
     description: p.description ?? "",
     yearsExperience: p.yearsExperience?.toString() ?? "",
     selfReportedCompletedJobs: p.selfReportedCompletedJobs?.toString() ?? "",
@@ -92,11 +96,13 @@ function locationErrors(errors: FieldErrors<ProfileValues>): LocationErrors | nu
 
 export function ProfilePage() {
   const { data: profile } = useProfile();
+  const { providerState } = useAuth();
   if (!profile) return <PageSkeleton />;
-  return <ProfileEditor profile={profile} />;
+  // With more than one listing the account stays an individual professional's.
+  return <ProfileEditor profile={profile} listingCount={providerState?.listings?.length ?? 1} mainService={providerState?.provider?.professionLabel ?? null} />;
 }
 
-function ProfileEditor({ profile }: { profile: ProviderProfile }) {
+function ProfileEditor({ profile, listingCount, mainService }: { profile: ProviderProfile; listingCount: number; mainService: string | null }) {
   const qc = useQueryClient();
   const initial = useMemo(() => toValues(profile), [profile]);
   const [uploading, setUploading] = useState(0);
@@ -109,6 +115,8 @@ function ProfileEditor({ profile }: { profile: ProviderProfile }) {
     reset(initial);
   }, [initial, reset]);
   const description = watch("description");
+  const type = watch("businessType");
+  const individual = type === "individual";
 
   const save = handleSubmit(
     async (v) => {
@@ -119,6 +127,7 @@ function ProfileEditor({ profile }: { profile: ProviderProfile }) {
           json: {
             businessName: v.businessName.trim(),
             businessType: v.businessType,
+            profession: v.businessType === "individual" ? orNull(v.profession) : null,
             description: orNull(v.description),
             yearsExperience: v.yearsExperience ? Number(v.yearsExperience) : null,
             selfReportedCompletedJobs: v.selfReportedCompletedJobs ? Number(v.selfReportedCompletedJobs) : null,
@@ -155,8 +164,8 @@ function ProfileEditor({ profile }: { profile: ProviderProfile }) {
   return (
     <form onSubmit={save} noValidate>
       <PageHeader
-        title="Business details"
-        description="What customers see on your public profile."
+        title={individual ? "Profile details" : "Business details"}
+        description={individual ? "What customers see on your public profile: your name, your profession and where you work." : "What customers see on your public profile."}
         actions={
           <Button variant="outline" asChild>
             <a href={publicProfileUrl(profile.slug)} onClick={previewIfNotLive(profile.status)} target="_blank" rel="noreferrer">
@@ -167,30 +176,46 @@ function ProfileEditor({ profile }: { profile: ProviderProfile }) {
       />
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
         <div className="space-y-6">
-          <Panel title="About your business">
+          <Panel title={individual ? "About you" : "About your business"}>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field id="businessName" label="Business name" error={errors.businessName} required className="sm:col-span-2">
-                <Input {...fieldA11y("businessName", errors.businessName)} {...register("businessName")} />
+              <Field id="businessName" label={ACCOUNT_TYPES[type].nameLabel} error={errors.businessName} required className="sm:col-span-2">
+                <Input {...fieldA11y("businessName", errors.businessName)} placeholder={ACCOUNT_TYPES[type].namePlaceholder} {...register("businessName")} />
               </Field>
-              <Field id="businessType" label="Business type" error={errors.businessType}>
+              {individual && (
+                <Field
+                  id="profession"
+                  label="Your title"
+                  error={errors.profession}
+                  hint={mainService && !profile.profession ? `Empty shows your main service: ${mainService}.` : "Shown after your name. Empty shows your main service."}
+                  className="sm:col-span-2"
+                >
+                  <Input {...fieldA11y("profession", errors.profession, true)} maxLength={80} placeholder="e.g. Plumber" {...register("profession")} />
+                </Field>
+              )}
+              <Field
+                id="businessType"
+                label="Account type"
+                error={errors.businessType}
+                hint={listingCount > 1 ? "You list more than one profession, so this stays Individual professional." : undefined}
+              >
                 <Controller
                   control={control}
                   name="businessType"
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={listingCount > 1}>
                       <SelectTrigger id="businessType" className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="individual">Individual professional</SelectItem>
-                        <SelectItem value="company">Company or shop</SelectItem>
+                        <SelectItem value="company">Business</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 />
               </Field>
               <div className="grid grid-cols-2 gap-4">
-                <Field id="years" label="Years in business" error={errors.yearsExperience}>
+                <Field id="years" label={individual ? "Years of experience" : "Years in business"} error={errors.yearsExperience}>
                   <Input inputMode="numeric" {...fieldA11y("years", errors.yearsExperience)} {...register("yearsExperience")} />
                 </Field>
                 <Field id="jobs" label="Jobs completed" error={errors.selfReportedCompletedJobs}>

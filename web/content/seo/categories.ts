@@ -1,5 +1,6 @@
 import { SEO_CITY as CITY } from "@/lib/seo";
 import type { ServiceSeo } from "../types";
+import { PROFESSION_CATEGORY_SEO } from "./professions";
 
 /**
  * Search-focused copy for each category page, keyed by category slug. Keyword targets are in
@@ -219,4 +220,6 @@ export const CATEGORY_SEO: Record<string, ServiceSeo> = {
       { q: "Why is my car AC not cooling?", a: "Low gas, a clogged cabin filter, or a faulty compressor or condenser fan are common causes. A car AC specialist can check pressure and find leaks." },
     ],
   },
+  // Professions added for individual professionals (content/seo/professions.ts).
+  ...PROFESSION_CATEGORY_SEO,
 };

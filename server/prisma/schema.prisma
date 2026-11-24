@@ -33,6 +33,8 @@ enum UserStatus {
   deleted
 }
 
+// The listing's account type. "individual" is an independent professional listed under their own name
+// (one listing per profession); "company" is a business (shown as "Business" in the apps).
 enum BusinessType {
   individual
   company
@@ -257,7 +259,8 @@ model User {
   sessions             AuthSession[]
   oauthAccounts        UserOAuthAccount[]
   leadDisputesResolved Lead[]              @relation("LeadDisputeResolver")
-  provider             Provider?
+  // An individual professional has one listing per profession; a business has one listing.
+  providers            Provider[]
   leads                Lead[]
   reviews              Review[]
   favorites            Favorite[]
@@ -376,14 +379,18 @@ model UserAddress {
 
 model Provider {
   id                        BigInt                                 @id @default(autoincrement())
-  // Nullable: seeded/imported listings exist before their owner claims them.
-  userId                    BigInt?                                @unique @map("user_id")
+  // Nullable: seeded/imported listings exist before their owner claims them. Not unique: an individual
+  // professional owns one listing per profession.
+  userId                    BigInt?                                @map("user_id")
   slug                      String                                 @unique
   businessName              String                                 @map("business_name")
   description               String?
   logoUrl                   String?                                @map("logo_url")
   coverUrl                  String?                                @map("cover_url")
-  businessType              BusinessType                           @default(individual) @map("business_type")
+  businessType              BusinessType                           @default(company) @map("business_type")
+  // Individual professionals only: the title shown after their name, e.g. "Plumber". Null means the
+  // listing's main service supplies it (presenter.ts).
+  profession                String?                                @db.VarChar(80)
   yearsExperience           Int?                                   @map("years_experience")
   // Business contact number shown on the profile and dialled by "Call Now".
   phone                     String
@@ -451,6 +458,7 @@ model Provider {
   sources           ProviderSource[]
   dailyStats        ProviderDailyStat[]
 
+  @@index([userId])
   @@index([status, rankingScore])
   @@index([city])
   @@index([seoScore])
@@ -608,20 +616,22 @@ model ProviderDailyStat {
 // ---------------------------------------------------------------------------
 
 model Category {
-  id            BigInt   @id @default(autoincrement())
-  name          String
-  slug          String   @unique
-  description   String?
-  iconUrl       String?  @map("icon_url")
+  id             BigInt   @id @default(autoincrement())
+  name           String
+  slug           String   @unique
+  description    String?
+  iconUrl        String?  @map("icon_url")
   // Frontend picks a component from this key, e.g. repair_appliance, tutor.
-  uiTemplate    String   @default("default") @map("ui_template")
-  displayOrder  Int      @default(0) @map("display_order")
-  isActive      Boolean  @default(true) @map("is_active")
-  providerCount Int      @default(0) @map("provider_count")
-  createdBy     BigInt?  @map("created_by")
-  updatedBy     BigInt?  @map("updated_by")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  uiTemplate     String   @default("default") @map("ui_template")
+  // What an individual who offers this service is called, e.g. "Plumber" for Plumbing.
+  professionName String?  @map("profession_name")
+  displayOrder   Int      @default(0) @map("display_order")
+  isActive       Boolean  @default(true) @map("is_active")
+  providerCount  Int      @default(0) @map("provider_count")
+  createdBy      BigInt?  @map("created_by")
+  updatedBy      BigInt?  @map("updated_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   creator           User?               @relation("CategoryCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
   updater           User?               @relation("CategoryUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
@@ -638,17 +648,19 @@ model Category {
 }
 
 model Subcategory {
-  id           BigInt   @id @default(autoincrement())
-  categoryId   BigInt   @map("category_id")
-  name         String
-  slug         String   @unique
-  iconUrl      String?  @map("icon_url")
-  displayOrder Int      @default(0) @map("display_order")
-  isActive     Boolean  @default(true) @map("is_active")
-  createdBy    BigInt?  @map("created_by")
-  updatedBy    BigInt?  @map("updated_by")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id             BigInt   @id @default(autoincrement())
+  categoryId     BigInt   @map("category_id")
+  name           String
+  slug           String   @unique
+  iconUrl        String?  @map("icon_url")
+  // What an individual who offers this service is called, e.g. "AC Technician".
+  professionName String?  @map("profession_name")
+  displayOrder   Int      @default(0) @map("display_order")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdBy      BigInt?  @map("created_by")
+  updatedBy      BigInt?  @map("updated_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   category         Category            @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   creator          User?               @relation("SubcategoryCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
@@ -821,7 +833,9 @@ model Review {
   @@map("reviews")
 }
 
-/** The version of a review before each edit, so the admin team can see what changed. */
+/**
+ * The version of a review before each edit, so the admin team can see what changed.
+ */
 model ReviewEdit {
   id         BigInt   @id @default(autoincrement())
   reviewId   BigInt   @map("review_id")
