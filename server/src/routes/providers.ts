@@ -15,6 +15,7 @@ import { limits } from "../lib/rate-limit.js";
 import { verifyPreviewToken } from "../lib/jwt.js";
 import { photoAltText, providerSeo } from "../services/seo.js";
 import { professionLabel, serviceAreaLabel } from "../services/professions.js";
+import { removedListingPath } from "../services/listing-removal.js";
 
 export const providersRouter = Router();
 
@@ -55,6 +56,16 @@ providersRouter.get("/sitemap", async (req, res) => {
     prisma.provider.count({ where }),
   ]);
   res.json({ results: rows, ...pageMeta(q.page, q.pageSize, total) });
+});
+
+/**
+ * GET /providers/removed/:slug — where a deleted listing's old address should go ({ path }), so the
+ * website can answer with a permanent redirect instead of a 404. 404 when no deleted listing had it.
+ */
+providersRouter.get("/removed/:slug", async (req, res) => {
+  const path = await removedListingPath(req.params.slug as string);
+  if (!path) throw notFound("No deleted listing has this address");
+  res.json({ path });
 });
 
 /** A live listing, or any listing when `previewToken` was issued for it (see signPreviewToken). */

@@ -7,7 +7,7 @@ import { idParam, parse } from "../../lib/validate.js";
 import { email, optionalPhone, personName } from "../../lib/rules.js";
 import { privateFileUrl } from "../../lib/private-files.js";
 import { temporaryPassword } from "../../lib/passwords.js";
-import { badRequest, conflict, notFound } from "../../lib/errors.js";
+import { badRequest, conflict, forbidden, notFound } from "../../lib/errors.js";
 import { adminPaginationSchema, pageMeta } from "../../lib/pagination.js";
 import { parseCsv } from "../../lib/csv.js";
 import { currentUser } from "../../middleware/auth.js";
@@ -18,12 +18,12 @@ import { sendListingClaimedForYou } from "../../services/emails.js";
 import { recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
 import { adminListingProfileSchema, createListing, newListingSchema, updateListingProfile, type NewListing } from "../../services/listings.js";
 import { searchPlaces } from "../../services/geocode.js";
-import { releaseFile } from "../../storage/references.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "../provider/shared.js";
 import { loadProfile } from "../provider/profile.js";
 import { checkSeoDraft, seoDraftSchema } from "../../services/seo.js";
 import { previewUrl, refreshProviderSlugs, refreshShared } from "../../services/web-cache.js";
 import { assertCanOwnAnother } from "../../services/professions.js";
+import { deleteListings } from "../../services/listing-removal.js";
 
 /** Listing management in the admin console: list, status, edit, create, import, ownership and delete. */
 export const adminProvidersRouter = Router();
@@ -387,34 +387,29 @@ adminProvidersRouter.delete("/providers/:id/owner", async (req, res) => {
 });
 
 /**
- * DELETE /admin/providers/:id — removes the listing with its leads, reviews and history. The admin
- * types the business name to confirm; the audit log keeps a snapshot of the main details.
+ * DELETE /admin/providers/:id — removes the listing with its leads, reviews, history and photos. The
+ * admin types the business name to confirm; the audit log keeps a snapshot of the main details, and the
+ * old profile address redirects to the category (see deleteListings).
  */
 adminProvidersRouter.delete("/providers/:id", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
   const { confirmName } = parse(z.object({ confirmName: z.string() }), req.body ?? {});
   if (confirmName.trim().toLowerCase() !== provider.businessName.trim().toLowerCase()) throw badRequest("Type the business name exactly to confirm");
-  const [portfolio, reviewPhotos, verifications, claims, counts] = await Promise.all([
-    prisma.providerPortfolio.findMany({ where: { providerId: provider.id }, select: { imageUrl: true } }),
-    prisma.reviewPhoto.findMany({ where: { review: { providerId: provider.id } }, select: { photoUrl: true } }),
-    prisma.verification.findMany({ where: { providerId: provider.id }, select: { documentUrl: true } }),
-    prisma.providerClaim.findMany({ where: { providerId: provider.id }, select: { documentUrl: true } }),
-    prisma.provider.findUniqueOrThrow({ where: { id: provider.id }, select: { _count: { select: { leads: true, reviews: true } } } }),
-  ]);
-  await prisma.provider.delete({ where: { id: provider.id } });
-  const files = [provider.logoUrl, provider.coverUrl, ...portfolio.map((p) => p.imageUrl), ...reviewPhotos.map((p) => p.photoUrl), ...verifications.map((v) => v.documentUrl), ...claims.map((c) => c.documentUrl)];
-  for (const url of files) void releaseFile(url);
-  refreshProviderSlugs([provider.slug], ["providers", "reviews"]);
-  await recalculateCategoryCounts();
-  await logAdmin(currentUser(req).id, "provider.delete", "provider", provider.id, {
-    businessName: provider.businessName,
-    phone: provider.phone,
-    city: provider.city,
-    ownerId: provider.userId ? Number(provider.userId) : null,
-    leads: counts._count.leads,
-    reviews: counts._count.reviews,
-  });
+  await deleteListings([provider], currentUser(req).id);
   res.json({ ok: true });
+});
+
+/**
+ * POST /admin/providers/bulk-delete — deletes up to 100 listings at once, the same way as one. Super
+ * admins only, because nothing asks for the names.
+ */
+adminProvidersRouter.post("/providers/bulk-delete", async (req, res) => {
+  const user = currentUser(req);
+  if (user.role !== "super_admin") throw forbidden("Only a super admin can delete listings in bulk");
+  const { ids } = parse(z.object({ ids: z.array(z.number().int().positive()).min(1).max(100) }), req.body);
+  const providers = await prisma.provider.findMany({ where: { id: { in: [...new Set(ids)].map(BigInt) } } });
+  const deleted = await deleteListings(providers, user.id, { bulk: true });
+  res.json({ deleted });
 });
 
 // CSV import -------------------------------------------------------------------------------------

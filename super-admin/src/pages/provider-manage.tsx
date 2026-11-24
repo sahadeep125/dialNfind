@@ -353,7 +353,7 @@ export function DeleteListingDialog({
       open={open}
       onOpenChange={(o) => (onOpenChange(o), setTyped(""))}
       title={`Delete ${businessName}?`}
-      description="This removes the listing with its leads, reviews, claims and photos, and cannot be undone. The audit log keeps the name, phone and city. Suspend it instead if it may come back."
+      description="This removes the listing with its leads, reviews, claims and photos, and cannot be undone. Its old page redirects to its category, and the audit log keeps the name, phone and city. Suspend it instead if it may come back."
       confirmLabel={del.isPending ? "Deleting…" : "Delete for good"}
       destructive
       busy={del.isPending || !matches}
