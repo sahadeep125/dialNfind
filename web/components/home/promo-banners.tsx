@@ -1,55 +1,56 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/config";
-import { PROVIDER_IMAGE } from "@/lib/stock-images";
+import { AUTH_IMAGE } from "@/lib/stock-images";
 
-const PROVIDER_PERKS = ["Free listing, no commission on jobs", "Customers call and WhatsApp you directly", "Reply to reviews and see who contacted you"];
+const PROVIDER_PERKS = [
+  { title: "Free listing", text: "No sign-up fee and no commission on the jobs you take." },
+  { title: "Direct contact", text: "Customers call or WhatsApp your own number." },
+  { title: "Your own dashboard", text: "Reply to reviews and see who contacted you." },
+];
 
-/** "Are you a service provider?" with a photo, then a slim "Get the app" strip when a store link is configured. */
+/** "For businesses" with a photo, then a slim "Get the app" strip when a store link is configured. */
 export function PromoBanners() {
   const hasApp = Boolean(APP_STORE_URL || PLAY_STORE_URL);
   return (
     <div className="space-y-5">
-      <div className="grid overflow-hidden rounded-xl bg-primary text-white md:grid-cols-[1.1fr_1fr]">
-        <div className="p-7 sm:p-10 lg:p-14">
-          <p className="eyebrow mb-3 text-cta">For professionals</p>
-          <h2 className="text-2xl font-bold text-white md:text-[2rem] md:leading-tight">Grow your business with local customers</h2>
-          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-white/75">
-            List your services for free and get found by people nearby who are ready to hire.
+      <div className="grid overflow-hidden rounded-lg bg-primary text-white lg:grid-cols-2">
+        <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-14">
+          <h2 className="text-3xl font-bold leading-tight text-white md:text-[2.5rem]">List your business on KaajVa for free</h2>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-white/75">
+            Already in our directory? Claim the listing and keep your phone number, hours and prices up to date. New here? Add your business in a few minutes.
           </p>
-          <ul className="mt-6 space-y-2.5">
+          <dl className="mt-8 grid gap-5 border-t border-white/15 pt-6 sm:grid-cols-3">
             {PROVIDER_PERKS.map((perk) => (
-              <li key={perk} className="flex items-center gap-2.5 text-[15px] text-white/90">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cta">
-                  <Check className="size-3.5 text-cta-foreground" strokeWidth={3} aria-hidden />
-                </span>
-                {perk}
-              </li>
+              <div key={perk.title}>
+                <dt className="text-[15px] font-semibold text-white">{perk.title}</dt>
+                <dd className="mt-1 text-sm leading-relaxed text-white/70">{perk.text}</dd>
+              </div>
             ))}
-          </ul>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild variant="cta" size="lg">
+          </dl>
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <Button asChild variant="cta" size="lg" className="w-full sm:w-auto">
               <Link href="/claim">
                 List your business <ArrowRight />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="ghost" className="text-white ring-1 ring-white/25 hover:bg-white/10 hover:text-white">
-              <Link href="/about#providers">How listing works</Link>
+            <Button asChild size="lg" variant="ghost" className="w-full text-white ring-1 ring-white/30 hover:bg-white/10 hover:text-white sm:w-auto">
+              <Link href="/about#providers">See how listing works</Link>
             </Button>
           </div>
         </div>
-        <div className="relative min-h-64 md:min-h-full">
-          <Image src={PROVIDER_IMAGE.src} alt={PROVIDER_IMAGE.alt} fill sizes="(min-width: 768px) 38rem, 100vw" className="object-cover" />
+        <div className="relative min-h-72 overflow-hidden lg:min-h-[34rem]">
+          <Image src={AUTH_IMAGE.src} alt={AUTH_IMAGE.alt} fill sizes="(min-width: 1024px) 40rem, 100vw" className="object-cover object-[50%_40%]" />
         </div>
       </div>
 
       {hasApp && (
-        <div className="flex flex-col items-start justify-between gap-5 rounded-xl border bg-card p-6 sm:flex-row sm:items-center sm:p-8">
+        <div className="flex flex-col items-start justify-between gap-5 rounded-lg border bg-card p-6 sm:flex-row sm:items-center sm:p-8">
           <div>
             <h2 className="text-xl font-bold">Get the KaajVa app</h2>
-            <p className="mt-1 text-[15px] text-muted-foreground">Find and call local professionals on the go, and keep your saved pros in one place.</p>
+            <p className="mt-1 text-[15px] text-muted-foreground">Find and call local businesses on the go, and keep your saved ones in one place.</p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-3">
             {APP_STORE_URL && (
@@ -68,7 +69,6 @@ export function PromoBanners() {
     </div>
   );
 }
-
 function StoreBadge({ href, caption, name, children }: { href: string; caption: string; name: string; children: React.ReactNode }) {
   return (
     <a

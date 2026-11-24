@@ -39,3 +39,8 @@ const CATEGORY_IMAGES: Record<string, StockImage> = {
 export function categoryImage(slug?: string | null): StockImage {
   return (slug && CATEGORY_IMAGES[slug]) || TOOLS_IMAGE;
 }
+
+/** Whether a category has a photograph of its own, rather than the shared tools photo. */
+export function hasCategoryImage(slug?: string | null): boolean {
+  return Boolean(slug && CATEGORY_IMAGES[slug]);
+}

@@ -20,7 +20,7 @@ export async function Testimonials() {
   if (reviews.length === 0) return null;
   return (
     <section className="section-y border-y bg-card">
-      <div className="container-page">
+      <div className="container-wide">
         <SectionHeading eyebrow="Customer reviews" title="What people say about local pros" />
         <ul className="mt-8 grid gap-5 md:grid-cols-3">
           {reviews.map((r) => (

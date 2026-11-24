@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, Mail, MapPin, Phone, PhoneCall, Star } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { Logo } from "./logo";
 import { SocialIcon } from "./social-icons";
 import { publicApi } from "@/lib/api";
@@ -43,33 +43,12 @@ async function popularServices() {
   }
 }
 
-const PROMISES = [
-  { icon: BadgeCheck, title: "Visible verification", text: "Every profile shows which checks were done" },
-  { icon: Star, title: "Real reviews", text: "Written by signed-in customers" },
-  { icon: PhoneCall, title: "No booking fees", text: "Call or WhatsApp the pro directly" },
-];
-
 export async function SiteFooter() {
   const [config, services] = await Promise.all([getAppConfig(), popularServices()]);
   const columns = services.length ? [{ title: "Popular services", links: services }, ...COLUMNS] : COLUMNS;
   return (
     <footer className="mt-16 bg-brand-deep text-white/70 md:mt-20">
-      <div className="border-b border-white/10">
-        <ul className="container-wide grid gap-6 py-8 sm:grid-cols-3">
-          {PROMISES.map((p) => (
-            <li key={p.title} className="flex items-center gap-3.5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-white/10 text-white">
-                <p.icon className="size-5" aria-hidden />
-              </span>
-              <div>
-                <div className="text-sm font-semibold text-white">{p.title}</div>
-                <div className="text-sm">{p.text}</div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="container-wide grid gap-10 py-12 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+      <div className="container-wide grid gap-10 py-14 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div className="space-y-4">
           <Logo inverted />
           <p className="max-w-xs text-sm leading-relaxed">
@@ -105,7 +84,7 @@ export async function SiteFooter() {
                   target="_blank"
                   rel="noopener noreferrer me"
                   aria-label={`KaajVa on ${s.label}`}
-                  className="flex size-9 items-center justify-center rounded-md bg-white/10 text-white transition-colors hover:bg-white/20"
+                  className="flex size-11 items-center justify-center rounded-md text-white/80 ring-1 ring-white/15 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   <SocialIcon name={s.label} className="size-4" />
                 </a>
@@ -119,7 +98,7 @@ export async function SiteFooter() {
             <ul className="space-y-2.5">
               {col.links.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-sm transition-colors hover:text-white">
+                  <Link href={l.href} className="link-draw text-sm transition-colors hover:text-white">
                     {l.label}
                   </Link>
                 </li>
@@ -129,18 +108,20 @@ export async function SiteFooter() {
         ))}
       </div>
       <div className="border-t border-white/10">
-        <div className="container-wide flex flex-col gap-2 py-6 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {new Date().getFullYear()} KaajVa. All rights reserved.</p>
-          <nav aria-label="Legal" className="flex gap-4">
-            <Link href="/terms" className="hover:text-white">Terms of use</Link>
-            <Link href="/privacy" className="hover:text-white">Privacy policy</Link>
-          </nav>
-          <p>
+        <div className="container-wide space-y-3 py-6 text-xs text-white/55">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p>&copy; {new Date().getFullYear()} KaajVa. All rights reserved.</p>
+            <nav aria-label="Legal" className="flex gap-5">
+              <Link href="/terms" className="link-draw hover:text-white">Terms of use</Link>
+              <Link href="/privacy" className="link-draw hover:text-white">Privacy policy</Link>
+            </nav>
+          </div>
+          <p className="max-w-4xl leading-relaxed">
             Unclaimed listings are compiled from public business data, including{" "}
             <a href="https://www.openstreetmap.org/copyright" className="underline hover:text-white" rel="noopener noreferrer" target="_blank">
               &copy; OpenStreetMap contributors
             </a>{" "}
-            and Overture Maps. Businesses can claim them; anyone can report one from its profile page.
+            and Overture Maps. Businesses can claim them; anyone can report one from its profile page. Photographs from Unsplash.
           </p>
         </div>
       </div>

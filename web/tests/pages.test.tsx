@@ -107,7 +107,8 @@ describe("home and content pages", () => {
     mockApi({ "/categories": { categories }, "/stats": { providers: 10, categories: 2, cities: 1, reviews: 3 }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
     const { unmount } = await renderAsync(await Home());
     expect(screen.getByRole("link", { name: "Bike service" })).toHaveAttribute("href", "/services/vehicle-repair/bike-service");
-    expect(screen.getByRole("link", { name: "TV Repair near me" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "TV Repair" })).toBeInTheDocument();
+    expect(screen.getByText("10 local businesses listed across 2 services")).toBeInTheDocument();
     expect(screen.getByText("3+ customer reviews")).toBeInTheDocument();
     unmount();
     mockApi({ "/categories": { categories: [] }, "/stats": { providers: 0, categories: 0, cities: 0, reviews: 0 }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });

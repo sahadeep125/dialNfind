@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Hanken_Grotesk, Schibsted_Grotesk } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site/site-header";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -10,8 +10,8 @@ import { getAppConfig } from "@/lib/app-config";
 import { SITE_NAME, SITE_URL } from "@/lib/config";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/structured-data";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap", weight: ["500", "600", "700", "800"] });
+const body = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+const heading = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-heading", display: "swap", weight: ["500", "600", "700", "800"] });
 
 const TITLE = "KaajVa: Local Services & Businesses in Siliguri";
 const DESCRIPTION =
@@ -65,7 +65,7 @@ export const viewport: Viewport = { themeColor: "#042161" };
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const config = await getAppConfig();
   return (
-    <html lang="en-IN" className={`${inter.variable} ${jakarta.variable}`}>
+    <html lang="en-IN" className={`${body.variable} ${heading.variable}`}>
       <body className="flex min-h-dvh flex-col font-sans">
         <a
           href="#main"

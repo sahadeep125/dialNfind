@@ -29,9 +29,8 @@ export function NearbyProviders() {
   const place = location ? location.city || location.name : null;
   return (
     // Follows the categories section, so it only needs space below.
-    <section className="container-page pb-14 md:pb-20">
+    <section className="container-wide pb-16 md:pb-24">
       <SectionHeading
-        eyebrow="Top rated"
         title={place ? `Popular pros in ${place}` : "Popular pros near you"}
         action={{ href: location ? buildSearchHref("", location) : "/search", label: "See all" }}
       />
