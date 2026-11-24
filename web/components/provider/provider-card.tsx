@@ -3,7 +3,6 @@ import { BadgeCheck, Briefcase, MapPin, Trophy } from "lucide-react";
 import type { ProviderCard as ProviderCardType } from "@/lib/types";
 import { formatDistance, formatKm, formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { ContactButtons } from "./contact-buttons";
 import { FavoriteButton } from "./favorite-button";
 import { ProviderAvatar } from "./provider-avatar";
@@ -15,26 +14,35 @@ import { listingParts } from "@/lib/account-type";
 export function OpenStatus({
   provider,
   compact = false,
+  onDark = false,
   className,
 }: {
   provider: Pick<ProviderCardType, "isOpenNow" | "isAvailable" | "todayHours"> & { hasHours?: boolean };
   /** Just "Open now" or "Closed", without today's hours; nothing when no hours are listed. */
   compact?: boolean;
+  /** Lighter status colours for navy boards. */
+  onDark?: boolean;
   className?: string;
 }) {
   if (!provider.isAvailable) {
-    return <Badge variant="muted" className={className}>Currently unavailable</Badge>;
+    return (
+      <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium", onDark ? "text-board-muted" : "text-muted-foreground", className)}>
+        <span className="size-2 rounded-full bg-current opacity-60" />
+        Currently unavailable
+      </span>
+    );
   }
   // No hours listed: say nothing rather than calling the place closed or filling the card with "not listed".
   if (provider.hasHours === false) return null;
   const closedAllDay = provider.todayHours === "Closed";
+  const open = provider.isOpenNow;
   return (
-    <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium", className)}>
-      <span className={cn("size-2 rounded-full", provider.isOpenNow ? "bg-success" : "bg-[oklch(0.65_0.16_27)]")} />
-      <span className={provider.isOpenNow ? "text-[oklch(0.42_0.11_155)]" : "text-[oklch(0.5_0.16_27)]"}>
-        {provider.isOpenNow ? "Open now" : closedAllDay ? "Closed today" : "Closed"}
+    <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold", className)}>
+      <span className={cn("size-2 rounded-full", open ? "bg-success" : "bg-destructive", onDark && (open ? "bg-[#4ade80]" : "bg-[#ff8a75]"))} />
+      <span className={onDark ? (open ? "text-[#86efac]" : "text-[#ffb4a6]") : open ? "text-success-ink" : "text-danger-ink"}>
+        {open ? "Open now" : closedAllDay ? "Closed today" : "Closed"}
       </span>
-      {!closedAllDay && !compact && <span className="font-normal text-muted-foreground">· {provider.todayHours}</span>}
+      {!closedAllDay && !compact && <span className={cn("font-normal tabular-nums", onDark ? "text-board-muted" : "text-muted-foreground")}>· {provider.todayHours}</span>}
     </span>
   );
 }
@@ -67,7 +75,7 @@ export function ProviderCard({
   return (
     <article
       className={cn(
-        "@container group relative rounded-lg border bg-card p-4 transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-[var(--shadow-lift)] sm:p-5",
+        "@container group relative rounded-xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)] transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] sm:p-5",
         className,
       )}
     >
@@ -146,7 +154,7 @@ export function ProviderCard({
         <div className="flex shrink-0 flex-col gap-3 border-t pt-4 @2xl:w-64 @2xl:justify-between @2xl:border-l @2xl:border-t-0 @2xl:pl-5 @2xl:pt-0">
           <div className="flex items-baseline justify-between gap-3 empty:hidden @2xl:block @2xl:pr-11 @2xl:text-right">
             {provider.distanceKm !== null && provider.distanceKm !== undefined && (
-              <div className="hidden tabular-nums @2xl:block">
+              <div className="hidden @2xl:block">
                 <span className="font-display text-xl font-bold leading-tight">{formatKm(provider.distanceKm)}</span>
                 <span className="ml-1 text-sm text-muted-foreground">away</span>
               </div>

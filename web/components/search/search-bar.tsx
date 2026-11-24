@@ -138,9 +138,9 @@ export function SearchBar({
       className={cn(
         "relative flex w-full",
         compact
-          ? "h-10 items-stretch rounded-lg border border-input bg-card transition-shadow focus-within:border-foreground/30 focus-within:shadow-[var(--shadow-lift)]"
+          ? "h-10 items-stretch rounded-lg border border-border bg-card shadow-[var(--shadow-card)] transition-shadow focus-within:shadow-[var(--shadow-lift)]"
           : "flex-col gap-2 md:flex-row md:items-stretch",
-        joined && "rounded-lg border border-input bg-card p-1.5 shadow-[0_1px_2px_rgb(20_22_26/0.05),0_12px_32px_-18px_rgb(20_22_26/0.25)] md:gap-0",
+        joined && "rounded-xl border border-border/60 bg-card p-1.5 shadow-[0_2px_4px_-1px_rgb(16_24_40/0.05),0_16px_36px_-16px_rgb(16_24_40/0.2)] md:gap-0",
         className,
       )}
       role="search"
@@ -152,7 +152,7 @@ export function SearchBar({
           "relative flex min-w-0 items-center",
           compact ? "flex-1 gap-2 pl-3" : "gap-3 px-4 md:flex-1",
           joined && "h-16 rounded-md transition-colors focus-within:bg-muted/60 md:h-[4.25rem]",
-          !joined && !compact && "rounded-lg border border-input bg-card focus-within:ring-[3px] focus-within:ring-cta/25",
+          !joined && !compact && "rounded-lg border border-transparent bg-card shadow-[var(--shadow-soft)] focus-within:ring-[3px] focus-within:ring-cta/25",
           !joined && !compact && (tall ? "h-14" : "h-12"),
         )}
       >
@@ -218,7 +218,7 @@ export function SearchBar({
           "flex items-center text-foreground",
           joined && "h-16 rounded-md border-t px-4 transition-colors focus-within:bg-muted/60 md:h-auto md:w-72 md:border-t-0",
           compact && "hidden w-44 px-3 sm:flex [&_svg:first-child]:size-4",
-          !joined && !compact && "rounded-lg border border-input bg-card px-4 md:w-[40%] md:max-w-md",
+          !joined && !compact && "rounded-lg border border-transparent bg-card px-4 shadow-[var(--shadow-soft)] md:w-[40%] md:max-w-md",
           !joined && !compact && (tall ? "h-14" : "h-12"),
         )}
       >

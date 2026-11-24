@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { publicApi } from "@/lib/api";
 import type { Category } from "@/lib/types";
 import { CategoryGrid } from "@/components/home/category-grid";
@@ -60,17 +63,31 @@ export default async function HomePage() {
 
       <section aria-labelledby="needs-title" className="section-y">
         <div className="container-wide">
-          <SectionHeading id="needs-title" title="What needs fixing?" description="Pick what you need and see who does it near you, nearest first." />
+          <SectionHeading id="needs-title" title="What's the problem?" description="Start from what went wrong. Each one opens the pros nearby who fix it, nearest first." />
           <div className="mt-8">
             <FixGrid />
           </div>
+          <div className="mt-10 flex justify-center">
+            <Button asChild size="lg" variant="outline" className="shadow-[var(--shadow-card)]">
+              <Link href="/search">
+                View all professionals <ArrowRight />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* For pros: listing is free. High on the page, so businesses find it without scrolling to the end. */}
+      <section className="bg-surface py-14 md:py-20">
+        <div className="container-wide">
+          <PromoBanners />
         </div>
       </section>
 
       {/* Loads in the browser, since it depends on the visitor's location. */}
       <NearbyProviders />
 
-      <section aria-labelledby="services-title" className="section-y border-t">
+      <section aria-labelledby="services-title" className="section-y border-y bg-surface">
         <div className="container-wide">
           <SectionHeading
             id="services-title"
@@ -84,13 +101,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="pb-14 md:pb-20">
+      <section className="section-y">
         <div className="container-wide">
           <AppPromo />
         </div>
       </section>
 
-      <section id="how" aria-labelledby="how-title" className="section-y scroll-mt-16 border-y bg-card">
+      <section id="how" aria-labelledby="how-title" className="section-y scroll-mt-16 border-y bg-[#eef3fc]">
         <div className="container-wide">
           <SectionHeading id="how-title" title="How KaajVa works" description="A directory, not a booking service: we show you the business, you deal with them directly." />
           <div className="mt-10">
@@ -113,11 +130,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="section-y">
-        <div className="container-wide">
-          <PromoBanners />
-        </div>
-      </section>
     </>
   );
 }

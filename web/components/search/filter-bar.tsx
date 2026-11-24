@@ -17,7 +17,7 @@ const RATINGS = [
   { value: "4.5", label: "4.5+" },
 ];
 
-const PILL = "inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-md border border-input bg-card px-3 text-sm font-medium text-foreground/85 transition-colors hover:border-foreground/25 hover:bg-muted";
+const PILL = "inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground/85 shadow-[var(--shadow-card)] transition-colors hover:bg-muted";
 const PILL_ON = "border-cta/50 bg-cta-soft text-cta-strong hover:border-cta/60 hover:bg-cta-soft";
 
 /** One row of quick filters under the search banner; every change is written to the URL. */

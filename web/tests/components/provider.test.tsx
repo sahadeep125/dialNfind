@@ -270,7 +270,8 @@ describe("profile sections", () => {
       />,
     );
     expect(screen.getAllByText("Individual professional").length).toBeGreaterThan(0);
-    expect(screen.getByText("Plumber")).toBeInTheDocument();
+    // The trade is on the name plate and in the line under the name.
+    expect(screen.getAllByText("Plumber").length).toBeGreaterThan(0);
     expect(screen.getByText("Verified professional")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Electrician" })).toHaveAttribute("href", "/providers/me-electrician");
     expect(screen.getByRole("link", { name: "Another profession" })).toBeInTheDocument();

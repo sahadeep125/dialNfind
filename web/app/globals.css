@@ -6,8 +6,8 @@
 :root {
   --radius: 0.375rem;
 
-  /* Warm neutral surfaces, so photos and the orange CTA sit on something calmer than pure grey. */
-  --background: #faf9f6;
+  /* Clean, cool neutral surfaces: a white page with the faintest blue-grey for quiet bands. */
+  --background: #ffffff;
   --foreground: #16181d;
   --card: #ffffff;
   --card-foreground: #16181d;
@@ -27,13 +27,13 @@
   --cta-soft: oklch(0.97 0.03 62);
   --secondary: oklch(0.955 0.015 262.5);
   --secondary-foreground: #042161;
-  --muted: #f1efe9;
+  --muted: #f3f5f9;
   --muted-foreground: #5d626c;
   --accent: oklch(0.955 0.015 262.5);
   --accent-foreground: #042161;
   --destructive: oklch(0.55 0.21 27);
-  --border: #e4e1d8;
-  --input: #d6d2c7;
+  --border: #e7eaf0;
+  --input: #dde1e9;
   --ring: oklch(0.45 0.13 262.5 / 0.4);
 
   --success: oklch(0.56 0.13 155);
@@ -58,9 +58,20 @@
   --chart-4: oklch(0.56 0.13 155);
   --chart-5: oklch(0.55 0.12 230);
 
-  --shadow-card: 0 1px 2px rgb(20 28 45 / 0.05);
-  --shadow-soft: var(--shadow-card);
-  --shadow-lift: 0 1px 2px rgb(20 28 45 / 0.04), 0 8px 24px -8px rgb(20 28 45 / 0.16);
+  /* Shadows, not dark outlines, separate things: small and soft at rest, a little deeper when lifted. */
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.05);
+  --shadow-soft: 0 2px 8px -2px rgb(16 24 40 / 0.08);
+  --shadow-lift: 0 2px 4px -1px rgb(16 24 40 / 0.05), 0 12px 28px -10px rgb(16 24 40 / 0.16);
+
+  /* The navy signboard on provider profiles and the dark search header. */
+  --board: #042161;
+  --board-deep: #021440;
+  --board-foreground: #ffffff;
+  --board-muted: #b9c3dc;
+  --board-rule: rgb(255 255 255 / 0.16);
+  --ink-rule: #cfd5df;
+  /* The quiet band between white sections. */
+  --surface: #eef2f8;
 }
 
 @theme inline {
@@ -68,6 +79,13 @@
   --font-display: var(--font-heading), var(--font-body), ui-sans-serif, system-ui, sans-serif;
 
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-board: var(--board);
+  --color-board-deep: var(--board-deep);
+  --color-board-foreground: var(--board-foreground);
+  --color-board-muted: var(--board-muted);
+  --color-board-rule: var(--board-rule);
+  --color-ink-rule: var(--ink-rule);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -156,12 +174,15 @@
   width: 100%;
   max-width: 80rem;
   margin-inline: auto;
-  padding-inline: 1rem;
+  padding-inline: 1.25rem;
   @media (width >= 40rem) {
-    padding-inline: 1.5rem;
+    padding-inline: 2rem;
   }
   @media (width >= 64rem) {
-    padding-inline: 2rem;
+    padding-inline: 3rem;
+  }
+  @media (width >= 96rem) {
+    padding-inline: 4rem;
   }
 }
 
@@ -170,12 +191,15 @@
   width: 100%;
   max-width: 96rem;
   margin-inline: auto;
-  padding-inline: 1rem;
+  padding-inline: 1.25rem;
   @media (width >= 40rem) {
-    padding-inline: 1.5rem;
+    padding-inline: 2rem;
   }
   @media (width >= 64rem) {
-    padding-inline: 2rem;
+    padding-inline: 3rem;
+  }
+  @media (width >= 96rem) {
+    padding-inline: 4rem;
   }
 }
 
@@ -276,4 +300,18 @@
 }
 .leaflet-container {
   font-family: inherit;
+}
+
+/* Light-on-navy: text tokens flip inside the dark header band; white controls inside it keep their own. */
+.dark-band {
+  --foreground: #ffffff;
+  --muted-foreground: var(--board-muted);
+  --border: var(--board-rule);
+}
+.dark-band [role="search"],
+.dark-band .on-light {
+  --foreground: #16181d;
+  --muted-foreground: #5d626c;
+  --border: #e7eaf0;
+  color: var(--foreground);
 }

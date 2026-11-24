@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Flag, Loader2, Share2 } from "lucide-react";
 import { toast } from "sonner";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { clientApi, ClientApiError } from "@/lib/client";
 import { track } from "@/lib/analytics";
 
-export function ShareButton({ title, withLabel = false }: { title: string; withLabel?: boolean }) {
+export function ShareButton({ title, withLabel = false, className }: { title: string; withLabel?: boolean; className?: string }) {
   async function share() {
     const url = window.location.href;
     if (navigator.share) {
@@ -28,7 +29,7 @@ export function ShareButton({ title, withLabel = false }: { title: string; withL
   }
   if (withLabel) {
     return (
-      <Button variant="ghost" size="sm" className="h-9 gap-1.5 px-2.5 text-sm font-medium text-foreground/80" onClick={share}>
+      <Button variant="ghost" size="sm" className={cn("h-9 gap-1.5 px-2.5 text-sm font-medium text-foreground/80", className)} onClick={share}>
         <Share2 /> Share
       </Button>
     );

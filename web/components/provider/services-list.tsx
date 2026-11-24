@@ -30,7 +30,7 @@ export function ServicesList({ services, businessName, categories = [] }: { serv
         title={`Services offered by ${businessName}`}
         initial={8}
         moreLabel={`View all ${services.length} services`}
-        className="grid gap-2 sm:grid-cols-2"
+        className="grid border-t border-border sm:grid-cols-2 sm:gap-x-8"
         items={sorted.map((s) => {
           const name = s.subcategory?.name ?? s.category.name;
           const price = formatPrice(s.startingPrice);
@@ -39,8 +39,8 @@ export function ServicesList({ services, businessName, categories = [] }: { serv
               key={s.id}
               href={serviceHref(s.category.slug, s.subcategory?.slug)}
               className={cn(
-                "group flex items-center gap-3 rounded-lg border bg-card px-4 py-3 transition-colors hover:border-foreground/20 hover:bg-muted/50",
-                s.isPrimary && "border-primary/25 bg-secondary/40",
+                // A rate board: ruled rows, name on the left, the starting price on the right.
+                "group flex items-center gap-3 border-b px-1 py-3.5 transition-colors hover:bg-card",
               )}
             >
               <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full", s.isPrimary ? "bg-primary text-primary-foreground" : "bg-success-soft text-success-ink")}>
@@ -66,7 +66,7 @@ export function ServicesList({ services, businessName, categories = [] }: { serv
           <ul className="mt-2.5 flex flex-wrap gap-1.5">
             {covers.map((c) => (
               <li key={c.slug}>
-                <Link href={serviceHref(c.categorySlug, c.slug)} className="block rounded-md border bg-card px-2.5 py-1.5 text-[13px] font-medium text-foreground/85 transition-colors hover:border-foreground/25 hover:bg-muted">
+                <Link href={serviceHref(c.categorySlug, c.slug)} className="block rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground">
                   {c.name}
                 </Link>
               </li>
