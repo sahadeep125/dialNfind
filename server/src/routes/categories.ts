@@ -21,6 +21,33 @@ categoriesRouter.get("/", async (_req, res) => {
   res.json({ categories });
 });
 
+/**
+ * GET /categories/professions — the professions an individual can pick when creating a listing, one per
+ * category or service that has a profession name: "Plumber" (Plumbing), "AC Technician" (AC Repair & Service).
+ */
+categoriesRouter.get("/professions", async (_req, res) => {
+  const categories = await prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+    include: { subcategories: { where: { isActive: true, professionName: { not: null } }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }] } },
+  });
+  const professions: { label: string; categoryId: bigint; categoryName: string; categorySlug: string; subcategoryId: bigint | null; subcategoryName: string | null }[] = [];
+  const seen = new Set<string>();
+  const add = (p: (typeof professions)[number]) => {
+    const key = p.label.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    professions.push(p);
+  };
+  for (const c of categories) {
+    const base = { categoryId: c.id, categoryName: c.name, categorySlug: c.slug };
+    if (c.professionName) add({ ...base, label: c.professionName, subcategoryId: null, subcategoryName: null });
+    for (const s of c.subcategories) add({ ...base, label: s.professionName!, subcategoryId: s.id, subcategoryName: s.name });
+  }
+  professions.sort((a, b) => a.label.localeCompare(b.label));
+  res.json({ professions });
+});
+
 categoriesRouter.get("/:slug", async (req, res) => {
   const category = await prisma.category.findUnique({
     where: { slug: req.params.slug as string },
@@ -37,12 +64,16 @@ categoriesRouter.get("/:slug", async (req, res) => {
 // Super-admin only: categories, subcategories and attributes are never provider-created.
 // ---------------------------------------------------------------------------
 
+/** What an individual offering it is called, "Plumber". Empty clears it. */
+const professionNameField = z.union([z.literal(""), z.null(), z.string().trim().max(60)]).transform((v) => v || null).optional();
+
 const categorySchema = z.object({
   name: z.string().trim().min(2).max(60),
   slug: z.string().trim().max(60).optional(),
   description: z.string().max(300).nullable().optional(),
   iconUrl: z.string().nullable().optional(),
   uiTemplate: z.string().max(40).optional(),
+  professionName: professionNameField,
   displayOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
 });
@@ -85,6 +116,7 @@ const subcategorySchema = z.object({
   name: z.string().trim().min(2).max(60),
   slug: z.string().trim().max(80).optional(),
   iconUrl: z.string().nullable().optional(),
+  professionName: professionNameField,
   displayOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
 });

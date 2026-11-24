@@ -57,9 +57,9 @@ const EXPORTS = {
           where: { AND: [userWhere(q), { id: { gt: afterId } }] },
           orderBy: { id: "asc" },
           take,
-          include: { provider: { select: { businessName: true } } },
+          include: { providers: { select: { businessName: true }, orderBy: { id: "asc" } } },
         })
-      ).map((u) => ({ id: u.id, values: [u.id, u.name, u.email, u.phone, u.role, u.status, u.emailVerifiedAt ? "yes" : "no", u.provider?.businessName, date(u.createdAt), date(u.lastLoginAt)] })),
+      ).map((u) => ({ id: u.id, values: [u.id, u.name, u.email, u.phone, u.role, u.status, u.emailVerifiedAt ? "yes" : "no", u.providers.map((p) => p.businessName).join("; ") || null, date(u.createdAt), date(u.lastLoginAt)] })),
   }),
   leads: exporter({
     module: "leads",

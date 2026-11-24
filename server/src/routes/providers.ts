@@ -14,6 +14,7 @@ import { recordProfileView, searchProviders } from "../services/search.js";
 import { limits } from "../lib/rate-limit.js";
 import { verifyPreviewToken } from "../lib/jwt.js";
 import { photoAltText, providerSeo } from "../services/seo.js";
+import { professionLabel, serviceAreaLabel } from "../services/professions.js";
 
 export const providersRouter = Router();
 
@@ -90,10 +91,19 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
     },
   });
 
-  const [breakdownRows, favorite, { myReview, reviewEligibility }] = await Promise.all([
+  const [breakdownRows, favorite, { myReview, reviewEligibility }, otherListings] = await Promise.all([
     prisma.review.groupBy({ by: ["rating"], where: { providerId: id, status: "published" }, _count: true }),
     req.user ? prisma.favorite.findUnique({ where: { userId_providerId: { userId: req.user.id, providerId: id } } }) : null,
     viewerReview(req.user, found),
+    // An individual professional's other professions, each its own listing.
+    provider.userId && provider.businessType === "individual"
+      ? prisma.provider.findMany({
+          where: { userId: provider.userId, id: { not: id }, status: "active", businessType: "individual" },
+          orderBy: { id: "asc" },
+          take: 10,
+          include: { services: providerCardInclude.services },
+        })
+      : [],
   ]);
   // The website renders profiles from a shared cache and counts each visit with /visit instead.
   if (req.query.view !== "false") void recordProfileView(id);
@@ -156,6 +166,10 @@ providersRouter.get("/:slug", optionalAuth, async (req, res) => {
         .filter((v, i, all) => all.findIndex((x) => x.attribute.id === v.attribute.id) === i)
         .map((v) => ({ label: v.attribute.label, value: displayAttributeValue(v.attribute, v.value) })),
       verifications: provider.verifications,
+      otherListings: otherListings.map((o) => {
+        // Services come primary first (providerCardInclude).
+        return { slug: o.slug, profession: professionLabel(o, o.services[0]), serviceAreaLabel: serviceAreaLabel(o) };
+      }),
       // What the website puts in <head>: the same title and description the provider sees in their SEO page.
       seo: {
         title: seo.title,

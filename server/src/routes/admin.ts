@@ -21,6 +21,7 @@ import { env } from "../env.js";
 import { recalculateProvider } from "../services/ranking.js";
 import { ticketRef } from "../services/tickets.js";
 import { refreshProviderPages, refreshProviderSlugs, refreshShared } from "../services/web-cache.js";
+import { assertCanOwnAnother } from "../services/professions.js";
 
 /**
  * Admin endpoints for the super admin and their team. Each path is guarded by the module it
@@ -52,6 +53,10 @@ adminRouter.patch("/claims/:id", async (req, res) => {
   if (!claim) throw notFound("Claim not found");
   if (claim.status !== "pending") throw badRequest("Claim already decided");
   if (decision === "approved" && claim.provider.userId) throw badRequest("Listing already has an owner");
+  if (decision === "approved") {
+    const primary = await prisma.providerService.findFirst({ where: { providerId: claim.providerId }, orderBy: [{ isPrimary: "desc" }, { id: "asc" }], select: { categoryId: true, subcategoryId: true } });
+    await assertCanOwnAnother(claim.userId, { businessType: claim.provider.businessType, profession: claim.provider.profession, primary }, claim.providerId);
+  }
   await prisma.$transaction([
     prisma.providerClaim.update({ where: { id: claim.id }, data: { status: decision, reviewedBy: admin.id, reviewedAt: new Date() } }),
     ...(decision === "approved"

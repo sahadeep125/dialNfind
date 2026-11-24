@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import express, { Router } from "express";
 import { optionalUploadedImageUrl, releaseFile } from "../storage/references.js";
 import bcrypt from "bcryptjs";
@@ -29,8 +30,8 @@ const publicUser = {
   profilePhotoUrl: true,
   emailVerifiedAt: true,
   createdAt: true,
-  provider: { select: { id: true, slug: true, businessName: true, status: true } },
-} as const;
+  providers: { select: { id: true, slug: true, businessName: true, businessType: true, profession: true, status: true }, orderBy: { id: "asc" } },
+} satisfies Prisma.UserSelect;
 
 /** The signed-in user as every app sees it, plus how they can sign in (for "set a password" and account deletion). */
 async function sessionUser(id: bigint) {
@@ -38,7 +39,15 @@ async function sessionUser(id: bigint) {
     where: { id },
     select: { ...publicUser, passwordHash: true, oauthAccounts: { select: { provider: true } } },
   });
-  return { ...user, hasPassword: passwordHash !== null, linkedAccounts: [...new Set(oauthAccounts.map((a) => a.provider))] };
+  // `provider` is the first listing, as older app versions expect; `providers` lists every one.
+  const { providers, ...rest } = user;
+  return {
+    ...rest,
+    provider: providers[0] ?? null,
+    providers,
+    hasPassword: passwordHash !== null,
+    linkedAccounts: [...new Set(oauthAccounts.map((a) => a.provider))],
+  };
 }
 
 const registerSchema = z.object({

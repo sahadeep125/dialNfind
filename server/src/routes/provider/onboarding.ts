@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { Router, type Request } from "express";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
@@ -11,25 +12,59 @@ import { limits } from "../../lib/rate-limit.js";
 import { privateFileUrl } from "../../lib/private-files.js";
 import { createListing, newListingSchema } from "../../services/listings.js";
 import { captureServer } from "../../services/analytics.js";
+import { assertCanOwnAnother, MAX_LISTINGS_PER_ACCOUNT, professionLabel } from "../../services/professions.js";
+import { LISTING_HEADER } from "./common.js";
 
 export const onboardingRouter = Router();
 
-/** GET /provider/me — onboarding state for the provider app's router. */
+const listingSelect = {
+  id: true,
+  slug: true,
+  businessName: true,
+  businessType: true,
+  profession: true,
+  locality: true,
+  city: true,
+  status: true,
+  profileCompletenessPct: true,
+  verificationStatus: true,
+  createdAt: true,
+  services: {
+    orderBy: [{ isPrimary: "desc" }, { id: "asc" }],
+    take: 1,
+    select: { category: { select: { id: true, name: true, professionName: true } }, subcategory: { select: { name: true, professionName: true } } },
+  },
+} satisfies Prisma.ProviderSelect;
+
+/**
+ * GET /provider/me — onboarding state for the provider apps' routers. `provider` is the listing the
+ * X-Listing-Id header names (else the first one); `listings` is every listing the account owns, so the
+ * apps can switch between an individual's professions. `canAddListing` says whether another may be added.
+ */
 onboardingRouter.get("/me", async (req, res) => {
   const user = currentUser(req);
-  const [provider, claims] = await Promise.all([
-    prisma.provider.findUnique({
-      where: { userId: user.id },
-      select: { id: true, slug: true, businessName: true, status: true, profileCompletenessPct: true, verificationStatus: true },
-    }),
+  const [owned, claims] = await Promise.all([
+    prisma.provider.findMany({ where: { userId: user.id }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: listingSelect }),
     prisma.providerClaim.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       include: { provider: { select: { id: true, businessName: true, city: true, locality: true, phone: true } } },
     }),
   ]);
+  const listings = owned.map(({ services, createdAt: _createdAt, ...p }) => ({
+    ...p,
+    professionLabel: professionLabel(p, services[0]),
+    primaryCategory: services[0] ? { id: services[0].category.id, name: services[0].category.name } : null,
+  }));
+  const wanted = req.get(LISTING_HEADER);
+  const provider = listings.find((l) => String(l.id) === wanted) ?? listings[0] ?? null;
+  const accountType = listings[0] ? (listings[0].businessType === "individual" ? "individual" : "business") : null;
   res.json({
     provider,
+    listings,
+    accountType,
+    canAddListing: listings.length === 0 || (accountType === "individual" && listings.length < MAX_LISTINGS_PER_ACCOUNT),
+    maxListings: MAX_LISTINGS_PER_ACCOUNT,
     claims: claims.map((c) => ({
       id: c.id,
       status: c.status,
@@ -59,18 +94,22 @@ async function ensureProviderRole(req: Request) {
   return null;
 }
 
-/** POST /provider/onboarding — create a brand-new listing owned by the signed-in user. */
+/**
+ * POST /provider/onboarding — create a brand-new listing owned by the signed-in user. The first listing
+ * sets the account type. An individual professional may come back to add a listing for each other
+ * profession; a business has one listing.
+ */
 onboardingRouter.post("/onboarding", async (req, res) => {
   const body = parse(newListingSchema, req.body);
   const user = currentUser(req);
-  const existing = await prisma.provider.findUnique({ where: { userId: user.id }, select: { id: true } });
-  if (existing) throw conflict("You already have a business profile");
+  const primary = body.services.find((s) => s.isPrimary) ?? body.services[0];
+  await assertCanOwnAnother(user.id, { businessType: body.businessType, profession: body.profession, primary });
 
   const token = await ensureProviderRole(req);
   // Controlled by the auto_approve_listings setting in the admin app.
   const autoApprove = ((await getSetting("auto_approve_listings")) ?? String(!isProduction)) === "true";
   const provider = await createListing(body, { ownerId: user.id, status: autoApprove ? "active" : "pending" });
-  captureServer(user.id, "provider_onboarded", { provider_id: Number(provider.id), status: provider.status, was_customer: token !== null });
+  captureServer(user.id, "provider_onboarded", { provider_id: Number(provider.id), status: provider.status, was_customer: token !== null, business_type: provider.businessType });
   res.status(201).json({ provider: { id: provider.id, slug: provider.slug, status: provider.status }, token });
 });
 
@@ -166,12 +205,12 @@ onboardingRouter.post("/claims", limits.claims, async (req, res) => {
   const user = currentUser(req);
   const [provider, owned, pending] = await Promise.all([
     prisma.provider.findUnique({ where: { id: BigInt(body.providerId) } }),
-    prisma.provider.findUnique({ where: { userId: user.id }, select: { id: true } }),
+    prisma.provider.findFirst({ where: { userId: user.id }, select: { id: true } }),
     prisma.providerClaim.findFirst({ where: { providerId: BigInt(body.providerId), userId: user.id, status: "pending" }, select: { id: true } }),
   ]);
   if (!provider || provider.status !== "active") throw notFound("Listing not found");
   if (provider.userId) throw conflict("This listing has already been claimed. Contact support if you believe this is a mistake.");
-  if (owned) throw conflict("Your account already manages a business profile");
+  if (owned) throw conflict("Your account already manages a listing. Claiming is for accounts with no listing yet; contact support to move a listing to this account.");
   if (pending) throw conflict("You already sent a claim for this listing. We will let you know once it is reviewed.");
 
   const token = await ensureProviderRole(req);

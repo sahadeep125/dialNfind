@@ -68,7 +68,7 @@ describe("admin providers", () => {
     expect((await give("nobody@example.com")).body.error.message).toBe("Enter the owner's name to create their account");
     expect((await give("off@example.com")).status).toBe(404);
     expect((await give("staff@example.com")).body.error.message).toBe("Team accounts cannot own a listing");
-    expect((await give("busy@example.com")).body.error.message).toBe("This account already manages Other Biz");
+    expect((await give("busy@example.com")).body.error.message).toContain("This account already manages Other Biz");
     expect((await give("new@example.com")).body).toMatchObject({ ok: true });
     expect((await give("busy@example.com", owner.provider.id)).body).toMatchObject({ ok: true });
     await settle();
