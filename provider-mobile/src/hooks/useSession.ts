@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import { api } from "@/services/api";
+import { STORAGE_KEYS, storage } from "@/services/storage";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { ProviderState, SessionUser } from "@/types";
 import { queryKeys } from "./queryKeys";
@@ -28,6 +29,10 @@ export function useSession(): UseQueryResult<Session> {
       const { user } = await api<{ user: SessionUser }>("/auth/me");
       // Business data is closed until the email address is confirmed.
       const state = user.emailVerifiedAt ? await api<ProviderState>("/provider/me") : NO_BUSINESS;
+      // A listing picked earlier that this account no longer owns (or another account's) is forgotten.
+      const picked = storage.getString(STORAGE_KEYS.listingId);
+      if (picked && state.listings && !state.listings.some((l) => String(l.id) === picked))
+        storage.remove(STORAGE_KEYS.listingId);
       return { user, state };
     },
   });

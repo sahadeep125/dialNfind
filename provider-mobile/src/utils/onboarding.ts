@@ -13,7 +13,20 @@ import type {
 } from "@/types/onboarding";
 import { normalizePhone, validateEmail } from "@/utils/validation";
 
-export const ONBOARDING_STEPS = ["Business", "Services", "Location", "Hours", "Contact"] as const;
+export const ONBOARDING_STEPS = [
+  "Account type",
+  "About",
+  "Services",
+  "Location",
+  "Hours",
+  "Contact",
+] as const;
+export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
+
+/** A first listing asks for the account type; another profession is always an individual's. */
+export function stepsFor(adding: boolean): readonly OnboardingStep[] {
+  return adding ? ONBOARDING_STEPS.slice(1) : ONBOARDING_STEPS;
+}
 
 export const DAY_NAMES = [
   "Sunday",
@@ -60,12 +73,14 @@ export const DEFAULT_HOURS: Hours[] = DAY_NAMES.map((_, d) => ({
 }));
 
 export function initialDraft(
-  user: { phone: string | null; email: string } | null,
+  user: { phone: string | null; email: string; name?: string } | null,
 ): OnboardingDraft {
   return {
     business: {
-      businessName: "",
+      businessName: user?.name ?? "",
       businessType: "individual",
+      professionKey: "",
+      profession: "",
       yearsExperience: "",
       description: "",
       logoUrl: null,
@@ -97,14 +112,18 @@ export function initialDraft(
 
 export function validateBusiness(b: BusinessDraft): StepErrors {
   const errors: StepErrors = {};
+  const individual = b.businessType === "individual";
   const name = b.businessName.trim();
-  if (name.length < 2) errors.businessName = "Enter your business name";
+  if (name.length < 2) errors.businessName = individual ? "Enter your full name" : "Enter your business name";
   else if (name.length > 100) errors.businessName = "Keep the name under 100 characters";
   const years = b.yearsExperience.trim();
   if (years && (!/^\d+$/.test(years) || Number(years) > 80))
     errors.yearsExperience = "Years of experience must be a whole number from 0 to 80";
   if (b.description.trim().length > 2000)
     errors.description = "Keep the description under 2,000 characters";
+  if (individual && !b.professionKey) errors.professionKey = "Pick your profession";
+  if (individual && b.profession.trim().length > 80)
+    errors.profession = "Keep the title under 80 characters";
   return errors;
 }
 
@@ -116,10 +135,14 @@ export function priceError(price: number | null): string | null {
   return null;
 }
 
-export function validateServices(services: ServiceDraft[]): StepErrors {
+export function validateServices(services: ServiceDraft[], individual = false): StepErrors {
   if (services.length === 0) return { services: "Pick at least one service" };
   if (services.some((s) => priceError(s.startingPrice)))
     return { services: "Fix the highlighted starting prices" };
+  if (individual && new Set(services.map((s) => s.categoryId)).size > 1)
+    return {
+      services: "This listing is for one profession. Add other professions as separate listings later.",
+    };
   return {};
 }
 
@@ -176,15 +199,46 @@ export function validateContact(c: ContactDraft): StepErrors {
 }
 
 /** Checks one step of the wizard and returns its problems (empty when it can move on). */
-export function validateStep(step: number, draft: OnboardingDraft): StepErrors {
-  if (step === 0) return validateBusiness(draft.business);
-  if (step === 1) return validateServices(draft.services);
-  if (step === 2) return validateLocation(draft.location);
-  if (step === 3)
+export function validateStep(step: OnboardingStep, draft: OnboardingDraft): StepErrors {
+  if (step === "Account type") return {};
+  if (step === "About") return validateBusiness(draft.business);
+  if (step === "Services")
+    return validateServices(draft.services, draft.business.businessType === "individual");
+  if (step === "Location") return validateLocation(draft.location);
+  if (step === "Hours")
     return Object.keys(validateHours(draft.hours)).length
       ? { hours: "Fix the highlighted days" }
       : {};
   return validateContact(draft.contact);
+}
+
+/**
+ * Picking a profession makes it the listing's main service. Other services of the same category stay,
+ * so going back to change "AC Technician" to "Refrigerator Repair Technician" keeps the rest.
+ */
+export function servicesForProfession(
+  services: ServiceDraft[],
+  p: { categoryId: number; subcategoryId: number | null },
+): ServiceDraft[] {
+  const keep = services
+    .filter((s) => s.categoryId === p.categoryId && s.subcategoryId !== p.subcategoryId)
+    .map((s) => ({ ...s, isPrimary: false }));
+  return [
+    { categoryId: p.categoryId, subcategoryId: p.subcategoryId, startingPrice: null, priceUnit: "per_visit", isPrimary: true },
+    ...keep,
+  ];
+}
+
+/** Switching to an individual keeps only the picked profession's category. */
+export function servicesForType(
+  services: ServiceDraft[],
+  type: BusinessDraft["businessType"],
+  professionCategoryId: number | null,
+): ServiceDraft[] {
+  if (type !== "individual" || professionCategoryId === null) return services;
+  const kept = services.filter((s) => s.categoryId === professionCategoryId);
+  if (kept.length && !kept.some((s) => s.isPrimary)) kept[0] = { ...kept[0], isPrimary: true };
+  return kept;
 }
 
 /** Adds a service area, or returns why it cannot be added. */
@@ -205,6 +259,7 @@ export function toPayload(draft: OnboardingDraft): OnboardingPayload {
   return {
     businessName: business.businessName.trim(),
     businessType: business.businessType,
+    profession: business.businessType === "individual" ? business.profession.trim() || null : null,
     yearsExperience: business.yearsExperience.trim() ? Number(business.yearsExperience) : null,
     description: business.description.trim() || undefined,
     phone,

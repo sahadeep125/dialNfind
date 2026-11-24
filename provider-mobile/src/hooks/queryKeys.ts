@@ -8,4 +8,5 @@ export const queryKeys = {
   categories: ["categories"] as const,
   locations: (q: string) => ["locations", q] as const,
   appConfig: ["app-config"] as const,
+  professions: ["professions"] as const,
 };

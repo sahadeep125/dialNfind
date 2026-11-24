@@ -82,7 +82,8 @@ export default function StartScreen() {
             </AppText>
           )}
           <AppText tone="secondary">
-            Your business may already be on KaajVa. Claim it to keep its reviews, or start fresh.
+            Get found by customers near you. Create your listing, or claim one that is already on KaajVa
+            to keep its reviews.
           </AppText>
         </View>
 
@@ -117,22 +118,22 @@ export default function StartScreen() {
 
         <View style={[isTablet ? styles.grid : null, { gap: theme.spacing[3] }]}>
           <StartChoiceCard
+            icon={<Sparkles size={20} color={theme.colors.semantic.success} />}
+            iconBackground={theme.colors.semantic.successSoft}
+            title="Create your listing"
+            badge="Free"
+            text="List yourself as a plumber, electrician, tutor or any other professional, or list your business. A few short steps."
+            cta="Start setup"
+            onPress={() => router.push("/onboarding")}
+            style={isTablet ? styles.card : null}
+          />
+          <StartChoiceCard
             icon={<Search size={20} color={theme.colors.brand.primary} />}
             iconBackground={theme.colors.brand.soft}
             title="Claim my existing listing"
             text="Keep your reviews and ranking. Verify with a code sent to the listed number."
-            cta="Find my business"
+            cta="Find my listing"
             onPress={() => router.push("/claim")}
-            style={isTablet ? styles.card : null}
-          />
-          <StartChoiceCard
-            icon={<Sparkles size={20} color={theme.colors.semantic.success} />}
-            iconBackground={theme.colors.semantic.successSoft}
-            title="Add a new business"
-            badge="Free"
-            text="Profile, services, areas and hours in five short steps."
-            cta="Start setup"
-            onPress={() => router.push("/onboarding")}
             style={isTablet ? styles.card : null}
           />
         </View>

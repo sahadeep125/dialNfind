@@ -3,7 +3,9 @@ import { ChevronRight, ShieldCheck } from "lucide-react-native";
 
 import { AppAvatar, AppBadge, AppCard, AppText, type BadgeTone } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
+import { AccountTypeBadge } from "@/components/listing/AccountTypeBadge";
 import type { ProviderStatus, VerificationStatus } from "@/types";
+import type { BusinessType } from "@/types/onboarding";
 
 interface Props {
   name: string;
@@ -11,6 +13,10 @@ interface Props {
   status: ProviderStatus;
   verification: VerificationStatus;
   email?: string;
+  /** Individual professional or business; shown as a badge beside the status. */
+  type?: BusinessType;
+  /** "Plumber – Ghoraguli": what the listing is, under the name. */
+  subtitle?: string | null;
   /** 0–100; shown as a thin bar when the profile is not complete. */
   completeness?: number;
   onPress: () => void;
@@ -30,6 +36,8 @@ export function BusinessHeader({
   status,
   verification,
   email,
+  type,
+  subtitle,
   completeness,
   onPress,
 }: Props) {
@@ -37,7 +45,7 @@ export function BusinessHeader({
   const s = STATUS[status] ?? STATUS.pending;
   const showBar = completeness !== undefined && completeness < 100;
   return (
-    <AppCard onPress={onPress} accessibilityLabel={`${name}, edit business profile`} padding={14}>
+    <AppCard onPress={onPress} accessibilityLabel={`${name}, edit ${type === "individual" ? "your" : "business"} profile`} padding={14}>
       <View style={[styles.row, { gap: theme.spacing[3] }]}>
         <AppAvatar name={name} uri={logoUrl} size={48} shape="rounded" />
         <View style={[styles.body, { gap: 3 }]}>
@@ -53,6 +61,11 @@ export function BusinessHeader({
               />
             ) : null}
           </View>
+          {subtitle ? (
+            <AppText variant="meta" tone="secondary" numberOfLines={1}>
+              {subtitle}
+            </AppText>
+          ) : null}
           {email ? (
             <AppText variant="meta" numberOfLines={1}>
               {email}
@@ -60,6 +73,7 @@ export function BusinessHeader({
           ) : null}
           <View style={[styles.badges, { gap: theme.spacing[1.5] }]}>
             <AppBadge label={s.label} tone={s.tone} dot />
+            {type ? <AccountTypeBadge type={type} /> : null}
           </View>
         </View>
         <ChevronRight size={16} color={theme.colors.text.tertiary} />

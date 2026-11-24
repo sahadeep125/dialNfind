@@ -7,6 +7,7 @@ import {
   BadgeCheck,
   Check,
   Moon,
+  Plus,
   Clock,
   ExternalLink,
   FileText,
@@ -36,6 +37,7 @@ import { DeleteAccountSheet } from "@/components/more/DeleteAccountSheet";
 import { PushAlertsRow } from "@/components/more/PushAlertsRow";
 import { SignOutSheet } from "@/components/more/SignOutSheet";
 import { useAuthActions } from "@/hooks/useAuthActions";
+import { useSwitchListing } from "@/hooks/useListings";
 import { useProfile } from "@/hooks/useProfile";
 import { useSession } from "@/hooks/useSession";
 import { useTheme } from "@/hooks/useTheme";
@@ -44,6 +46,7 @@ import { errorMessage } from "@/services/api";
 import { openPublicProfile, openUrl } from "@/services/links";
 import { useThemeStore } from "@/stores/useThemeStore";
 import type { SelectOption, ThemePreference } from "@/types";
+import { listingTitle } from "@/utils/accountType";
 
 const THEME_OPTIONS: SelectOption<ThemePreference>[] = [
   { value: "system", label: "System" },
@@ -85,7 +88,18 @@ export default function MoreScreen() {
   const [deleting, setDeleting] = useState(false);
   const [pickingTheme, setPickingTheme] = useState(false);
 
+  const switchListing = useSwitchListing();
   const provider = session.data?.state.provider ?? null;
+  const listings = session.data?.state.listings ?? [];
+  const current = listings.find((l) => l.id === provider?.id);
+  const individual = current?.businessType === "individual";
+  // An individual professional has one listing per profession and can add more.
+  const canAdd = session.data?.state.accountType === "individual" && !!session.data?.state.canAddListing;
+  const pick = async (id: number): Promise<void> => {
+    if (id === provider?.id) return;
+    await switchListing(id);
+    toast("Switched listing", "success");
+  };
   const user = session.data?.user;
   const businessName = provider?.businessName ?? profile.data?.businessName ?? "Your business";
   const icon = theme.colors.text.secondary;
@@ -123,6 +137,14 @@ export default function MoreScreen() {
             status={provider.status}
             verification={provider.verificationStatus}
             email={user?.email}
+            type={current?.businessType}
+            subtitle={
+              current
+                ? [individual ? current.professionLabel : current.primaryCategory?.name, current.locality?.trim() || current.city]
+                    .filter(Boolean)
+                    .join(" – ")
+                : null
+            }
             completeness={provider.profileCompletenessPct}
             onPress={() => router.push("/profile")}
           />
@@ -130,9 +152,33 @@ export default function MoreScreen() {
           <AppSkeleton shape="block" height={84} />
         )}
 
+        {listings.length > 1 || canAdd ? (
+          <AppSection title={individual ? "Your professions" : "Your listings"}>
+            {listings.map((l) => (
+              <AppListItem
+                key={l.id}
+                title={listingTitle(l)}
+                subtitle={l.id === provider?.id ? "Editing now" : l.status === "pending" ? "In review" : undefined}
+                leading={l.id === provider?.id ? <Check size={16} color={theme.colors.brand.primary} /> : <Store size={16} color={icon} />}
+                accent={l.id === provider?.id}
+                onPress={() => void pick(l.id)}
+              />
+            ))}
+            {canAdd ? (
+              <AppListItem
+                title="Add another profession"
+                subtitle="A separate listing under your name"
+                leading={<Plus size={16} color={theme.colors.brand.primary} />}
+                accent
+                onPress={() => router.push("/onboarding?add=1")}
+              />
+            ) : null}
+          </AppSection>
+        ) : null}
+
         <AppSection title="Your listing">
           <AppListItem
-            title="Business details"
+            title={individual ? "Profile details" : "Business details"}
             subtitle="Name, about, contact, photos"
             leading={<Store size={16} color={icon} />}
             onPress={() => router.push("/profile")}

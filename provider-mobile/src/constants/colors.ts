@@ -11,6 +11,7 @@ export const palette = {
   navy400: "#3F6FD1",
   orange500: "#FD8003",
   orange100: "#FFF1E2",
+  orange800: "#9A4A00",
   green600: "#00986C",
   green700: "#005D3F",
   red700: "#B3141F",
@@ -60,6 +61,9 @@ export interface ColorScheme {
     softText: string;
     deep: string;
     accent: string;
+    /** Tint and text for the "Individual professional" badge. */
+    accentSoft: string;
+    accentText: string;
   };
   semantic: {
     success: string;
@@ -106,6 +110,8 @@ export const lightColors: ColorScheme = {
     softText: palette.navy700,
     deep: palette.navy900,
     accent: palette.orange500,
+    accentSoft: palette.orange100,
+    accentText: palette.orange800,
   },
   semantic: {
     success: palette.green600,
@@ -152,6 +158,8 @@ export const darkColors: ColorScheme = {
     softText: palette.navy200,
     deep: palette.navy200,
     accent: palette.orange500,
+    accentSoft: "#3A2310",
+    accentText: "#FFB766",
   },
   semantic: {
     success: "#2BC592",

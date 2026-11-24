@@ -46,6 +46,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: () => {
     secureToken.clear();
     storage.remove(STORAGE_KEYS.authUser);
+    storage.remove(STORAGE_KEYS.listingId);
     set({ token: null, user: null });
   },
 }));

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from "react-native";
 
 import { useSaveProfile } from "@/hooks/useSaveProfile";
+import { useSession } from "@/hooks/useSession";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { ApiError, errorMessage } from "@/services/api";
@@ -24,6 +25,12 @@ export function ProfileEditor({ profile }: Props) {
   const theme = useTheme();
   const toast = useToast();
   const save = useSaveProfile();
+  const session = useSession();
+  // With no title typed, the listing shows its main service's profession ("Plumber").
+  const main = profile.services.find((s) => s.isPrimary) ?? profile.services[0];
+  const listing = session.data?.state.listings?.find((l) => l.id === profile.id);
+  const defaultProfession =
+    (!profile.profession ? listing?.professionLabel : null) ?? main?.subcategory?.name ?? main?.category?.name ?? null;
   const initial = useMemo(() => toFormValues(profile), [profile]);
   const [values, setValues] = useState<ProfileFormValues>(initial);
   const [errors, setErrors] = useState<ProfileFormErrors>({});
@@ -74,7 +81,13 @@ export function ProfileEditor({ profile }: Props) {
       >
         <ProfileStrengthCard pct={profile.profileCompletenessPct} checklist={profile.checklist} />
         <ProfileBrandingSection values={values} onChange={change} />
-        <ProfileAboutSection values={values} errors={errors} onChange={change} />
+        <ProfileAboutSection
+          values={values}
+          errors={errors}
+          onChange={change}
+          typeLocked={(session.data?.state.listings?.length ?? 0) > 1}
+          defaultProfession={defaultProfession}
+        />
         <ProfileContactSection values={values} errors={errors} onChange={change} />
         <ProfileLocationSection
           values={values}
