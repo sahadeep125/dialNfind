@@ -8,7 +8,6 @@ import {
   Check,
   Moon,
   Clock,
-  CreditCard,
   ExternalLink,
   FileText,
   HelpCircle,
@@ -16,7 +15,6 @@ import {
   LifeBuoy,
   LogOut,
   MapPin,
-  Megaphone,
   ShieldCheck,
   Star,
   Store,
@@ -40,7 +38,6 @@ import { SignOutSheet } from "@/components/more/SignOutSheet";
 import { useAuthActions } from "@/hooks/useAuthActions";
 import { useProfile } from "@/hooks/useProfile";
 import { useSession } from "@/hooks/useSession";
-import { usePlan } from "@/hooks/useSubscription";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
@@ -81,7 +78,6 @@ export default function MoreScreen() {
   const toast = useToast();
   const session = useSession();
   const profile = useProfile();
-  const plan = usePlan();
   const { signOut } = useAuthActions();
   const preference = useThemeStore((s) => s.preference);
   const setPreference = useThemeStore((s) => s.setPreference);
@@ -127,7 +123,6 @@ export default function MoreScreen() {
             status={provider.status}
             verification={provider.verificationStatus}
             email={user?.email}
-            planName={plan.plan.name}
             completeness={provider.profileCompletenessPct}
             onPress={() => router.push("/profile")}
           />
@@ -187,32 +182,6 @@ export default function MoreScreen() {
           ) : null}
         </AppSection>
 
-        <AppSection title="Grow">
-          <AppListItem
-            title="Plan and billing"
-            subtitle={
-              plan.plan.code === "free"
-                ? "Unlimited leads and analytics on Pro"
-                : "Invoices and payments"
-            }
-            value={plan.plan.name}
-            accent={plan.plan.code === "free"}
-            leading={
-              <CreditCard
-                size={16}
-                color={plan.plan.code === "free" ? theme.colors.brand.primary : icon}
-              />
-            }
-            onPress={() => router.push("/subscription")}
-          />
-          <AppListItem
-            title="Promote"
-            subtitle="Sponsored spots in search"
-            value={plan.features.promote ? undefined : "Business"}
-            leading={<Megaphone size={16} color={icon} />}
-            onPress={() => router.push("/promote")}
-          />
-        </AppSection>
 
         <AppSection title="Preferences">
           <PushAlertsRow />

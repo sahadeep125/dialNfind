@@ -11,8 +11,6 @@ interface Props {
   status: ProviderStatus;
   verification: VerificationStatus;
   email?: string;
-  /** Current plan name, shown as a pill. */
-  planName?: string;
   /** 0–100; shown as a thin bar when the profile is not complete. */
   completeness?: number;
   onPress: () => void;
@@ -25,14 +23,13 @@ const STATUS: Record<ProviderStatus, { label: string; tone: BadgeTone }> = {
   suspended: { label: "Suspended", tone: "danger" },
 };
 
-/** Logo, business name, listing status and plan at the top of the More tab. Taps through to the profile. */
+/** Logo, business name, listing status and profile completeness at the top of the More tab. Taps through to the profile. */
 export function BusinessHeader({
   name,
   logoUrl,
   status,
   verification,
   email,
-  planName,
   completeness,
   onPress,
 }: Props) {
@@ -63,7 +60,6 @@ export function BusinessHeader({
           ) : null}
           <View style={[styles.badges, { gap: theme.spacing[1.5] }]}>
             <AppBadge label={s.label} tone={s.tone} dot />
-            {planName ? <AppBadge label={planName} tone="brand" /> : null}
           </View>
         </View>
         <ChevronRight size={16} color={theme.colors.text.tertiary} />

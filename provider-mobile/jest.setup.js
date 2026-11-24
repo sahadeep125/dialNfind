@@ -22,25 +22,6 @@ jest.mock("expo-notifications", () => ({
   AndroidImportance: { HIGH: 4 },
 }));
 
-// react-native-purchases pulls in RevenueCat's ESM web bundle, which Jest cannot parse. Store purchases
-// are off in tests (no RevenueCat keys), so a stub is enough.
-jest.mock("react-native-purchases", () => {
-  const Purchases = {
-    configure: jest.fn(),
-    setLogLevel: jest.fn(),
-    logIn: jest.fn(async () => ({ customerInfo: {}, created: false })),
-    logOut: jest.fn(async () => ({})),
-    getOfferings: jest.fn(async () => ({ current: null, all: {} })),
-    getCustomerInfo: jest.fn(async () => ({ entitlements: { active: {} } })),
-    restorePurchases: jest.fn(async () => ({ entitlements: { active: {} } })),
-    purchasePackage: jest.fn(),
-    addCustomerInfoUpdateListener: jest.fn(),
-    removeCustomerInfoUpdateListener: jest.fn(),
-    isConfigured: jest.fn(async () => false),
-  };
-  return { __esModule: true, default: Purchases, LOG_LEVEL: { DEBUG: "DEBUG", WARN: "WARN" }, PURCHASES_ERROR_CODE: {} };
-});
-
 // Google Sign-In's native module is not in Jest; the buttons are hidden without client ids anyway.
 jest.mock("@react-native-google-signin/google-signin", () => ({
   GoogleSignin: { configure: jest.fn(), hasPlayServices: jest.fn(async () => true), signIn: jest.fn(), signOut: jest.fn(async () => null) },

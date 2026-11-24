@@ -12,7 +12,6 @@ export const TICKET_STATUS: Record<TicketStatus, { label: string; tone: BadgeTon
 export const TICKET_CATEGORIES: SelectOption<TicketCategory>[] = [
   { value: "listing", label: "My listing" },
   { value: "account", label: "Account and sign in" },
-  { value: "billing", label: "Plans and payments" },
   { value: "verification", label: "Verification" },
   { value: "report", label: "Report a customer or review" },
   { value: "technical", label: "Something is not working" },

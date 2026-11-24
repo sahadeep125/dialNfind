@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   ChevronRight,
   Info,
-  Sparkles,
   XCircle,
   type LucideIcon,
 } from "lucide-react-native";
@@ -13,14 +12,14 @@ import { useTheme } from "@/hooks/useTheme";
 import { AppPressable } from "./AppPressable";
 import { AppText } from "./AppText";
 
-export type NoticeTone = "info" | "warning" | "danger" | "upgrade";
+export type NoticeTone = "info" | "warning" | "danger";
 
 interface Props {
   tone?: NoticeTone;
   title: string;
   text?: string;
   icon?: LucideIcon;
-  /** A short verb on the right, e.g. "Upgrade". Without it a chevron shows when onPress is set. */
+  /** A short verb on the right, e.g. "Reply". Without it a chevron shows when onPress is set. */
   actionLabel?: string;
   onPress?: () => void;
   trailing?: ReactNode;
@@ -40,7 +39,6 @@ export function AppNotice({
   const { brand, semantic } = theme.colors;
   const map = {
     info: { bg: brand.soft, fg: brand.softText, accent: brand.primary, Icon: Info },
-    upgrade: { bg: brand.soft, fg: brand.softText, accent: brand.primary, Icon: Sparkles },
     warning: {
       bg: semantic.warningSoft,
       fg: semantic.warningText,

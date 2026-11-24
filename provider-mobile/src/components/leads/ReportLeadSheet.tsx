@@ -13,7 +13,7 @@ interface Props {
   onClose: () => void;
 }
 
-/** Report a spam, fake or wrong-number contact. If the team agrees, it stops counting and any promotion charge is refunded. */
+/** Report a spam, fake or wrong-number contact. If the team agrees, it stops counting. */
 export function ReportLeadSheet({ lead, onClose }: Props) {
   const theme = useTheme();
   const toast = useToast();
@@ -50,7 +50,7 @@ export function ReportLeadSheet({ lead, onClose }: Props) {
       <View style={{ gap: theme.spacing[4], padding: theme.spacing[4], paddingTop: 0 }}>
         <AppText tone="secondary">
           For spam, fake or wrong-number contacts. If our team agrees, it no longer counts in your
-          numbers and any promotion charge goes back to your budget.
+          numbers.
         </AppText>
         <AppInput
           label="What was wrong with it?"

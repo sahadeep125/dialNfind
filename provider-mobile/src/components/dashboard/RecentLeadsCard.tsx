@@ -1,6 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { router } from "expo-router";
-import { Lock, PhoneIncoming } from "lucide-react-native";
+import { PhoneIncoming } from "lucide-react-native";
 
 import { AppPressable, AppSection, AppText } from "@/components/design-system";
 import { EmptyState } from "@/components/layout";
@@ -36,16 +35,8 @@ export function RecentLeadsCard({ leads, onViewAll }: Props) {
           <AppPressable
             key={l.id}
             accessibilityRole="button"
-            accessibilityLabel={
-              l.locked
-                ? `Locked lead. Upgrade to see this contact`
-                : `${l.customerName}, ${l.service ?? "general enquiry"}, ${formatRelative(l.createdAt)}`
-            }
-            onPress={() =>
-              l.locked
-                ? router.push({ pathname: "/paywall", params: { feature: "leads" } })
-                : onViewAll()
-            }
+            accessibilityLabel={`${l.customerName}, ${l.service ?? "general enquiry"}, ${formatRelative(l.createdAt)}`}
+            onPress={onViewAll}
             scale={false}
           >
             <View
@@ -61,17 +52,12 @@ export function RecentLeadsCard({ leads, onViewAll }: Props) {
               <ChannelIcon channel={l.channel} size={32} />
               <View style={styles.main}>
                 <View style={[styles.row, { gap: 4 }]}>
-                  {l.locked ? <Lock size={12} color={theme.colors.brand.primary} /> : null}
-                  <AppText
-                    variant="label"
-                    numberOfLines={1}
-                    style={[styles.shrink, l.locked ? { color: theme.colors.brand.primary } : null]}
-                  >
+                  <AppText variant="label" numberOfLines={1} style={styles.shrink}>
                     {l.customerName}
                   </AppText>
                 </View>
                 <AppText variant="meta" tone="secondary" numberOfLines={1}>
-                  {l.locked ? "Upgrade to see this contact" : (l.service ?? "General enquiry")}
+                  {l.service ?? "General enquiry"}
                 </AppText>
               </View>
               <AppText variant="meta" numeric>

@@ -9,15 +9,13 @@ import { pushOptedOut, registerForPush } from "@/services/push";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { logError } from "@/utils/log";
 
-type PushData = { type?: string; leadId?: number; reviewId?: number; ticketId?: number; campaignId?: number };
+type PushData = { type?: string; leadId?: number; reviewId?: number; ticketId?: number };
 
 /** Where tapping an alert takes the person. */
 function routeFor(data: PushData): Href {
   if (data.leadId || data.type === "lead") return "/(tabs)/leads";
   if (data.reviewId || data.type === "review") return "/(tabs)/reviews";
   if (data.ticketId) return { pathname: "/support/[id]", params: { id: String(data.ticketId) } };
-  if (data.campaignId || data.type === "sponsored") return "/promote";
-  if (data.type === "subscription") return "/subscription";
   return "/notifications";
 }
 
@@ -27,8 +25,6 @@ function staleKeys(data: PushData): string[] {
   if (data.leadId || data.type === "lead") keys.push("leads", "dashboard");
   if (data.reviewId || data.type === "review") keys.push("reviews", "dashboard");
   if (data.ticketId || data.type === "support") keys.push("support");
-  if (data.type === "subscription") keys.push("billing", "session");
-  if (data.type === "sponsored") keys.push("sponsored");
   if (data.type === "listing" || data.type === "verification" || data.type === "claim") keys.push("session", "profile");
   return keys;
 }

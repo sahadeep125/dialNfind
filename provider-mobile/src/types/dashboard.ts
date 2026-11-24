@@ -24,9 +24,8 @@ export interface DashboardTotals {
   leads: number;
   calls: number;
   whatsapp: number;
-  /** Null on Free: views, trends and conversion are analytics (Pro). */
-  views: number | null;
-  impressions: number | null;
+  views: number;
+  impressions: number;
   leadsChangePct: number | null;
   viewsChangePct: number | null;
   conversionPct: number | null;
@@ -49,8 +48,6 @@ export interface DashboardRecentLead {
   customerName: string;
   service: string | null;
   description: string | null;
-  /** Past the plan's monthly lead limit: details hidden until the provider upgrades. */
-  locked: boolean;
 }
 
 export interface DashboardRecentReview {
@@ -62,23 +59,14 @@ export interface DashboardRecentReview {
   author: string;
 }
 
-export interface DashboardSubscription {
-  planName: string;
-  status: string;
-  endDate: string | null;
-  autoRenew: boolean;
-}
-
 export interface Dashboard {
   provider: DashboardProvider;
-  analyticsLocked: boolean;
   totals: DashboardTotals;
-  ranking: { position: number; outOf: number } | null;
+  ranking: { position: number; outOf: number };
   series: DashboardSeriesPoint[];
   checklist: ChecklistItem[];
   recentLeads: DashboardRecentLead[];
   recentReviews: DashboardRecentReview[];
-  subscription: DashboardSubscription | null;
 }
 
 export type ChartMetric = "leads" | "views";

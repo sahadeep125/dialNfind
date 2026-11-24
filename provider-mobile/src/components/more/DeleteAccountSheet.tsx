@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Linking, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { Trash2 } from "lucide-react-native";
 
@@ -18,11 +18,6 @@ interface Props {
   /** False for Google/Apple-only accounts, who type DELETE instead. */
   hasPassword: boolean;
 }
-
-const STORE_MANAGE = {
-  app_store: { name: "the App Store", url: "https://apps.apple.com/account/subscriptions" },
-  play_store: { name: "Google Play", url: "https://play.google.com/store/account/subscriptions" },
-} as const;
 
 /** Permanently deletes the business account after the person confirms with their password (or DELETE). */
 export function DeleteAccountSheet({ visible, onClose, businessName, hasPassword }: Props) {
@@ -44,22 +39,10 @@ export function DeleteAccountSheet({ visible, onClose, businessName, hasPassword
       return;
     }
     deleteAccount.mutate(hasPassword ? { password: value } : { confirm: value.trim() }, {
-      onSuccess: ({ storeSubscription }) => {
+      onSuccess: () => {
         close();
         router.replace("/login");
-        if (storeSubscription) {
-          const store = STORE_MANAGE[storeSubscription];
-          Alert.alert(
-            "Cancel your store subscription",
-            `Your account is deleted. Your plan was bought in ${store.name}, which keeps billing until you cancel it there.`,
-            [
-              { text: "Later", style: "cancel" },
-              { text: "Manage subscription", onPress: () => void Linking.openURL(store.url) },
-            ],
-          );
-        } else {
-          toast("Your account has been deleted", "success");
-        }
+        toast("Your account has been deleted", "success");
       },
       onError: (err: Error) => setError(err instanceof ApiError ? (err.fieldErrors.password ?? err.fieldErrors.confirm ?? err.message) : errorMessage(err)),
     });
@@ -70,7 +53,7 @@ export function DeleteAccountSheet({ visible, onClose, businessName, hasPassword
       <View style={{ gap: theme.spacing[4], paddingHorizontal: theme.spacing[4] }}>
         <AppText tone="secondary">
           {businessName
-            ? `${businessName} will be removed from KaajVa search straight away, your plan will stop renewing and running promotions will end. Your sign-in details are erased. This cannot be undone.`
+            ? `${businessName} will be removed from KaajVa search straight away. Your sign-in details are erased. This cannot be undone.`
             : "Your account and sign-in details are erased. This cannot be undone."}
         </AppText>
         {hasPassword ? (

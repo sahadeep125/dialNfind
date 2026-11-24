@@ -1,4 +1,3 @@
-import type { PlanState } from "./billing";
 
 // Shared domain types. API shapes mirror server/src and the provider web app's src/lib/types.ts.
 // Screen-specific response shapes live in their own files in this folder (dashboard.ts, leads.ts, ...).
@@ -33,8 +32,6 @@ export interface ProviderState {
     profileCompletenessPct: number;
     verificationStatus: VerificationStatus;
   } | null;
-  /** Plan, entitlements and limits; null until a business exists. */
-  plan: PlanState | null;
   claims: {
     id: number;
     status: string;

@@ -6,7 +6,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import type { ProviderState, SessionUser } from "@/types";
 import { queryKeys } from "./queryKeys";
 
-const NO_BUSINESS: ProviderState = { provider: null, plan: null, claims: [] };
+const NO_BUSINESS: ProviderState = { provider: null, claims: [] };
 
 interface Session {
   user: SessionUser;
