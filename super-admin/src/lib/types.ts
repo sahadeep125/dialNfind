@@ -9,6 +9,9 @@ export interface ProviderRow {
   id: number;
   slug: string;
   businessName: string;
+  /** individual: an independent professional listed under their own name. */
+  businessType: "individual" | "company";
+  profession: string | null;
   city: string;
   locality: string | null;
   phone: string;

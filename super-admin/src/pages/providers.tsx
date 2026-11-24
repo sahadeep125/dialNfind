@@ -1,7 +1,7 @@
 import { useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Award, BadgeCheck, ExternalLink, EyeOff, Search, MapPin, Pencil, Phone, Plus, Star, Store, Upload, X } from "lucide-react";
+import { ArrowLeft, Award, BadgeCheck, Building2, ExternalLink, EyeOff, Search, MapPin, Pencil, Phone, Plus, Star, Store, Upload, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { WEB_URL } from "@/lib/config";
@@ -26,7 +26,7 @@ const STATUS_OPTIONS = [
 ];
 
 export function ProvidersPage() {
-  const [f, setF] = useUrlState({ q: "", status: "", verification: "", claimed: "", seo: "", sort: "", page: "1", pageSize: DEFAULT_PAGE_SIZE });
+  const [f, setF] = useUrlState({ q: "", type: "", status: "", verification: "", claimed: "", seo: "", sort: "", page: "1", pageSize: DEFAULT_PAGE_SIZE });
   const qs = new URLSearchParams({ ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)), pageSize: String(pageSizeOf(f.pageSize)) });
   const { data, isLoading } = useQuery({ queryKey: ["admin-providers", qs.toString()], queryFn: () => api<{ providers: ProviderRow[] } & Paged>(`/admin/providers?${qs}`) });
   const selection = useSelection(data?.providers.map((p) => p.id) ?? []);
@@ -63,6 +63,16 @@ export function ProvidersPage() {
       <ImportListingsDialog open={dialog === "import"} onOpenChange={(o) => setDialog(o ? "import" : null)} />
       <Toolbar>
         <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search name or phone" />
+        <FilterSelect
+          label="Account type"
+          allLabel="Individuals and businesses"
+          value={f.type}
+          onChange={(type) => setF({ type, page: "1" })}
+          options={[
+            { value: "individual", label: "Individual professionals" },
+            { value: "business", label: "Businesses" },
+          ]}
+        />
         <FilterSelect label="Status" allLabel="Any status" value={f.status} onChange={(status) => setF({ status, page: "1" })} options={STATUS_OPTIONS} />
         <FilterSelect
           label="Verification"
@@ -132,7 +142,7 @@ export function ProvidersPage() {
               <SelectAllBox selection={selection} />
             </Th>
             <Th>Business</Th>
-            <Th>Category</Th>
+            <Th>Type and profession</Th>
             <Th>Owner</Th>
             <Th>Rating</Th>
             <Th>SEO</Th>
@@ -165,7 +175,12 @@ export function ProvidersPage() {
                   </span>
                 </Link>
               </Td>
-              <Td className="text-muted-foreground">{p.services[0]?.category.name ?? "Not set"}</Td>
+              <Td>
+                <AccountType type={p.businessType} />
+                <span className="mt-0.5 block max-w-44 truncate text-xs text-muted-foreground">
+                  {(p.businessType === "individual" ? p.profession : null) ?? p.services[0]?.category.name ?? "No category"}
+                </span>
+              </Td>
               <Td>{p.user ? <span className="block max-w-44 truncate">{p.user.email}</span> : <span className="text-muted-foreground">Unclaimed</span>}</Td>
               <Td>
                 {p.totalReviews ? (
@@ -299,6 +314,7 @@ interface ProviderDetail {
     logoUrl: string | null;
     coverUrl: string | null;
     businessType: string;
+    profession?: string | null;
     phone: string;
     whatsappNumber: string | null;
     email: string | null;
@@ -461,7 +477,8 @@ export function ProviderDetailPage() {
                 ["Website", p.website],
                 ["Address", [p.addressLine, p.locality, p.city, p.state, p.pincode].filter(Boolean).join(", ")],
                 ["Travel distance", `${p.serviceRadiusKm} km`],
-                ["Type", p.businessType === "company" ? "Company or shop" : "Individual"],
+                ["Account type", p.businessType === "company" ? "Business" : "Individual professional"],
+                ["Profession", p.businessType === "individual" ? (p.profession ?? "From the main service") : null],
                 ["Listed", formatDate(p.createdAt)],
               ]}
             />
@@ -611,5 +628,17 @@ export function ProviderDetailPage() {
         />
       )}
     </>
+  );
+}
+
+/** Individual professional (a person) or business, the same words and icons as the customer apps. */
+function AccountType({ type }: { type: ProviderRow["businessType"] }) {
+  const individual = type === "individual";
+  const Icon = individual ? UserRound : Building2;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium ${individual ? "bg-warning/15 text-foreground" : "bg-accent text-primary"}`}>
+      <Icon className="size-3.5" aria-hidden />
+      {individual ? "Individual" : "Business"}
+    </span>
   );
 }
