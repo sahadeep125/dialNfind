@@ -73,7 +73,7 @@ Also set:
 
 **Runtime:**
 - `API_URL`
-- `CLIENT_IP_HEADER`, only when your proxy always overwrites that header (for example `x-real-ip` behind nginx)
+- `CLIENT_IP_HEADER`, only when your proxy always overwrites that header (`cf-connecting-ip` behind Cloudflare, `x-real-ip` behind nginx)
 - `ANDROID_SHA256_CERT_FINGERPRINTS` (Play Console → App integrity), so links open the Android app
 - `APPLE_TEAM_ID`, `GOOGLE_SITE_VERIFICATION`
 
