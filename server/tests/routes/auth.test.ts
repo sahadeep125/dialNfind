@@ -8,7 +8,7 @@ import { uploadDir } from "../../src/storage/index.js";
 import { issueUserToken, issueVerifyCode } from "../../src/services/user-tokens.js";
 import { verifyToken } from "../../src/lib/jwt.js";
 import { api, authed, json, sentMails, settle, tokenFor } from "../helpers/app.js";
-import { createOwner, createStaff, createUser, PASSWORD, seedPlans, subscribe } from "../helpers/factories.js";
+import { createOwner, createStaff, createUser, PASSWORD } from "../helpers/factories.js";
 import { applePrivateKeyPem, appleToken, googleToken, idToken, stubIdentityFetch } from "../helpers/oauth.js";
 
 const register = (body: Record<string, unknown>) =>
@@ -128,19 +128,18 @@ describe("account deletion", () => {
     expect(wrong.status).toBe(400);
     expect((await c.delete("/api/v1/auth/me").send({})).status).toBe(400);
     const ok = await c.delete("/api/v1/auth/me").send({ password: PASSWORD });
-    expect(ok.body).toEqual({ ok: true, storeSubscription: null });
+    expect(ok.body).toEqual({ ok: true });
     expect(sentMails()[0]).toMatchObject({ to: "bye@example.com", subject: "Your KaajVa account was deleted" });
     expect((await prisma.user.findUniqueOrThrow({ where: { id: u.id } })).status).toBe("deleted");
   });
   it("closes businesses; password-less owners type DELETE", async () => {
-    const plans = await seedPlans();
     const { user, provider } = await createOwner({}, { passwordHash: null });
-    await subscribe(provider.id, plans.pro.id, { source: "app_store" });
     const c = await authed(user);
     expect((await c.delete("/api/v1/auth/me").send({ confirm: "nope" })).status).toBe(400);
     expect((await c.delete("/api/v1/auth/me")).status).toBe(400);
     const ok = await c.delete("/api/v1/auth/me").send({ confirm: " delete " });
-    expect(ok.body).toEqual({ ok: true, storeSubscription: "app_store" });
+    expect(ok.body).toEqual({ ok: true });
+    expect(await prisma.provider.findUniqueOrThrow({ where: { id: provider.id } })).toMatchObject({ status: "suspended", isAvailable: false });
     const social = await createUser({ passwordHash: null });
     expect((await (await authed(social)).delete("/api/v1/auth/me").send({})).status).toBe(200);
   });

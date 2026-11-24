@@ -7,7 +7,7 @@ import { uploadDir } from "../../src/storage/index.js";
 import { PRIVATE_FILES_URL } from "../../src/lib/private-files.js";
 import { verifyToken } from "../../src/lib/jwt.js";
 import { api, authed, settle } from "../helpers/app.js";
-import { createCategory, createOwner, createProvider, createStaff, createUser, seedPlans, subscribe } from "../helpers/factories.js";
+import { createCategory, createOwner, createProvider, createStaff, createUser } from "../helpers/factories.js";
 
 const pub = (key: string) => `${env.publicUrl}/uploads/${key}`;
 const listing = (categoryId: bigint, over: Record<string, unknown> = {}) => ({
@@ -20,7 +20,7 @@ describe("provider onboarding", () => {
     const cat = await createCategory();
     const customer = await createUser();
     const c = await authed(customer);
-    expect((await c.get("/api/v1/provider/me")).body).toEqual({ provider: null, plan: null, claims: [] });
+    expect((await c.get("/api/v1/provider/me")).body).toEqual({ provider: null, claims: [] });
     const res = await c.post("/api/v1/provider/onboarding").send(listing(cat.id));
     expect(res.status).toBe(201);
     // Not production and no setting: listings go live straight away.
@@ -30,7 +30,9 @@ describe("provider onboarding", () => {
     // The old sign-in was swapped out.
     expect((await c.get("/api/v1/provider/me")).status).toBe(401);
     const fresh = api().get("/api/v1/provider/me").set("Authorization", `Bearer ${res.body.token}`);
-    expect((await fresh).body.plan.plan.code).toBe("free");
+    const me = (await fresh).body;
+    expect(me.provider.status).toBe("active");
+    expect(me).not.toHaveProperty("plan");
     const again = await api().post("/api/v1/provider/onboarding").set("Authorization", `Bearer ${res.body.token}`).send(listing(cat.id));
     expect(again.status).toBe(409);
   });
@@ -156,10 +158,9 @@ describe("provider profile", () => {
     expect((await c.put("/api/v1/provider/attributes").send({ values: [{ providerServiceId: 999, attributeId: Number(wide.id), value: "x" }] })).status).toBe(404);
     expect((await c.put("/api/v1/provider/attributes").send({ values: [{ providerServiceId: Number(acService.id), attributeId: Number(tvOnly.id), value: 1 }] })).status).toBe(400);
   });
-  it("manages portfolio photos within the plan limit", async () => {
-    const plans = await seedPlans();
+  it("manages portfolio photos with no limit", async () => {
     const cat = await createCategory();
-    const { user, provider } = await createOwner();
+    const { user } = await createOwner();
     const c = await authed(user);
     const ids: number[] = [];
     for (let i = 0; i < 3; i++) {
@@ -168,10 +169,6 @@ describe("provider profile", () => {
       ids.push(res.body.item.id);
     }
     expect((await prisma.providerPortfolio.findMany({ orderBy: { sortOrder: "asc" } })).map((p) => p.title)).toEqual(["Job 2", "Job 1", "Job 0"]);
-    const limited = await c.post("/api/v1/provider/portfolio").send({ title: "Job 3", imageUrl: pub("p3.webp") });
-    expect(limited.status).toBe(402);
-    expect(limited.body.error.message).toBe("Your Free plan includes 3 photos. Upgrade to add more.");
-    await subscribe(provider.id, plans.business.id);
     expect((await c.post("/api/v1/provider/portfolio").send({ title: "Job 3", imageUrl: pub("p3.webp") })).status).toBe(201);
 
     const all = (await prisma.providerPortfolio.findMany()).map((p) => Number(p.id));
@@ -194,7 +191,7 @@ describe("provider profile", () => {
     expect((await (await authed(stranger.user)).delete(`/api/v1/provider/portfolio/${ids[1]}`)).status).toBe(404);
     expect((await c.delete(`/api/v1/provider/portfolio/${ids[1]}`)).body).toEqual({ ok: true });
   });
-  it("allows unlimited photos without a free plan row", async () => {
+  it("puts the first photo at the start", async () => {
     const { user } = await createOwner();
     expect((await (await authed(user)).post("/api/v1/provider/portfolio").send({ title: "First", imageUrl: pub("a.webp") })).body.item.sortOrder).toBe(0);
   });

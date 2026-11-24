@@ -1,15 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { Prisma } from "@prisma/client";
 import { csvLine, parseCsv } from "../../../src/lib/csv.js";
-import { financialYear, splitGst, stateCodeFor, stateName, GSTIN_PATTERN } from "../../../src/lib/gst.js";
 import { DAY_NAMES, formatHours, isOpenNow, localNow, localToday, todayHoursLabel, type HoursRow } from "../../../src/lib/hours.js";
-import { entitlementsFor, planCodeForEntitlements, planTier } from "../../../src/lib/plans.js";
 import { adminPaginationSchema, pageMeta, paginationSchema } from "../../../src/lib/pagination.js";
 import { num, toPlain } from "../../../src/lib/serialize.js";
 import { idParam, parse } from "../../../src/lib/validate.js";
 import { z } from "zod";
 import {
-  badRequest, billingDetailsRequired, conflict, emailUnverified, forbidden, HttpError, notConfigured, notFound, unauthorized, upgradeRequired,
+  badRequest, conflict, emailUnverified, forbidden, HttpError, notConfigured, notFound, unauthorized,
 } from "../../../src/lib/errors.js";
 import { email, httpUrl, normalizePhone, optionalPhone, optionalUrl, password, personName, phone, pincode } from "../../../src/lib/rules.js";
 
@@ -35,28 +33,6 @@ describe("csv", () => {
       `a,,,3,${d.toISOString()},"x""y","a,b",'=SUM(A1),'-1,'+1,'@x,'\tx,"l\nb"\r\n`,
     );
     expect(csvLine(["\rx"])).toBe(`"'\rx"\r\n`);
-  });
-});
-
-describe("gst", () => {
-  it("maps codes and names", () => {
-    expect(stateName("27")).toBe("Maharashtra");
-    expect(stateName("99")).toBeNull();
-    expect(stateName(null)).toBeNull();
-    expect(stateCodeFor("  jammu & kashmir ")).toBe("01");
-    expect(stateCodeFor("Nowhere")).toBeNull();
-    expect(stateCodeFor(undefined)).toBeNull();
-    expect(GSTIN_PATTERN.test("27ABCDE1234F1Z5")).toBe(true);
-  });
-  it("computes the financial year around April", () => {
-    expect(financialYear(new Date("2026-09-25T00:00:00Z"), "Asia/Kolkata")).toBe("2026-27");
-    expect(financialYear(new Date("2026-03-31T12:00:00Z"), "Asia/Kolkata")).toBe("2025-26");
-    expect(financialYear(new Date("2099-06-01T00:00:00Z"), "UTC")).toBe("2099-00");
-  });
-  it("splits intra and inter state tax", () => {
-    expect(splitGst(118, 18, true)).toEqual({ taxable: 100, cgst: 9, sgst: 9, igst: 0 });
-    expect(splitGst(118, 18, false)).toEqual({ taxable: 100, cgst: 0, sgst: 0, igst: 18 });
-    expect(splitGst(599, 18, true)).toEqual({ taxable: 507.63, cgst: 45.69, sgst: 45.68, igst: 0 });
   });
 });
 
@@ -103,20 +79,6 @@ describe("hours", () => {
     expect(todayHoursLabel([row(4, null, null, true)], mondayTen)).toBe("Open 24 hours");
     expect(todayHoursLabel([row(1, "09:00", "18:00")], mondayTen)).toBe("9 AM - 6 PM");
     expect(todayHoursLabel([])).toBe("Closed");
-  });
-});
-
-describe("plans", () => {
-  it("maps codes and entitlements", () => {
-    expect(entitlementsFor("business")).toEqual(["provider_pro", "provider_business"]);
-    expect(entitlementsFor(null)).toEqual([]);
-    expect(entitlementsFor("weird")).toEqual([]);
-    expect(planCodeForEntitlements(["provider_business"])).toBe("business");
-    expect(planCodeForEntitlements(["provider_pro"])).toBe("pro");
-    expect(planCodeForEntitlements([])).toBe("free");
-    expect(planTier("pro")).toBe("pro");
-    expect(planTier("business")).toBe("business");
-    expect(planTier("free")).toBeNull();
   });
 });
 
@@ -173,9 +135,7 @@ describe("errors", () => {
     expect(emailUnverified()).toMatchObject({ status: 403, code: "email_unverified" });
     expect(notFound()).toMatchObject({ status: 404, message: "Not found" });
     expect(conflict("dup")).toMatchObject({ status: 409 });
-    expect(billingDetailsRequired()).toMatchObject({ code: "billing_details_required" });
     expect(notConfigured("no")).toMatchObject({ status: 501 });
-    expect(upgradeRequired("pay", "provider_pro", "analytics")).toMatchObject({ status: 402, details: { entitlement: "provider_pro", feature: "analytics" } });
   });
 });
 

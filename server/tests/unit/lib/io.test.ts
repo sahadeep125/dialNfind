@@ -5,7 +5,7 @@ import { slugify, uniqueProviderSlug } from "../../../src/lib/slug.js";
 import { signToken, verifyToken } from "../../../src/lib/jwt.js";
 import { processImage } from "../../../src/lib/images.js";
 import {
-  checkFileSignature, PRIVATE_FILES_URL, privateFileUrl, signedLink, signFileUrl, signPrivateUrls,
+  checkFileSignature, PRIVATE_FILES_URL, privateFileUrl, signFileUrl, signPrivateUrls,
 } from "../../../src/lib/private-files.js";
 import { limits } from "../../../src/lib/rate-limit.js";
 import { env } from "../../../src/env.js";
@@ -75,9 +75,6 @@ describe("private files", () => {
     expect(checkFileSignature("docs/a.pdf", "1", u.searchParams.get("sig")!)).toBe(false);
     expect(checkFileSignature("docs/a.pdf", "x", "y")).toBe(false);
     expect(checkFileSignature("docs/a.pdf", u.searchParams.get("exp")!, undefined)).toBe(false);
-
-    const link = new URL(signedLink("/api/v1/invoice-files", "3.pdf"));
-    expect(checkFileSignature("3.pdf", link.searchParams.get("exp")!, link.searchParams.get("sig")!)).toBe(true);
 
     const body = signPrivateUrls({ a: url, b: ["x", url], c: 1, d: null }) as { a: string; b: string[]; c: number; d: null };
     expect(body.a).toContain("sig=");

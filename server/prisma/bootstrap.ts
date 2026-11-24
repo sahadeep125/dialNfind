@@ -1,7 +1,7 @@
 /* Production bootstrap: the reference data the API needs, one super admin, and the real provider listings in
  * prisma/data/providers-*.json. No demo users, reviews or leads. Safe to run on every deploy: it only adds what
- * is missing and never changes rows the team has since edited in the admin console (plan prices, settings,
- * categories, listings).
+ * is missing and never changes rows the team has since edited in the admin console (settings, categories,
+ * listings).
  *
  * Run with `pnpm --filter server db:bootstrap` (deploys run it through `pnpm release`). The first run needs
  * BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD to create the first super admin; later runs skip that step.
@@ -30,62 +30,12 @@ const BADGES = [
   { name: "Top Rated", criteriaDescription: "Average rating of 4.5 or higher from at least 10 reviews" },
   { name: "Verified Pro", criteriaDescription: "Phone and business documents verified by KaajVa" },
   { name: "Quick Responder", criteriaDescription: "Most customers report a quick response" },
-  { name: "Pro Partner", criteriaDescription: "Active Pro plan subscriber" },
-  { name: "Business Partner", criteriaDescription: "Active Business plan subscriber" },
 ];
-
-// The code decides the entitlements (src/lib/plans.ts) and must never change; prices include GST.
-const PLANS = [
-  {
-    code: "free",
-    name: "Free",
-    price: 0,
-    leadAccessLimit: 10,
-    photoLimit: 3,
-    analyticsEnabled: false,
-    rankingBoost: 0,
-    badge: null,
-    featuresJson: ["Business listing", "10 leads a month with full details", "Customer reviews", "3 portfolio photos"],
-    prices: [],
-  },
-  {
-    code: "pro",
-    name: "Pro",
-    price: 599,
-    leadAccessLimit: null,
-    photoLimit: 30,
-    analyticsEnabled: true,
-    rankingBoost: 0.025,
-    badge: "Pro Partner",
-    featuresJson: ["Unlimited leads", "Profile analytics and ranking", "WhatsApp button", "30 portfolio photos", "Pro Partner badge"],
-    prices: [
-      { billingCycle: "monthly", amount: 599, iosProductId: "kjv_pro_monthly", androidProductId: "kjv_pro:monthly" },
-      { billingCycle: "yearly", amount: 5990, iosProductId: "kjv_pro_yearly", androidProductId: "kjv_pro:yearly" },
-    ],
-  },
-  {
-    code: "business",
-    name: "Business",
-    price: 999,
-    leadAccessLimit: null,
-    photoLimit: null,
-    analyticsEnabled: true,
-    rankingBoost: 0.04,
-    badge: "Business Partner",
-    featuresJson: ["Everything in Pro", "Sponsored campaigns", "Priority support", "Unlimited portfolio photos", "Business Partner badge"],
-    prices: [
-      { billingCycle: "monthly", amount: 999, iosProductId: "kjv_business_monthly", androidProductId: "kjv_business:monthly" },
-      { billingCycle: "yearly", amount: 9990, iosProductId: "kjv_business_yearly", androidProductId: "kjv_business:yearly" },
-    ],
-  },
-] as const;
 
 // Published legal links are left for the team to fill in under Settings; the support phone falls back to the
 // default in services/settings.ts. The support address is SUPPORT_EMAIL from .env, or the KaajVa support inbox.
 const supportEmail = (process.env.SUPPORT_EMAIL || "support@kaajva.in").trim().toLowerCase();
 const SETTINGS = [
-  { key: "sponsored_cpc", value: "5" },
-  { key: "sponsored_min_budget", value: "500" },
   ...(supportEmail ? [{ key: "support_email", value: supportEmail }] : []),
   { key: "default_search_radius_km", value: "15" },
   { key: "support_hours", value: "Mon to Sat, 9 AM to 7 PM" },
@@ -95,25 +45,13 @@ const SETTINGS = [
 const ADMIN_ROLES = [
   { name: "Operations", description: "Approves listings, checks documents and keeps categories tidy.", permissions: ["providers", "verifications", "categories", "reviews", "support", "leads"] },
   { name: "Support agent", description: "Answers tickets and helps customers and providers with their accounts.", permissions: ["support", "users", "reviews"] },
-  { name: "Finance", description: "Plans, payments, promotions and revenue reports.", permissions: ["plans", "promotions", "analytics"] },
 ];
 
 async function main() {
   const log: string[] = [];
 
-  const badgeIds: Record<string, bigint> = {};
   for (const b of BADGES) {
-    const badge = await prisma.badge.upsert({ where: { name: b.name }, update: {}, create: b });
-    badgeIds[b.name] = badge.id;
-  }
-
-  for (const { prices, badge, ...plan } of PLANS) {
-    const existing = await prisma.subscriptionPlan.findUnique({ where: { code: plan.code } });
-    if (existing) continue;
-    await prisma.subscriptionPlan.create({
-      data: { ...plan, featuresJson: [...plan.featuresJson], badgeId: badge ? badgeIds[badge] : null, prices: { create: prices.map((p) => ({ ...p })) } },
-    });
-    log.push(`plan ${plan.code}`);
+    await prisma.badge.upsert({ where: { name: b.name }, update: {}, create: b });
   }
 
   const settings = await prisma.setting.createMany({ data: SETTINGS, skipDuplicates: true });

@@ -5,7 +5,7 @@
 # Uploads live in /app/uploads; mount a persistent volume there (docs/DEPLOY.md).
 
 FROM node:22-bookworm-slim AS base
-# openssl for Prisma's query engine, ca-certificates for SMTP, Razorpay and RevenueCat over TLS.
+# openssl for Prisma's query engine, ca-certificates for SMTP and other outbound TLS.
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm@10.33.0
 WORKDIR /app

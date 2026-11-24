@@ -11,11 +11,11 @@ import { logAdmin } from "../../../src/services/audit.js";
 import {
   applicableAttributes, attributeOptions, decodeAttributeValue, displayAttributeValue, encodeAttributeValue, loadAttributeValues,
 } from "../../../src/services/attributes.js";
-import { cardPlan, providerCardInclude, toProviderCard } from "../../../src/services/presenter.js";
+import { providerCardInclude, toProviderCard } from "../../../src/services/presenter.js";
 import {
   completenessChecklist, completenessPct, computeRankingScore, recalculateAllProviders, recalculateCategoryCounts, recalculateProvider,
 } from "../../../src/services/ranking.js";
-import { createCategory, createLead, createProvider, createReview, createStaff, createUser, seedPlans, subscribe } from "../../helpers/factories.js";
+import { createCategory, createLead, createProvider, createReview, createStaff, createUser } from "../../helpers/factories.js";
 
 describe("user tokens", () => {
   it("issues single-use link tokens", async () => {
@@ -226,26 +226,27 @@ describe("attributes", () => {
 
 describe("presenter", () => {
   it("builds provider cards", async () => {
-    const plans = await seedPlans();
+    const badge = await prisma.badge.create({ data: { name: "Top Rated" } });
     const cat = await createCategory();
     const p = await createProvider({ description: "x".repeat(200), whatsappNumber: null, categoryId: cat.id, subcategoryId: cat.subcategories[0]!.id });
     await prisma.providerService.create({ data: { providerId: p.id, categoryId: cat.id, subcategoryId: cat.subcategories[1]!.id, startingPrice: 0 } });
-    await prisma.providerBadge.create({ data: { providerId: p.id, badgeId: plans.badges.pro.id } });
+    await prisma.providerBadge.create({ data: { providerId: p.id, badgeId: badge.id } });
     await prisma.providerBusinessHour.create({ data: { providerId: p.id, dayOfWeek: 0, is24x7: true } });
     const load = () => prisma.provider.findUniqueOrThrow({ where: { id: p.id }, include: providerCardInclude });
 
-    const free = toProviderCard(await load());
-    expect(free).toMatchObject({ planTier: null, acceptsWhatsapp: false, whatsappNumber: null, distanceKm: null, startingPrice: 300, isOpenNow: true, isClaimed: false });
-    expect(free.shortDescription).toHaveLength(160);
-    expect(free.subcategories).toEqual(["TV Repair", "AC Repair"]);
-    expect(free.badges).toEqual([{ id: plans.badges.pro.id, name: "Pro Partner" }]);
-    expect(cardPlan(await load())).toEqual({ code: "free", photoLimit: 3 });
-    expect(cardPlan(await load(), null)).toEqual({ code: "free", photoLimit: null });
+    const card = toProviderCard(await load());
+    // WhatsApp falls back to the phone number when no separate number is set.
+    expect(card).toMatchObject({ acceptsWhatsapp: true, whatsappNumber: "+919876543210", distanceKm: null, startingPrice: 300, isOpenNow: true, isClaimed: false, isFavorite: false });
+    expect(card).not.toHaveProperty("planTier");
+    expect(card).not.toHaveProperty("isSponsored");
+    expect(card.shortDescription).toHaveLength(160);
+    expect(card.subcategories).toEqual(["TV Repair", "AC Repair"]);
+    expect(card.badges).toEqual([{ id: badge.id, name: "Top Rated" }]);
+    expect(toProviderCard(await load(), { distanceKm: 3.14159, isFavorite: true })).toMatchObject({ distanceKm: 3.1, isFavorite: true });
 
-    await subscribe(p.id, plans.pro.id);
-    const pro = toProviderCard(await load(), { distanceKm: 3.14159, isFavorite: true, isSponsored: true });
-    expect(pro).toMatchObject({ planTier: "pro", acceptsWhatsapp: true, whatsappNumber: "+919876543210", distanceKm: 3.1, isFavorite: true, isSponsored: true });
-    expect(cardPlan(await load())).toEqual({ code: "pro", photoLimit: 30 });
+    await prisma.provider.update({ where: { id: p.id }, data: { acceptsWhatsapp: false } });
+    expect(toProviderCard(await load())).toMatchObject({ acceptsWhatsapp: false, whatsappNumber: null });
+    await prisma.provider.update({ where: { id: p.id }, data: { acceptsWhatsapp: true } });
 
     await prisma.provider.update({ where: { id: p.id }, data: { whatsappNumber: "+919999999999", description: null, isAvailable: false } });
     await prisma.providerService.deleteMany({ where: { providerId: p.id } });
@@ -263,14 +264,13 @@ describe("ranking", () => {
     expect(completenessPct(completenessChecklist(full))).toBe(100);
     const empty = { ...full, description: null, logoUrl: null, coverUrl: null, yearsExperience: null, whatsappNumber: null, addressLine: null, website: null, verificationStatus: "none", _count: { businessHours: 0, serviceAreas: 0, services: 0, portfolio: 0 } };
     expect(completenessPct(completenessChecklist(empty))).toBe(0);
-    const base = { avgRating: 5, totalReviews: 10, completenessPct: 100, verificationStatus: "verified", responseSignal: 1, planBoost: 0, isAvailable: true };
+    const base = { avgRating: 5, totalReviews: 10, completenessPct: 100, verificationStatus: "verified", responseSignal: 1, isAvailable: true };
     const top = computeRankingScore(base);
     expect(computeRankingScore({ ...base, verificationStatus: "partial" })).toBeLessThan(top);
     expect(computeRankingScore({ ...base, verificationStatus: "none", responseSignal: null })).toBeLessThan(top);
     expect(computeRankingScore({ ...base, isAvailable: false })).toBeCloseTo(top / 2, 3);
   });
   it("recalculates providers and category counts", async () => {
-    const plans = await seedPlans();
     const cat = await createCategory();
     const p = await createProvider({ categoryId: cat.id });
     await createProvider({ categoryId: cat.id, status: "pending" });
@@ -279,7 +279,6 @@ describe("ranking", () => {
     await createReview(p.id, u1.id, { rating: 4 });
     await createReview(p.id, u2.id, { rating: 5 });
     for (let i = 0; i < 5; i++) await createLead(p.id, { customerReportedResponse: i < 4 });
-    await subscribe(p.id, plans.pro.id);
     await recalculateProvider(p.id);
     await recalculateProvider(999n);
     const after = await prisma.provider.findUniqueOrThrow({ where: { id: p.id } });

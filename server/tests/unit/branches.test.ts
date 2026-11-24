@@ -21,16 +21,11 @@ import { toProviderCard, providerCardInclude } from "../../src/services/presente
 import { listingProfileSchema } from "../../src/services/listings.js";
 import { newListingSchema } from "../../src/services/listings.js";
 import { serviceAreaSchema } from "../../src/routes/provider/shared.js";
-import { activateSponsoredOrder } from "../../src/services/sponsored-orders.js";
-import { issueInvoice, renderInvoicePdf } from "../../src/services/invoices.js";
-import { applySubscriptionChange, leadsThisMonth } from "../../src/services/entitlements.js";
 import { searchProviders } from "../../src/services/search.js";
-import { syncRazorpaySubscription } from "../../src/services/billing-sync.js";
-import { externalSubscriptionUrl } from "../../src/routes/admin/records.js";
 import { adminTeamRouter } from "../../src/routes/admin/team.js";
 import supertest from "supertest";
 import { api, authed, json, mockFetch, settle } from "../helpers/app.js";
-import { createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser, seedPlans, subscribe } from "../helpers/factories.js";
+import { createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser } from "../helpers/factories.js";
 import { tokenFor } from "../helpers/app.js";
 
 const res = () => {
@@ -175,76 +170,21 @@ describe("schema fallbacks", () => {
     const loaded = await prisma.provider.findUniqueOrThrow({ where: { id: p.id }, include: providerCardInclude });
     expect(toProviderCard({ ...loaded, avgRating: null as never }).avgRating).toBe(0);
   });
-  it("links subscriptions only for known sources", () => {
-    expect(externalSubscriptionUrl({ source: "admin", externalId: "x" })).toBeNull();
-  });
 });
 
 describe("service fallbacks", () => {
-  it("activates an order and invoices a payment without an amount", async () => {
-    const cat = await createCategory();
-    const p = await createProvider();
-    const order = await prisma.sponsoredOrder.create({ data: { providerId: p.id, categoryId: cat.id, days: 1, budget: 1, amount: 1, razorpayOrderId: "o" } });
-    await activateSponsoredOrder({ ...order, amount: null as never }, "pay");
-    const txn = await prisma.transaction.findFirstOrThrow();
-    expect(Number(txn.amount)).toBe(0);
-    await prisma.invoice.deleteMany();
-    const find = prisma.transaction.findUnique.bind(prisma.transaction);
-    vi.spyOn(prisma.transaction, "findUnique").mockImplementationOnce((async (args: never) => ({ ...(await find(args)), amount: null })) as never);
-    expect(Number((await issueInvoice(txn.id, { email: false }))!.total)).toBe(0);
-  });
-  it("renders an invoice with missing tax amounts", async () => {
-    const p = await createProvider();
-    const txn = await prisma.transaction.create({ data: { providerId: p.id, type: "lead_fee", amount: 10, status: "success" } });
-    const inv = (await issueInvoice(txn.id, { email: false }))!;
-    expect((await renderInvoicePdf({ ...inv, igst: null, cgst: null, sgst: null } as never)).length).toBeGreaterThan(100);
-  });
-  it("names plans that are no longer in the table", async () => {
-    await seedPlans();
-    const { provider } = await createOwner();
-    const change = { providerId: provider.id, billingCycle: "monthly" as const, source: "admin" as const, status: "active" as const, periodEnd: null, autoRenew: true };
-    vi.spyOn(prisma.subscriptionPlan, "findMany").mockResolvedValue([]);
-    await applySubscriptionChange({ ...change, planCode: "pro" });
-    await applySubscriptionChange({ ...change, planCode: "free", status: "expired" });
-    await settle();
-    const titles = (await prisma.notification.findMany({ orderBy: { id: "asc" } })).map((n) => n.title);
-    expect(titles).toEqual(["You are now on the pro plan", "Your paid plan has ended"]);
-  });
-  it("counts zero leads when the count query returns no row", async () => {
-    stubRawQuery("COUNT(*)::bigint AS count FROM leads", []);
-    expect(await leadsThisMonth(1n)).toBe(0);
-  });
-  it("search survives an empty count and a failed impression update", async () => {
+  it("search survives an empty count", async () => {
     const cat = await createCategory({ slug: "c" });
-    const p = await createProvider({ categoryId: cat.id });
-    await prisma.sponsoredListing.create({ data: { providerId: p.id, categoryId: cat.id, startDate: new Date(Date.now() - 86400000), endDate: new Date(Date.now() + 86400000), budget: 1 } });
-    vi.spyOn(prisma.sponsoredListing, "updateMany").mockImplementationOnce((() => Promise.reject(new Error("db"))) as never);
+    await createProvider({ categoryId: cat.id });
     stubRawQuery("SELECT COUNT(*)::bigint AS count FROM providers", []);
     const result = await searchProviders({ category: "c", sort: "relevance", page: 1, pageSize: 5 });
     expect(result.total).toBe(0);
     expect(result.results).toHaveLength(1);
     await settle();
   });
-  it("syncs Razorpay events for subscriptions it has not stored", async () => {
-    await seedPlans();
-    const p = await createProvider();
-    const sub = { id: "sub_new", plan_id: "plan_pro_m", current_start: null, current_end: null, ended_at: null, charge_at: null, paid_count: 0, notes: { providerId: String(p.id) } };
-    // Created, with a captured payment already: recorded against no subscription.
-    expect(await syncRazorpaySubscription({ ...sub, status: "created" }, { id: "pay_x", amount: 100, currency: "INR", status: "captured" })).toBeNull();
-    expect((await prisma.transaction.findFirstOrThrow()).subscriptionId).toBeNull();
-    expect(await syncRazorpaySubscription({ ...sub, id: "sub_p", status: "pending" })).toMatchObject({ status: "past_due", autoRenew: true });
-  });
 });
 
 describe("route fallbacks", () => {
-  it("leads: a failing promotion charge does not fail the contact", async () => {
-    const cat = await createCategory({ slug: "c" });
-    const p = await createProvider();
-    vi.spyOn(prisma.sponsoredListing, "findFirst").mockRejectedValueOnce(new Error("db"));
-    expect((await api().post("/api/v1/leads").send({ providerId: Number(p.id), channel: "call", categorySlug: "c" })).status).toBe(201);
-    await settle();
-    expect(cat.id).toBeDefined();
-  });
   it("me: paged favorites with no count", async () => {
     const c = await authed(await createUser());
     vi.spyOn(prisma.favorite, "count").mockResolvedValueOnce(null as never);
@@ -267,50 +207,6 @@ describe("route fallbacks", () => {
     expect((await api().get("/api/v1/reviews/highlights")).body.reviews).toEqual([]);
     expect(r.id).toBeDefined();
   });
-  it("webhooks: a subscription event with nothing stored reports no provider", async () => {
-    await seedPlans();
-    const p = await createProvider();
-    const crypto = await import("node:crypto");
-    const raw = JSON.stringify({ event: "subscription.authenticated", payload: { subscription: { entity: { id: "sub_q", plan_id: "plan_pro_m", status: "authenticated", notes: { providerId: String(p.id) } } } } });
-    const sig = crypto.createHmac("sha256", env.razorpay.webhookSecret).update(raw).digest("hex");
-    await api().post("/api/v1/webhooks/razorpay").set("content-type", "application/json").set("x-razorpay-signature", sig).set("x-razorpay-event-id", "q").send(raw);
-    expect((await prisma.webhookEvent.findFirstOrThrow()).providerId).toBeNull();
-  });
-  it("admin: plan edits without a badge, attribute edits without a subcategory, and empty revenue", async () => {
-    const plans = await seedPlans();
-    const c = await authed(await createStaff());
-    expect((await c.patch(`/api/v1/admin/plans/${plans.pro.id}`).send({ name: "Pro+" })).body.plan.badgeId).toBe(Number(plans.badges.pro.id));
-    const cat = await createCategory();
-    const attr = await prisma.categoryAttribute.create({ data: { categoryId: cat.id, appliesTo: "lead", label: "A", fieldType: "text" } });
-    expect((await c.patch(`/api/v1/categories/attributes/${attr.id}`).send({ label: "B" })).body.attribute.label).toBe("B");
-    expect((await c.get("/api/v1/admin/transactions").query({ providerId: 999 })).body.revenue).toBe(0);
-  });
-  it("admin: granting Free with a payment records it without a subscription", async () => {
-    const plans = await seedPlans();
-    const c = await authed(await createStaff());
-    const p = await createProvider({ state: "Goa" });
-    const res = await c.post(`/api/v1/admin/providers/${p.id}/subscription`).send({ planId: Number(plans.free.id), months: 1, payment: { amount: 10, reference: "CASH1" } });
-    expect(res.body.subscription).toBeNull();
-    expect((await prisma.transaction.findFirstOrThrow()).subscriptionId).toBeNull();
-  });
-  it("admin billing: overview and sync with missing amounts", async () => {
-    await seedPlans();
-    const c = await authed(await createStaff());
-    const p = await createProvider();
-    const plan = await prisma.subscriptionPlan.findUniqueOrThrow({ where: { code: "pro" } });
-    await subscribe(p.id, plan.id, { source: "razorpay" });
-    const findLive = prisma.providerSubscription.findMany.bind(prisma.providerSubscription);
-    vi.spyOn(prisma.providerSubscription, "findMany").mockImplementationOnce((async (args: never) => (await findLive(args)).map((s) => ({ ...s, planId: 999n, plan: { code: "x", name: "X", price: null } }))) as never);
-    vi.spyOn(prisma.transaction, "groupBy").mockResolvedValueOnce([{ gateway: "manual", _sum: { amount: null }, _count: 1 }] as never);
-    const overview = await c.get("/api/v1/admin/billing/overview");
-    expect(overview.body).toMatchObject({ mrr: 0, revenue30: [{ gateway: "manual", amount: 0, count: 1 }] });
-    const findPrices = prisma.planPrice.findMany.bind(prisma.planPrice);
-    vi.spyOn(prisma.planPrice, "findMany").mockImplementationOnce((async (args: never) => (await findPrices(args)).slice(0, 1).map((x) => ({ ...x, amount: null }))) as never);
-    await prisma.planPrice.updateMany({ data: { razorpayPlanId: null } });
-    const fetch = mockFetch(json({ id: "plan_zero" }));
-    await c.post("/api/v1/admin/plans/sync-razorpay");
-    expect(JSON.parse(String(fetch.mock.calls[0]![1]!.body)).item.amount).toBe(0);
-  });
   it("admin import: short rows, rowless errors and skipped rows on a real run", async () => {
     const c = await authed(await createStaff());
     await createCategory({ name: "Plumbing", slug: "plumbing" });
@@ -322,28 +218,21 @@ describe("route fallbacks", () => {
     const dry = await c.post("/api/v1/admin/providers/import").send({ csv: ["business_name,phone,category,city,state,latitude,longitude", "X Y,9876543299,plumbing,Pune,Maharashtra,18,73"].join("\n") });
     expect(dry.body.rows[0].errors).toEqual(["row: Broken row"]);
   });
-  it("provider portal: dashboard ranking fallback, leads without plans, notes untouched", async () => {
-    const plans = await seedPlans();
+  it("provider portal: dashboard ranking fallback and notes untouched", async () => {
     const { user, provider } = await createOwner();
-    await subscribe(provider.id, plans.pro.id);
     const c = await authed(user);
     stubRawQuery("WITH mine AS", []);
     expect((await c.get("/api/v1/provider/dashboard")).body.ranking).toEqual({ position: 1, outOf: 1 });
     vi.restoreAllMocks();
     const lead = await createLead(provider.id, { providerNote: "keep" });
     expect((await c.patch(`/api/v1/provider/leads/${lead.id}`).send({ status: "won" })).body.lead).toMatchObject({ providerStatus: "won", providerNote: "keep" });
-    await prisma.providerSubscription.deleteMany();
-    await prisma.planPrice.deleteMany();
-    await prisma.subscriptionPlan.deleteMany();
-    expect((await c.get("/api/v1/provider/leads")).body.leadLimit).toBeNull();
   });
-  it("provider portal: payments without invoices and service details for a service without a subcategory", async () => {
+  it("provider portal: service details for a service without a subcategory", async () => {
     const cat = await createCategory();
     const { user, provider } = await createOwner({ categoryId: cat.id, subcategoryId: cat.subcategories[0]!.id });
     await prisma.categoryAttribute.create({ data: { categoryId: cat.id, subcategoryId: cat.subcategories[0]!.id, appliesTo: "provider", label: "Size", fieldType: "number" } });
-    await prisma.transaction.create({ data: { providerId: provider.id, type: "subscription", amount: 1, status: "failed" } });
     const c = await authed(user);
-    expect((await c.get("/api/v1/provider/billing")).body.transactions[0].invoiceNumber).toBeNull();
+    expect(provider.id).toBeDefined();
     const find = prisma.providerService.findMany.bind(prisma.providerService);
     vi.spyOn(prisma.providerService, "findMany").mockImplementationOnce((async (args: never) => (await find(args)).map((s) => ({ ...s, subcategory: null }))) as never);
     expect((await c.get("/api/v1/provider/attributes")).body.groups[0].title).toBe(cat.name);

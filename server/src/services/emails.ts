@@ -5,7 +5,7 @@ import { issueUserToken, issueVerifyCode } from "./user-tokens.js";
 
 /**
  * Every account, security, support and staff email in one place. Decisions about a business (listing,
- * claim, verification, plan) go through notifyAndEmail at their call sites. Frequent events such as
+ * claim, verification) go through notifyAndEmail at their call sites. Frequent events such as
  * leads and reviews are in-app and push only, never email.
  */
 
@@ -20,7 +20,6 @@ const firstName = (name: string) => name.split(" ")[0] || "there";
 const appUrl = (role: UserRole) => (role === "provider" ? env.providerUrl : env.webUrl);
 const when = (d = new Date()) =>
   d.toLocaleString("en-IN", { timeZone: env.timezone, dateStyle: "medium", timeStyle: "short" });
-const longDate = (d: Date) => d.toLocaleDateString("en-IN", { timeZone: env.timezone, day: "numeric", month: "long", year: "numeric" });
 
 /** Sign-up and "send a new code": a 6-digit code for the apps plus a link, both confirming the address. */
 export async function sendVerificationEmail(user: Recipient) {
@@ -81,16 +80,14 @@ export function sendSignInMethodAdded(user: Recipient, provider: "google" | "app
 }
 
 /** Sent to the address before it is erased, so it must be called before anonymiseUser. */
-export function sendAccountDeleted(user: Recipient, storeSubscription: "app_store" | "play_store" | null) {
-  const store = storeSubscription === "app_store" ? "the App Store" : storeSubscription === "play_store" ? "Google Play" : null;
+export function sendAccountDeleted(user: Recipient) {
   return sendMail({
     to: user.email,
     subject: "Your KaajVa account was deleted",
     lines: [
       `Hi ${firstName(user.name)},`,
       "Your account and personal details have been removed, as you asked.",
-      ...(user.role === "provider" ? ["Your business listing stays on KaajVa as an unclaimed listing, and its plan will not renew."] : []),
-      ...(store ? [`Your subscription was bought through ${store}. Cancel it there so you are not charged again.`] : []),
+      ...(user.role === "provider" ? ["Your business listing stays on KaajVa as an unclaimed listing."] : []),
       "If you did not ask for this, reply to this email.",
     ],
   });
@@ -103,19 +100,6 @@ export function sendAccountSuspended(userId: bigint) {
       "Your account was suspended by the KaajVa team and you have been signed out.",
       "If you think this is a mistake, reply to this email and tell us what happened.",
     ],
-  });
-}
-
-export function sendPaymentFailed(userId: bigint | null | undefined, planName: string, graceUntil: Date | null) {
-  return mailUser(userId, {
-    subject: `Payment for your ${planName} plan failed`,
-    lines: [
-      "We could not take the renewal payment for your plan.",
-      graceUntil
-        ? `Your plan keeps working until ${longDate(graceUntil)} while we retry. Update your payment method before then to avoid losing it.`
-        : "Update your payment method to keep your plan.",
-    ],
-    action: { label: "Update payment", url: `${env.providerUrl}/subscription` },
   });
 }
 

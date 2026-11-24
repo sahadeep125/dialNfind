@@ -22,10 +22,6 @@ import { UPLOAD_ROUTE, uploadDir } from "./storage/index.js";
 import { onboardingRouter } from "./routes/provider/onboarding.js";
 import { profileRouter } from "./routes/provider/profile.js";
 import { insightsRouter } from "./routes/provider/insights.js";
-import { billingRouter } from "./routes/provider/billing.js";
-import { webhooksRouter } from "./routes/webhooks.js";
-import { INVOICE_PDF_ROUTE, renderInvoicePdf } from "./services/invoices.js";
-import { prisma } from "./lib/prisma.js";
 import { limits } from "./lib/rate-limit.js";
 import path from "node:path";
 import { checkFileSignature, PRIVATE_FILES_ROUTE, privateDir, signPrivateUrls } from "./lib/private-files.js";
@@ -37,8 +33,6 @@ export function createApp() {
   app.set("trust proxy", env.trustProxyHops);
   app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
   app.use(cors({ origin: env.corsOrigins, credentials: true }));
-  // Payment webhooks read the raw body to check signatures, so they come before the JSON parser.
-  app.use("/api/v1/webhooks", webhooksRouter);
   app.use(express.json({ limit: "1mb" }));
   // Production logs one plain line per request without the query string, which can carry signed file links.
   if (env.nodeEnv === "production") app.use(morgan(':remote-addr ":method :url-path HTTP/:http-version" :status :res[content-length] :response-time ms'));
@@ -70,24 +64,6 @@ export function createApp() {
     });
   });
 
-  // Invoice PDFs, through signed links that expire after an hour (see services/invoices.ts).
-  app.get(`${INVOICE_PDF_ROUTE}/:file`, limits.global, async (req, res) => {
-    const file = req.params.file as string;
-    const query = req.query as Record<string, string | undefined>;
-    const m = /^(\d+)\.pdf$/.exec(file);
-    if (!m || !checkFileSignature(file, query.exp, query.sig)) {
-      res.status(403).json({ error: { code: "forbidden", message: "This link has expired. Reload the page to get a new one." } });
-      return;
-    }
-    const invoice = await prisma.invoice.findUnique({ where: { id: BigInt(m[1]) } });
-    if (!invoice) {
-      res.status(404).json({ error: { code: "not_found", message: "Invoice not found" } });
-      return;
-    }
-    res.set({ "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${invoice.number.replace(/\//g, "-")}.pdf"`, "Cache-Control": "private, no-store" });
-    res.send(await renderInvoicePdf(invoice));
-  });
-
   const api = Router();
   api.use(healthRouter);
   api.use(limits.global);
@@ -109,7 +85,6 @@ export function createApp() {
   providerPortal.use(onboardingRouter);
   providerPortal.use(profileRouter);
   providerPortal.use(insightsRouter);
-  providerPortal.use(billingRouter);
   api.use("/provider", providerPortal);
 
   api.use(miscRouter);

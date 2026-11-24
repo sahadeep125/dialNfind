@@ -54,7 +54,6 @@ export function computeRankingScore(input: {
   completenessPct: number;
   verificationStatus: string;
   responseSignal: number | null;
-  planBoost: number;
   isAvailable: boolean;
 }): number {
   const bayesian = (PRIOR_MEAN * PRIOR_WEIGHT + input.avgRating * input.totalReviews) / (PRIOR_WEIGHT + input.totalReviews);
@@ -63,7 +62,7 @@ export function computeRankingScore(input: {
   const completeness = input.completenessPct / 100;
   const verification = input.verificationStatus === "verified" ? 1 : input.verificationStatus === "partial" ? 0.5 : 0;
   const response = input.responseSignal ?? 0.5;
-  let score = 0.4 * rating + 0.15 * volume + 0.15 * completeness + 0.15 * verification + 0.1 * response + input.planBoost;
+  let score = 0.4 * rating + 0.15 * volume + 0.15 * completeness + 0.15 * verification + 0.1 * response;
   if (!input.isAvailable) score *= 0.5;
   return Math.round(score * 100 * 10000) / 10000;
 }
@@ -77,7 +76,6 @@ export async function recalculateProvider(providerId: bigint, { refreshWeb = tru
     where: { id: providerId },
     include: {
       _count: { select: { businessHours: true, serviceAreas: true, services: true, portfolio: true } },
-      subscriptions: { where: { status: { in: ["active", "past_due"] } }, include: { plan: true }, take: 1, orderBy: { startDate: "desc" } },
     },
   });
   if (!provider) return;
@@ -98,14 +96,12 @@ export async function recalculateProvider(providerId: bigint, { refreshWeb = tru
   const responseSignal = answered >= MIN_RESPONSE_SAMPLES ? positive / answered : null;
 
   const pct = completenessPct(completenessChecklist(provider));
-  const planBoost = num(provider.subscriptions[0]?.plan.rankingBoost) ?? 0;
   const rankingScore = computeRankingScore({
     avgRating,
     totalReviews,
     completenessPct: pct,
     verificationStatus: provider.verificationStatus,
     responseSignal,
-    planBoost,
     isAvailable: provider.isAvailable,
   });
 

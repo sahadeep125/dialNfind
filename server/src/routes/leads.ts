@@ -1,10 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
-import { getNumberSetting } from "../services/settings.js";
 import { idParam, parse } from "../lib/validate.js";
 import { badRequest, forbidden, notFound } from "../lib/errors.js";
-import { leadsThisMonth, planOf } from "../services/entitlements.js";
 import { applicableAttributes, encodeAttributeValue, type AttributeInput } from "../services/attributes.js";
 import { notify } from "../services/notify.js";
 import { currentUser, optionalAuth, requireAuth } from "../middleware/auth.js";
@@ -42,28 +40,6 @@ async function prepareLeadDetails(categoryId: bigint | null, subcategoryId: bigi
 }
 
 /**
- * A contact from a promoted category counts as a click and spends the cost per click from the budget.
- * The charge is stored on the lead so an accepted dispute can give it back.
- */
-async function chargeSponsoredClick(leadId: bigint, providerId: bigint, categoryId: bigint) {
-  const now = new Date();
-  const listing = await prisma.sponsoredListing.findFirst({
-    where: { providerId, categoryId, status: "active", startDate: { lte: now }, endDate: { gte: now } },
-  });
-  if (!listing) return;
-  const cpc = await getNumberSetting("sponsored_cpc", 5);
-  const spent = Math.min(Number(listing.budget), Number(listing.amountSpent) + cpc);
-  const charge = spent - Number(listing.amountSpent);
-  await prisma.$transaction([
-    prisma.sponsoredListing.update({
-      where: { id: listing.id },
-      data: { clicks: { increment: 1 }, amountSpent: spent, ...(spent >= Number(listing.budget) ? { status: "completed" } : {}) },
-    }),
-    prisma.lead.update({ where: { id: leadId }, data: { sponsoredListingId: listing.id, sponsoredCharge: charge } }),
-  ]);
-}
-
-/**
  * POST /leads — recorded when a visitor taps Call or WhatsApp. Guests are allowed so every contact
  * counts; the response carries the number to dial so the client never needs a second request.
  */
@@ -74,10 +50,6 @@ leadsRouter.post("/", limits.leads, optionalAuth, async (req, res) => {
     select: { id: true, userId: true, businessName: true, phone: true, whatsappNumber: true },
   });
   if (!provider) throw notFound("Provider not found");
-  const { plan, entitlements } = await planOf(provider.id);
-  // WhatsApp contact is a paid feature; free listings only show Call.
-  if (body.channel === "whatsapp" && !entitlements.includes("provider_pro")) throw badRequest("This business takes calls only");
-
   const [category, subcategory] = await Promise.all([
     body.categorySlug ? prisma.category.findUnique({ where: { slug: body.categorySlug }, select: { id: true } }) : null,
     body.subcategorySlug ? prisma.subcategory.findUnique({ where: { slug: body.subcategorySlug }, select: { id: true, categoryId: true } }) : null,
@@ -102,22 +74,17 @@ leadsRouter.post("/", limits.leads, optionalAuth, async (req, res) => {
     await prisma.attributeValue.createMany({ data: details.map((d) => ({ ...d, entityType: "lead" as const, entityId: lead.id })) });
   }
 
-  if (categoryId) void chargeSponsoredClick(lead.id, provider.id, categoryId).catch(() => undefined);
-
-  const overLimit = plan?.leadAccessLimit != null && (await leadsThisMonth(provider.id)) > plan.leadAccessLimit;
   void notify(
     provider.userId,
     "lead",
     body.channel === "call" ? "New call from KaajVa" : "New WhatsApp enquiry",
-    overLimit
-      ? `You have used the ${plan!.leadAccessLimit} leads in your ${plan!.name} plan this month. Upgrade to see who contacted you.`
-      : "A customer just tapped to contact you from your KaajVa profile.",
-    { leadId: Number(lead.id), locked: overLimit },
+    "A customer just tapped to contact you from your KaajVa profile.",
+    { leadId: Number(lead.id) },
   );
 
   const leadProps = { lead_id: Number(lead.id), provider_id: Number(provider.id), channel: body.channel, lead_source: body.source, category_id: categoryId === null ? null : Number(categoryId) };
   captureServer(req.user?.id, "lead_created", leadProps);
-  captureServer(provider.userId, "lead_received", { ...leadProps, over_limit: overLimit });
+  captureServer(provider.userId, "lead_received", leadProps);
 
   const number = body.channel === "whatsapp" ? (provider.whatsappNumber ?? provider.phone) : provider.phone;
   res.status(201).json({ lead: { id: lead.id, channel: lead.channel, createdAt: lead.createdAt }, contact: { number } });

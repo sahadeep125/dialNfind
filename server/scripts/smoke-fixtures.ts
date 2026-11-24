@@ -1,8 +1,8 @@
 /* Accounts and activity for `pnpm smoke` (scripts/smoke.mjs) on a throwaway database: CI, or a local copy.
  * Run after `pnpm db:bootstrap`, which provides the super admin, categories and the imported listings.
  *
- * Creates a customer, a second customer, a provider who owns one imported electronics listing on the Business
- * plan with a running promotion, a lead and a review, and a provider without a listing. All use SMOKE_PASSWORD
+ * Creates a customer, a second customer, a provider who owns one imported electronics listing with a lead and a
+ * review, and a provider without a listing. All use SMOKE_PASSWORD
  * (the mobile and web end-to-end tests read it as E2E_PASSWORD). Never run it against
  * production: it refuses when NODE_ENV=production. */
 import { Prisma } from "@prisma/client";
@@ -50,14 +50,6 @@ async function main() {
     });
   }
 
-  const business = await prisma.subscriptionPlan.findUniqueOrThrow({ where: { code: "business" } });
-  const day = 864e5;
-  await prisma.providerSubscription.create({
-    data: { providerId: listing.id, planId: business.id, source: "admin", startDate: new Date(Date.now() - day), endDate: new Date(Date.now() + 30 * day), status: "active", autoRenew: false },
-  });
-  await prisma.sponsoredListing.create({
-    data: { providerId: listing.id, categoryId: category.id, targetLocation: listing.city, startDate: new Date(Date.now() - day), endDate: new Date(Date.now() + 20 * day), budget: 2000 },
-  });
   await prisma.lead.create({ data: { userId: customer.id, providerId: listing.id, categoryId: category.id, channel: "call", source: "search" } });
   await prisma.review.create({ data: { providerId: listing.id, userId: other.id, rating: 5, reviewText: "Fixed our TV the same day and explained the fault clearly." } });
   await recalculateProvider(listing.id);

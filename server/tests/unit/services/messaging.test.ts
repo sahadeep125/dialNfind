@@ -193,12 +193,9 @@ describe("emails", () => {
     await emails.sendPasswordChanged(customer);
     await emails.sendSignInMethodAdded(customer, "google");
     await emails.sendSignInMethodAdded(customer, "apple");
-    await emails.sendAccountDeleted(provider, "app_store");
-    await emails.sendAccountDeleted(customer, "play_store");
-    await emails.sendAccountDeleted(customer, null);
+    await emails.sendAccountDeleted(provider);
+    await emails.sendAccountDeleted(customer);
     await emails.sendAccountSuspended(customer.id);
-    await emails.sendPaymentFailed(provider.id, "Pro", new Date("2026-10-01T00:00:00Z"));
-    await emails.sendPaymentFailed(provider.id, "Pro", null);
     await emails.sendTicketReceived("g@x.co", "Guest", "KJV-000001", "Help", false);
     await emails.sendTicketReceived("g@x.co", "Guest", "KJV-000001", "Help", true);
     await emails.sendStaffInvite(provider, "Finance", "Boss");
@@ -211,10 +208,7 @@ describe("emails", () => {
       "Sign in with Apple was added to your account",
       "Your KaajVa account was deleted",
       "Your KaajVa account was deleted",
-      "Your KaajVa account was deleted",
       "Your KaajVa account has been suspended",
-      "Payment for your Pro plan failed",
-      "Payment for your Pro plan failed",
       "We got your request [KJV-000001]",
       "We got your request [KJV-000001]",
       "You have been added to the KaajVa team",
@@ -222,12 +216,9 @@ describe("emails", () => {
     ]);
     const texts = sentMails().map((m) => m.text);
     expect(texts[4]).toContain("unclaimed listing");
-    expect(texts[4]).toContain("the App Store");
-    expect(texts[5]).toContain("Google Play");
-    expect(texts[8]).toContain("keeps working until 1 October 2026");
-    expect(texts[9]).toContain("Update your payment method to keep your plan.");
-    expect(texts[10]).toContain("Reply to this email");
-    expect(texts[11]).toContain("Help and support");
-    expect(texts[12]).toContain("/reset-password?token=");
+    expect(texts[5]).not.toContain("unclaimed listing");
+    expect(texts[7]).toContain("Reply to this email");
+    expect(texts[8]).toContain("Help and support");
+    expect(texts[9]).toContain("/reset-password?token=");
   });
 });

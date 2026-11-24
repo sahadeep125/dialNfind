@@ -1,9 +1,8 @@
 import { prisma } from "../lib/prisma.js";
 import { notify } from "./notify.js";
 import { sendTicketReceived } from "./emails.js";
-import { planOf } from "./entitlements.js";
 
-export const TICKET_CATEGORIES = ["general", "account", "listing", "billing", "verification", "report", "technical"] as const;
+export const TICKET_CATEGORIES = ["general", "account", "listing", "verification", "report", "technical"] as const;
 
 /** Public reference shown to customers, e.g. KJV-000123. */
 export const ticketRef = (id: bigint | number) => `KJV-${String(id).padStart(6, "0")}`;
@@ -37,8 +36,6 @@ export async function supportStaffIds(assignedToId: bigint | null): Promise<bigi
 /** Opens a ticket for a signed-in user (customer or provider) and tells the support team. */
 export async function openTicket(userId: bigint, input: { subject: string; category: (typeof TICKET_CATEGORIES)[number]; message: string; attachments?: string[] }) {
   const me = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { id: true, name: true, email: true, phone: true, provider: { select: { id: true } } } });
-  // Business plan: priority support.
-  const priority = me.provider && (await planOf(me.provider.id)).entitlements.includes("provider_business") ? "high" : "normal";
   const ticket = await prisma.supportTicket.create({
     data: {
       userId: me.id,
@@ -48,7 +45,6 @@ export async function openTicket(userId: bigint, input: { subject: string; categ
       phone: me.phone,
       subject: input.subject,
       category: input.category,
-      priority,
       source: me.provider ? "provider_app" : "web",
       messages: { create: { authorId: me.id, body: input.message, attachments: input.attachments ?? [] } },
     },

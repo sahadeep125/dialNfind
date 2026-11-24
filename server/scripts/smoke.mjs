@@ -32,7 +32,7 @@ const prov = await login(PROVIDER_EMAIL);
 // public
 await call("GET", "/health");
 await call("GET", "/stats");
-await call("GET", "/plans");
+await call("GET", "/plans", { expect: 404, label: "plans removed: KaajVa is free" });
 await call("GET", "/app-config");
 const cats = (await call("GET", "/categories")).categories;
 const cat = await call("GET", `/categories/${cats[0].slug}`);
@@ -73,7 +73,7 @@ await call("DELETE", "/auth/me", { token: temp, body: { password: TEMP_PASSWORD 
 await call("GET", "/auth/me", { token: temp, expect: 401, label: "deleted account is signed out" });
 await call("DELETE", "/auth/me", { token: prov, body: { password: "wrong-password1" }, expect: 400, label: "business delete checks the password" });
 await call("DELETE", "/auth/me", { token: admin, body: { password: PASSWORD }, expect: 403, label: "staff cannot self-delete" });
-// A business account can delete itself; the response says whether a store plan must be cancelled there.
+// A business account can delete itself.
 const tempProv = (await call("POST", "/auth/register", { body: { name: "Smoke Business", email: `smoke.biz.${Date.now()}@example.com`, password: TEMP_PASSWORD, role: "provider", acceptTerms: true } })).token;
 const bizDeleted = await call("DELETE", "/auth/me", { token: tempProv, body: { password: TEMP_PASSWORD }, label: "business account deletion" });
 results.push(`     business delete: ${JSON.stringify(bizDeleted)}`);
@@ -193,17 +193,10 @@ const tampered = await fetch(upload.url.replace(/sig=./, "sig=x"));
 tampered.status === 403 ? pass++ : (fail++, results.push(`FAIL tampered document link should be 403, got ${tampered.status}`));
 await call("POST", "/provider/verifications", { token: prov, body: { type: "location", documentUrl: "https://example.com/bill.pdf" }, expect: 400, label: "outside links are not accepted as documents" });
 const ver = (await call("POST", "/provider/verifications", { token: prov, body: { type: "location", documentUrl: upload.url } })).verification;
-const billing = await call("GET", "/provider/billing", { token: prov });
-results.push(`     plan: ${billing.state.plan.code} (${billing.state.entitlements.join(", ") || "no entitlements"}), managed in ${billing.managedIn}`);
-await call("GET", "/provider/sponsored", { token: prov });
-const catIds = [...new Set(profile.services.map((s) => s.categoryId))];
-await call("POST", "/provider/sponsored/request", { token: prov, body: { categoryId: catIds[0], days: 7, budget: 1000 }, expect: 409, label: "duplicate campaign blocked" });
-await call("POST", "/provider/sponsored/request", { token: prov, body: { categoryId: catIds[0], days: 7, budget: 100 }, expect: 400, label: "below minimum" });
-await call("POST", "/provider/subscription/request", { token: prov, body: { planId: 1 }, expect: 404, label: "plan requests replaced by checkout" });
-await call("PUT", "/provider/billing/profile", { token: prov, body: { billingName: "Demo Electronics", billingAddress: "Sevoke Road, Siliguri 734001", billingStateCode: "19", gstin: "" } });
-await call("PUT", "/provider/billing/profile", { token: prov, body: { billingName: "Demo Electronics", billingAddress: "Sevoke Road, Siliguri", billingStateCode: "19", gstin: "27AAAAA0000A1Z5" }, expect: 400, label: "GSTIN must match state" });
-await call("POST", "/webhooks/razorpay", { body: { event: "subscription.charged", payload: {} }, expect: 401, label: "unsigned Razorpay webhook refused" });
-await call("POST", "/webhooks/revenuecat", { body: { event: { id: "x", type: "TEST" } }, expect: 401, label: "RevenueCat webhook needs auth" });
+// Payments, plans and promotions were removed: KaajVa is free, so none of these exist any more.
+for (const [method, path] of [["GET", "/provider/billing"], ["GET", "/provider/sponsored"], ["POST", "/provider/sponsored/request"], ["POST", "/provider/billing/razorpay/checkout"], ["POST", "/webhooks/razorpay"], ["POST", "/webhooks/revenuecat"]]) {
+  await call(method, path, { token: prov, body: method === "GET" ? undefined : {}, expect: 404, label: `${path} removed` });
+}
 await call("POST", "/provider/claims/1/verify", { token: prov, body: { code: "123456" }, expect: 404, label: "claim code removed" });
 // Social sign-in: forged tokens are refused (501 when GOOGLE_CLIENT_IDS / APPLE_CLIENT_IDS are not set).
 await call("POST", "/auth/google", { body: { idToken: "x".repeat(40) }, expect: [401, 501], label: "forged Google token refused" });
@@ -213,9 +206,6 @@ await call("POST", "/auth/apple/callback", { body: { state: "evil.abc", id_token
 await call("POST", "/auth/apple/notifications", { body: { payload: "x".repeat(40) }, expect: [400, 501], label: "unsigned Apple notification refused" });
 const meUser = (await call("GET", "/auth/me", { token: cust })).user;
 if (meUser.hasPassword !== true || !Array.isArray(meUser.linkedAccounts)) { fail++; results.push("FAIL /auth/me should report hasPassword and linkedAccounts"); } else pass++;
-const sp = (await call("GET", "/provider/sponsored", { token: prov })).listings[0];
-await call("PATCH", `/provider/sponsored/${sp.id}`, { token: prov, body: { status: "paused" } });
-await call("PATCH", `/provider/sponsored/${sp.id}`, { token: prov, body: { status: "active" } });
 await call("GET", "/provider/claims/search?q=electronics&city=Siliguri", { token: prov });
 await call("GET", "/me/notifications", { token: prov });
 await call("GET", "/admin/overview", { token: prov, expect: 403, label: "provider blocked from admin" });
@@ -232,7 +222,8 @@ await call("PATCH", `/admin/flags/${flags[0].id}`, { token: admin, body: { statu
 await call("GET", "/admin/flags?status=dismissed", { token: admin });
 await call("PATCH", `/admin/reviews/${r0.id}`, { token: admin, body: { status: "published" } });
 await call("GET", "/admin/settings", { token: admin });
-await call("PUT", "/admin/settings", { token: admin, body: { values: { sponsored_cpc: "5", min_review_length: "20" } } });
+await call("PUT", "/admin/settings", { token: admin, body: { values: { min_review_length: "20" } } });
+await call("PUT", "/admin/settings", { token: admin, body: { values: { sponsored_cpc: "5" } }, expect: 400, label: "promotion settings are gone" });
 await call("POST", "/reviews", { token: cust, body: { providerId: featured[3].id, rating: 4, reviewText: "Too short text" }, expect: 400, label: "admin minimum review length applies" });
 await call("PUT", "/admin/settings", { token: admin, body: { values: { min_review_length: null } } });
 await call("PUT", "/admin/settings", { token: admin, body: { values: { "plugin.razorpay.key_secret": "x" } }, expect: 400, label: "plugin keys are gone" });
@@ -268,7 +259,6 @@ await call("GET", "/admin/analytics?days=30", { token: admin });
 await call("GET", "/admin/leads?days=30", { token: admin });
 await call("GET", "/admin/reviews?status=published", { token: admin });
 await call("GET", `/admin/providers/${me.provider.id}`, { token: admin });
-await call("GET", "/admin/subscriptions", { token: admin });
 await call("GET", "/admin/categories", { token: admin });
 await call("POST", "/admin/notifications/preview", { token: admin, body: { audience: "providers" } });
 await call("GET", "/admin/notifications/broadcasts", { token: admin });
@@ -294,14 +284,6 @@ await call("PATCH", `/admin/badges/${badge.id}`, { token: admin, body: { name: "
 await call("POST", `/admin/providers/${me.provider.id}/badges`, { token: admin, body: { badgeId: badge.id } });
 await call("DELETE", `/admin/providers/${me.provider.id}/badges/${badge.id}`, { token: admin });
 await call("DELETE", `/admin/badges/${badge.id}`, { token: admin });
-const plan = (await call("POST", "/admin/plans", { token: admin, body: { code: `smoke_${Date.now() % 100000}`, name: `Smoke Plan ${Date.now() % 100000}`, price: 49, features: ["One"] } })).plan;
-await call("PATCH", `/admin/plans/${plan.id}`, { token: admin, body: { isActive: false } });
-await call("GET", "/admin/plans", { token: admin });
-await call("GET", "/admin/transactions?type=sponsored_ad", { token: admin });
-await call("GET", "/admin/sponsored", { token: admin });
-const today = new Date().toISOString().slice(0, 10);
-const asp = (await call("POST", "/admin/sponsored", { token: admin, body: { providerId: featured[4].id, categoryId: cats[1].id, startDate: today, endDate: today, budget: 0 } })).listing;
-await call("PATCH", `/admin/sponsored/${asp.id}`, { token: admin, body: { status: "completed" } });
 const newCat = (await call("POST", "/categories", { token: admin, body: { name: "Smoke Category" } })).category;
 const sub1 = (await call("POST", `/categories/${newCat.id}/subcategories`, { token: admin, body: { name: "Smoke Sub" } })).subcategory;
 await call("PATCH", `/categories/subcategories/${sub1.id}`, { token: admin, body: { name: "Smoke Sub 2" } });
@@ -315,10 +297,8 @@ await call("POST", "/categories", { token: prov, body: { name: "Nope" }, expect:
 // provider sees verification + review notifications
 const pn = await call("GET", "/me/notifications", { token: prov });
 results.push(`     provider latest notifications: ${JSON.stringify(pn.notifications.slice(0, 4).map((n) => n.title))}`);
-const spAfter = (await call("GET", "/provider/sponsored", { token: prov })).listings[0];
-results.push(`     sponsored clicks ${sp.clicks} -> ${spAfter.clicks}, impressions ${sp.impressions} -> ${spAfter.impressions}`);
 
-// admin tools: listings, import, ownership, users, disputes, payments, export, bulk
+// admin tools: listings, import, ownership, users, disputes, export, bulk
 const newListing = { businessName: "Smoke Test Electricals", phone: "9876512340", city: "Siliguri", state: "West Bengal", locality: "Hakimpara", latitude: 26.71, longitude: 88.42, services: [{ categoryId: cats[0].id, isPrimary: true }] };
 const created = (await call("POST", "/admin/providers", { token: admin, body: newListing })).provider;
 await call("POST", "/admin/providers", { token: admin, body: newListing, expect: [201], label: "duplicate names get their own slug" });
@@ -354,45 +334,22 @@ results.push(`     open lead disputes: ${openDisputes.openDisputes}`);
 await call("PATCH", `/admin/leads/${disputedLead.id}/dispute`, { token: admin, body: { decision: "accepted" } });
 await call("PATCH", `/admin/leads/${disputedLead.id}/dispute`, { token: admin, body: { decision: "rejected" }, expect: 400, label: "a dispute is decided once" });
 
-const tx = (await call("POST", "/admin/transactions", { token: admin, body: { providerId: me.provider.id, type: "subscription", amount: 599, reference: "UPI-SMOKE-1" } })).transaction;
-await call("PATCH", `/admin/transactions/${tx.id}`, { token: admin, body: { status: "refunded", note: "Smoke test refund" } });
-await call("PATCH", `/admin/transactions/${tx.id}`, { token: admin, body: { status: "failed", note: "Twice" }, expect: 400, label: "refund only once" });
-const planForGrant = (await call("GET", "/admin/plans", { token: admin })).plans.find((p) => Number(p.price) > 0 && p.isActive);
-await call("POST", `/admin/providers/${me.provider.id}/subscription`, { token: admin, body: { planId: planForGrant.id, months: 1, payment: { amount: Number(planForGrant.price), reference: "UPI-SMOKE-2" } } });
-
-// Plans and entitlements: Free is gated, Business unlocks everything, and plan badges follow the plan.
-await call("DELETE", `/admin/providers/${me.provider.id}/subscription`, { token: admin, body: { note: "Smoke revoke" } });
+// Everything is free: every listing gets WhatsApp, analytics and full lead details, and the admin billing pages are gone.
 const freeMe = await call("GET", "/provider/me", { token: prov });
-results.push(`     after revoke: plan ${freeMe.plan.plan.code}, leads ${freeMe.plan.limits.leads.used}/${freeMe.plan.limits.leads.limit}`);
-if (freeMe.plan.plan.code !== "free") { fail++; results.push("FAIL revoke did not move the provider to Free"); }
+if ("plan" in freeMe) { fail++; results.push("FAIL /provider/me still reports a plan"); } else pass++;
 const freeDash = await call("GET", "/provider/dashboard", { token: prov });
-if (!freeDash.analyticsLocked || freeDash.ranking !== null) { fail++; results.push("FAIL analytics not locked on Free"); }
+if ("analyticsLocked" in freeDash || freeDash.ranking === null || freeDash.totals.views === null) { fail++; results.push("FAIL dashboard analytics are still gated"); } else pass++;
 const freeLeads = await call("GET", "/provider/leads?pageSize=50", { token: prov });
-results.push(`     locked leads on Free: ${freeLeads.leads.filter((l) => l.locked).length} of ${freeLeads.leads.length}`);
-await call("POST", "/provider/sponsored/request", { token: prov, body: { categoryId: catIds[0], days: 7, budget: 1000 }, expect: 402, label: "promotions need Business" });
+if (freeLeads.leads.some((l) => "locked" in l) || "leadLimit" in freeLeads) { fail++; results.push("FAIL leads are still locked by a plan"); } else pass++;
 const freeCard = (await call("GET", `/providers/${slug}`)).provider;
-if (freeCard.planTier !== null || freeCard.acceptsWhatsapp) { fail++; results.push("FAIL free listing still shows plan tier or WhatsApp"); }
-await call("POST", "/leads", { body: { providerId: me.provider.id, channel: "whatsapp" }, expect: 400, label: "no WhatsApp leads on Free" });
-await call("POST", "/provider/billing/razorpay/checkout", { token: prov, body: { planCode: "pro", billingCycle: "monthly" }, expect: [201, 501], label: "web checkout (501 without Razorpay keys)" });
-const business = (await call("GET", "/admin/plans", { token: admin })).plans.find((p) => p.code === "business");
-await call("POST", `/admin/providers/${me.provider.id}/subscription`, { token: admin, body: { planId: business.id, months: 12, payment: { amount: 9990, reference: "UPI-SMOKE-3" } } });
-const bizMe = await call("GET", "/provider/me", { token: prov });
-if (bizMe.plan.plan.code !== "business" || !bizMe.plan.features.promote) { fail++; results.push("FAIL grant did not unlock Business"); }
-const bizCard = (await call("GET", `/providers/${slug}`)).provider;
-results.push(`     Business card: tier ${bizCard.planTier}, badges ${bizCard.badges.map((b) => b.name).join(", ")}`);
-const provBilling = await call("GET", "/provider/billing", { token: prov });
-const inv = provBilling.invoices[0];
-results.push(`     latest invoice ${inv?.number}: total ${inv?.total}, tax ${inv?.tax}`);
-const pdf = await fetch(inv.pdfUrl);
-(pdf.ok && pdf.headers.get("content-type") === "application/pdf") ? pass++ : (fail++, results.push(`FAIL invoice PDF ${pdf.status}`));
-await call("GET", "/admin/billing/overview", { token: admin });
-await call("GET", "/admin/invoices", { token: admin });
-await call("GET", "/admin/webhooks", { token: admin });
-await call("GET", "/admin/subscriptions?source=admin", { token: admin });
-await call("GET", "/admin/transactions?gateway=manual", { token: admin });
+if ("planTier" in freeCard || !freeCard.acceptsWhatsapp) { fail++; results.push("FAIL listing still shows a plan tier or hides WhatsApp"); } else pass++;
+await call("POST", "/leads", { body: { providerId: me.provider.id, channel: "whatsapp" }, expect: 201, label: "WhatsApp leads for every listing" });
+for (const path of ["/admin/plans", "/admin/subscriptions", "/admin/transactions", "/admin/invoices", "/admin/webhooks", "/admin/billing/overview", "/admin/sponsored"]) {
+  await call("GET", path, { token: admin, expect: 404, label: `${path} removed` });
+}
 await call("POST", "/admin/reviews/bulk", { token: admin, body: { ids: [r0.id], status: "published" } });
 
-for (const entity of ["providers", "users", "leads", "reviews", "transactions", "subscriptions", "invoices"]) {
+for (const entity of ["providers", "users", "leads", "reviews"]) {
   const res = await fetch(`${B}/admin/export/${entity}`, { headers: { authorization: `Bearer ${admin}` } });
   const text = await res.text();
   const ok = res.status === 200 && res.headers.get("content-type")?.startsWith("text/csv") && text.split("\r\n").length > 2;

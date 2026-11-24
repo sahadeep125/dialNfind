@@ -1,11 +1,9 @@
 import cron from "node-cron";
 import { env } from "../env.js";
 import { recalculateAllProviders } from "../services/ranking.js";
-import { completeCampaigns } from "./campaigns.js";
 import { cleanup } from "./cleanup.js";
 import { sendReviewPrompts } from "./review-prompts.js";
 import { sendStaffDigests } from "./staff-digest.js";
-import { expireSubscriptions, remindExpiringSubscriptions } from "./subscriptions.js";
 
 interface Job {
   /** Cron expression in the platform timezone (APP_TIMEZONE). */
@@ -14,9 +12,6 @@ interface Job {
 }
 
 export const JOBS: Record<string, Job> = {
-  "expire-subscriptions": { schedule: "5 * * * *", run: expireSubscriptions },
-  "complete-campaigns": { schedule: "10 * * * *", run: completeCampaigns },
-  "remind-subscriptions": { schedule: "0 9 * * *", run: remindExpiringSubscriptions },
   "staff-digest": { schedule: "0 9 * * *", run: sendStaffDigests },
   "review-prompts": { schedule: "0 11,18 * * *", run: sendReviewPrompts },
   "recalculate-rankings": { schedule: "0 2 * * *", run: async () => `${await recalculateAllProviders()} providers` },
@@ -40,7 +35,7 @@ export async function runJob(name: string): Promise<boolean> {
 
 /**
  * Schedules every job in this process. Only one API instance should do this (RUN_JOBS=true),
- * otherwise each instance would expire subscriptions and send reminder emails.
+ * otherwise each instance would send the digests and review prompts again.
  */
 const scheduled: ReturnType<typeof cron.schedule>[] = [];
 

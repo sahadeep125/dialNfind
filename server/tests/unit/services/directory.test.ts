@@ -14,7 +14,7 @@ import { purgeGeocodeCache, reversePlace, searchPlaces } from "../../../src/serv
 import { recordProfileView, resolveTerm, searchProviders } from "../../../src/services/search.js";
 import { uploadDir } from "../../../src/storage/index.js";
 import {
-  createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser, seedPlans, subscribe,
+  createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser,
 } from "../../helpers/factories.js";
 import { json, mockFetch, sentMails, settle } from "../../helpers/app.js";
 
@@ -121,47 +121,18 @@ describe("listings", () => {
 });
 
 describe("accounts", () => {
-  it("closes a business: suspends it and stops renewals", async () => {
-    const plans = await seedPlans();
-    const cat = await createCategory();
+  it("closes a business: suspends it and drops push tokens", async () => {
     const { user, provider } = await createOwner();
     await prisma.pushToken.create({ data: { userId: user.id, token: "t", platform: "ios" } });
-    await subscribe(provider.id, plans.pro.id, { source: "razorpay", externalId: "sub_1" });
-    await prisma.sponsoredListing.create({ data: { providerId: provider.id, categoryId: cat.id, startDate: new Date(), endDate: new Date(), budget: 500 } });
-    const fetch = mockFetch(json({ id: "sub_1" }));
-    expect(await closeBusinessAccount(user.id)).toEqual({ storeSubscription: null });
-    expect(fetch.mock.calls[0]![0]).toBe("https://api.razorpay.com/v1/subscriptions/sub_1/cancel");
+    await closeBusinessAccount(user.id);
     const p = await prisma.provider.findUniqueOrThrow({ where: { id: provider.id } });
     expect(p).toMatchObject({ status: "suspended", isAvailable: false });
     expect(await prisma.pushToken.count()).toBe(0);
-    expect((await prisma.sponsoredListing.findFirstOrThrow()).status).toBe("completed");
-    expect((await prisma.providerSubscription.findFirstOrThrow()).autoRenew).toBe(false);
-  });
-  it("reports store subscriptions and survives a failed Razorpay cancel", async () => {
-    const plans = await seedPlans();
-    const a = await createOwner();
-    await subscribe(a.provider.id, plans.pro.id, { source: "app_store" });
-    expect(await closeBusinessAccount(a.user.id)).toEqual({ storeSubscription: "app_store" });
-    const b = await createOwner();
-    await subscribe(b.provider.id, plans.pro.id, { source: "play_store" });
-    expect(await closeBusinessAccount(b.user.id)).toEqual({ storeSubscription: "play_store" });
-    const c = await createOwner();
-    await subscribe(c.provider.id, plans.pro.id, { source: "razorpay", externalId: "sub_c" });
-    mockFetch(json({ error: { description: "nope" } }, 400));
-    expect(await closeBusinessAccount(c.user.id)).toEqual({ storeSubscription: null });
-    expect(console.error).toHaveBeenCalledWith("[accounts] Razorpay cancel failed", expect.anything());
-    // Not configured, not renewing, or no provider at all: nothing to cancel.
-    const d = await createOwner();
-    await subscribe(d.provider.id, plans.pro.id, { source: "razorpay", externalId: "sub_d", autoRenew: false });
-    expect(await closeBusinessAccount(d.user.id)).toEqual({ storeSubscription: null });
+    // No business at all: nothing else to close.
     const customer = await createUser();
-    expect(await closeBusinessAccount(customer.id)).toEqual({ storeSubscription: null });
-    const saved = env.razorpay.keyId;
-    env.razorpay.keyId = "";
-    const e = await createOwner();
-    await subscribe(e.provider.id, plans.pro.id, { source: "razorpay", externalId: "sub_e" });
-    expect(await closeBusinessAccount(e.user.id)).toEqual({ storeSubscription: null });
-    env.razorpay.keyId = saved;
+    await prisma.pushToken.create({ data: { userId: customer.id, token: "c", platform: "ios" } });
+    await closeBusinessAccount(customer.id);
+    expect(await prisma.pushToken.count()).toBe(0);
   });
   it("anonymises a user and cleans up after them", async () => {
     const photo = await upload("me.webp");
@@ -264,16 +235,14 @@ describe("tickets", () => {
     await createStaff("super", { status: "suspended" });
     expect((await supportStaffIds(null)).sort()).toEqual([boss.id, agent.id].sort());
   });
-  it("opens tickets with priority by plan", async () => {
-    const plans = await seedPlans();
+  it("opens tickets at normal priority for everyone", async () => {
     await createStaff();
     const customer = await createUser();
     const t1 = await openTicket(customer.id, { subject: "Help", category: "general", message: "Hi" });
     expect(t1).toMatchObject({ priority: "normal", source: "web", providerId: null, reference: ticketRef(t1.id) });
     const { user, provider } = await createOwner();
-    await subscribe(provider.id, plans.business.id);
-    const t2 = await openTicket(user.id, { subject: "Billing", category: "billing", message: "Hi", attachments: ["a"] });
-    expect(t2).toMatchObject({ priority: "high", source: "provider_app", providerId: provider.id });
+    const t2 = await openTicket(user.id, { subject: "Listing", category: "listing", message: "Hi", attachments: ["a"] });
+    expect(t2).toMatchObject({ priority: "normal", source: "provider_app", providerId: provider.id });
     const other = await createOwner();
     expect((await openTicket(other.user.id, { subject: "x", category: "general", message: "y" })).priority).toBe("normal");
     await settle();
@@ -338,7 +307,6 @@ describe("geocode", () => {
 
 describe("search", () => {
   async function directory() {
-    const plans = await seedPlans();
     const cat = await createCategory({ name: "Appliance Repair", slug: "appliance-repair" }, ["TV Repair", "Washing Machine Repair"]);
     const plumbing = await createCategory({ name: "Plumbing", slug: "plumbing" }, ["Pipe Fitting"]);
     const [tv, wm] = cat.subcategories;
@@ -348,7 +316,6 @@ describe("search", () => {
     await createProvider({ businessName: "Hidden", status: "pending", categoryId: cat.id });
     await prisma.providerServiceArea.create({ data: { providerId: plumber.id, areaName: "Bandra West", latitude: 19.06, longitude: 72.83 } });
     await prisma.providerBusinessHour.create({ data: { providerId: near.id, dayOfWeek: 0, is24x7: true } });
-    await subscribe(near.id, plans.pro.id);
     return { cat, plumbing, tv: tv!, near, far, plumber };
   }
   const base = { sort: "relevance" as const, page: 1, pageSize: 10 };
@@ -374,7 +341,6 @@ describe("search", () => {
     const { cat, tv, near, far, plumber } = await directory();
     const user = await createUser();
     await prisma.favorite.create({ data: { userId: user.id, providerId: near.id } });
-    const sponsored = await prisma.sponsoredListing.create({ data: { providerId: near.id, categoryId: cat.id, startDate: new Date(Date.now() - 86400000), endDate: new Date(Date.now() + 86400000), budget: 500 } });
 
     const all = await searchProviders({ ...base, userId: user.id });
     expect(all.total).toBe(3);
@@ -383,10 +349,10 @@ describe("search", () => {
 
     const bySub = await searchProviders({ ...base, subcategory: tv.slug, userId: user.id });
     expect(bySub.results.map((r) => r.id)).toEqual([near.id]);
-    expect(bySub.results[0]).toMatchObject({ isFavorite: true, isSponsored: true });
+    expect(bySub.results[0]).toMatchObject({ isFavorite: true });
+    expect(bySub.results[0]).not.toHaveProperty("isSponsored");
     expect(bySub.resolved.subcategory).toMatchObject({ slug: tv.slug });
     await settle();
-    expect((await prisma.sponsoredListing.findUniqueOrThrow({ where: { id: sponsored.id } })).impressions).toBe(1);
     expect((await prisma.providerDailyStat.findFirstOrThrow({ where: { providerId: near.id } })).searchImpressions).toBeGreaterThan(0);
 
     expect((await searchProviders({ ...base, subcategory: "missing" })).total).toBe(3);

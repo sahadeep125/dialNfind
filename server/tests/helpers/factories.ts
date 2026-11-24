@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import type { BillingCycle, Prisma, SubscriptionSource, SubscriptionStatus, UserRole } from "@prisma/client";
+import type { Prisma, UserRole } from "@prisma/client";
 import { prisma } from "../../src/lib/prisma.js";
 
 let seq = 0;
@@ -7,51 +7,6 @@ const next = () => ++seq;
 
 export const PASSWORD = "secret123";
 const passwordHash = bcrypt.hashSync(PASSWORD, 4);
-
-/** Badges, the three plans (with store and Razorpay price ids) and admin roles, like prisma/bootstrap.ts. */
-export async function seedPlans(): Promise<Awaited<ReturnType<typeof createPlans>>> {
-  const existing = await prisma.subscriptionPlan.findMany({ where: { code: { in: ["free", "pro", "business"] } } });
-  if (existing.length === 3) {
-    const by = (code: string) => existing.find((p) => p.code === code)!;
-    const badge = (name: string) => prisma.badge.findUniqueOrThrow({ where: { name } });
-    return { free: by("free"), pro: by("pro"), business: by("business"), badges: { pro: await badge("Pro Partner"), business: await badge("Business Partner") } };
-  }
-  return createPlans();
-}
-
-async function createPlans() {
-  const badges = {
-    pro: await prisma.badge.create({ data: { name: "Pro Partner" } }),
-    business: await prisma.badge.create({ data: { name: "Business Partner" } }),
-  };
-  const free = await prisma.subscriptionPlan.create({
-    data: { code: "free", name: "Free", price: 0, leadAccessLimit: 2, photoLimit: 3, featuresJson: ["Listing"] },
-  });
-  const pro = await prisma.subscriptionPlan.create({
-    data: {
-      code: "pro", name: "Pro", price: 599, leadAccessLimit: null, photoLimit: 30, analyticsEnabled: true, rankingBoost: 0.025, badgeId: badges.pro.id,
-      featuresJson: ["Unlimited leads"],
-      prices: {
-        create: [
-          { billingCycle: "monthly", amount: 599, razorpayPlanId: "plan_pro_m", iosProductId: "kjv_pro_monthly", androidProductId: "kjv_pro:monthly" },
-          { billingCycle: "yearly", amount: 5990, razorpayPlanId: "plan_pro_y", iosProductId: "kjv_pro_yearly", androidProductId: "kjv_pro:yearly" },
-        ],
-      },
-    },
-  });
-  const business = await prisma.subscriptionPlan.create({
-    data: {
-      code: "business", name: "Business", price: 999, leadAccessLimit: null, photoLimit: null, analyticsEnabled: true, rankingBoost: 0.04, badgeId: badges.business.id,
-      prices: {
-        create: [
-          { billingCycle: "monthly", amount: 999, razorpayPlanId: "plan_biz_m", iosProductId: "kjv_business_monthly", androidProductId: "kjv_business:monthly" },
-          { billingCycle: "yearly", amount: 9990, iosProductId: "kjv_business_yearly", androidProductId: "kjv_business:yearly" },
-        ],
-      },
-    },
-  });
-  return { free, pro, business, badges };
-}
 
 export async function createUser(overrides: Partial<Prisma.UserUncheckedCreateInput> & { role?: UserRole; verified?: boolean } = {}) {
   const { verified = true, ...data } = overrides;
@@ -115,23 +70,6 @@ export async function createOwner(overrides: Parameters<typeof createProvider>[0
   const user = await createUser({ role: "provider", ...userOverrides });
   const provider = await createProvider({ userId: user.id, claimedAt: new Date(), ...overrides });
   return { user, provider };
-}
-
-export async function subscribe(
-  providerId: bigint,
-  planId: bigint,
-  overrides: { status?: SubscriptionStatus; source?: SubscriptionSource; billingCycle?: BillingCycle; externalId?: string | null; endDate?: Date | null; autoRenew?: boolean; graceUntil?: Date | null; startDate?: Date; createdAt?: Date } = {},
-) {
-  return prisma.providerSubscription.create({
-    data: {
-      providerId,
-      planId,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      status: "active",
-      ...overrides,
-    },
-  });
 }
 
 export async function createLead(providerId: bigint, overrides: Partial<Prisma.LeadUncheckedCreateInput> = {}) {
