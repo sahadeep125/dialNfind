@@ -12,7 +12,7 @@ const PRICE_UNIT_LABEL: Record<string, string> = { per_visit: "per visit", per_h
 const VERIFICATION_LABEL: Record<string, string> = { phone: "Phone number", business: "Business documents", location: "Location", id_proof: "ID proof" };
 
 export const SECONDARY_ACTION =
-  "flex h-10 flex-1 items-center justify-center gap-2 rounded-md border-[1.5px] border-input bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-ink-rule";
+  "flex h-10 flex-1 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-[var(--shadow-card)] transition-colors hover:bg-muted";
 
 export const directionsHref = (p: Pick<ProviderDetail, "latitude" | "longitude">) =>
   `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
@@ -27,7 +27,7 @@ export function ContactCard({ p }: { p: ProviderDetail }) {
   const verified = Array.from(new Set(p.verifications.map((v) => v.type))).filter((t) => t in VERIFICATION_LABEL);
   return (
     // A ticket: inked border, a torn-off line, and the contact details on the counterfoil.
-    <div className="rounded-lg border-[1.5px] border-ink-rule bg-card p-5 shadow-[0_28px_56px_-28px_rgb(2_20_64/0.55)]">
+    <div className="rounded-xl border border-border bg-card p-5 shadow-[0_2px_4px_-1px_rgb(16_24_40/0.05),0_18px_40px_-16px_rgb(16_24_40/0.22)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.08em] text-cta-strong">Get in touch</p>
@@ -50,7 +50,7 @@ export function ContactCard({ p }: { p: ProviderDetail }) {
         <Navigation className="size-4" aria-hidden /> Get directions
       </a>
 
-      <p className="-mx-5 mt-5 flex items-start gap-2 border-t-[1.5px] border-dashed border-input px-5 pt-4 text-sm text-foreground/80">
+      <p className="-mx-5 mt-5 flex items-start gap-2 border-t border-dashed border-border px-5 pt-4 text-sm text-foreground/80">
         <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
         <span>{fullAddress(p)}</span>
       </p>

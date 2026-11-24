@@ -17,9 +17,8 @@ const RATINGS = [
   { value: "4.5", label: "4.5+" },
 ];
 
-const PILL = "inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-input bg-card px-3.5 text-sm font-medium text-foreground/85 transition-colors hover:border-ink-rule hover:text-foreground";
-// A chosen filter is inked in, like a ticked box on a printed form.
-const PILL_ON = "border-primary bg-primary text-primary-foreground hover:border-primary hover:bg-primary/90 hover:text-primary-foreground";
+const PILL = "inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground/85 shadow-[var(--shadow-card)] transition-colors hover:bg-muted";
+const PILL_ON = "border-cta/50 bg-cta-soft text-cta-strong hover:border-cta/60 hover:bg-cta-soft";
 
 /** One row of quick filters under the search banner; every change is written to the URL. */
 export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius }: { categories?: Category[]; lockedCategory?: Category; lockedSub?: string; defaultRadius: number }) {
@@ -38,7 +37,7 @@ export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius
 
   return (
     // Stays under the site header while the results scroll, so filters are always at hand.
-    <div className="sticky top-16 z-30 border-b bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
+    <div className="sticky top-16 z-30 border-b bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/85">
       <div className="container-wide no-scrollbar flex items-center gap-2 overflow-x-auto py-2.5">
         <FiltersSheet categories={categories} lockedCategory={lockedCategory} lockedSub={lockedSub} defaultRadius={defaultRadius} activeCount={activeCount} />
 
@@ -50,7 +49,7 @@ export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius
               type="button"
               aria-pressed={type === f.value}
               onClick={() => update({ type: f.value || null })}
-              className={cn(PILL, type === f.value && PILL_ON)}
+              className={cn(PILL, type === f.value && (f.value ? PILL_ON : "border-foreground/30 bg-muted"))}
             >
               {f.label}
             </button>
@@ -59,8 +58,8 @@ export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius
 
         <RadiusPill radius={radius} active={params.has("radius")} onCommit={(v) => update({ radius: String(v) })} />
 
-        <button type="button" aria-pressed={openNow} onClick={() => update({ openNow: openNow ? null : "true" })} className={cn(PILL, openNow && PILL_ON)}>
-          <span className={cn("size-2 rounded-full", openNow ? "bg-[#5fe0a0]" : "bg-muted-foreground/40")} /> Open now
+        <button type="button" aria-pressed={openNow} onClick={() => update({ openNow: openNow ? null : "true" })} className={cn(PILL, openNow && "border-success/50 bg-success-soft text-[oklch(0.4_0.1_155)] hover:border-success/60 hover:bg-success-soft")}>
+          <span className={cn("size-2 rounded-full", openNow ? "bg-success" : "bg-muted-foreground/40")} /> Open now
         </button>
 
         <Popover>
@@ -79,7 +78,7 @@ export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius
         </Popover>
 
         <button type="button" aria-pressed={verified} onClick={() => update({ verified: verified ? null : "true" })} className={cn(PILL, verified && PILL_ON)}>
-          <BadgeCheck className={cn("size-4", verified ? "text-white" : "text-success")} /> Verified only
+          <BadgeCheck className={cn("size-4", verified ? "text-cta-strong" : "text-success")} /> Verified only
         </button>
 
         {categories && !lockedCategory && (

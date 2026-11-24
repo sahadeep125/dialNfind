@@ -138,9 +138,9 @@ export function SearchBar({
       className={cn(
         "relative flex w-full",
         compact
-          ? "h-10 items-stretch rounded-lg border border-input bg-card transition-shadow focus-within:border-foreground/30 focus-within:shadow-[var(--shadow-lift)]"
+          ? "h-10 items-stretch rounded-lg border border-border bg-card shadow-[var(--shadow-card)] transition-shadow focus-within:shadow-[var(--shadow-lift)]"
           : "flex-col gap-2 md:flex-row md:items-stretch",
-        joined && "gap-0 rounded-lg border-[1.5px] border-ink-rule bg-card p-1.5 text-foreground shadow-[0_24px_48px_-24px_rgb(2_20_64/0.55)]",
+        joined && "rounded-xl border border-border/60 bg-card p-1.5 shadow-[0_2px_4px_-1px_rgb(16_24_40/0.05),0_16px_36px_-16px_rgb(16_24_40/0.2)] md:gap-0",
         className,
       )}
       role="search"
@@ -151,15 +151,15 @@ export function SearchBar({
           // Stacked on phones, where flex-1 would override the field's height, so it only grows in a row.
           "relative flex min-w-0 items-center",
           compact ? "flex-1 gap-2 pl-3" : "gap-3 px-4 md:flex-1",
-          joined && "h-16 rounded-md transition-colors focus-within:bg-muted/50 md:h-[4.5rem]",
-          !joined && !compact && "rounded-md border-[1.5px] border-input bg-card focus-within:border-ink-rule focus-within:ring-[3px] focus-within:ring-ring/30",
+          joined && "h-16 rounded-md transition-colors focus-within:bg-muted/60 md:h-[4.25rem]",
+          !joined && !compact && "rounded-lg border border-transparent bg-card shadow-[var(--shadow-soft)] focus-within:ring-[3px] focus-within:ring-cta/25",
           !joined && !compact && (tall ? "h-14" : "h-12"),
         )}
       >
         <Search className={cn("shrink-0", compact ? "size-4 text-muted-foreground" : "size-5 text-foreground/60")} aria-hidden />
         <div className={cn("flex h-full min-w-0 flex-1 flex-col", joined && "justify-center")}>
           <label htmlFor={inputId} className={joined ? "text-xs font-medium text-muted-foreground" : "sr-only"}>
-            {joined ? "What needs fixing?" : "Service"}
+            {joined ? "What do you need?" : "Service"}
           </label>
           <input
             id={inputId}
@@ -176,10 +176,10 @@ export function SearchBar({
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
-            placeholder={joined ? "Mixer grinder, AC, plumber…" : compact ? "Search a service" : "What service do you need?"}
+            placeholder={joined ? "Plumber, AC repair, electrician..." : compact ? "Search a service" : "What service do you need?"}
             className={cn(
               "min-w-0 bg-transparent text-foreground outline-none placeholder:text-muted-foreground",
-              joined ? "mt-0.5 h-7 text-[17px] font-medium" : compact ? "h-full flex-1 text-sm" : "h-full flex-1 text-[15px]",
+              joined ? "mt-0.5 h-6 text-base" : compact ? "h-full flex-1 text-sm" : "h-full flex-1 text-[15px]",
             )}
           />
         </div>
@@ -218,7 +218,7 @@ export function SearchBar({
           "flex items-center text-foreground",
           joined && "h-16 rounded-md border-t px-4 transition-colors focus-within:bg-muted/60 md:h-auto md:w-72 md:border-t-0",
           compact && "hidden w-44 px-3 sm:flex [&_svg:first-child]:size-4",
-          !joined && !compact && "rounded-md border-[1.5px] border-input bg-card px-4 focus-within:border-ink-rule md:w-[40%] md:max-w-md",
+          !joined && !compact && "rounded-lg border border-transparent bg-card px-4 shadow-[var(--shadow-soft)] md:w-[40%] md:max-w-md",
           !joined && !compact && (tall ? "h-14" : "h-12"),
         )}
       >
@@ -234,7 +234,7 @@ export function SearchBar({
           <Search className="size-4" />
         </button>
       ) : (
-        <Button type="submit" variant="cta" className={cn("text-base", joined ? "mt-1.5 h-14 px-9 text-[17px] md:mt-0 md:h-auto" : tall ? "h-14 px-10" : "h-12 px-8")}>
+        <Button type="submit" variant="cta" className={cn("text-base", joined ? "h-14 px-8 md:h-auto" : tall ? "h-14 px-10" : "h-12 px-8")}>
           <Search className="size-5 md:hidden" />
           Search
         </Button>

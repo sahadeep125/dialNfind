@@ -29,14 +29,14 @@ describe("home sections", () => {
         <TrustPoints />
       </>,
     );
-    // The trades directory: every category by name, biggest first, with its count and no stock photo.
+    // Only a category with its own photograph gets a tile; every category is in the index below.
+    expect(screen.getByText("1 business")).toBeInTheDocument();
+    expect(screen.queryByText("1,200 businesses")).toBeNull();
     expect(screen.getByText("1,200")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Plumbing" })).toHaveAttribute("href", "/services/plumbing");
-    expect(screen.queryByRole("img")).toBeNull();
-    expect(screen.getByText(/^1,500 repair shops, technicians and local pros/)).toBeInTheDocument();
-    // Only the hero with shortcuts shows the "Popular searches" row.
+    expect(screen.getByText("1,500 local pros")).toBeInTheDocument();
+    expect(screen.getByText("20+ customer reviews")).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { name: "Popular searches" })).toHaveLength(1);
-    expect(screen.getByText("Say what broke")).toBeInTheDocument();
+    expect(screen.getByText("Search a service and your area")).toBeInTheDocument();
     expect(screen.getByText("The rules every listing follows")).toBeInTheDocument();
   });
   it("hero city follows the saved location", () => {
@@ -60,7 +60,7 @@ describe("NearbyProviders", () => {
     const fetch = mockApi({ "/providers/featured": { results: [provider()] } });
     render(<NearbyProviders />);
     expect(await screen.findByText("Sharma TV Repair")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Near Kothrud right now" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Popular pros in Pune" })).toBeInTheDocument();
     expect(String(fetch.mock.calls[0]![0])).toContain("lat=1&lng=2&limit=4");
     expect(screen.getByRole("link", { name: /See all/ }).getAttribute("href")).toContain("/search?");
   });
@@ -77,7 +77,7 @@ describe("NearbyProviders", () => {
     let resolve!: (r: Response) => void;
     mockApi({ "/providers/featured": () => new Promise<Response>((r) => (resolve = r)) });
     const third = render(<NearbyProviders />);
-    expect(screen.getByRole("heading", { name: "Near Kothrud right now" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Popular pros in Kothrud" })).toBeInTheDocument();
     third.unmount();
     await act(async () => resolve(json({ results: [provider()] })));
     let reject!: (e: unknown) => void;
@@ -89,7 +89,7 @@ describe("NearbyProviders", () => {
   it("shows skeletons with a generic heading while rendering on the server", async () => {
     const { renderToString } = await import("react-dom/server");
     const html = renderToString(<NearbyProviders />);
-    expect(html).toContain("Near <!-- -->you<!-- --> right now");
+    expect(html).toContain("Popular pros near you");
     expect(html).toContain('href="/search"');
   });
 });

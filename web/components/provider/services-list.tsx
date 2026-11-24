@@ -30,7 +30,7 @@ export function ServicesList({ services, businessName, categories = [] }: { serv
         title={`Services offered by ${businessName}`}
         initial={8}
         moreLabel={`View all ${services.length} services`}
-        className="grid border-t-[1.5px] border-ink-rule sm:grid-cols-2 sm:gap-x-8"
+        className="grid border-t border-border sm:grid-cols-2 sm:gap-x-8"
         items={sorted.map((s) => {
           const name = s.subcategory?.name ?? s.category.name;
           const price = formatPrice(s.startingPrice);
@@ -66,7 +66,7 @@ export function ServicesList({ services, businessName, categories = [] }: { serv
           <ul className="mt-2.5 flex flex-wrap gap-1.5">
             {covers.map((c) => (
               <li key={c.slug}>
-                <Link href={serviceHref(c.categorySlug, c.slug)} className="block rounded-full border border-input bg-card px-3 py-1.5 text-[13px] font-medium text-foreground/85 transition-colors hover:border-ink-rule hover:text-foreground">
+                <Link href={serviceHref(c.categorySlug, c.slug)} className="block rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground">
                   {c.name}
                 </Link>
               </li>

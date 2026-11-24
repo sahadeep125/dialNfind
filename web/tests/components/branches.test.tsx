@@ -136,7 +136,7 @@ describe("hydration: the saved location is not known on the first render", () =>
     await act(async () => {
       root = hydrateRoot(container, ui, { onRecoverableError: () => undefined });
     });
-    await waitFor(() => expect(container.textContent).toContain("Near Sevoke Road right now"));
+    await waitFor(() => expect(container.textContent).toContain("Popular pros in Pune"));
     expect(container.textContent).toContain("Kothrud, Pune");
     act(() => root.unmount());
     container.remove();

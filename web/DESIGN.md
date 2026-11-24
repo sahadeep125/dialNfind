@@ -1,201 +1,171 @@
-# KaajVa design system: "Para Board"
+# KaajVa design system
 
-*Para* is what Siliguri calls a neighbourhood. People here give directions by landmarks and
-localities ("basement of Planet Mall, Sevoke Road"), and they find a repairman by walking past his
-painted signboard. The website should feel like the best-kept signboard on the street: big plain
-words, a clear address, how far it is, and a phone number. Nothing decorative stands between
-"my mixer stopped" and "I'm on the phone with someone".
+KaajVa is a directory of repair technicians and local service pros in Siliguri. People arrive with
+something broken, often on a phone, and want one thing: the nearest person who can fix it, and a way
+to call them. The design keeps that path short and calm.
 
-Tokens live in `app/globals.css`, shared components in `components/ui`, `components/site` and
-`components/provider`. Never hard-code a colour or a font in a component.
+## 1. Principles
 
-## 1. Who and where
+- **Clean and fresh.** A white page, cool light-grey bands, generous side padding. Nothing beige.
+- **Soft depth, not outlines.** Separate things with small, soft shadows and very light hairlines.
+  No dark borders around cards, fields or chips.
+- **Navy for identity, orange for action.** Navy (logo) carries the search header, the profile
+  signboard and the footer. Orange marks the one main action on a screen: Search, Call.
+- **Honest content.** Ratings and reviews only when real ones exist, never "No reviews yet". No
+  "Member since". A business shows only its own logo and photos; no stock pictures stand in for it.
+- **Distance first.** "How far?" is the question people compare on, so distance is set large on every
+  result card. No timeline or rail graphics.
 
-- **People:** households and small shops in Siliguri. Mostly Android phones, often outdoors or in a
-  bright kitchen, often in a hurry because something just broke. Many read English as a second language.
-- **Questions they bring:** Who fixes this? Who is closest? How far? Are they open? Where exactly? How do
-  I reach them? Who else, if they don't pick up?
-- **Data reality:** most listings have no photo, no hours and no reviews yet. The design must look
-  finished with only a name, a service, a locality, coordinates and a phone number. It never fills the
-  gap with stock photos or invented trust signals.
-- **Modes:** the home page persuades (explain, then search); search and profiles are *operate*
-  surfaces where facts and tap targets come first.
-- **Theme:** light paper surfaces for daylight use; navy blocks for the moments that carry identity
-  (the home masthead, the profile signboard, the footer).
+## 2. Colour
 
-## 2. Signature ideas
+Tokens live in `app/globals.css` (`:root`, mapped to Tailwind in `@theme inline`).
 
-1. **The distance rail.** Search results and "nearby" lists hang off a vertical rail, nearest first.
-   Each stop on the rail shows the distance in large display type. Distance is the first thing people
-   compare, so it gets the strongest typographic position on the page.
-2. **The signboard.** A profile opens on a navy board: an orange strip with the trade and para (like
-   the strip over a shop front), the logo or initials, the name set large, then address, hours and
-   distance. On desktop the contact ticket overlaps the right edge of the board; on phones the
-   secondary actions (Directions, Website, Email) sit on the board and Call/WhatsApp live in the bottom
-   bar.
-3. **The problem index.** Services are offered the way people describe them ("Mixer grinder stopped"),
-   as a ruled index, not a wall of identical cards.
-4. **One moving word.** The home masthead cycles the broken thing (mixer, AC, tap, fan, bike). That is the
-   only authored motion; everything else is instant.
-
-## 3. Colour
-
-| Token | Value | Role |
+| Token | Value | Use |
 | --- | --- | --- |
-| `--primary` Board navy | `#042161` | Logo navy. Masthead, signboard, footer, primary buttons, links |
-| `--primary-hover` | `#001755` | Hover / pressed navy |
-| `--ink` / `--foreground` | `#0c1430` | Body text and headings on paper (15.9:1) |
-| `--muted-foreground` Ink 2 | `#555c6b` | Secondary text, placeholders (5.9:1 on paper) |
-| `--background` Paper | `#f4f0e7` | Page ground: warm newsprint, calmer than white in sunlight |
-| `--card` Sheet | `#fffdf8` | Cards, inputs, sheets on paper |
-| `--muted` Sunken | `#ebe5d8` | Tag fills, skeletons, quiet panels |
-| `--border` Rule | `#dcd4c3` | Hairlines between rows and around sheets |
-| `--input` | `#c9c0ad` | Field borders, one step stronger than rules |
-| `--cta` Signal orange | `#fd8003` | Call, Search, the name plate. Fill only; carries navy text (5.9:1) |
-| `--cta-hover` | `#e87400` | Hover for orange |
-| `--cta-strong` Orange ink | `#a85200` | Orange text and icons on paper (4.8:1, 5.3:1 on sheets) |
-| `--cta-soft` | `#ffeedb` | Matched-service highlight |
-| `--secondary` / `--accent` Navy wash | `#e4e9f4` | Selected filters, today's hours row, hovers |
-| `--board-foreground` | `#ffffff` / `--board-muted` `#b9c3dc` | Text on navy (15:1 / 8.5:1) |
-| `--success` Leaf | `#18995a` dot, `--success-ink` `#0f7a42` text, `--success-soft` `#e2f2e8` | Open now, verified |
-| `--warning` Marigold | `#f2a20c`, `--warning-ink` `#875400`, `--warning-soft` `#fdf0d2` | Stars, 24x7, badges |
-| `--destructive` Brick | `#c4321f`, `--danger-ink` `#b42318`, `--danger-soft` `#fbe7e3` | Closed, errors |
-| `--whatsapp` | `#25d366` icon, `--whatsapp-ink` `#0f7a42` label | WhatsApp button only |
+| `--background` | `#ffffff` | Page |
+| `--surface` / `--muted` | `#f7f9fc` / `#f3f5f9` | Quiet bands, tag fills, skeletons |
+| `--card` | `#ffffff` | Cards, fields, sheets |
+| `--foreground` | `#16181d` | Text and headings (17:1) |
+| `--muted-foreground` | `#5d626c` | Secondary text (6:1) |
+| `--border` | `#e7eaf0` | Hairlines and card edges, always light |
+| `--input` | `#dde1e9` | Field edges where a shadow is not enough |
+| `--primary` / `--board` | `#042161` | Logo navy: header bands, signboard, footer, primary buttons |
+| `--board-deep` | `#021440` | Deeper navy for panels on the board |
+| `--board-muted` | `#b9c3dc` | Secondary text on navy (8:1) |
+| `--board-rule` | white 16% | Rules on navy |
+| `--cta` | `#fd8003` | Orange fill, always with navy text (5.9:1) |
+| `--cta-strong` | `#ae5600` | Orange text and icons on white (5.1:1) |
+| `--success-ink` / `--danger-ink` | `#127a43` / `#b42318` | Open now / Closed text |
+| `--whatsapp` | `#25d366` | WhatsApp icon only; the label uses `--whatsapp-ink` |
 
-Rules: orange fills always carry navy text. Only one orange action competes on a screen. Status is
-never colour alone (dot + words). On navy, secondary text is `--board-muted`, a navy tint, never grey.
+`.dark-band` (a navy header) flips the text tokens to white and `--board-muted`. White controls inside
+it (`[role=search]`, `.on-light`) keep the light tokens.
 
-## 4. Typography
+## 3. Typography
 
-| Role | Family | Weights |
+Hanken Grotesk for text and UI (`--font-sans`) and Schibsted Grotesk for headings
+(`--font-display`), both through `next/font`. Swap the two in `app/layout.tsx` to change the type
+everywhere.
+
+| Role | Size (mobile → desktop) | Weight |
 | --- | --- | --- |
-| Display: headings, names, distances | **Bricolage Grotesque** (`--font-display`) | 600, 700, 800 |
-| Text and UI | **Instrument Sans** (`--font-sans`) | 400, 500, 600, 700 |
+| Home H1 (centred) | 2.25 → 3.5rem, leading 1.06, -0.03em | 800 |
+| Page H1 (search, category) | 1.5 → 2rem (2.75rem large) | 700 |
+| Profile name (signboard) | 2 → 3.5rem, -0.035em | 800 |
+| Section H2 | 1.75 → 2.5rem home, 1.375 → 1.5rem profile | 700 |
+| Card title | 1.0625–1.25rem | 600–700 |
+| Body | 15–16px, leading 1.6 | 400 |
+| Small / meta | 13–14px | 500 |
 
-Bricolage has the slightly irregular, hand-cut warmth of a painted sign while staying very legible;
-Instrument Sans is calm and compact for addresses, hours and buttons. Both load through `next/font`
-with `display: swap`.
+## 4. Space, shape and depth
 
-| Step | Size (phone → desktop) | Line height | Tracking | Use |
-| --- | --- | --- | --- | --- |
-| Masthead | 2.6 → 5.25rem | 0.98 | -0.035em | Home H1 only |
-| Board name | 2.1 → 3.75rem | 1.0 | -0.03em | Provider name on the signboard |
-| H1 | 1.9 → 3rem | 1.05 | -0.03em | Search and service page titles |
-| H2 | 1.5 → 2.125rem | 1.1 | -0.02em | Section titles |
-| H3 | 1.125rem | 1.25 | -0.01em | Card and row titles |
-| Distance | 1.5 → 1.75rem, display 700, tabular | 1 | -0.02em | Rail stops |
-| Body | 1rem (15px in dense lists) | 1.55 | 0 | Text, 65–75ch measure |
-| Small | 0.875rem | 1.45 | 0 | Addresses, meta |
-| Label | 0.75–0.8125rem, 600 | 1.3 | 0.01em | Field labels, tags |
+- **Containers:** `container-page` (80rem) and `container-wide` (96rem), with side padding of 20px
+  on phones, 32px from 640px, 48px from 1024px and 64px from 1536px.
+- **Section rhythm:** `section-y`, 56px / 80px.
+- **Radius:** 6px controls, 8–12px cards and sheets, full pills for chips.
+- **Shadows:** `--shadow-card` (1–3px, 4–5% opacity) at rest; `--shadow-soft` for fields on navy;
+  `--shadow-lift` (12px offset, 28px blur, 16%) on hover and for floating things (popovers, the
+  contact ticket).
 
-No uppercase eyebrows above headings, no gradient text. One H1 per page. Numbers that change use
-`tabular-nums`.
+## 5. Buttons
 
-## 5. Shape, space and depth
-
-- **Grid:** 4px base. Page gutter 16 / 24 / 40px. Content frame 88rem (`container-wide`), reading frame
-  80rem (`container-page`).
-- **Radius:** `--radius` 4px for buttons, inputs and tags: signboard corners, not bubbles. Sheets 6px.
-  Full pills only for status and filter chips.
-- **Lines over shadows:** rows are separated by 1px rules; key frames (the search box, the contact
-  ticket) take a 1.5px ink border. `--shadow-lift` (offset 0 10px, blur 30px, navy at 14%) is for things
-  that float: popovers, the sticky ticket, hovered rows.
-- **Rhythm:** sections use `section-y` (64px phone / 104px desktop). More space above a heading than
-  below. Dense lists (rail, index) breathe with 16–20px row padding.
-
-## 6. Buttons
-
-`components/ui/button.tsx`. 44px default, 52px (`lg`) for the main action, 36px (`sm`) in compact rows.
+`components/ui/button.tsx`.
 
 | Variant | Look | Use |
 | --- | --- | --- |
-| `cta` | Orange fill, navy text, bold | Call, Search: the one action |
-| `default` | Navy fill, white text | Apply, Sign up, secondary strong actions |
-| `whatsapp` | Sheet fill, green rule, green label, brand-green icon | WhatsApp, always beside Call |
-| `outline` | Sheet fill, input rule, ink text | Directions, Share, Save, Filters |
-| `board` | Transparent, white 1.5px rule, white text | Secondary actions on navy |
-| `ghost` | No fill until hover (navy wash) | Toolbars, menus |
-| `link` | Navy text, underline on hover | Inline "View all" |
-| `destructive` | Brick fill, white text | Delete, behind a confirm |
+| `cta` | Orange fill, navy text, bold | Search, Call: the one action |
+| `default` | Navy fill, white text | Sign up, apply |
+| `whatsapp` | White, green edge, green label | WhatsApp, always beside Call |
+| `outline` | White, light edge, soft shadow | Directions, View all professionals, filters |
+| `ghost` / `link` | No fill until hover / navy text | Toolbars, inline links |
 
-States: hover darkens one step and lifts 1px; active drops back; focus-visible draws a 3px ring
-(navy 40%, orange 45% on `cta`); disabled is 50% opacity without pointer events; loading keeps the
-label and swaps the icon for a spinner with `aria-busy`.
+Hover lifts 1px; focus-visible shows a 3px ring; disabled is 50% opacity.
 
-## 7. Forms and search
+## 6. Search and forms
 
-- **Search box:** one sheet with a 1.5px ink frame. Service field (label "What needs fixing?"), a rule,
-  location field (pin, area name, chevron), and an orange Search block flush to the right edge. On
-  phones the three stack inside the same frame. Suggestions open in a popover sheet beneath.
-- **Location picker:** popover with an area search, "Use my current location" first, then areas with
-  pro counts. If permission is refused the picker says so and keeps the list open, so choosing an area
-  is always one tap away.
-- **Inputs:** 44px, sheet fill, `--input` rule, 4px radius, 16px text on phones (no iOS zoom). Focus:
-  navy rule + ring. Errors: brick rule, message below naming the problem and the fix.
-- **Filter chips:** 36px pills on a horizontal scroller. Off: sheet + rule. On: navy wash + navy text.
+- **Home search:** a white panel with a light edge and a soft shadow: service field ("What do you
+  need?"), location field, orange Search. Stacks on phones.
+- **Search header:** navy band with the title, white fields with soft shadows, and white-tint popular
+  chips.
+- **Location picker:** area search, "Use my current location" first, then areas with counts. If
+  location permission is refused, a message explains and the area list stays one tap away.
+- **Filter chips:** 36px, white with a light edge and soft shadow; chosen ones fill.
 
-## 8. Navigation
+## 7. Navigation
 
-- **Header:** paper bar with a hairline; logo, the compact search on inner pages, Services, Guides,
-  Help, "List your business", account. Phones: logo, search icon route, menu sheet.
-- **Footer:** navy board with the trades index, company links and contact, plus the data credit line.
-- **Breadcrumbs:** small text on the board (profile) or above the H1 (service pages).
+- **Header:** white bar with a hairline. Logo, compact search on inner pages, Services, Guides, How it
+  works, Help, "List your business", account. Guides and Help step aside between 1280px and 1400px
+  when the header search is shown.
+- **Footer:** navy, with popular services, company links, contact and the data credit line.
+- **Breadcrumbs:** above the H1 on navy headers, on the signboard on profiles.
+
+## 8. Home
+
+1. **Hero, centred:** H1 "Something to fix? Find a local pro near you in {city}.", subtitle, the
+   search panel, popular-search pills and three facts, over a faint navy-tint glow. No photo.
+2. **What's the problem?:** a minimal two-column list. A round tinted icon, the problem in plain words
+   ("AC not cooling"), the service under it, and an arrow, with light hairlines only. It ends with a
+   "View all professionals" outline button.
+3. Then the existing sections: popular pros, all services, app, how it works, reviews, popular
+   searches, listing promo.
 
 ## 9. Provider components
 
-- **Name plate (`ProviderAvatar`):** the business logo; otherwise initials in display type on a tinted
-  plate with the trade glyph in the corner. Never a stock face.
-- **Rail stop (`ProviderCard`):** distance on the rail; name + verified tick; trade · para; address
-  line; open status with today's hours; rating only when real; matched service tag; Call + WhatsApp;
-  the whole row opens the profile.
-- **Nearby list (`SimilarProviders`):** compact rail stops with Call, titled "If they don't pick up".
-- **Signboard (`ProfileHeader`):** navy board carrying the breadcrumb row, the orange trade strip, the
-  logo or initials, the name, account type and verification, a dashed rule, then address, status line,
-  distance from the visitor and rating (only when real). Extra service chips and a facts ledger
-  (experience, jobs, travel radius, 24x7) appear only when they add something. The content keeps clear
-  of the right 24rem on desktop for the ticket.
-- **Contact ticket (`ContactCard`):** 1.5px ink border, a deep navy shadow, "Get in touch" eyebrow,
-  Call, WhatsApp, Directions, then a dashed tear line before address, email/website/save and verified
-  checks. Sticky on desktop, pulled up 14rem to overlap the signboard. Phones use the fixed bottom bar.
-- **Section eyebrows:** an orange uppercase line over a section title says why it is there, e.g. "If
-  they don't pick up" over the nearby list. The H2 itself keeps its search wording.
-- **Services menu (`ServicesList`):** ruled list like a shop's rate board: service, "main" marker,
-  price only when set; whole-category listings list what they cover.
-- **Status line:** `● Open now · 10 AM – 8 PM`, `● Closed · 10 AM – 8 PM`. No hours: nothing.
-- **Reviews:** shown only when real reviews exist. No placeholder.
+- **Avatar:** the business logo; otherwise initials with the trade glyph. Never a stock face.
+- **Result card (`ProviderCard`):** white, rounded 12px, soft shadow, lifts on hover. Avatar, name and
+  verified tick, account type, trade and area, matched service tag, address, status line; on the right
+  the distance in large type, then Call and WhatsApp.
+- **Signboard (`ProfileHeader`):** navy band with the breadcrumb row, an orange strip naming the trade
+  and area, the logo or initials, the name set large, account type and verification, then address,
+  status line, distance from the visitor and rating (only when real). Extra chips and a facts row
+  appear only when they add something.
+- **Contact ticket (`ContactCard`):** white, rounded 12px, light edge, soft deep shadow; "Get in
+  touch", Call, WhatsApp, Directions, a dashed tear line, then address, email, website, save and
+  verification checks. Sticky on desktop, pulled up to overlap the signboard. Phones use the fixed
+  bottom bar.
+- **Services (`ServicesList`):** ruled rows with light hairlines, price only when set; listings for a
+  whole category list what they cover as pills.
+- **Nearby pros (`SimilarProviders`):** a grid of compact cards with distance, Call and WhatsApp,
+  under the eyebrow "If they don't pick up".
+- **Status line:** `● Open now · 10 AM – 8 PM` / `● Closed`. No hours listed: nothing.
 
-## 10. Service and category components
+## 10. Category and service pages
 
-- **Problem index:** two-column ruled list of everyday problems linking to service pages, with an
-  outline icon (Lucide, 1.75 stroke) and an arrow.
-- **Trades directory:** every category as a heading with its pro count and its services as inline
-  links, set in newspaper-like columns.
-- **Para list:** neighbourhoods as large display words with counts, linking to area pages.
+- Navy header with breadcrumb, H1, description, location switcher, count and service pills.
+- Results and map, as on search.
+- **Guide (`CategoryGuide`)**, counted from KaajVa's own listings and dated "Last updated":
+  - how many are listed (individuals and businesses)
+  - where to find them (top areas with counts, linking to area pages)
+  - services people look for (with counts)
+  - what it costs (only when prices are listed)
+  Nothing is estimated.
+- **About and FAQs:** written copy, plus questions answered from the same counts (how many, which
+  areas, individuals or businesses, cost, booking fee). All of them go into the FAQ structured data.
+- Related services, area links and guides.
 
 ## 11. Icons and imagery
 
-Lucide icons at 16/20/24px, 1.75–2px stroke. No emoji. A business shows only its own logo, cover and
-work photos; categories and the home page use typography and real listing data instead of stock
-photographs.
+Lucide at 16/20/24px, 1.75–2px stroke, in round tinted tiles (`icon-tile`). No emoji. Search,
+category and profile pages show only a business's own photos.
 
 ## 12. Responsive behaviour
 
-- Phones first: single column, the search inside the masthead, the rail with a narrow distance column,
-  a fixed Call/WhatsApp bar on profiles, filters on a scroller and in a sheet.
-- Tablet (md): two-column indexes; the rail gets its full distance column.
-- Desktop (lg+): search results beside a sticky map; profiles with a sticky contact ticket; the home
-  masthead puts the live "near you" list beside the search.
-- No horizontal page scroll at any width from 320px.
+- Phones: one column, stacked search fields, filters on a scroller and in a sheet, a fixed
+  Call/WhatsApp bar on profiles, a floating Map button on results.
+- Tablet: two-column lists; cards lay out by their own width (container queries).
+- Desktop: results beside a sticky map; profiles with the overlapping sticky ticket.
+- No horizontal scroll at any width from 320px (checked at 360, 390, 820, 1280 and 1440).
 
-## 13. Interaction states
+## 13. States
 
-Hover: rows lift onto a sheet with `--shadow-lift`; links underline with offset 0.2em. Focus: visible
-3px ring everywhere. Loading: skeleton rows in `--muted` with the rail already drawn. Empty search:
-why, plus the nearest pros further out when the service is known. Location refused: message plus the
-area list. Unavailable business: "Currently unavailable" in place of hours, still listed.
+- **Loading:** skeletons in `--muted` that match each page (navy header for search, signboard for
+  profiles).
+- **Empty search:** says why, plus nearby alternatives when the service is known.
+- **Error:** a plain message and a way back.
+- **Location refused:** a message and the area list.
+- **Unavailable business:** "Currently unavailable" in place of hours; it stays listed.
 
-## 14. Accessibility floor
+## 14. Accessibility
 
-Body and placeholder text ≥ 4.5:1, large text ≥ 3:1 (pairs listed above). Tap targets ≥ 44px, Call
-52px. Icon-only buttons carry `aria-label`. `prefers-reduced-motion` stops the masthead word and all
-transitions.
+Text ≥ 4.5:1 (pairs above). Tap targets ≥ 44px. Icon-only buttons carry `aria-label`. Visible focus
+rings. `prefers-reduced-motion` turns off entrance motion.

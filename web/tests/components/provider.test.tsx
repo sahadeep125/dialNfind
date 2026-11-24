@@ -237,10 +237,7 @@ describe("cards and tiles", () => {
   it("SimilarProviders", () => {
     render(<SimilarProviders providers={[provider(), provider({ id: 2, slug: "b", distanceKm: null }), provider({ id: 3, slug: "c", distanceKm: null, locality: null, primaryCategory: null })] as never} />);
     expect(screen.getAllByRole("link")).toHaveLength(3);
-    // On the distance rail: the nearest stop shows its distance, the others say it is not known.
-    expect(screen.getByText("1.2")).toBeInTheDocument();
-    expect(screen.getByText("km away")).toBeInTheDocument();
-    expect(screen.getAllByText("Distance not known")).toHaveLength(2);
+    expect(screen.getByText(/1\.2 km away/)).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /Call/ }).length).toBe(3);
   });
 });

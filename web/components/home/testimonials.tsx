@@ -19,9 +19,9 @@ export async function Testimonials() {
   const reviews = await highlights();
   if (reviews.length === 0) return null;
   return (
-    <section className="section-y">
+    <section className="section-y border-y bg-card">
       <div className="container-wide">
-        <SectionHeading title="What neighbours say about local pros" />
+        <SectionHeading eyebrow="Customer reviews" title="What people say about local pros" />
         <ul className="mt-8 grid gap-5 md:grid-cols-3">
           {reviews.map((r) => (
             <li key={r.id} className="flex flex-col rounded-lg border bg-background p-6">

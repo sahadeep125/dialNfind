@@ -23,7 +23,6 @@ const NEAR_ME = [
 /** Plain text links, grouped: services by name, then services by neighbourhood. Good for visitors and for crawlers. */
 export function PopularSearches({ areas }: { areas: CategoryArea[] }) {
   const byArea = [...areas].sort((a, b) => b.providers - a.providers).slice(0, 12);
-  // The para band above already lists areas; here they are a compact list for people scanning the footer.
   return (
     <div className="grid gap-10 md:grid-cols-2">
       <div>

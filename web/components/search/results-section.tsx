@@ -3,7 +3,6 @@ import { SearchX } from "lucide-react";
 import type { Category, ProviderCard as ProviderCardType, SearchResponse } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ProviderCard } from "@/components/provider/provider-card";
-import { DistanceRail, RailStop } from "./distance-rail";
 import { Pagination } from "@/components/pagination";
 import { FilterBar } from "./filter-bar";
 import { MapViewButton, SortSelect } from "./results-toolbar";
@@ -49,15 +48,13 @@ export function ResultsSection({
   const empty = data.results.length === 0;
 
   const list = (
-    <DistanceRail label="Results, nearest first">
+    <div className="space-y-4">
       {data.results.map((p, i) => (
-        <RailStop key={p.id} distanceKm={p.distanceKm}>
-          <ResultHover id={p.id}>
-            <ProviderCard provider={p} source={source} highlight={highlight} topMatch={bestFirst && i === 0} hideDistance />
-          </ResultHover>
-        </RailStop>
+        <ResultHover key={p.id} id={p.id}>
+          <ProviderCard provider={p} source={source} highlight={highlight} topMatch={bestFirst && i === 0} />
+        </ResultHover>
       ))}
-    </DistanceRail>
+    </div>
   );
 
   return (
@@ -91,13 +88,11 @@ export function ResultsSection({
                   <p className="rounded-lg border bg-card px-4 py-3 text-sm text-foreground/80">
                     Nobody matches within this distance. These are the nearest ones further out:
                   </p>
-                  <DistanceRail className="mt-5" label="Nearest further out">
+                  <div className="mt-4 space-y-4">
                     {alternatives.map((p) => (
-                      <RailStop key={p.id} distanceKm={p.distanceKm}>
-                        <ProviderCard provider={p} source={source} highlight={highlight} hideDistance />
-                      </RailStop>
+                      <ProviderCard key={p.id} provider={p} source={source} highlight={highlight} />
                     ))}
-                  </DistanceRail>
+                  </div>
                 </div>
               ) : empty ? (
                 <EmptyState basePath={basePath} />
@@ -131,7 +126,7 @@ export function ResultsSection({
 
 function EmptyState({ basePath }: { basePath: string }) {
   return (
-    <div className="mt-2 flex flex-col items-center rounded-lg border-[1.5px] border-dashed border-input bg-card px-6 py-16 text-center">
+    <div className="mt-2 flex flex-col items-center rounded-lg border border-dashed bg-card px-6 py-16 text-center">
       <span className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <SearchX className="size-7" aria-hidden />
       </span>

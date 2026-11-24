@@ -50,7 +50,7 @@ describe("SearchBar", () => {
             }),
     });
     render(<SearchBar variant="joined" initialLocation={loc("Andheri")} />);
-    const input = screen.getByRole("combobox", { name: "What needs fixing?" });
+    const input = screen.getByRole("combobox", { name: "What do you need?" });
     await u.type(input, "t");
     expect(screen.queryByRole("listbox")).toBeNull();
     await u.type(input, "v");
@@ -502,5 +502,31 @@ describe("CategoryListing", () => {
     expect(String(listingMetadata(cat({ slug: "zzz", providerCount: 0 }), { id: 1, categoryId: 1, name: "Sub", slug: "zz-sub" }).description)).toContain("Compare sub providers");
     mockApi({ "/categories/x": { category: { slug: "x" } } });
     expect(await getCategory("x")).toEqual({ category: { slug: "x" } });
+  });
+});
+
+describe("CategoryGuide", () => {
+  it("answers questions from the counts, and leaves out what it cannot count", async () => {
+    const { guideFaqs, CategoryGuide } = await import("@/components/seo/category-guide");
+    const g = {
+      name: "Plumbing",
+      noun: "Plumbers",
+      total: 10,
+      individuals: 4,
+      areas: [{ area: "Hakimpara", href: "/services/plumbing/in/hakimpara", count: 5 }],
+      services: [{ name: "Leak Repair", href: "/services/plumbing/leak-repair", count: 3 }],
+      prices: { listed: 2, sampled: 10, min: 200, max: 500 },
+      updated: "1 Nov 2026",
+    };
+    const qs = guideFaqs(g).map((f) => f.q);
+    expect(qs).toContain("How many Plumbers listings are there in Siliguri?");
+    expect(guideFaqs(g).find((f) => f.q.startsWith("Which areas"))!.a).toMatch(/^Hakimpara \(5\) has/);
+    expect(guideFaqs({ ...g, individuals: 0 }).find((f) => f.q.startsWith("Are these"))!.a).toMatch(/^All 10 listings are shops/);
+    expect(guideFaqs({ ...g, individuals: 10 }).find((f) => f.q.startsWith("Are these"))!.a).toMatch(/individual professionals working/);
+    expect(guideFaqs({ ...g, prices: null, areas: [], individuals: null }).map((f) => f.q)).toHaveLength(2);
+    render(<CategoryGuide g={g} />);
+    expect(screen.getByRole("heading", { name: "Guide to Plumbers in Siliguri" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Hakimpara/ })).toHaveAttribute("href", "/services/plumbing/in/hakimpara");
+    expect(screen.getByText("What it costs")).toBeInTheDocument();
   });
 });

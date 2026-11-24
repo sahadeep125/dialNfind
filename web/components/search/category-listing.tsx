@@ -9,6 +9,7 @@ import { LocationSwitcher } from "@/components/search/location-switcher";
 import { ResultsSection, one, type SearchParamsRecord } from "@/components/search/results-section";
 import { SearchHero } from "@/components/search/search-hero";
 import { ServiceContent } from "@/components/seo/service-content";
+import { CategoryGuide, getCategoryGuide, guideFaqs } from "@/components/seo/category-guide";
 import { JsonLd } from "@/components/json-ld";
 import { CATEGORY_SEO } from "@/content/seo/categories";
 import { SUBCATEGORY_SEO } from "@/content/seo/subcategories";
@@ -127,6 +128,9 @@ export async function CategoryListing({
     },
   });
   const copy = area ? areaCopy(category, area, data.results.map((r) => r.businessName), data.total) : pageCopy(category, sub);
+  // The counted guide and its questions, for category and service pages (area pages have their own copy).
+  const guide = area || category.providerCount === 0 ? null : await getCategoryGuide({ category, sub, noun: sub ? sub.name : areaNoun(category), areas: allAreas });
+  const faqs = [...copy.faqs, ...(guide ? guideFaqs(guide).filter((f) => !copy.faqs.some((c) => c.q === f.q)) : [])];
 
   const crumbs = [
     { name: "Home", path: "/" },
@@ -153,7 +157,7 @@ export async function CategoryListing({
         data={[
           breadcrumbJsonLd(crumbs),
           itemListJsonLd(data.results.map((r) => ({ name: r.businessName, path: `/providers/${r.slug}` }))),
-          ...(copy.faqs.length ? [faqJsonLd(copy.faqs)] : []),
+          ...(faqs.length ? [faqJsonLd(faqs)] : []),
         ]}
       />
       <SearchHero
@@ -179,7 +183,7 @@ export async function CategoryListing({
       >
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           {!area && (
-            <div className="[&>div]:h-12">
+            <div className="on-light [&>div]:h-12">
               <LocationSwitcher location={location} />
             </div>
           )}
@@ -225,13 +229,14 @@ export async function CategoryListing({
         lockedSub={sub?.slug}
         source="category_browse"
       />
-      {(copy.intro.length > 0 || copy.faqs.length > 0 || guides.length > 0) && (
+      {guide && <CategoryGuide g={guide} />}
+      {(copy.intro.length > 0 || faqs.length > 0 || guides.length > 0) && (
         <ServiceContent
           heading={
             area ? `About ${noun} in ${area.area}` : sub ? `About ${sub.name.toLowerCase()} in ${SEO_CITY}` : `About ${category.name.toLowerCase()} in ${SEO_CITY}`
           }
           intro={copy.intro}
-          faqs={copy.faqs}
+          faqs={faqs}
           guides={guides}
           related={related}
           relatedHeading={area ? `More ${noun} nearby` : sub ? `More ${category.name.toLowerCase()} services` : `Popular ${category.name.toLowerCase()} services`}
@@ -256,8 +261,8 @@ function SubLink({ href, active, sp, children }: { href: string; active: boolean
       aria-current={active ? "page" : undefined}
       className={
         active
-          ? "shrink-0 rounded-full bg-primary px-3.5 py-1.5 text-sm font-semibold text-primary-foreground"
-          : "shrink-0 rounded-full border border-input bg-card px-3.5 py-1.5 text-sm font-medium text-foreground/80 transition-colors hover:border-ink-rule hover:text-foreground"
+          ? "shrink-0 rounded-md bg-white px-3.5 py-1.5 text-sm font-semibold text-board"
+          : "shrink-0 rounded-md bg-white/10 px-3.5 py-1.5 text-sm text-white/90 transition-colors hover:bg-white/20 hover:text-white"
       }
     >
       {children}

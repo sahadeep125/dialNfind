@@ -11,13 +11,13 @@ const PERKS = [
 /** The KaajVa app: live on the App Store, Android on the way. */
 export function AppPromo() {
   return (
-    <div className="flex h-full flex-col justify-between gap-8 rounded-lg border-[1.5px] border-ink-rule bg-card p-7 sm:p-10">
+    <div className="grid gap-8 overflow-hidden rounded-lg border bg-card p-6 sm:p-10 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
       <div>
-        <h2 className="text-3xl font-extrabold leading-[1.02] tracking-[-0.03em] md:text-[2.5rem]">Get the KaajVa app</h2>
+        <h2 className="text-2xl font-bold md:text-3xl">Get the KaajVa app</h2>
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
           The quickest way to find someone next time something breaks. Free, with no sign-up needed to search and call.
         </p>
-        <ul className="mt-6 grid gap-3 border-t pt-6 text-[15px]">
+        <ul className="mt-5 grid gap-2.5 text-[15px] sm:grid-cols-3 sm:gap-4">
           {PERKS.map((p) => (
             <li key={p.text} className="flex items-start gap-2.5">
               <p.icon className="mt-0.5 size-4 shrink-0 text-cta-strong" aria-hidden />
@@ -26,7 +26,7 @@ export function AppPromo() {
           ))}
         </ul>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 md:flex-col md:items-stretch">
         {APP_STORE_URL && (
           <StoreBadge href={APP_STORE_URL} caption="Download on the" name="App Store">
             <AppleLogo />
