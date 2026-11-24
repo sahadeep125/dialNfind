@@ -72,12 +72,25 @@ describe("rating and badges", () => {
         <ProviderAvatar name="Asha Rao" size="xl" categorySlug="plumbing" />
         <ProviderAvatar name="Asha Rao" size="lg" />
         <OpenStatus provider={{ isAvailable: false, isOpenNow: false, todayHours: "" }} />
-        <OpenStatus provider={{ isAvailable: true, isOpenNow: false, todayHours: "Closed today" }} />
+        <OpenStatus provider={{ isAvailable: true, isOpenNow: false, todayHours: "9 AM - 6 PM" }} />
+        <OpenStatus provider={{ isAvailable: true, isOpenNow: false, todayHours: "Closed" }} />
+        <OpenStatus provider={{ isAvailable: true, isOpenNow: false, todayHours: "Closed", hasHours: false }} />
       </>,
     );
     expect(screen.getByAltText("Asha Rao logo")).toBeInTheDocument();
     expect(screen.getByText("Currently unavailable")).toBeInTheDocument();
     expect(screen.getByText("Closed")).toBeInTheDocument();
+    expect(screen.getByText("· 9 AM - 6 PM")).toBeInTheDocument();
+    // A day off says so once, not "Closed · Closed"; a listing with no hours never claims to be closed.
+    expect(screen.getByText("Closed today")).toBeInTheDocument();
+    expect(screen.getByText("Hours not listed")).toBeInTheDocument();
+  });
+  it("compact open status leaves out the hours, and says nothing without hours", () => {
+    const { container } = render(<OpenStatus compact provider={{ isAvailable: true, isOpenNow: true, todayHours: "9 AM - 6 PM", hasHours: false }} />);
+    expect(container).toBeEmptyDOMElement();
+    render(<OpenStatus compact provider={{ isAvailable: true, isOpenNow: true, todayHours: "9 AM - 6 PM" }} />);
+    expect(screen.getByText("Open now")).toBeInTheDocument();
+    expect(screen.queryByText(/9 AM/)).toBeNull();
   });
 });
 
@@ -183,11 +196,11 @@ describe("cards and tiles", () => {
   });
   it("ProviderTile variants", () => {
     const second = render(<ProviderTile provider={provider() as never} source="category_browse" />);
-    expect(screen.getByText("Verified")).toBeInTheDocument();
+    expect(screen.getByLabelText("Verified")).toBeInTheDocument();
     second.unmount();
     render(<ProviderTile provider={provider({ verificationStatus: "none", primaryCategory: null, startingPrice: null, locality: null }) as never} />);
     expect(screen.getByText("Price on request")).toBeInTheDocument();
-    expect(screen.queryByText("Verified")).toBeNull();
+    expect(screen.queryByLabelText("Verified")).toBeNull();
   });
   it("cards name an individual professional by profession and a business by category", () => {
     const one = render(<ProviderCard provider={provider({ businessName: "Deep Saha", businessType: "individual", profession: "Plumber", categoryLabel: "Plumber", serviceAreaLabel: "Ghoraguli" }) as never} />);
@@ -370,9 +383,9 @@ describe("profile sections", () => {
 describe("photos", () => {
   const photos = (n: number) => Array.from({ length: n }, (_, i) => ({ id: i, title: i ? `P${i}` : "", imageUrl: `https://img.test/${i}.webp` }));
 
-  it("shows a stock photo when there are none", () => {
-    render(<PhotoGallery photos={[]} businessName="Shop" categorySlug="plumbing" />);
-    expect(screen.getByText("Representative photo")).toBeInTheDocument();
+  it("shows nothing, not a stock photo, when there are none", () => {
+    const { container } = render(<PhotoGallery photos={[]} businessName="Shop" categorySlug="plumbing" />);
+    expect(container).toBeEmptyDOMElement();
   });
   it.each([1, 2, 3, 4, 5, 7])("lays out %i photos", (n) => {
     render(
