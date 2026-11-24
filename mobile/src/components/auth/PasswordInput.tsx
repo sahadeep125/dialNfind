@@ -1,5 +1,5 @@
 import { forwardRef, useState, type ComponentProps } from "react";
-import type { TextInput } from "react-native";
+import type { TextInputInstance } from "react-native";
 import { Eye, EyeOff, Lock } from "lucide-react-native";
 
 import { AppInput } from "@/components/design-system";
@@ -11,7 +11,7 @@ type Props = Omit<
 >;
 
 /** Password field with a show or hide toggle. */
-export const PasswordInput = forwardRef<TextInput, Props>(function PasswordInput(props, ref) {
+export const PasswordInput = forwardRef<TextInputInstance, Props>(function PasswordInput(props, ref) {
   const theme = useTheme();
   const [visible, setVisible] = useState(false);
   const Icon = visible ? EyeOff : Eye;

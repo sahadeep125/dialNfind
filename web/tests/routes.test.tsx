@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { revalidateTag, updateTag } from "next/cache";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
 import { request } from "./next-state";
 import { json, mockApi, provider, user } from "./helpers";
 import { POST as login } from "@/app/api/auth/login/route";
@@ -204,6 +204,18 @@ describe("revalidate route", () => {
     expect(revalidateTag).toHaveBeenCalledTimes(2);
     for (const body of [{}, { tags: [] }, { tags: ["Bad Tag"] }, { tags: [1] }, { tags: Array.from({ length: 51 }, (_, i) => `t${i}`) }, "not json"]) {
       expect((await call(body, "s3cret")).status).toBe(400);
+    }
+    vi.unstubAllEnvs();
+  });
+  it("drops every cached page for { all: true } (sent when the container starts after a deploy)", async () => {
+    expect((await call({ all: true }, "s3cret")).status).toBe(401);
+    expect(revalidatePath).not.toHaveBeenCalled();
+    vi.stubEnv("REVALIDATE_SECRET", "s3cret");
+    const res = await call({ all: true }, "s3cret");
+    expect(await res.json()).toEqual({ ok: true, revalidated: "all" });
+    expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+    for (const tag of ["providers", "categories", "app-config", "stats", "reviews", "sitemap"]) {
+      expect(revalidateTag).toHaveBeenCalledWith(tag, { expire: 0 });
     }
     vi.unstubAllEnvs();
   });

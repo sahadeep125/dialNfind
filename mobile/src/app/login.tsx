@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { StyleSheet, type TextInput } from "react-native";
+import { StyleSheet, type TextInputInstance } from "react-native";
 import { router } from "expo-router";
 import { Mail } from "lucide-react-native";
 
@@ -22,7 +22,7 @@ export default function LoginScreen() {
   const theme = useTheme();
   const toast = useToast();
   const { login } = useAuthActions();
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string | null>>({});

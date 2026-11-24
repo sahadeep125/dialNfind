@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import type { TextInput } from "react-native";
+import type { TextInputInstance } from "react-native";
 import { router } from "expo-router";
 import { Mail, Phone, UserRound } from "lucide-react-native";
 
@@ -30,9 +30,9 @@ export default function RegisterScreen() {
   const theme = useTheme();
   const toast = useToast();
   const { register } = useAuthActions();
-  const emailRef = useRef<TextInput>(null);
-  const phoneRef = useRef<TextInput>(null);
-  const passwordRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInputInstance>(null);
+  const phoneRef = useRef<TextInputInstance>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
   const [values, setValues] = useState<Record<Field, string>>({
     name: "",
     email: "",

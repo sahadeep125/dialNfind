@@ -55,8 +55,11 @@ export async function api<T>(path: string, init: RequestInit & { query?: Query; 
  */
 export async function publicApi<T>(path: string, { query, revalidate = 300, tags }: { query?: Query; revalidate?: number; tags?: string[] } = {}): Promise<T> {
   try {
+    // REVALIDATE_SECRET tells the API this is the website itself, not one visitor, so its per-address
+    // rate limit does not turn a search engine's crawl into 500 pages (server/src/lib/rate-limit.ts).
+    const secret = process.env.REVALIDATE_SECRET;
     const res = await fetch(`${API_URL}${path}${query ? toQuery(query) : ""}`, {
-      headers: { accept: "application/json" },
+      headers: { accept: "application/json", ...(secret ? { "x-web-secret": secret } : {}) },
       next: { revalidate, tags },
     });
     if (!res.ok) {
@@ -70,7 +73,8 @@ export async function publicApi<T>(path: string, { query, revalidate = 300, tags
     if (err instanceof ApiError || process.env.NEXT_PHASE !== "phase-production-build") throw err;
     console.warn(`[publicApi] API fetch fallback for ${path}:`, err instanceof Error ? err.message : err);
     if (path.includes("/stats")) return { providers: 0, categories: 0, cities: 0, reviews: 0 } as unknown as T;
-    if (path.includes("/sitemap")) return { providers: [], totalPages: 0, page: 1, pageSize: 50 } as unknown as T;
+    if (path.includes("/sitemap")) return { results: [], total: 0, totalPages: 0, page: 1, pageSize: 50 } as unknown as T;
+    if (path.includes("/category-areas")) return { areas: [] } as unknown as T;
     if (path.includes("/reviews")) return { reviews: [], page: 1, totalPages: 0, totalCount: 0 } as unknown as T;
     if (path.includes("/categories")) return { categories: [] } as unknown as T;
     if (path.includes("/popular")) return { terms: [] } as unknown as T;
@@ -80,9 +84,9 @@ export async function publicApi<T>(path: string, { query, revalidate = 300, tags
     return new Proxy({} as Record<string, unknown>, {
       get(_, prop: string) {
         if (typeof prop === "symbol" || prop === "then") return undefined;
-        if (["categories", "reviews", "terms", "results", "providers", "items"].includes(prop)) return [];
+        if (["categories", "reviews", "terms", "results", "providers", "items", "areas"].includes(prop)) return [];
         if (["config"].includes(prop)) return { min_review_length: 10 };
-        if (["page", "pageSize", "totalPages", "totalCount", "cities", "count"].includes(prop)) return 0;
+        if (["page", "pageSize", "total", "totalPages", "totalCount", "cities", "count"].includes(prop)) return 0;
         return undefined;
       },
     }) as unknown as T;

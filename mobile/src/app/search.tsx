@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ScrollView, StyleSheet, View, type TextInput } from "react-native";
+import { ScrollView, StyleSheet, View, type TextInputInstance } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Search, X } from "lucide-react-native";
 
@@ -25,7 +25,7 @@ export default function SearchScreen() {
     sub?: string;
   }>();
   const addSearch = useSearchHistoryStore((s) => s.addSearch);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
   const initialSort = SORTS.find((s) => s === params.sort) ?? "relevance";
   const [text, setText] = useState(params.q ?? "");
   const [editing, setEditing] = useState(
