@@ -621,6 +621,17 @@ model Category {
   slug           String   @unique
   description    String?
   iconUrl        String?  @map("icon_url")
+  // The category page's search content, written in the admin console. Null or empty means the website uses
+  // its own written copy (web/content/seo/categories.ts) or text generated from the category.
+  imageUrl       String?  @map("image_url")
+  imageAlt       String?  @map("image_alt") @db.VarChar(150)
+  seoTitle       String?  @map("seo_title") @db.VarChar(70)
+  seoDescription String?  @map("seo_description") @db.VarChar(200)
+  seoHeading     String?  @map("seo_heading") @db.VarChar(100)
+  // Paragraphs separated by a blank line.
+  seoContent     String?  @map("seo_content")
+  // [{ q, a }]
+  faqs           Json     @default("[]")
   // Frontend picks a component from this key, e.g. repair_appliance, tutor.
   uiTemplate     String   @default("default") @map("ui_template")
   // What an individual who offers this service is called, e.g. "Plumber" for Plumbing.

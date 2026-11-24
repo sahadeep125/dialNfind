@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import { isOptimizableImage } from "@/lib/image-hosts";
 import type { LocationOption } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { SearchBar } from "./search-bar";
@@ -12,6 +14,7 @@ export function SearchHero({
   popular = [],
   above,
   size = "md",
+  image,
   className,
   children,
 }: {
@@ -23,6 +26,8 @@ export function SearchHero({
   /** Small content over the title, such as a breadcrumb. */
   above?: React.ReactNode;
   size?: "lg" | "md";
+  /** A photo beside the title on wider screens (category pages). */
+  image?: { src: string; alt: string };
   className?: string;
   /** Replaces the search box and "Popular" row, for pages that filter in place. */
   children?: React.ReactNode;
@@ -30,7 +35,7 @@ export function SearchHero({
   return (
     // The dark header band: navy behind the title and search, so the white fields and the results below stand out.
     <section className={cn("dark-band bg-board text-board-foreground", className)}>
-      <div className={cn("container-wide", size === "lg" ? "py-10 md:py-14" : "py-8 md:py-10")}>
+      <div className={cn("container-wide", size === "lg" ? "py-10 md:py-14" : "py-8 md:py-10", image && "lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center lg:gap-10")}>
         <div className="min-w-0">
           {above}
           <h1 className={cn("max-w-3xl font-bold leading-tight text-white", size === "lg" ? "text-3xl md:text-[2.75rem]" : "text-2xl md:text-[2rem]")}>{title}</h1>
@@ -51,6 +56,11 @@ export function SearchHero({
             </div>
           )}
         </div>
+        {image && (
+          <div className="relative hidden aspect-[4/3] overflow-hidden rounded-lg bg-white/5 lg:block">
+            <Image src={image.src} alt={image.alt} fill priority sizes="340px" unoptimized={image.src.startsWith("http") && !isOptimizableImage(image.src)} className="object-cover" />
+          </div>
+        )}
       </div>
     </section>
   );

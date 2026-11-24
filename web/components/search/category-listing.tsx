@@ -4,7 +4,6 @@ import { ChevronRight } from "lucide-react";
 import { api, publicApiOrNull } from "@/lib/api";
 import { areaHref, getCategoryAreas, type CategoryArea } from "@/lib/category-areas";
 import type { Category, SearchResponse, Subcategory } from "@/lib/types";
-import { CategoryIcon } from "@/components/site/category-icon";
 import { LocationSwitcher } from "@/components/search/location-switcher";
 import { ResultsSection, one, type SearchParamsRecord } from "@/components/search/results-section";
 import { SearchHero } from "@/components/search/search-hero";
@@ -12,11 +11,13 @@ import { ServiceContent } from "@/components/seo/service-content";
 import { CategoryGuide, getCategoryGuide, guideFaqs } from "@/components/seo/category-guide";
 import { JsonLd } from "@/components/json-ld";
 import { CATEGORY_SEO } from "@/content/seo/categories";
+import type { ServiceSeo } from "@/content/types";
 import { SUBCATEGORY_SEO } from "@/content/seo/subcategories";
 import { guidesForCategory, guidesForSubcategory } from "@/lib/guides";
 import { resolveLocation } from "@/lib/location";
 import { SEO_CITY, clip, pageMetadata } from "@/lib/seo";
 import { serviceHref } from "@/lib/service-href";
+import { categoryPhoto } from "@/lib/stock-images";
 import { breadcrumbJsonLd, faqJsonLd, itemListJsonLd } from "@/lib/structured-data";
 
 export const getCategory = (slug: string) =>
@@ -72,10 +73,29 @@ export function areaMetadata(category: Category, area: CategoryArea): Metadata {
   return pageMetadata({ title: copy.title, description: copy.description, path: areaHref(category.slug, area.slug) });
 }
 
-/** Editorial copy for the page, or text generated from the category when none is written yet. */
-function pageCopy(category: Category, sub: Subcategory | undefined) {
-  const written = sub ? SUBCATEGORY_SEO[sub.slug] : CATEGORY_SEO[category.slug];
-  if (written) return written;
+/** The category page content written in the admin console, field by field over the repository copy. */
+function adminCopy(category: Category, base: ServiceSeo): ServiceSeo {
+  const paragraphs = (category.seoContent ?? "")
+    .split(/\n\s*\n/)
+    .map((p) => p.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const faqs = (category.faqs ?? []).filter((f) => f?.q?.trim() && f?.a?.trim());
+  return {
+    title: category.seoTitle?.trim() || base.title,
+    description: category.seoDescription?.trim() ? clip(category.seoDescription) : base.description,
+    h1: category.seoHeading?.trim() || base.h1,
+    intro: paragraphs.length ? paragraphs : base.intro,
+    faqs: faqs.length ? faqs : base.faqs,
+  };
+}
+
+/** Admin-written copy, else editorial copy, else text generated from the category when none is written yet. */
+function pageCopy(category: Category, sub: Subcategory | undefined): ServiceSeo {
+  if (sub) return SUBCATEGORY_SEO[sub.slug] ?? generatedCopy(category, sub);
+  return adminCopy(category, CATEGORY_SEO[category.slug] ?? generatedCopy(category, undefined));
+}
+
+function generatedCopy(category: Category, sub: Subcategory | undefined): ServiceSeo {
   const name = sub ? sub.name : category.name;
   const count = category.providerCount > 0 ? `${category.providerCount.toLocaleString("en-IN")}+ ` : "";
   return {
@@ -89,8 +109,10 @@ function pageCopy(category: Category, sub: Subcategory | undefined) {
 
 export function listingMetadata(category: Category, sub: Subcategory | undefined): Metadata {
   const copy = pageCopy(category, sub);
+  // An uploaded category photo is the link preview; otherwise the site's default share image is used.
+  const images = category.imageUrl ? [{ url: category.imageUrl, alt: categoryPhoto(category).alt }] : undefined;
   // Location, filters and paging all point back to the plain category or subcategory address.
-  return pageMetadata({ title: copy.title, description: copy.description, path: serviceHref(category.slug, sub?.slug) });
+  return pageMetadata({ title: copy.title, description: copy.description, path: serviceHref(category.slug, sub?.slug), images });
 }
 
 /** A category page, or one of its subcategories: hero, results near the visitor, then the written guide. */
@@ -180,6 +202,7 @@ export async function CategoryListing({
         }
         title={copy.h1}
         subtitle={category.description}
+        image={sub || area ? undefined : categoryPhoto(category)}
       >
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           {!area && (
