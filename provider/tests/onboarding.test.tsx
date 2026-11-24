@@ -3,7 +3,7 @@ import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { OnboardingPage } from "@/pages/onboarding";
 import { DEFAULT_HOURS } from "@/components/editors";
-import { categories, json, lastBody, mockApi, pdfFile, pickOption, providerMe, renderApp, renderWith, signedIn, stubUploads } from "./helpers";
+import { categories, json, lastBody, mockApi, pdfFile, pickOption, profile, providerMe, renderApp, renderWith, signedIn, stubUploads } from "./helpers";
 
 const where = () => screen.getByTestId("where").textContent;
 const noBusiness = { provider: null };
@@ -130,8 +130,8 @@ describe("claim page", () => {
 
 type DraftStep = { step: number } & Record<string, unknown>;
 const fullDraft = (over: Partial<DraftStep> = {}) => ({
-  step: 4,
-  business: { businessName: "  Ravi Repairs ", businessType: "company", yearsExperience: "", description: "" },
+  step: 5,
+  business: { businessName: "  Ravi Repairs ", businessType: "company", professionKey: "", profession: "", yearsExperience: "", description: "" },
   services: [{ categoryId: 1, subcategoryId: 11, startingPrice: 300, priceUnit: "per_visit", isPrimary: true, id: 99 }],
   location: { addressLine: "", locality: "", city: "Siliguri", state: "West Bengal", pincode: "", latitude: 26.7, longitude: 88.4, serviceRadiusKm: 10 },
   areas: [],
@@ -139,6 +139,12 @@ const fullDraft = (over: Partial<DraftStep> = {}) => ({
   contact: { phone: "98765 43210", whatsappNumber: "", email: " a@b.co ", website: "", acceptsCalls: true, acceptsWhatsapp: true },
   ...over,
 });
+
+const professions = [
+  { label: "AC Technician", categoryId: 1, categoryName: "Electronics Repair", categorySlug: "electronics-repair", subcategoryId: 12, subcategoryName: "AC Repair" },
+  { label: "Plumber", categoryId: 2, categoryName: "Plumbing", categorySlug: "plumbing", subcategoryId: null, subcategoryName: null },
+  { label: "TV Repairer", categoryId: 1, categoryName: "Electronics Repair", categorySlug: "electronics-repair", subcategoryId: 11, subcategoryName: "TV Repair" },
+];
 
 /** A signed-in account with no business yet; once onboarding succeeds, /provider/me returns one. */
 function onboardingApi(extra: Record<string, unknown> = {}) {
@@ -148,6 +154,7 @@ function onboardingApi(extra: Record<string, unknown> = {}) {
     ...routes,
     "/provider/me": () => json(live ? providerMe() : { ...providerMe(), ...noBusiness }),
     "/categories": { categories },
+    "/categories/professions": { professions },
     "/locations": { locations: [] },
     "/provider/dashboard": json({ error: { message: "x" } }, 500),
     "/provider/profile": json({ error: { message: "x" } }, 500),
@@ -161,12 +168,19 @@ function onboardingApi(extra: Record<string, unknown> = {}) {
 }
 
 describe("onboarding", () => {
-  it("walks through every step with validation", async () => {
+  it("walks a business through every step with validation", async () => {
     const fetch = onboardingApi();
     await renderApp("/onboarding");
 
-    // Step 1: business.
+    // Step 1: account type. Individual professional comes first and is picked by default.
+    expect(await screen.findByText("How do you work?")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Individual professional/ })).toHaveAttribute("aria-checked", "true");
+    await userEvent.click(screen.getByRole("radio", { name: /Business/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+
+    // Step 2: business details.
     const name = await screen.findByLabelText(/Business name/);
+    await userEvent.clear(name);
     await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
     expect(screen.getByText("Enter your business name")).toBeInTheDocument();
     await userEvent.type(name, "Ravi Repairs");
@@ -182,10 +196,9 @@ describe("onboarding", () => {
     await userEvent.clear(screen.getByLabelText(/Description/));
     await userEvent.type(screen.getByLabelText(/Description/), "We fix TVs");
     expect(screen.getByText(/^10 of 2,000 characters/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /A company or shop/ }));
     await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
 
-    // Step 2: services.
+    // Step 3: services.
     expect(await screen.findByText("What services do you offer?")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
     expect(screen.getByText("Pick at least one service")).toBeInTheDocument();
@@ -193,9 +206,9 @@ describe("onboarding", () => {
     await userEvent.click(screen.getAllByRole("checkbox")[0]!);
     expect(screen.queryByText("Pick at least one service")).not.toBeInTheDocument();
     // The step markers let the provider go back to a finished step, but not forward.
-    await userEvent.click(screen.getByRole("button", { name: "3" }));
+    await userEvent.click(screen.getByRole("button", { name: "4" }));
     expect(screen.getByText("What services do you offer?")).toBeInTheDocument();
-    await userEvent.click(screen.getAllByRole("button").find((b) => b.className.includes("bg-success"))!);
+    await userEvent.click(screen.getAllByRole("button").filter((b) => b.className.includes("bg-success"))[1]!);
     expect(screen.getByText("Tell us about your business")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
     await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
@@ -223,7 +236,7 @@ describe("onboarding", () => {
     // Step 5: contact.
     expect(await screen.findByText("How should customers reach you?")).toBeInTheDocument();
     expect(screen.getByLabelText(/Business phone/)).toHaveValue("+919876543210");
-    expect(screen.getByText(/Ravi Repairs · 1 services · Pradhan Nagar, Siliguri · 10 km radius/)).toBeInTheDocument();
+    expect(screen.getByText(/Ravi Repairs – Pradhan Nagar · 1 services · 10 km radius/)).toBeInTheDocument();
     const [calls, whatsapp] = screen.getAllByRole("switch");
     await userEvent.click(calls!);
     await userEvent.click(whatsapp!);
@@ -251,10 +264,11 @@ describe("onboarding", () => {
     await userEvent.click(screen.getByRole("button", { name: /Publish my listing/ }));
 
     await waitFor(() => expect(where()).toBe("/"));
-    expect(await screen.findByText("Your business is live on KaajVa")).toBeInTheDocument();
+    expect(await screen.findByText("Your business is listed on KaajVa")).toBeInTheDocument();
     expect(lastBody(fetch, "/provider/onboarding")).toMatchObject({
       businessName: "Ravi Repairs",
       businessType: "company",
+      profession: null,
       yearsExperience: 5,
       description: "We fix TVs",
       locality: "Pradhan Nagar",
@@ -265,6 +279,107 @@ describe("onboarding", () => {
     expect(localStorage.getItem("kjv_onboarding_7")).toBeNull();
   });
 
+  it("lists an individual professional under their name and profession", async () => {
+    const fetch = onboardingApi();
+    await renderApp("/onboarding");
+    await userEvent.click(await screen.findByRole("button", { name: /Continue/ }));
+
+    // The name starts as the account's; a profession must be picked.
+    expect(await screen.findByText("About you")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Your full name/)).toHaveValue("Ravi Kumar");
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    expect(screen.getByText("Pick your profession")).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/Your profession/), "zzz");
+    expect(screen.getByText(/No profession matches/)).toBeInTheDocument();
+    await userEvent.clear(screen.getByLabelText(/Your profession/));
+    await userEvent.type(screen.getByLabelText(/Your profession/), "plu");
+    expect(screen.queryByRole("radio", { name: "AC Technician" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: "Plumber" }));
+    expect(screen.queryByText("Pick your profession")).not.toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/Your title/), "Senior Plumber");
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+
+    // Services stay inside the profession's category.
+    expect(await screen.findByText("Your services as Senior Plumber")).toBeInTheDocument();
+    expect(screen.getByText(/This listing is for one profession/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Electronics Repair" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /Continue/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /Continue/ }));
+    expect(await screen.findByLabelText(/^Phone number/)).toHaveValue("+919876543210");
+    expect(screen.getByText(/Ravi Kumar – Senior Plumber – Siliguri · 1 services/)).toBeInTheDocument();
+    await act(async () => new Promise((r) => setTimeout(r, 450)));
+    await userEvent.click(screen.getByRole("button", { name: /Publish my listing/ }));
+    expect(await screen.findByText("You are listed on KaajVa")).toBeInTheDocument();
+    expect(lastBody(fetch, "/provider/onboarding")).toMatchObject({
+      businessName: "Ravi Kumar",
+      businessType: "individual",
+      profession: "Senior Plumber",
+      services: [{ categoryId: 2, subcategoryId: null, isPrimary: true }],
+    });
+  });
+
+  it("swaps the profession and keeps an individual to one category", async () => {
+    localStorage.setItem(
+      "kjv_onboarding_7",
+      JSON.stringify(fullDraft({ step: 1, business: { businessName: "Ravi", businessType: "individual", professionKey: "", profession: "", yearsExperience: "", description: "" }, services: [] })),
+    );
+    const fetch = onboardingApi();
+    await renderApp("/onboarding");
+    await userEvent.click(await screen.findByRole("radio", { name: "TV Repairer" }));
+    await userEvent.click(screen.getByRole("radio", { name: "AC Technician" }));
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    expect(await screen.findByText("Your services as AC Technician")).toBeInTheDocument();
+    // Both services are in Electronics Repair; AC is the main one.
+    expect(screen.getAllByRole("checkbox", { checked: true })).toHaveLength(2);
+    await userEvent.click(screen.getByRole("button", { name: /Back/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Back/ }));
+    // A business may mix categories; going back to individual keeps the profession's category only.
+    await userEvent.click(screen.getByRole("radio", { name: /Business/ }));
+    await userEvent.click(screen.getByRole("radio", { name: /Individual professional/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    expect(await screen.findByText("Your services as AC Technician")).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalled();
+  });
+
+  it("adds another profession to an individual's account", async () => {
+    const me = {
+      provider: { id: 3, slug: "ravi-plumber", businessName: "Ravi Kumar", businessType: "individual", professionLabel: "Plumber", status: "active", profileCompletenessPct: 60, verificationStatus: "none", locality: null, city: "Siliguri" },
+      listings: [{ id: 3, slug: "ravi-plumber", businessName: "Ravi Kumar", businessType: "individual", professionLabel: "Plumber", status: "active", profileCompletenessPct: 60, verificationStatus: "none", locality: null, city: "Siliguri" }],
+      accountType: "individual",
+      canAddListing: true,
+    };
+    const fetch = mockApi({
+      ...signedIn({}, me),
+      "/categories": { categories },
+      "/categories/professions": { professions },
+      "/locations": { locations: [] },
+      "/provider/profile": { provider: profile({ businessName: "Ravi Kumar", businessType: "individual", phone: "+919811111111", locality: "Ghoraguli" }) },
+      "/provider/dashboard": json({ error: { message: "x" } }, 500),
+      "/me/notifications": { notifications: [], unread: 0 },
+      "POST /provider/onboarding": () => {
+        me.listings.push({ ...me.listings[0]!, id: 9, professionLabel: "TV Repairer" });
+        return json({ token: null, provider: { id: 9 } });
+      },
+    });
+    await renderApp("/onboarding?add=1");
+    expect(await screen.findByText("Add another profession")).toBeInTheDocument();
+    expect(await screen.findByLabelText(/Your full name/)).toHaveValue("Ravi Kumar");
+    expect(screen.getByLabelText(/Your full name/)).toHaveAttribute("readonly");
+    expect(screen.getByRole("radio", { name: "Plumber" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("radio", { name: "TV Repairer" }));
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    for (let i = 0; i < 3; i++) await userEvent.click(await screen.findByRole("button", { name: /Continue/ }));
+    expect(await screen.findByLabelText(/^Phone number/)).toHaveValue("+919811111111");
+    await act(async () => new Promise((r) => setTimeout(r, 450)));
+    await userEvent.click(screen.getByRole("button", { name: /Publish my listing/ }));
+    expect(await screen.findByText("Your new profession is listed")).toBeInTheDocument();
+    expect(localStorage.getItem("kjv_provider_listing")).toBe("9");
+    expect(lastBody(fetch, "/provider/onboarding")).toMatchObject({ businessType: "individual", locality: "Ghoraguli", services: [{ categoryId: 1, subcategoryId: 11 }] });
+    await waitFor(() => expect(where()).toBe("/"));
+  });
+
   it("resumes a saved draft, reports a failed publish, and signs in with a returned token", async () => {
     localStorage.setItem("kjv_onboarding_7", JSON.stringify(fullDraft()));
     let fail = true;
@@ -272,7 +387,7 @@ describe("onboarding", () => {
       "POST /provider/onboarding": () => (fail ? json({ error: { message: "Name is taken" } }, 409) : json({ token: "new-token" })),
     });
     await renderApp("/onboarding");
-    expect(await screen.findByText(/Ravi Repairs · 1 services · Siliguri · 10 km radius/)).toBeInTheDocument();
+    expect(await screen.findByText(/Ravi Repairs – Siliguri · 1 services · 10 km radius/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /Publish my listing/ }));
     expect(await screen.findByText("Name is taken")).toBeInTheDocument();
     fail = false;
@@ -288,12 +403,14 @@ describe("onboarding", () => {
   });
 
   it("goes back a step, clears the form error, and leaves from the first step", async () => {
-    localStorage.setItem("kjv_onboarding_7", JSON.stringify(fullDraft({ step: 1 })));
+    localStorage.setItem("kjv_onboarding_7", JSON.stringify(fullDraft({ step: 2 })));
     onboardingApi();
     await renderApp("/onboarding");
     expect(await screen.findByText("What services do you offer?")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /Back/ }));
     expect(screen.getByText("Tell us about your business")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /Back/ }));
+    expect(screen.getByText("How do you work?")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /Back/ }));
     await waitFor(() => expect(where()).toBe("/start"));
   });
@@ -301,7 +418,9 @@ describe("onboarding", () => {
   it("saves the draft as the provider types", async () => {
     onboardingApi();
     await renderApp("/onboarding");
-    await userEvent.type(await screen.findByLabelText(/Business name/), "Draft Shop");
+    await userEvent.click(await screen.findByRole("button", { name: /Continue/ }));
+    await userEvent.clear(await screen.findByLabelText(/Your full name/));
+    await userEvent.type(screen.getByLabelText(/Your full name/), "Draft Shop");
     await waitFor(() => expect(JSON.parse(localStorage.getItem("kjv_onboarding_7")!).business.businessName).toBe("Draft Shop"));
   });
 
@@ -314,7 +433,8 @@ describe("onboarding", () => {
   it("works without a signed-in account, keeping an anonymous draft", async () => {
     mockApi({});
     renderWith(<OnboardingPage />);
-    await userEvent.type(screen.getByLabelText(/Business name/), "Anon");
+    await userEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    await userEvent.type(screen.getByLabelText(/Your full name/), "Anon");
     await act(async () => new Promise((r) => setTimeout(r, 450)));
     expect(JSON.parse(localStorage.getItem("kjv_onboarding_anon")!).contact).toMatchObject({ phone: "", email: "" });
   });

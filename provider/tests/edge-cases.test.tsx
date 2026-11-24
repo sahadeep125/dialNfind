@@ -179,8 +179,8 @@ describe("remaining branches", () => {
     localStorage.setItem(
       "kjv_onboarding_7",
       JSON.stringify({
-        step: 4,
-        business: { businessName: "", businessType: "individual", yearsExperience: "", description: "" },
+        step: 5,
+        business: { businessName: "", businessType: "individual", professionKey: "", profession: "", yearsExperience: "", description: "" },
         services: [],
         location: { addressLine: "", locality: "", city: "Siliguri", state: "WB", pincode: "", latitude: 1, longitude: 2, serviceRadiusKm: 10 },
         areas: [],
@@ -190,7 +190,7 @@ describe("remaining branches", () => {
     );
     mockApi(signedIn({}, { provider: null }));
     await renderApp("/onboarding");
-    expect(await screen.findByText(/Your business · 0 services/)).toBeInTheDocument();
+    expect(await screen.findByText(/You – Siliguri · 0 services/)).toBeInTheDocument();
   });
 
   it("clears no error while typing a first reply", async () => {

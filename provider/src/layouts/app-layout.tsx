@@ -14,9 +14,12 @@ import {
   Menu,
   MessageSquare,
   PhoneIncoming,
+  Plus,
   Settings,
   Store,
   Wrench,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
@@ -27,6 +30,7 @@ import { initials } from "@/lib/format";
 import type { ProviderProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
+import { AccountTypeBadge, listingTitle } from "@/components/account-type";
 import { NotificationBell } from "@/components/notifications";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -40,7 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const NAV = [
+const nav = (individual: boolean) => [
   {
     title: "Overview",
     items: [
@@ -50,9 +54,9 @@ const NAV = [
     ],
   },
   {
-    title: "Business profile",
+    title: individual ? "Your listing" : "Business profile",
     items: [
-      { to: "/profile", label: "Business details", icon: Store },
+      { to: "/profile", label: individual ? "Profile details" : "Business details", icon: Store },
       { to: "/services", label: "Services and prices", icon: Wrench },
       { to: "/hours", label: "Working hours", icon: Clock },
       { to: "/areas", label: "Service areas", icon: MapPinned },
@@ -72,9 +76,10 @@ export function useProfile() {
 }
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const { providerState } = useAuth();
   return (
     <nav className="space-y-6">
-      {NAV.map((group) => (
+      {nav(providerState?.provider?.businessType === "individual").map((group) => (
         <div key={group.title}>
           <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-white/40">{group.title}</div>
           <div className="space-y-0.5">
@@ -98,6 +103,65 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       ))}
     </nav>
+  );
+}
+
+/**
+ * The listing being worked on. An individual professional has one listing per profession and switches
+ * between them here, or adds another profession.
+ */
+function ListingSwitcher() {
+  const { providerState, switchListing } = useAuth();
+  const provider = providerState?.provider;
+  if (!provider) return null;
+  const listings = providerState?.listings ?? [provider];
+  const individual = provider.businessType === "individual";
+  const canAdd = individual && !!providerState?.canAddListing;
+  const heading = (
+    <div className="min-w-0 text-left">
+      <div className="truncate font-semibold">
+        {provider.businessName}
+        {provider.professionLabel && <span className="font-normal text-muted-foreground"> · {provider.professionLabel}</span>}
+      </div>
+      <div className="flex items-center gap-2">
+        <AccountTypeBadge type={provider.businessType} />
+        {provider.status === "pending" && <span className="text-xs text-warning">Waiting for approval</span>}
+      </div>
+    </div>
+  );
+  if (listings.length < 2 && !canAdd) return heading;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 outline-none hover:bg-muted" aria-label="Switch listing">
+        {heading}
+        <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-80">
+        <DropdownMenuLabel>Your professions</DropdownMenuLabel>
+        {listings.map((l) => (
+          <DropdownMenuItem
+            key={l.id}
+            onSelect={() => {
+              if (l.id !== provider.id) void switchListing(l.id);
+            }}
+          >
+            <Check className={cn("size-4", l.id === provider.id ? "opacity-100" : "opacity-0")} />
+            <span className="min-w-0 flex-1 truncate">{listingTitle(l)}</span>
+            {l.status === "pending" && <span className="text-xs text-warning">Pending</span>}
+          </DropdownMenuItem>
+        ))}
+        {canAdd && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/onboarding?add=1">
+                <Plus /> Add another profession
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -162,8 +226,7 @@ export function AppLayout() {
             </SheetContent>
           </Sheet>
           <div className="min-w-0">
-            <div className="truncate font-semibold">{provider?.businessName}</div>
-            {provider?.status === "pending" && <div className="text-xs text-warning">Waiting for approval</div>}
+            <ListingSwitcher />
           </div>
           <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
             <AvailabilityToggle />
