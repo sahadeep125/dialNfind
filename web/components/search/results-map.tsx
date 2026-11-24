@@ -14,12 +14,22 @@ function pinIcon(rating: number, active: boolean) {
   const bg = active ? "#fd8003" : "#042161";
   // Navy text on the orange pin: white on #fd8003 is too faint to read.
   const fg = active ? "#042161" : "white";
+  // Unrated listings get a plain dot: a map full of "New" labels said nothing.
+  if (!rating) {
+    const size = active ? 18 : 14;
+    return L.divIcon({
+      className: "",
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      html: `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${bg};border:2.5px solid white;box-shadow:0 2px 6px rgb(30 30 80 / .3);transition:transform .15s"></div>`,
+    });
+  }
   return L.divIcon({
     className: "",
     iconSize: [44, 30],
     iconAnchor: [22, 30],
     html: `<div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 4px 6px rgb(30 30 80 / .25));transform:scale(${active ? 1.18 : 1});transform-origin:bottom center;transition:transform .15s">
-      <div style="background:${bg};color:${fg};font:700 12px/1 Inter,system-ui;padding:5px 8px;border-radius:999px;border:2px solid white;white-space:nowrap">${rating ? rating.toFixed(1) + " &#9733;" : "New"}</div>
+      <div style="background:${bg};color:${fg};font:700 12px/1 Inter,system-ui;padding:5px 8px;border-radius:999px;border:2px solid white;white-space:nowrap">${rating.toFixed(1)} &#9733;</div>
       <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${bg};margin-top:-1px"></div>
     </div>`,
   });

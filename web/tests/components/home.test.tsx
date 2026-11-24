@@ -29,11 +29,15 @@ describe("home sections", () => {
         <TrustPoints />
       </>,
     );
-    expect(screen.getByText("1 pro")).toBeInTheDocument();
-    expect(screen.getByText("1,200 pros")).toBeInTheDocument();
-    expect(screen.getByText("1,500+ local professionals")).toBeInTheDocument();
+    // Only a category with its own photograph gets a tile; every category is in the index below.
+    expect(screen.getByText("1 business")).toBeInTheDocument();
+    expect(screen.queryByText("1,200 businesses")).toBeNull();
+    expect(screen.getByText("1,200")).toBeInTheDocument();
+    expect(screen.getByText("1,500 local businesses listed")).toBeInTheDocument();
+    expect(screen.getByText("20+ customer reviews")).toBeInTheDocument();
     expect(screen.getAllByText("Popular:")).toHaveLength(1);
-    expect(screen.getByText("Tell us what you need")).toBeInTheDocument();
+    expect(screen.getByText("Search a service and your area")).toBeInTheDocument();
+    expect(screen.getByText("The rules every listing follows")).toBeInTheDocument();
   });
   it("hero city follows the saved location", () => {
     setLocation({ city: "" });

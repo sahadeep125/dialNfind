@@ -26,7 +26,7 @@ export function ProfileHeader({ p, chips, extraChips, facts }: { p: ProviderDeta
         <ProviderAvatar name={p.businessName} logoUrl={p.logoUrl} categorySlug={p.primaryCategory?.slug} size="xl" className="size-16 border bg-card text-2xl sm:size-20 md:size-24 md:text-3xl" />
         <div className="min-w-0 flex-1">
           <AccountTypeBadge type={p.businessType} size="md" />
-          <h1 className="mt-2 text-[1.75rem] font-extrabold leading-tight text-foreground md:text-4xl">{p.businessName}</h1>
+          <h1 className="mt-2 text-[1.75rem] font-bold leading-tight tracking-[-0.025em] text-foreground md:text-[2.5rem] md:leading-[1.08]">{p.businessName}</h1>
           {middle && <p className="mt-1 text-lg font-semibold text-foreground/80 md:text-xl">{middle}</p>}
           <p className="mt-1 text-sm text-muted-foreground">
             {individual ? "Works independently. You deal with this professional directly." : "A business. Work may be done by its team."}

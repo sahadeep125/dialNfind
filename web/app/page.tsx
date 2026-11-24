@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { publicApi } from "@/lib/api";
 import type { Category } from "@/lib/types";
 import { CategoryGrid } from "@/components/home/category-grid";
@@ -52,15 +51,15 @@ export default async function HomePage() {
     <>
       <HomeHero stats={stats} popular={POPULAR} />
 
-      <section className="section-y">
-        <div className="container-page">
+      <section aria-labelledby="services-title" className="section-y">
+        <div className="container-wide">
           <SectionHeading
-            eyebrow="Services"
-            title="What do you need help with?"
-            description={`${stats.categories} categories of home and local services, from quick repairs to big moves.`}
-            action={{ href: "/services", label: "All services" }}
+            id="services-title"
+            title={`Services in ${SEO_CITY}`}
+            description="Home repairs, beauty, tuition, vehicles and moving. Each service lists every business we know of, claimed or not."
+            action={{ href: "/services", label: `All ${stats.categories} services` }}
           />
-          <div className="mt-8">
+          <div className="mt-10">
             <CategoryGrid categories={categories} />
           </div>
         </div>
@@ -69,57 +68,22 @@ export default async function HomePage() {
       {/* Loads in the browser, since it depends on the visitor's location. */}
       <NearbyProviders />
 
-      <section id="how" className="section-y scroll-mt-16 border-y bg-card">
-        <div className="container-page">
-          <SectionHeading eyebrow="How it works" title="Hire a local pro in three steps" align="center" />
+      <section id="how" aria-labelledby="how-title" className="section-y scroll-mt-16 border-y bg-card">
+        <div className="container-wide">
+          <SectionHeading id="how-title" title="How KaajVa works" description="A directory, not a booking service: we show you the business, you deal with them directly." />
           <div className="mt-10">
             <HowItWorks />
           </div>
-        </div>
-      </section>
-
-      <section className="section-y">
-        <div className="container-page">
-          <TrustPoints />
+          <div className="mt-16">
+            <TrustPoints />
+          </div>
         </div>
       </section>
 
       <Testimonials />
 
-      {/* Popular services: plain links so every service page is one click from home ---------------- */}
       <section className="section-y">
-        <div className="container-page">
-          <SectionHeading eyebrow="Near you" title={`Popular services in ${SEO_CITY}`} action={{ href: "/guides", label: "Service guides" }} />
-          <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-muted-foreground">
-            KaajVa helps you find trusted local professionals near you: electricians, plumbers, AC and fridge repair, TV and mobile repair, home cleaning, pest control, painters,
-            carpenters, packers and movers, home tutors, beauty services and car and bike mechanics. Compare ratings, prices and distance, then call or WhatsApp the provider
-            directly, with no booking fees or commission.
-          </p>
-          <div className="mt-8 grid gap-x-8 gap-y-8 border-t pt-8 sm:grid-cols-2 lg:grid-cols-4">
-            {categories.map((c) => (
-              <div key={c.id}>
-                <h3 className="text-[15px] font-semibold">
-                  <Link href={serviceHref(c.slug)} className="hover:text-cta-strong">
-                    {c.name}
-                  </Link>
-                </h3>
-                <ul className="mt-2.5 space-y-2">
-                  {c.subcategories.slice(0, 5).map((s) => (
-                    <li key={s.id}>
-                      <Link href={serviceHref(c.slug, s.slug)} className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline">
-                        {s.name} near me
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div className="container-page">
+        <div className="container-wide">
           <PromoBanners />
         </div>
       </section>

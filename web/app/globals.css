@@ -4,15 +4,15 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.375rem;
 
   /* Warm neutral surfaces, so photos and the orange CTA sit on something calmer than pure grey. */
-  --background: oklch(0.985 0.004 95);
-  --foreground: oklch(0.23 0.03 262.5);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.23 0.03 262.5);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.23 0.03 262.5);
+  --background: #faf9f6;
+  --foreground: #16181d;
+  --card: #ffffff;
+  --card-foreground: #16181d;
+  --popover: #ffffff;
+  --popover-foreground: #16181d;
 
   /* Brand (from the KaajVa logo): navy #042161 for trust and structure; orange #fd8003 only for the main action on a screen.
      Orange is too light for white text (2.5:1), so orange fills carry navy text (5.9:1), and orange *text* on light
@@ -27,13 +27,13 @@
   --cta-soft: oklch(0.97 0.03 62);
   --secondary: oklch(0.955 0.015 262.5);
   --secondary-foreground: #042161;
-  --muted: oklch(0.962 0.006 90);
-  --muted-foreground: oklch(0.5 0.025 262.5);
+  --muted: #f1efe9;
+  --muted-foreground: #5d626c;
   --accent: oklch(0.955 0.015 262.5);
   --accent-foreground: #042161;
   --destructive: oklch(0.55 0.21 27);
-  --border: oklch(0.915 0.01 85);
-  --input: oklch(0.88 0.012 85);
+  --border: #e4e1d8;
+  --input: #d6d2c7;
   --ring: oklch(0.45 0.13 262.5 / 0.4);
 
   --success: oklch(0.56 0.13 155);
@@ -55,8 +55,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), var(--font-body), ui-sans-serif, system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -111,14 +111,13 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
   h1,
   h2,
   h3,
   h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.022em;
+    letter-spacing: -0.015em;
     text-wrap: balance;
   }
   ::selection {
@@ -188,11 +187,50 @@
   color: var(--cta-strong);
 }
 
+/* The one text link look: an underline that draws in from the left on hover. */
+@utility link-draw {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  transition: background-size 0.25s ease;
+  &:hover,
+  &:focus-visible {
+    background-size: 100% 1px;
+  }
+}
+
 /* Hides a horizontal scroller's bar while keeping it scrollable. */
 @utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* The hero's one entrance on load: text first, then the photograph. */
+@keyframes hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.hero-enter {
+  animation: hero-enter 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.hero-enter-late {
+  animation-delay: 0.12s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }
 

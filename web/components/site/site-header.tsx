@@ -13,14 +13,14 @@ export const NAV_LINKS = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/85">
+    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
       <div className="container-wide flex h-16 items-center gap-4 lg:gap-6">
         <Logo />
         <div className="flex min-w-0 flex-1 items-center gap-6">
           <HeaderSearch />
           <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
             {NAV_LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground">
+              <Link key={l.href} href={l.href} className="whitespace-nowrap rounded-md px-3 py-2 text-[15px] font-medium text-foreground/75 transition-colors hover:text-foreground">
                 {l.label}
               </Link>
             ))}

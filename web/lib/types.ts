@@ -67,6 +67,8 @@ export interface ProviderCard {
   isClaimed: boolean;
   isOpenNow: boolean;
   todayHours: string;
+  /** False when no opening hours are listed (older APIs leave it out). */
+  hasHours?: boolean;
   primaryCategory: { id: number; name: string; slug: string } | null;
   subcategories: string[];
   startingPrice: number | null;
