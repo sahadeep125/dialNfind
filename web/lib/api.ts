@@ -2,6 +2,7 @@ import "server-only";
 import { cookies, headers as requestHeaders } from "next/headers";
 import { API_URL, TOKEN_COOKIE } from "./config";
 import { forwardClientIp } from "./client-ip";
+import { isVerifiedCrawler } from "./crawler";
 
 export class ApiError extends Error {
   constructor(
@@ -29,11 +30,17 @@ export async function api<T>(path: string, init: RequestInit & { query?: Query; 
   const headers = new Headers(rest.headers);
   headers.set("accept", "application/json");
   if (rest.body && !headers.has("content-type")) headers.set("content-type", "application/json");
+  let token: string | undefined;
   if (auth) {
-    const token = (await cookies()).get(TOKEN_COOKIE)?.value;
+    token = (await cookies()).get(TOKEN_COOKIE)?.value;
     if (token) headers.set("authorization", `Bearer ${token}`);
   }
-  forwardClientIp(await requestHeaders(), headers);
+  const incoming = await requestHeaders();
+  forwardClientIp(incoming, headers);
+  // Category and area listings are rendered per visitor through here. A verified Google or Bing crawler
+  // skips the API's per-address limit like the website's own fetches, so a sitemap crawl never hits 429.
+  const secret = process.env.REVALIDATE_SECRET;
+  if (secret && !token && (await isVerifiedCrawler(incoming))) headers.set("x-web-secret", secret);
   const res = await fetch(`${API_URL}${path}${query ? toQuery(query) : ""}`, { cache: "no-store", ...rest, headers });
   if (!res.ok) {
     let message = res.statusText;
