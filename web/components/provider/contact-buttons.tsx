@@ -90,15 +90,11 @@ export function ContactButtons({
         {whatsappNumber && (
           <Button
             size={size}
-            variant="outline"
+            variant="whatsapp"
             onClick={() => whatsapp(whatsappNumber)}
-            className={cn(
-              "border-[oklch(0.8_0.1_150)] text-[oklch(0.4_0.11_150)] hover:border-[oklch(0.7_0.13_150)] hover:bg-[oklch(0.97_0.03_150)]",
-              layout === "row" && "flex-1",
-              profile && "text-base",
-            )}
+            className={cn(layout === "row" && "flex-1", profile && "text-base")}
           >
-            <MessageCircle className={cn("text-[oklch(0.62_0.17_150)]", profile && "size-5")} />
+            <MessageCircle className={cn(profile && "size-5")} />
             {profile ? "Chat on WhatsApp" : "WhatsApp"}
           </Button>
         )}

@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { publicApi, publicApiOrNull } from "@/lib/api";
-import type { Paged, ProviderCard as ProviderCardType, ProviderDetail, Review } from "@/lib/types";
+import type { Category, Paged, ProviderCard as ProviderCardType, ProviderDetail, Review } from "@/lib/types";
 import { ProviderProfile, REVIEWS_PAGE } from "@/components/provider/provider-profile";
 import { clip, pageMetadata } from "@/lib/seo";
 
@@ -103,7 +103,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
   const { slug } = await params;
   const p = await getProvider(slug);
   if (!p) return redirectOrNotFound(slug);
-  const [reviews, { results: similar }, { config }] = await Promise.all([
+  const [reviews, { results: similar }, { config }, { categories }] = await Promise.all([
     publicApi<{ reviews: Review[] } & Paged>(`/providers/${encodeURIComponent(slug)}/reviews`, {
       query: { pageSize: REVIEWS_PAGE },
       revalidate: PROVIDER_TTL,
@@ -111,7 +111,8 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
     }),
     publicApi<{ results: ProviderCardType[] }>(`/providers/${encodeURIComponent(slug)}/similar`, { revalidate: PROVIDER_TTL, tags: tagsFor(slug) }),
     publicApi<{ config: { min_review_length: number } }>("/app-config", { revalidate: 600, tags: ["app-config"] }),
+    publicApi<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] }),
   ]);
 
-  return <ProviderProfile p={p} reviews={reviews} similar={similar} minReviewLength={config.min_review_length} />;
+  return <ProviderProfile p={p} reviews={reviews} similar={similar} minReviewLength={config.min_review_length} categories={categories} />;
 }

@@ -37,9 +37,18 @@
   --ring: oklch(0.45 0.13 262.5 / 0.4);
 
   --success: oklch(0.56 0.13 155);
+  --success-ink: #127a43;
   --success-soft: oklch(0.965 0.03 155);
   --warning: oklch(0.78 0.16 72);
+  --warning-ink: #8a5a00;
   --warning-soft: oklch(0.97 0.04 85);
+  --danger-ink: #b42318;
+  --danger-soft: #fdecea;
+  /* WhatsApp: the brand green for the icon only; the label uses the darker ink so it reads at 5.4:1. */
+  --whatsapp: #25d366;
+  --whatsapp-ink: #127a43;
+  --whatsapp-border: oklch(0.82 0.09 152);
+  --whatsapp-soft: oklch(0.97 0.03 150);
   --brand-deep: oklch(0.21 0.1 262.5);
   --star: oklch(0.78 0.16 72);
 
@@ -85,6 +94,14 @@
   --color-ring: var(--ring);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
+  --color-success-ink: var(--success-ink);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger-ink: var(--danger-ink);
+  --color-danger-soft: var(--danger-soft);
+  --color-whatsapp: var(--whatsapp);
+  --color-whatsapp-ink: var(--whatsapp-ink);
+  --color-whatsapp-border: var(--whatsapp-border);
+  --color-whatsapp-soft: var(--whatsapp-soft);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-brand-deep: var(--brand-deep);
@@ -122,6 +139,16 @@
   }
   ::selection {
     background-color: color-mix(in oklch, var(--cta) 22%, transparent);
+  }
+  input,
+  textarea {
+    caret-color: var(--primary);
+  }
+  html {
+    scrollbar-color: color-mix(in oklch, var(--primary) 28%, transparent) transparent;
+  }
+  a {
+    text-underline-offset: 0.2em;
   }
 }
 

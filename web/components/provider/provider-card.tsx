@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BadgeCheck, Briefcase, MapPin, Trophy } from "lucide-react";
 import type { ProviderCard as ProviderCardType } from "@/lib/types";
-import { formatDistance, formatPrice } from "@/lib/format";
+import { formatDistance, formatKm, formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ContactButtons } from "./contact-buttons";
@@ -25,11 +25,8 @@ export function OpenStatus({
   if (!provider.isAvailable) {
     return <Badge variant="muted" className={className}>Currently unavailable</Badge>;
   }
-  // No hours listed: say so plainly rather than calling the place closed.
-  if (provider.hasHours === false) {
-    if (compact) return null;
-    return <span className={cn("inline-flex items-center gap-1.5 text-xs text-muted-foreground", className)}>Hours not listed</span>;
-  }
+  // No hours listed: say nothing rather than calling the place closed or filling the card with "not listed".
+  if (provider.hasHours === false) return null;
   const closedAllDay = provider.todayHours === "Closed";
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium", className)}>
@@ -137,7 +134,7 @@ export function ProviderCard({
                 <MapPin className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                 <span className="truncate">
                   {place}
-                  {distance && <span className="text-muted-foreground"> · {distance}</span>}
+                  {distance && <span className="text-muted-foreground @2xl:hidden"> · {distance}</span>}
                 </span>
               </span>
               <OpenStatus provider={provider} className="text-sm" />
@@ -145,19 +142,21 @@ export function ProviderCard({
           </div>
         </div>
 
-        {/* Price + contact */}
+        {/* Distance and price, then contact. Distance first: "how close?" is the question people compare on. */}
         <div className="flex shrink-0 flex-col gap-3 border-t pt-4 @2xl:w-64 @2xl:justify-between @2xl:border-l @2xl:border-t-0 @2xl:pl-5 @2xl:pt-0">
-          <div className="@2xl:pr-11 @2xl:text-right">
-            {price ? (
-              <>
-                <div className="text-xs text-muted-foreground">Starting from</div>
-                <div className="text-xl font-bold leading-tight">
-                  {price}
-                  {provider.priceUnit && <span className="ml-1 text-xs font-normal text-muted-foreground">{PRICE_UNIT_LABEL[provider.priceUnit]}</span>}
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground @2xl:pt-2">Price on request</div>
+          <div className="flex items-baseline justify-between gap-3 empty:hidden @2xl:block @2xl:pr-11 @2xl:text-right">
+            {provider.distanceKm !== null && provider.distanceKm !== undefined && (
+              <div className="hidden tabular-nums @2xl:block">
+                <span className="font-display text-xl font-bold leading-tight">{formatKm(provider.distanceKm)}</span>
+                <span className="ml-1 text-sm text-muted-foreground">away</span>
+              </div>
+            )}
+            {price && (
+              <div className="text-sm @2xl:mt-1">
+                <span className="text-muted-foreground">From </span>
+                <span className="font-semibold tabular-nums">{price}</span>
+                {provider.priceUnit && <span className="text-muted-foreground"> {PRICE_UNIT_LABEL[provider.priceUnit]}</span>}
+              </div>
             )}
           </div>
           <ContactButtons provider={provider} source={source} categorySlug={provider.primaryCategory?.slug} layout="row" className="relative z-10" />

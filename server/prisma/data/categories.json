@@ -97,6 +97,21 @@
         "name": "Geyser Repair",
         "slug": "geyser-repair",
         "professionName": "Geyser Repair Technician"
+      },
+      {
+        "name": "Mixer Grinder Repair",
+        "slug": "mixer-grinder-repair",
+        "professionName": "Mixer Grinder Repair Technician"
+      },
+      {
+        "name": "Kitchen Chimney Service",
+        "slug": "kitchen-chimney-service",
+        "professionName": "Chimney Technician"
+      },
+      {
+        "name": "Gas Stove & Induction Repair",
+        "slug": "gas-stove-and-induction-repair",
+        "professionName": "Gas Stove Repair Technician"
       }
     ],
     "attributes": [

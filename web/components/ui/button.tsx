@@ -16,6 +16,7 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         success: "bg-success text-white shadow-sm hover:bg-success/90",
+        whatsapp: "border border-whatsapp-border bg-card text-whatsapp-ink hover:border-whatsapp-ink/50 hover:bg-whatsapp-soft [&_svg]:text-whatsapp",
       },
       size: {
         default: "h-10 px-4 py-2 has-[>svg]:px-3.5",

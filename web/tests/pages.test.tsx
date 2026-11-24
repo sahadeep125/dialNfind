@@ -104,36 +104,49 @@ describe("home and content pages", () => {
   it("home page links its shortcuts to service pages and hides an empty review count", async () => {
     const { default: Home, metadata } = await import("@/app/page");
     expect(metadata.title).toEqual({ absolute: expect.stringContaining("Siliguri") });
-    mockApi({ "/categories": { categories }, "/stats": { providers: 10, categories: 2, cities: 1, reviews: 3 }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
+    mockApi({
+      "/categories": { categories },
+      "/stats": { providers: 10, categories: 2, cities: 1, reviews: 3 },
+      "/reviews/highlights": { reviews: [] },
+      "/providers/featured": { results: [] },
+      "/locations/category-areas": { areas: [{ category: "beauty-salon", categoryName: "Beauty & Salon", area: "Matigara", slug: "matigara", city: "Siliguri", providers: 12 }] },
+    });
     const { unmount } = await renderAsync(await Home());
-    expect(screen.getByRole("link", { name: "Bike service" })).toHaveAttribute("href", "/services/vehicle-repair/bike-service");
+    expect(screen.getByRole("link", { name: "Beauty & Salon in Matigara" })).toHaveAttribute("href", "/services/beauty-salon/in/matigara");
+    expect(screen.getAllByRole("link", { name: "Bike service" })[0]).toHaveAttribute("href", "/services/vehicle-repair/bike-service");
+    // The example people search for most: a hero shortcut, a "What needs fixing?" tile and a popular search.
+    expect(screen.getAllByRole("link", { name: /Mixer grinder repair/ }).every((a) => a.getAttribute("href") === "/services/home-appliances/mixer-grinder-repair")).toBe(true);
     expect(screen.getByRole("link", { name: "TV Repair" })).toBeInTheDocument();
-    expect(screen.getByText("10 local businesses listed across 2 services")).toBeInTheDocument();
+    expect(screen.getByText("10 local pros in 2 services")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Get the KaajVa app" })).toBeInTheDocument();
     expect(screen.getByText("3+ customer reviews")).toBeInTheDocument();
     unmount();
     mockApi({ "/categories": { categories: [] }, "/stats": { providers: 0, categories: 0, cities: 0, reviews: 0 }, "/reviews/highlights": { reviews: [] }, "/providers/featured": { results: [] } });
     await renderAsync(await Home());
-    expect(screen.getByRole("link", { name: "Beauty parlour" })).toHaveAttribute("href", "/services/beauty-salon");
+    expect(screen.getAllByRole("link", { name: "Beauty parlour" })[0]).toHaveAttribute("href", "/services/beauty-salon");
     expect(screen.queryByText("0+ customer reviews")).not.toBeInTheDocument();
   });
-  it("promo banners show store badges when configured", async () => {
-    vi.resetModules();
-    vi.stubEnv("NEXT_PUBLIC_APP_STORE_URL", "https://apps.apple.com/x");
-    vi.stubEnv("NEXT_PUBLIC_PLAY_STORE_URL", "");
-    const rtl = await import("@testing-library/react");
-    const { PromoBanners } = await import("@/components/home/promo-banners");
-    const a = rtl.render(<PromoBanners />);
-    expect(rtl.screen.getByLabelText("Download on the App Store")).toBeInTheDocument();
-    a.unmount();
+  it("app band links the App Store and says Android is coming until it has a link", async () => {
     vi.resetModules();
     vi.stubEnv("NEXT_PUBLIC_APP_STORE_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_PLAY_STORE_URL", "");
+    const rtl = await import("@testing-library/react");
+    const { AppPromo } = await import("@/components/home/app-promo");
+    const a = rtl.render(<AppPromo />);
+    // The iOS app is live, so its listing is the default.
+    expect(rtl.screen.getByLabelText("Download on the App Store")).toHaveAttribute("href", expect.stringContaining("apps.apple.com"));
+    expect(rtl.screen.getByLabelText("Android app coming soon")).toBeInTheDocument();
+    a.unmount();
+    vi.resetModules();
     vi.stubEnv("NEXT_PUBLIC_PLAY_STORE_URL", "https://play.google.com/x");
     const rtl2 = await import("@testing-library/react");
-    const { PromoBanners: P2 } = await import("@/components/home/promo-banners");
+    const { AppPromo: P2 } = await import("@/components/home/app-promo");
     rtl2.render(<P2 />);
-    expect(rtl2.screen.getByLabelText("GET IT ON Google Play")).toBeInTheDocument();
-    expect(rtl2.screen.queryByLabelText("Download on the App Store")).toBeNull();
+    expect(rtl2.screen.getByLabelText("GET IT ON Google Play")).toHaveAttribute("href", "https://play.google.com/x");
+    expect(rtl2.screen.queryByLabelText("Android app coming soon")).toBeNull();
+    vi.unstubAllEnvs();
   });
+
   it("about, claim, services, help, contact, terms and privacy", async () => {
     mockApi({
       "/stats": { providers: 10, categories: 2, cities: 1, reviews: 3 },
@@ -271,6 +284,29 @@ describe("search and service pages", () => {
     await renderAsync(await Search({ searchParams: sp({}) }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Find trusted local professionals");
   });
+  it("an empty search for a known service offers the nearest pros further out", async () => {
+    const { default: Search } = await import("@/app/search/page");
+    const resolved = { category: { id: 2, name: "Home Appliances", slug: "home-appliances" }, subcategory: { id: 9, name: "Mixer Grinder Repair", slug: "mixer-grinder-repair" } };
+    const fallback = provider({ id: 7, slug: "far", businessName: "Far Fixers", distanceKm: 22 });
+    const fetch = mockApi({
+      "/search/providers": (url: URL) => json(url.searchParams.get("radiusKm") === "60" ? searchResponse({ results: [fallback], resolved }) : searchResponse({ results: [], total: 0, totalPages: 0, resolved })),
+      "/categories": { categories },
+    });
+    const a = await renderAsync(await Search({ searchParams: sp({ q: "mixer grinder repair", radius: "3" }) }));
+    expect(screen.getByText(/nearest ones further out/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Far Fixers" })).toHaveAttribute("href", "/providers/far");
+    const wide = fetch.mock.calls.map(([u]) => new URL(String(u))).find((u) => u.searchParams.get("radiusKm") === "60")!;
+    expect(wide.searchParams.get("subcategory")).toBe("mixer-grinder-repair");
+    expect(wide.searchParams.get("sort")).toBe("distance");
+    a.unmount();
+    // A failed second search falls back to the plain empty state.
+    mockApi({
+      "/search/providers": (url: URL) => (url.searchParams.get("radiusKm") === "60" ? json({}, 500) : json(searchResponse({ results: [], total: 0, totalPages: 0, resolved }))),
+      "/categories": { categories },
+    });
+    await renderAsync(await Search({ searchParams: sp({ q: "mixer grinder repair" }) }));
+    expect(screen.getByText("No providers match yet")).toBeInTheDocument();
+  });
   it("category and subcategory pages", async () => {
     const cat = await import("@/app/services/[category]/page");
     const sub = await import("@/app/services/[category]/[sub]/page");
@@ -326,6 +362,7 @@ describe("provider profile page", () => {
     "/providers/shop/reviews": { reviews: [review()], page: 1, pageSize: 3, total: 1, totalPages: 1 },
     "/providers/shop/similar": { results: [provider({ id: 9, slug: "other" })] },
     "/app-config": { config: { min_review_length: 10 } },
+    "/categories": { categories },
     "/api/session": { user: null, unread: 0 },
     "POST /providers/shop/visit": { isFavorite: false, myReview: null },
     ...extra,
@@ -385,11 +422,13 @@ describe("provider profile page", () => {
     await renderAsync(await Page({ params: sp({ slug: "shop" }) }));
     await act(async () => undefined);
     expect(screen.getAllByText("+2 more").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "Claim this listing" })).toHaveAttribute("href", expect.stringContaining("/claim?listing=1"));
-    expect(screen.getByText("Business verified")).toBeInTheDocument();
-    expect(screen.getByText("Phone not verified")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Claim it for free" })).toHaveAttribute("href", expect.stringContaining("/claim?listing=1"));
+    // Only the checks that passed are listed; "not verified" rows only cost trust.
+    expect(screen.getByText("Business documents verified")).toBeInTheDocument();
+    expect(screen.queryByText(/not verified/)).toBeNull();
+    expect(screen.queryByText("Member since")).toBeNull();
     expect(screen.getByText("Emergency calls")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Similar pros nearby" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^More tv repair near / })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toHaveTextContent("TV Repair");
   });
   it("renders a bare profile and 404s for unknown ones", async () => {
@@ -403,8 +442,11 @@ describe("provider profile page", () => {
     await renderAsync(await Page({ params: sp({ slug: "shop" }) }));
     await act(async () => undefined);
     expect(screen.getByText(/is a local services business in .* Services listed include x\./)).toBeInTheDocument();
-    expect(screen.getByText("No reviews yet", { selector: "p" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Similar pros nearby" })).toBeNull();
+    // No reviews: no Reviews section and no placeholder, only a quiet way to write the first one.
+    expect(screen.queryByText(/No reviews yet/)).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Reviews" })).toBeNull();
+    expect(screen.getByRole("button", { name: /Write a Review/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /^More / })).toBeNull();
     mockApi(routes(null));
     await expect(Page({ params: sp({ slug: "shop" }) })).rejects.toBeInstanceOf(NotFoundError);
   });
@@ -422,7 +464,7 @@ describe("provider profile page", () => {
     mockApi(routes({ primaryCategory: null, services: [{ id: 2, category: { id: 1, name: "X", slug: "x" }, subcategory: null, startingPrice: 1, priceUnit: "fixed", isPrimary: true }], portfolio: [{ id: 1, title: "One", description: null, imageUrl: "https://img.test/1.webp", category: null }] }));
     await renderAsync(await Page({ params: sp({ slug: "shop" }) }));
     await act(async () => undefined);
-    expect(screen.getByRole("heading", { name: "Similar pros nearby" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^More professionals near / })).toBeInTheDocument();
   });
   it("previews a listing that is not live, with the signed token and without caching", async () => {
     const { default: Preview, dynamic, metadata } = await import("@/app/providers/[slug]/preview/page");

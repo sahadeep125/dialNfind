@@ -6,19 +6,23 @@ import { HomeHero } from "@/components/home/home-hero";
 import { HowItWorks } from "@/components/home/how-it-works";
 import { NearbyProviders } from "@/components/home/nearby-providers";
 import { PromoBanners } from "@/components/home/promo-banners";
+import { AppPromo } from "@/components/home/app-promo";
+import { FixGrid } from "@/components/home/fix-grid";
+import { PopularSearches } from "@/components/home/popular-searches";
+import { getCategoryAreas } from "@/lib/category-areas";
 import { Testimonials } from "@/components/home/testimonials";
 import { TrustPoints } from "@/components/home/trust-points";
 import { SectionHeading } from "@/components/site/section-heading";
 import { SEO_CITY, pageMetadata } from "@/lib/seo";
 import { serviceHref } from "@/lib/service-href";
 
-const TITLE = "KaajVa: Local Services & Businesses in Siliguri";
+const TITLE = "KaajVa: Repair & Local Services Near You in Siliguri";
 
 export const metadata: Metadata = {
   ...pageMetadata({
     title: TITLE,
     description:
-      "Siliguri's local services directory: beauty parlours, bike and car service, home tutors, mobile and TV repair, electricians and more. Compare and call directly.",
+      "Find repair technicians and local pros near you in Siliguri: appliance, AC and mobile repair, electricians, plumbers, salons and tutors. Call or WhatsApp directly.",
     path: "/",
   }),
   // The home page title already names the site, so it skips the "| KaajVa" suffix.
@@ -30,32 +34,47 @@ export const metadata: Metadata = {
  * page passes its weight to the pages that should rank, led by the services with the most listings.
  */
 const POPULAR = [
-  { label: "Beauty parlour", href: serviceHref("beauty-salon") },
-  { label: "Bike service", href: serviceHref("vehicle-repair", "bike-service") },
-  { label: "Home tutor", href: serviceHref("tutors") },
-  { label: "Mobile repair", href: serviceHref("electronics-repair", "mobile-phone-repair") },
   { label: "AC repair", href: serviceHref("home-appliances", "ac-repair-and-service") },
+  { label: "Mixer grinder repair", href: serviceHref("home-appliances", "mixer-grinder-repair") },
   { label: "Electrician", href: serviceHref("electricians") },
+  { label: "Mobile repair", href: serviceHref("electronics-repair", "mobile-phone-repair") },
+  { label: "Plumber", href: serviceHref("plumbing") },
+  { label: "Bike service", href: serviceHref("vehicle-repair", "bike-service") },
+  { label: "Beauty parlour", href: serviceHref("beauty-salon") },
+  { label: "Home tutor", href: serviceHref("tutors") },
 ];
 
 /** The same for every visitor, so it is cached; the "near you" part loads in the browser. */
 export const revalidate = 600;
 
 export default async function HomePage() {
-  const [{ categories }, stats] = await Promise.all([
+  const [{ categories }, stats, areas] = await Promise.all([
     publicApi<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] }),
     publicApi<{ providers: number; categories: number; cities: number; reviews: number }>("/stats", { revalidate: 3600, tags: ["stats"] }),
+    getCategoryAreas(),
   ]);
 
   return (
     <>
       <HomeHero stats={stats} popular={POPULAR} />
 
-      <section aria-labelledby="services-title" className="section-y">
+      <section aria-labelledby="needs-title" className="section-y">
+        <div className="container-wide">
+          <SectionHeading id="needs-title" title="What needs fixing?" description="Pick what you need and see who does it near you, nearest first." />
+          <div className="mt-8">
+            <FixGrid />
+          </div>
+        </div>
+      </section>
+
+      {/* Loads in the browser, since it depends on the visitor's location. */}
+      <NearbyProviders />
+
+      <section aria-labelledby="services-title" className="section-y border-t">
         <div className="container-wide">
           <SectionHeading
             id="services-title"
-            title={`Services in ${SEO_CITY}`}
+            title={`All services in ${SEO_CITY}`}
             description="Home repairs, beauty, tuition, vehicles and moving. Each service lists every business we know of, claimed or not."
             action={{ href: "/services", label: `All ${stats.categories} services` }}
           />
@@ -65,8 +84,11 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Loads in the browser, since it depends on the visitor's location. */}
-      <NearbyProviders />
+      <section className="pb-14 md:pb-20">
+        <div className="container-wide">
+          <AppPromo />
+        </div>
+      </section>
 
       <section id="how" aria-labelledby="how-title" className="section-y scroll-mt-16 border-y bg-card">
         <div className="container-wide">
@@ -81,6 +103,15 @@ export default async function HomePage() {
       </section>
 
       <Testimonials />
+
+      <section aria-labelledby="popular-title" className="section-y">
+        <div className="container-wide">
+          <SectionHeading id="popular-title" title={`Popular searches in ${SEO_CITY}`} />
+          <div className="mt-8">
+            <PopularSearches areas={areas} />
+          </div>
+        </div>
+      </section>
 
       <section className="section-y">
         <div className="container-wide">

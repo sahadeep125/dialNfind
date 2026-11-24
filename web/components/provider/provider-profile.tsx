@@ -3,14 +3,15 @@ import {
   ArrowRight,
   Briefcase,
   CalendarCheck2,
-  CalendarDays,
-  Check,
   ClipboardCheck,
   Clock,
   CreditCard,
+  Globe,
   Info,
+  Mail,
   MapPin,
-  Minus,
+  Navigation,
+  PenLine,
   ShieldCheck,
   Store,
   Tag,
@@ -18,25 +19,23 @@ import {
 import Image from "next/image";
 import { isOptimizableImage } from "@/lib/image-hosts";
 import { PROVIDER_APP_URL } from "@/lib/config";
-import type { Paged, ProviderCard as ProviderCardType, ProviderDetail, Review } from "@/lib/types";
+import type { Category, Paged, ProviderCard as ProviderCardType, ProviderDetail, Review } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { TrackView } from "@/components/site/track-view";
 import { Button } from "@/components/ui/button";
 import { ContactButtons } from "@/components/provider/contact-buttons";
-import { ContactCard } from "@/components/provider/contact-card";
-import { OpeningHours } from "@/components/provider/opening-hours";
+import { ContactCard, SECONDARY_ACTION, directionsHref } from "@/components/provider/contact-card";
+import { LocationAndHours } from "@/components/provider/location-hours";
 import { ProfileHeader, type ProfileFact } from "@/components/provider/profile-header";
 import { ReviewsList } from "@/components/provider/reviews-list";
 import { ReviewsSummary } from "@/components/provider/reviews-summary";
-import { ProfileSection, SideCard } from "@/components/provider/section-card";
+import { ProfileSection } from "@/components/provider/section-card";
 import { ServicesList } from "@/components/provider/services-list";
 import { SimilarProviders } from "@/components/provider/similar-providers";
 import { ProfileFavoriteButton, ProfileReviewForm, ProviderViewerState } from "@/components/provider/viewer-state";
 import { ReportListing, ShareButton } from "@/components/provider/share-report";
-import { LocationMap } from "@/components/provider/location-map";
 import { PhotoGallery } from "@/components/provider/photo-gallery";
 import { PhotoLightbox, PhotoTrigger, type LightboxPhoto } from "@/components/provider/photo-lightbox";
-import { ExpandableChips } from "@/components/provider/expandable";
 import { BackButton } from "@/components/provider/back-button";
 import { SectionNav } from "@/components/provider/section-nav";
 import { StickyColumn } from "@/components/provider/sticky-column";
@@ -46,19 +45,6 @@ import { breadcrumbJsonLd, providerJsonLd } from "@/lib/structured-data";
 
 /** Reviews shown in the sidebar before "Show more reviews". */
 export const REVIEWS_PAGE = 3;
-
-const VERIFICATION_TYPES = [
-  "phone",
-  "business",
-  "location",
-  "id_proof",
-] as const;
-const VERIFICATION_LABEL: Record<string, string> = {
-  phone: "Phone",
-  business: "Business",
-  location: "Location",
-  id_proof: "ID Proof",
-};
 
 /** A generic icon per service-detail row, guessed from its label so the grid doesn't look flat. No icon field exists on the data itself. */
 function serviceDetailIcon(label: string) {
@@ -77,15 +63,15 @@ type ProviderProfileProps = {
   reviews: { reviews: Review[] } & Paged;
   similar: ProviderCardType[];
   minReviewLength: number;
+  /** The service tree, to list what a whole-category listing covers. */
+  categories?: Category[];
   /** Set on the owner/team preview of a listing that is not live: no analytics or structured data, and a notice. */
   previewStatus?: string;
 };
 
 /** The provider profile, shared by the public page and the preview of a listing that is not live yet. */
-export function ProviderProfile({ p, reviews, similar, minReviewLength, previewStatus }: ProviderProfileProps) {
+export function ProviderProfile({ p, reviews, similar, minReviewLength, previewStatus, categories }: ProviderProfileProps) {
   const config = { min_review_length: minReviewLength };
-  const directions = `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
-  const verifiedTypes = new Set(p.verifications.map((v) => v.type));
   const primarySub = p.services.find((s) => s.isPrimary && s.subcategory)?.subcategory ?? null;
 
   // The primary chip names the main service; the rest follow as plain chips.
@@ -114,14 +100,31 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
     ...(p.selfReportedCompletedJobs !== null
       ? [{ icon: ClipboardCheck, value: `${p.selfReportedCompletedJobs.toLocaleString("en-IN")}+`, label: "Jobs completed" }]
       : []),
-    {
-      icon: CalendarDays,
-      value: new Intl.DateTimeFormat("en-IN", { month: "short", year: "numeric" }).format(new Date(p.memberSince)),
-      label: "Member since",
-    },
-    { icon: MapPin, value: `${p.serviceRadiusKm} km`, label: "Service radius" },
+    { icon: MapPin, value: `${p.serviceRadiusKm} km`, label: "Travels up to" },
     ...(p.is24x7 ? [{ icon: Clock, value: "24x7", label: "Emergency calls" }] : []),
   ];
+  // "Travels up to" alone is not worth a row of its own.
+  const shownFacts = facts.length > 1 ? facts : [];
+  const hiddenSections = [...(p.totalReviews > 0 ? [] : ["reviews"]), ...(similar.length > 0 ? [] : ["similar"]), ...(p.portfolio.length > 0 ? [] : ["photos"])];
+
+  // Phones: the bottom bar carries Call and WhatsApp, so the header row holds the next most useful actions.
+  const mobileActions = (
+    <div className="mt-5 flex flex-wrap gap-2 lg:hidden">
+      <a href={directionsHref(p)} target="_blank" rel="noopener noreferrer" className={SECONDARY_ACTION}>
+        <Navigation className="size-4" aria-hidden /> Directions
+      </a>
+      {p.website && (
+        <a href={p.website} target="_blank" rel="noopener noreferrer" className={SECONDARY_ACTION}>
+          <Globe className="size-4" aria-hidden /> Website
+        </a>
+      )}
+      {p.email && (
+        <a href={`mailto:${p.email}`} className={SECONDARY_ACTION}>
+          <Mail className="size-4" aria-hidden /> Email
+        </a>
+      )}
+    </div>
+  );
 
   return (
     <ProviderViewerState slug={p.slug}>
@@ -192,18 +195,18 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
           <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-12">
             {/* Main column */}
             <div className="min-w-0">
-              <ProfileHeader p={p} chips={[...(leadChip ? [leadChip] : []), ...visibleChips]} extraChips={extraChips} facts={facts} />
+              <ProfileHeader p={p} chips={[...(leadChip ? [leadChip] : []), ...visibleChips]} extraChips={extraChips} facts={shownFacts} actions={mobileActions} />
 
               <div className="mt-8">
-                <SectionNav reviewCount={p.totalReviews} photoCount={p.portfolio.length} hidden={similar.length > 0 ? [] : ["similar"]} />
+                <SectionNav reviewCount={p.totalReviews} photoCount={p.portfolio.length} hidden={hiddenSections} />
               </div>
 
-              <ProfileSection title={`About ${p.businessName}`} className="border-t-0">
-                <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground/80">{p.description || fallbackDescription(p)}</p>
+              <ProfileSection id="services" className="border-t-0">
+                <ServicesList services={p.services} businessName={p.businessName} categories={categories} />
               </ProfileSection>
 
-              <ProfileSection id="services">
-                <ServicesList services={p.services} />
+              <ProfileSection title={`About ${p.businessName}`}>
+                <p className="max-w-[70ch] whitespace-pre-line text-[15px] leading-relaxed text-foreground/80">{p.description || fallbackDescription(p)}</p>
               </ProfileSection>
 
               {p.portfolio.length > 0 && (
@@ -263,113 +266,68 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
                 </ProfileSection>
               )}
 
-              <ProfileSection
-                title="Reviews"
-                id="reviews"
-                action={<ProfileReviewForm providerId={p.id} providerName={p.businessName} slug={p.slug} minLength={config.min_review_length} />}
-              >
-                {p.totalReviews > 0 ? (
-                  <>
-                    <ReviewsSummary p={p} />
-                    <div className="mt-6">
-                      <ReviewsList slug={p.slug} initial={reviews} providerName={p.businessName} pageSize={REVIEWS_PAGE} />
-                    </div>
-                  </>
-                ) : (
-                  <div className="rounded-lg border border-dashed bg-card px-6 py-10 text-center">
-                    <p className="font-semibold">No reviews yet</p>
-                    <p className="mt-1 text-sm text-muted-foreground">Hired {p.businessName}? Your review helps neighbours choose.</p>
-                  </div>
-                )}
+              <ProfileSection title={p.is24x7 || p.hours.some((h) => h.openTime) ? "Location and working hours" : "Location"} id="location">
+                <LocationAndHours p={p} />
               </ProfileSection>
+
+              {/* Reviews show only when there are some: an empty "No reviews yet" box tells a visitor nothing. */}
+              {p.totalReviews > 0 && (
+                <ProfileSection
+                  title="Reviews"
+                  id="reviews"
+                  action={<ProfileReviewForm providerId={p.id} providerName={p.businessName} slug={p.slug} minLength={config.min_review_length} />}
+                >
+                  <ReviewsSummary p={p} />
+                  <div className="mt-6">
+                    <ReviewsList slug={p.slug} initial={reviews} providerName={p.businessName} pageSize={REVIEWS_PAGE} />
+                  </div>
+                </ProfileSection>
+              )}
 
               {similar.length > 0 && (
                 <ProfileSection
-                  title="Similar pros nearby"
+                  title={`More ${(primarySub?.name ?? p.primaryCategory?.name ?? "professionals").toLowerCase()} near ${p.locality ?? p.city}`}
                   id="similar"
                   action={
                     p.primaryCategory && (
-                      <Link href={`/services/${p.primaryCategory.slug}`} className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+                      <Link
+                        href={serviceHref(p.primaryCategory.slug, primarySub?.slug)}
+                        className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                      >
                         View all <ArrowRight className="size-4" />
                       </Link>
                     )
                   }
                 >
-                  <SimilarProviders providers={similar.slice(0, 3)} />
+                  <SimilarProviders providers={similar.slice(0, 6)} />
                 </ProfileSection>
               )}
+
+              {/* Housekeeping for people who know this business: review it, report a problem, or claim it. */}
+              <div className="flex flex-col gap-4 border-t py-6 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                {p.totalReviews === 0 && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <PenLine className="size-4 text-muted-foreground" aria-hidden />
+                    <span className="text-foreground/80">Used {p.businessName}?</span>
+                    <ProfileReviewForm providerId={p.id} providerName={p.businessName} slug={p.slug} minLength={config.min_review_length} />
+                  </div>
+                )}
+                {!p.isClaimed && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Store className="size-4 text-cta-strong" aria-hidden />
+                    <span className="text-foreground/80">Is this your business?</span>
+                    <Button asChild size="sm" variant="outline">
+                      <a href={`${PROVIDER_APP_URL}/claim?listing=${p.id}`}>Claim it for free</a>
+                    </Button>
+                  </div>
+                )}
+                <ReportListing slug={p.slug} />
+              </div>
             </div>
 
             {/* Sidebar */}
-            <StickyColumn as="aside" className="space-y-4">
+            <StickyColumn as="aside" className="hidden lg:block">
               <ContactCard p={p} />
-
-              <OpeningHours p={p} />
-
-              <SideCard title="Location" id="location">
-                <div className="relative h-44 overflow-hidden rounded-md border">
-                  <LocationMap lat={p.latitude} lng={p.longitude} radiusKm={p.serviceRadiusKm} label={p.businessName} />
-                  <a
-                    href={directions}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute right-2.5 top-2.5 z-20 inline-flex items-center gap-1.5 rounded-md bg-card px-3 py-1.5 text-sm font-semibold text-primary shadow-md transition-colors hover:bg-muted"
-                  >
-                    <MapPin className="size-4" /> Directions
-                  </a>
-                </div>
-                {p.addressLine && (
-                  <p className="mt-4 flex items-start gap-2.5 text-sm">
-                    <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                    <span>
-                      {p.addressLine}, {p.city}, {p.state} {p.pincode}
-                    </span>
-                  </p>
-                )}
-                <div className="mt-3">
-                  <ExpandableChips
-                    header={
-                      <span className="flex items-center gap-2.5 text-sm">
-                        <Clock className="size-4 shrink-0 text-muted-foreground" /> Serves within {p.serviceRadiusKm} km
-                      </span>
-                    }
-                    chips={p.serviceAreas.map((a) => a.areaName)}
-                    initial={3}
-                    noun="areas"
-                    linkLabel="View service areas"
-                  />
-                </div>
-              </SideCard>
-
-              <SideCard title="Verifications" action={<ReportListing slug={p.slug} />}>
-                <ul className="space-y-3 text-sm">
-                  {VERIFICATION_TYPES.map((type) => {
-                    const done = verifiedTypes.has(type);
-                    return (
-                      <li key={type} className="flex items-center gap-2.5">
-                        <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-full", done ? "bg-success text-white" : "bg-muted text-muted-foreground")}>
-                          {done ? <Check className="size-3" strokeWidth={3} /> : <Minus className="size-3" strokeWidth={3} />}
-                        </span>
-                        <span className={done ? "" : "text-muted-foreground"}>
-                          {VERIFICATION_LABEL[type]} {done ? "verified" : "not verified"}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </SideCard>
-
-              {!p.isClaimed && (
-                <div className="rounded-lg border border-dashed bg-card p-5">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <Store className="size-4 text-cta-strong" /> Is this your business?
-                  </div>
-                  <p className="mt-1.5 text-sm text-muted-foreground">Claim it for free to update details, reply to reviews and see who is calling.</p>
-                  <Button asChild size="sm" variant="outline" className="mt-3">
-                    <a href={`${PROVIDER_APP_URL}/claim?listing=${p.id}`}>Claim this listing</a>
-                  </Button>
-                </div>
-              )}
             </StickyColumn>
           </div>
         </div>
