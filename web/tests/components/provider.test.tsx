@@ -175,8 +175,8 @@ describe("FavoriteButton", () => {
 
 describe("cards and tiles", () => {
   it("ProviderCard shows a full result", () => {
-    render(<ProviderCard provider={provider({ subcategories: ["TV Repair", "AC Repair", "Fridge", "Washer"] }) as never} highlight="Fridge" topMatch />);
-    expect(screen.getByText("Top match")).toBeInTheDocument();
+    render(<ProviderCard provider={provider({ subcategories: ["TV Repair", "AC Repair", "Fridge", "Washer"] }) as never} highlight="Fridge" />);
+    expect(screen.queryByText("Top match")).toBeNull();
     expect(screen.getByLabelText("Verified")).toBeInTheDocument();
     expect(screen.getByText("5+ yrs")).toBeInTheDocument();
     expect(screen.getByText("+1 more")).toBeInTheDocument();
@@ -206,11 +206,9 @@ describe("cards and tiles", () => {
   });
   it("cards name an individual professional by profession and a business by category", () => {
     const one = render(<ProviderCard provider={provider({ businessName: "Deep Saha", businessType: "individual", profession: "Plumber", categoryLabel: "Plumber", serviceAreaLabel: "Ghoraguli" }) as never} />);
-    expect(screen.getByText("Individual professional")).toBeInTheDocument();
     expect(screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "Plumber – Ghoraguli")).toBeInTheDocument();
     one.unmount();
     const two = render(<ProviderTile provider={provider({ businessName: "ABC Services", businessType: "company", profession: null, categoryLabel: "Plumbing & Electricians", serviceAreaLabel: "Siliguri" }) as never} />);
-    expect(screen.getByText("Business")).toBeInTheDocument();
     expect(screen.getByText(/Plumbing & Electricians/)).toBeInTheDocument();
     expect(screen.queryByText("Individual professional")).toBeNull();
     two.unmount();
@@ -252,7 +250,6 @@ describe("profile sections", () => {
         facts={[{ icon: Star, value: "5 yrs", label: "Experience" }]}
       />,
     );
-    expect(screen.getByText("Business")).toBeInTheDocument();
     expect(screen.getByText("(1 review)")).toBeInTheDocument();
     expect(screen.getByText("Top Rated")).toBeInTheDocument();
     expect(screen.getByText("+2 more")).toBeInTheDocument();
@@ -269,7 +266,6 @@ describe("profile sections", () => {
         facts={[]}
       />,
     );
-    expect(screen.getAllByText("Individual professional").length).toBeGreaterThan(0);
     // The trade is on the name plate and in the line under the name.
     expect(screen.getAllByText("Plumber").length).toBeGreaterThan(0);
     expect(screen.getByText("Verified professional")).toBeInTheDocument();

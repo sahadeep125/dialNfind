@@ -234,9 +234,10 @@ describe("last branches", () => {
     await act(async () => new Promise((r) => setTimeout(r, 20)));
     expect(screen.getByRole("button", { name: /Write a Review/ })).toBeInTheDocument();
   });
-  it("explicit relevance sort still marks the top match", async () => {
+  it("explicit relevance sort lists every result without a top match label", async () => {
     render(<ResultsSection data={{ results: [provider(), provider({ id: 2, slug: "b" })], total: 2, page: 1, pageSize: 12, totalPages: 1, radiusKm: 15, resolved: { category: null, subcategory: null } } as never} searchParams={{ sort: "relevance" }} basePath="/s" heading="h" origin={null} radiusKm={15} source="search" />);
-    expect(screen.getByText("Top match")).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(2);
+    expect(screen.queryByText("Top match")).toBeNull();
   });
   it("the review dialog closes with Escape and a short code is not sent", async () => {
     const u = userEvent.setup();

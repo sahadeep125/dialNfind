@@ -62,7 +62,7 @@ describe("services offered", () => {
       { id: 1, category: { id: 2, name: "Home Appliances", slug: "home-appliances" }, subcategory: null, startingPrice: null, priceUnit: "per_visit", isPrimary: true },
       { id: 2, category: { id: 2, name: "Home Appliances", slug: "home-appliances" }, subcategory: { id: 5, name: "AC Repair", slug: "ac-repair" }, startingPrice: 400, priceUnit: "per_visit", isPrimary: false },
     ];
-    const categories = [{ id: 2, name: "Home Appliances", slug: "home-appliances", subcategories: [{ id: 5, name: "AC Repair", slug: "ac-repair" }, { id: 6, name: "Mixer Grinder Repair", slug: "mixer-grinder-repair" }] }];
+    const categories = [{ id: 2, name: "Home Appliances", slug: "home-appliances", subcategories: [{ id: 5, name: "AC Repair", slug: "ac-repair" }, { id: 6, name: "Mixer Grinder Repair", slug: "mixer-grinder-repair" }, { id: 7, name: "Geyser Repair", slug: "geyser-repair" }] }];
     render(<ServicesList services={services as never} businessName="Tech Fix" categories={categories as never} />);
     expect(screen.getByRole("heading", { name: "Services offered by Tech Fix" })).toBeInTheDocument();
     expect(screen.getByText(/Listed for all home appliances work/)).toBeInTheDocument();
