@@ -2,12 +2,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { identifyUser, resetUser } from "./analytics";
 import { api, ApiError, tokenStore } from "./api";
-import type { PlanState, User } from "./types";
+import type { User } from "./types";
 
 interface ProviderState {
   provider: { id: number; slug: string; businessName: string; status: string; profileCompletenessPct: number; verificationStatus: string } | null;
-  /** The provider's plan, entitlements and limits; null until a business exists. */
-  plan: PlanState | null;
   claims: { id: number; status: string; method: string; provider: { id: number; businessName: string; city: string } }[];
 }
 
@@ -46,21 +44,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("kjv:logout", onLogout);
   }, []);
 
-  // Analytics follows the session: identify once the account loads (again when the role or plan changes),
+  // Analytics follows the session: identify once the account loads (again when the role changes),
   // reset when the token goes (sign-out, or a 401 anywhere).
   const identified = useRef<string | null>(null);
   const meUser = me.data?.user;
-  const planCode = me.data?.state?.plan?.plan.code ?? null;
   useEffect(() => {
     if (token && meUser) {
-      const key = `${meUser.id}:${meUser.role}:${meUser.name}:${meUser.email}:${meUser.provider?.id ?? ""}:${planCode ?? ""}`;
-      if (key !== identified.current) identifyUser(meUser, planCode);
+      const key = `${meUser.id}:${meUser.role}:${meUser.name}:${meUser.email}:${meUser.provider?.id ?? ""}`;
+      if (key !== identified.current) identifyUser(meUser);
       identified.current = key;
     } else if (!token && identified.current !== null) {
       resetUser();
       identified.current = null;
     }
-  }, [token, meUser, planCode]);
+  }, [token, meUser]);
 
   const signIn = useCallback(
     async (next: string) => {

@@ -1,14 +1,14 @@
 /**
  * Google Tag Manager, for Google Analytics 4 and ad conversions. Off unless VITE_GTM_ID is set.
  * The same container as the website (kaajva.in); PostHog keeps the full event list, GTM gets the provider
- * sign-up, listing and purchase moments under GA4 names. The list and the key events are in docs/ANALYTICS.md.
+ * sign-up and listing moments under GA4 names. The list and the key events are in docs/ANALYTICS.md.
  */
 const GTM_ID: string = import.meta.env.VITE_GTM_ID ?? "";
 
 /** Every parameter the GTM container reads. Each push clears the others, so one event's values never leak into the next. */
 const GTM_PARAMS = [
   "search_term", "city", "category", "subcategory", "provider_id", "is_claimed", "channel", "contact_source",
-  "method", "rating", "listing_type", "value", "currency", "item_category", "item_name",
+  "method", "rating", "listing_type",
 ] as const;
 
 type GtmParams = Partial<Record<(typeof GTM_PARAMS)[number], unknown>>;
@@ -23,10 +23,6 @@ export function toGtmEvent(event: string, p: Record<string, unknown> = {}): { ev
       return { event: "listing_complete", params: { listing_type: "new" } };
     case "claim_submitted":
       return { event: "listing_complete", params: { listing_type: "claim", provider_id: p.provider_id } };
-    case "subscription_purchased":
-      return { event: "purchase", params: { value: p.amount, currency: "INR", item_category: "plan", item_name: p.plan } };
-    case "promotion_purchased":
-      return { event: "purchase", params: { value: p.amount, currency: "INR", item_category: "promotion", item_name: "promotion" } };
     default:
       return null;
   }

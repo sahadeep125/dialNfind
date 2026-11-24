@@ -44,11 +44,11 @@ export function track(event: string, properties?: Record<string, unknown>): void
 }
 
 /** Ties this browser to the account; the same id is used by the website, the apps and the API. */
-export function identifyUser(user: User, plan?: string | null): void {
+export function identifyUser(user: User): void {
   if (!analyticsEnabled) return;
   posthog.identify(
     String(user.id),
-    { email: user.email, name: user.name, role: user.role, provider_id: user.provider?.id ?? null, ...(plan ? { plan } : {}) },
+    { email: user.email, name: user.name, role: user.role, provider_id: user.provider?.id ?? null },
     user.createdAt ? { signed_up_at: user.createdAt } : undefined,
   );
   posthog.register({ user_type: user.role === "provider" ? "provider" : "customer" });

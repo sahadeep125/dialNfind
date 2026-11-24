@@ -6,7 +6,7 @@ import { DEFAULT_HOURS } from "@/components/editors";
 import { categories, json, lastBody, mockApi, pdfFile, pickOption, providerMe, renderApp, renderWith, signedIn, stubUploads } from "./helpers";
 
 const where = () => screen.getByTestId("where").textContent;
-const noBusiness = { provider: null, plan: null };
+const noBusiness = { provider: null };
 
 const listing = (over: Record<string, unknown> = {}) => ({
   id: 5,

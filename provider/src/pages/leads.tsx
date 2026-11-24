@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, CircleHelp, Download, Flag, Loader2, Lock, MessageCircle, Phone, PhoneIncoming, Search, StickyNote, XCircle } from "lucide-react";
+import { CheckCircle2, CircleHelp, Download, Flag, Loader2, MessageCircle, Phone, PhoneIncoming, Search, StickyNote, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 import { api, download, errorMessage } from "@/lib/api";
@@ -11,7 +10,6 @@ import { useDebounced } from "@/lib/use-debounced";
 import { cn } from "@/lib/utils";
 import { PageHeader, Panel } from "@/components/page-header";
 import { EmptyState, PageSkeleton, Pager, Stars } from "@/components/common";
-import { PlanBanner } from "@/components/plan";
 import { ReportDialog } from "@/components/report-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -91,11 +89,6 @@ export function LeadsPage() {
           </Button>
         }
       />
-      {data.leadLimit !== null && (
-        <div className="mb-4">
-          <PlanBanner />
-        </div>
-      )}
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <Tabs value={channel} onValueChange={(v) => onFilter(setChannel)(v as Channel)}>
@@ -177,16 +170,10 @@ export function LeadsPage() {
                     {l.channel === "call" ? <Phone className="size-4" /> : <MessageCircle className="size-4" />}
                   </span>
                   <div className="min-w-0">
-                    {l.locked ? (
-                      <Link to="/subscription" className="flex items-center gap-1.5 truncate font-medium text-muted-foreground hover:text-primary">
-                        <Lock className="size-3.5 shrink-0" /> {l.customerName}
-                      </Link>
-                    ) : (
-                      <div className="truncate font-medium">
-                        {l.customerName}
-                        {l.isGuest && <span className="ml-2 text-xs font-normal text-muted-foreground">not signed in</span>}
-                      </div>
-                    )}
+                    <div className="truncate font-medium">
+                      {l.customerName}
+                      {l.isGuest && <span className="ml-2 text-xs font-normal text-muted-foreground">not signed in</span>}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {l.channel === "call" ? "Call" : "WhatsApp"} · {formatRelative(l.createdAt)}
                     </div>
@@ -252,7 +239,6 @@ function useUpdateLead() {
 
 function FollowUp({ lead, onNote }: { lead: Lead; onNote: () => void }) {
   const update = useUpdateLead();
-  if (lead.locked) return <span className="text-xs text-muted-foreground">Upgrade to track</span>;
   return (
     <div className="flex items-center gap-2">
       <Select value={lead.providerStatus} onValueChange={(v) => update.mutate({ id: lead.id, status: v as LeadStatus })} disabled={update.isPending}>
@@ -357,7 +343,7 @@ function DisputeState({ lead, onReport }: { lead: Lead; onReport: () => void }) 
   );
 }
 
-/** Spam, fake or wrong-number contacts can be reported; if our team agrees, they stop counting and any promotion charge is refunded. */
+/** Spam, fake or wrong-number contacts can be reported; if our team agrees, they stop counting. */
 function ReportLead({ lead, onClose }: { lead: Lead | null; onClose: () => void }) {
   const qc = useQueryClient();
   const report = useMutation({
@@ -373,7 +359,7 @@ function ReportLead({ lead, onClose }: { lead: Lead | null; onClose: () => void 
     <ReportDialog
       open={!!lead}
       title="Report this contact"
-      description="For spam, fake or wrong-number contacts. If our team agrees, it no longer counts in your numbers and any promotion charge goes back to your budget."
+      description="For spam, fake or wrong-number contacts. If our team agrees, it no longer counts in your numbers."
       label="What was wrong with it?"
       sending={report.isPending}
       error={report.error ? errorMessage(report.error) : null}

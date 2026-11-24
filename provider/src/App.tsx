@@ -18,8 +18,6 @@ import { AreasPage, HoursPage, ServicesPage } from "@/pages/editors";
 import { PortfolioPage } from "@/pages/portfolio";
 import { SeoPage } from "@/pages/seo";
 import { VerificationPage } from "@/pages/verification";
-import { SubscriptionPage } from "@/pages/subscription";
-import { PromotePage } from "@/pages/promote";
 import { SupportPage, SupportTicketPage } from "@/pages/support";
 import { VerifyEmailPage } from "@/pages/verify-email";
 
@@ -113,8 +111,6 @@ export function App() {
             <Route path="/portfolio" element={<PortfolioPage />} />
             <Route path="/seo" element={<SeoPage />} />
             <Route path="/verification" element={<VerificationPage />} />
-            <Route path="/promote" element={<PromotePage />} />
-            <Route path="/subscription" element={<SubscriptionPage />} />
             <Route path="/support" element={<SupportPage />} />
             <Route path="/support/:id" element={<SupportTicketPage />} />
             <Route path="/account" element={<AccountPage />} />

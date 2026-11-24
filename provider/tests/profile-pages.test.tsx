@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { categories, inApp, json, lastBody, mockApi, pdfFile, pickOption, planState, pngFile, profile, renderApp, stubUploads } from "./helpers";
+import { categories, inApp, json, lastBody, mockApi, pdfFile, pickOption, pngFile, profile, renderApp, stubUploads } from "./helpers";
 
 /** App routes with a profile that tests can change (it is re-read on every request). */
 function withProfile(initial: Record<string, unknown> = {}, extra: Record<string, unknown> = {}, me: Record<string, unknown> = {}) {
@@ -264,10 +264,9 @@ const photo = (id: number, over: Record<string, unknown> = {}) => ({ id, title: 
 describe("portfolio", () => {
   it("shows the empty state and adds a first photo", async () => {
     stubUploads();
-    const { fetch } = withProfile({ portfolio: [] }, { "POST /provider/portfolio": { ok: true } }, { plan: planState("pro") });
+    const { fetch } = withProfile({ portfolio: [] }, { "POST /provider/portfolio": { ok: true } });
     await renderApp("/portfolio");
     expect(await screen.findByText("No photos yet")).toBeInTheDocument();
-    expect(screen.queryByText(/plan shows/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /Add your first photo/ }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Add a photo")).toBeInTheDocument();
@@ -299,9 +298,7 @@ describe("portfolio", () => {
     await renderApp("/portfolio");
     expect(await screen.findByText("Front")).toBeInTheDocument();
     expect(screen.getByText("Cover")).toBeInTheDocument();
-    expect(screen.getByText(/Your Free plan shows 3 photos \(3 of 3 used\)/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Upgrade for more photos/ })).toBeInTheDocument();
-    expect(screen.getByText("Show more of your work")).toBeInTheDocument();
+    expect(screen.queryByText(/Upgrade/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: 'Move "Photo 1" earlier' })).toBeDisabled();
     expect(screen.getByRole("button", { name: 'Move "Photo 2" earlier' })).toBeDisabled();
     expect(screen.getByRole("button", { name: 'Move "Photo 3" later' })).toBeDisabled();
@@ -357,11 +354,10 @@ describe("portfolio", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
-  it("lets photos move when none is the cover, below the limit", async () => {
+  it("lets photos move when none is the cover", async () => {
     const { fetch } = withProfile({ portfolio: [photo(1), photo(2)] }, { "PUT /provider/portfolio/order": { ok: true } });
     await renderApp("/portfolio");
-    expect(await screen.findByText(/\(2 of 3 used\)/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Add photo/ })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /Add photo/ })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: 'Move "Photo 2" earlier' }));
     await waitFor(() => expect(lastBody(fetch, "/portfolio/order")).toEqual({ ids: [2, 1] }));
     await userEvent.click(screen.getByRole("button", { name: /Add photo/ }));

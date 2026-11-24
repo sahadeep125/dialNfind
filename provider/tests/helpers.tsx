@@ -57,18 +57,8 @@ export const user = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-export const planState = (code: "free" | "pro" | "business" = "free", over: Record<string, unknown> = {}) => ({
-  plan: { id: code === "free" ? 1 : code === "pro" ? 2 : 3, code, name: code[0]!.toUpperCase() + code.slice(1) },
-  entitlements: code === "free" ? [] : code === "pro" ? ["provider_pro"] : ["provider_pro", "provider_business"],
-  features: { analytics: code !== "free", whatsapp: code !== "free", promote: code === "business", priority_support: code === "business" },
-  subscription: null,
-  limits: { leads: { limit: code === "free" ? 10 : null, used: 3 }, photos: { limit: code === "free" ? 3 : null, used: 1 } },
-  ...over,
-});
-
 export const providerMe = (over: Record<string, unknown> = {}) => ({
   provider: { id: 3, slug: "sharma-tv", businessName: "Sharma TV Repair", status: "active", profileCompletenessPct: 60, verificationStatus: "partial" },
-  plan: planState(),
   claims: [],
   ...over,
 });

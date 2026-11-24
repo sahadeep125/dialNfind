@@ -2,12 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { ApiError, UPGRADE_EVENT } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import { EmptyState, PageSkeleton, Pager, SaveBar, Stars } from "@/components/common";
-import { FeatureGate, LockedCard } from "@/components/plan";
 import { PageHeader, Panel } from "@/components/page-header";
-import { Logo } from "@/components/logo";
-import { json, mockApi, newQueryClient, planState, profile, renderApp, renderWith, signedIn } from "./helpers";
+import { Logo, LogoMark } from "@/components/logo";
+import { json, mockApi, newQueryClient, profile, renderApp, signedIn } from "./helpers";
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 
@@ -15,7 +14,6 @@ const where = () => screen.getByTestId("where").textContent;
 
 const dashboard = (over: Record<string, unknown> = {}) => ({
   provider: { businessName: "Sharma TV Repair", avgRating: 4.25, totalReviews: 8, profileCompletenessPct: 60, verificationStatus: "partial", responseSignal: null, favorites: 2, city: "Mumbai", status: "active" },
-  analyticsLocked: false,
   totals: { leads: 1200, calls: 1000, whatsapp: 200, views: 5000, impressions: 12000, leadsChangePct: 12, viewsChangePct: -4, conversionPct: 24, unrepliedReviews: 2 },
   ranking: { position: 3, outOf: 40 },
   series: [{ date: "2026-09-01", calls: 2, whatsapp: 1, views: 30, impressions: 90 }],
@@ -25,14 +23,13 @@ const dashboard = (over: Record<string, unknown> = {}) => ({
     { key: "hours", label: "Set your working hours", done: true },
   ],
   recentLeads: [
-    { id: 1, channel: "call", createdAt: "2026-09-27T10:00:00.000Z", customerName: "Asha", service: "TV Repair", locked: false },
-    { id: 2, channel: "whatsapp", createdAt: "2026-09-27T10:00:00.000Z", customerName: "Hidden customer", service: null, locked: true },
+    { id: 1, channel: "call", createdAt: "2026-09-27T10:00:00.000Z", customerName: "Asha", service: "TV Repair" },
+    { id: 2, channel: "whatsapp", createdAt: "2026-09-27T10:00:00.000Z", customerName: "Hidden customer", service: null },
   ],
   recentReviews: [
     { id: 1, rating: 5, reviewText: "Great", providerReply: null, createdAt: "2026-09-01T00:00:00.000Z", author: "Meena" },
     { id: 2, rating: 4, reviewText: "Good", providerReply: "Thanks", createdAt: "2026-09-01T00:00:00.000Z", author: "Raj" },
   ],
-  subscription: null,
   ...over,
 });
 
@@ -84,7 +81,7 @@ describe("routing guards", () => {
   });
 
   it("sends accounts without a business to the start page", async () => {
-    mockApi(shell({}, { provider: null, plan: null }));
+    mockApi(shell({}, { provider: null }));
     await renderApp("/leads");
     await waitFor(() => expect(where()).toBe("/start"));
     expect(screen.getByText(/Welcome, Ravi/)).toBeInTheDocument();
@@ -121,7 +118,7 @@ describe("onboarding layout and start page", () => {
       { id: 2, status: "pending", method: "otp", provider: { id: 10, businessName: "Other Shop", city: "Goa" } },
       { id: 3, status: "rejected", method: "otp", provider: { id: 11, businessName: "Gone Shop", city: "Goa" } },
     ];
-    const fetch = mockApi({ ...shell({}, { provider: null, plan: null, claims }), "POST /auth/logout": { ok: true } });
+    const fetch = mockApi({ ...shell({}, { provider: null, claims }), "POST /auth/logout": { ok: true } });
     await renderApp("/start");
     expect(await screen.findByText("Claim in progress")).toBeInTheDocument();
     expect(screen.getByText(/Old Shop, Pune. Our team is reviewing/)).toBeInTheDocument();
@@ -140,7 +137,7 @@ describe("onboarding layout and start page", () => {
   });
 
   it("shows no claim box when there are no pending claims", async () => {
-    mockApi(shell({}, { provider: null, plan: null }));
+    mockApi(shell({}, { provider: null }));
     await renderApp("/start");
     await screen.findByText(/Welcome, Ravi/);
     expect(screen.queryByText("Claim in progress")).not.toBeInTheDocument();
@@ -148,7 +145,7 @@ describe("onboarding layout and start page", () => {
 });
 
 describe("app layout", () => {
-  it("shows the business, plan chip, availability and a locked Promote item", async () => {
+  it("shows the business, availability and approval state", async () => {
     mockApi({
       ...shell({}, { provider: { ...signedIn()["/provider/me"].provider, status: "pending" } }),
       "/provider/dashboard": dashboard({ provider: { ...dashboard().provider, status: "pending" } }),
@@ -157,20 +154,10 @@ describe("app layout", () => {
     expect(await screen.findByText("Available for work")).toBeInTheDocument();
     expect(screen.getAllByText("Sharma TV Repair").length).toBeGreaterThan(0);
     expect(screen.getByText("Waiting for approval")).toBeInTheDocument();
-    expect(screen.getAllByLabelText("Needs an upgrade").length).toBe(1);
-    const chip = screen.getByTitle("Free plan");
-    expect(chip).toHaveTextContent("Free· Upgrade");
+    expect(screen.queryByText(/Upgrade/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Promote/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /View public profile/ })).toHaveAttribute("href", "http://web.test/providers/sharma-tv");
     expect(screen.getByText(/waiting for approval. It will appear/)).toBeInTheDocument();
-  });
-
-  it("shows a paid chip with its source and unlocks Promote on Business", async () => {
-    const sub = { status: "active", source: "razorpay", cancelAtPeriodEnd: false, endDate: null, graceUntil: null };
-    mockApi(shell({}, { plan: planState("business", { subscription: sub }) }));
-    await renderApp("/");
-    const chip = await screen.findByTitle("Business, paid online");
-    expect(chip).not.toHaveTextContent("Upgrade");
-    expect(screen.queryByLabelText("Needs an upgrade")).not.toBeInTheDocument();
   });
 
   it("toggles availability both ways and reports failures", async () => {
@@ -201,7 +188,7 @@ describe("app layout", () => {
   });
 
   it("opens the mobile menu and closes it on navigation", async () => {
-    mockApi({ ...shell(), "/provider/leads": { leads: [], total: 0, page: 1, totalPages: 1, locked: 0 } });
+    mockApi({ ...shell(), "/provider/leads": { leads: [], total: 0, page: 1, totalPages: 1 } });
     await renderApp("/");
     await screen.findByText("Good to see you");
     await userEvent.click(screen.getByRole("button", { name: "Open menu" }));
@@ -221,41 +208,6 @@ describe("app layout", () => {
     expect(screen.getByRole("menuitem", { name: /Help and support/ })).toHaveAttribute("href", "/support");
     await userEvent.click(screen.getByRole("menuitem", { name: /Log out/ }));
     await waitFor(() => expect(where()).toMatch(/^\/login/));
-  });
-
-  it("opens the upgrade dialog for a 402 with a known feature, and goes to the plans", async () => {
-    mockApi(shell());
-    await renderApp("/");
-    await screen.findByText("Good to see you");
-    act(() => {
-      window.dispatchEvent(new CustomEvent(UPGRADE_EVENT, { detail: { entitlement: "provider_business", feature: "promote", message: "Business only" } }));
-    });
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("Promote your listing")).toBeInTheDocument();
-    expect(within(dialog).getByText("Business only")).toBeInTheDocument();
-    expect(within(dialog).getByText(/sponsored campaigns/)).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole("button", { name: "See Business" }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    expect(where()).toBe("/subscription");
-  });
-
-  it("opens the upgrade dialog for an unknown feature and can be dismissed", async () => {
-    mockApi(shell());
-    await renderApp("/");
-    await screen.findByText("Good to see you");
-    act(() => {
-      window.dispatchEvent(new CustomEvent(UPGRADE_EVENT, { detail: { feature: "mystery", message: "Upgrade needed" } }));
-    });
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("Upgrade to Pro")).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole("button", { name: "Not now" }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    act(() => {
-      window.dispatchEvent(new CustomEvent(UPGRADE_EVENT, { detail: { feature: "mystery", message: "Again" } }));
-    });
-    await screen.findByRole("dialog");
-    await userEvent.keyboard("{Escape}");
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 });
 
@@ -319,9 +271,8 @@ describe("notifications", () => {
 });
 
 describe("dashboard", () => {
-  it("shows KPIs, ranking, checklist, recent leads and reviews on a paid plan", async () => {
-    const sub = { status: "active", source: "razorpay", cancelAtPeriodEnd: false, endDate: "2026-10-28T00:00:00.000Z", graceUntil: null };
-    const fetch = mockApi(shell({}, { plan: planState("pro", { subscription: sub }) }));
+  it("shows KPIs, ranking, checklist, recent leads and reviews", async () => {
+    const fetch = mockApi(shell());
     await renderApp("/");
     expect(await screen.findByText("Good to see you")).toBeInTheDocument();
     expect(screen.getByText("1,200")).toBeInTheDocument();
@@ -336,11 +287,10 @@ describe("dashboard", () => {
     expect(screen.queryByText("Set your working hours")).not.toBeInTheDocument();
     expect(screen.getByText("Tapped Call · TV Repair")).toBeInTheDocument();
     expect(screen.getByText("Opened WhatsApp")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Hidden customer/ })).toHaveAttribute("href", "/subscription");
+    expect(screen.getByText("Hidden customer")).toBeInTheDocument();
     expect(screen.getByText("2 need a reply")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Reply" })).toHaveLength(1);
-    expect(screen.getByText(/Renews on/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Manage plan" })).toBeInTheDocument();
+    expect(screen.queryByText(/plan/i)).not.toBeInTheDocument();
     expect(screen.getByText("Leads and profile views")).toBeInTheDocument();
     // Google visibility: the SEO score with the next fixes, each linking to where it is fixed.
     expect(screen.getByText("Google visibility")).toBeInTheDocument();
@@ -354,14 +304,12 @@ describe("dashboard", () => {
     await waitFor(() => expect(fetch.mock.calls.some(([u]) => String(u).includes("days=7"))).toBe(true));
   });
 
-  it("locks analytics and handles empty data on Free", async () => {
+  it("handles empty data", async () => {
     mockApi({
-      ...shell({}, { plan: planState("free", { limits: { leads: { limit: 10, used: 12 }, photos: { limit: 3, used: 0 } } }) }),
+      ...shell(),
       "/provider/dashboard": dashboard({
-        analyticsLocked: true,
         provider: { ...dashboard().provider, totalReviews: 0, profileCompletenessPct: 90 },
-        totals: { ...dashboard().totals, views: null, impressions: null, viewsChangePct: null, leadsChangePct: null, conversionPct: null, unrepliedReviews: 0 },
-        ranking: null,
+        totals: { ...dashboard().totals, views: 0, impressions: 0, viewsChangePct: null, leadsChangePct: null, conversionPct: null, unrepliedReviews: 0 },
         checklist: [
           { key: "hours", label: "Set your working hours", done: true },
           { key: "verification", label: "Verify", done: true },
@@ -371,113 +319,28 @@ describe("dashboard", () => {
       }),
     });
     await renderApp("/");
-    expect(await screen.findByText("Upgrade to see who views you")).toBeInTheDocument();
-    expect(screen.getAllByText("Unlock with Pro").length).toBeGreaterThanOrEqual(3);
-    expect(screen.getByText("See who is looking at your business")).toBeInTheDocument();
-    expect(screen.getByText("See where you rank")).toBeInTheDocument();
+    expect(await screen.findByText("Good to see you")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Set your working hours" })).toHaveAttribute("href", "/hours");
     expect(screen.getByRole("link", { name: "Verify" })).toHaveAttribute("href", "/verification");
     expect(screen.getByText("No leads yet. Complete your profile to rank higher.")).toBeInTheDocument();
     expect(screen.getByText("No reviews yet.")).toBeInTheDocument();
-    expect(screen.getByText("-")).toBeInTheDocument();
-    expect(screen.getByText(/10 of 10 leads used this month. Upgrade/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Upgrade" })).toBeInTheDocument();
-    expect(screen.getByText("You have used all 10 free leads this month")).toBeInTheDocument();
-    expect(screen.getByText(/details stay hidden/)).toBeInTheDocument();
+    expect(screen.getAllByText("-").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Upgrade|Unlock/)).not.toBeInTheDocument();
   });
 
-  it("shows a dash for a missing conversion rate and unlimited plans without an end date", async () => {
+  it("shows a dash for a missing conversion rate", async () => {
     mockApi({
-      ...shell({}, { plan: planState("pro") }),
+      ...shell(),
       "/provider/dashboard": dashboard({ totals: { ...dashboard().totals, conversionPct: null, leadsChangePct: 0 } }),
     });
     await renderApp("/");
-    expect(await screen.findByText("Unlimited leads and profile analytics.")).toBeInTheDocument();
+    expect(await screen.findByText("Good to see you")).toBeInTheDocument();
     expect(screen.getByText("-")).toBeInTheDocument();
     expect(screen.getByText("0%")).toBeInTheDocument();
-  });
-
-  it("shows the ending date when the plan is cancelled", async () => {
-    const sub = { status: "active", source: "admin", cancelAtPeriodEnd: true, endDate: "2026-10-28T00:00:00.000Z", graceUntil: null };
-    mockApi(shell({}, { plan: planState("pro", { subscription: sub }) }));
-    await renderApp("/");
-    expect(await screen.findByText(/^Ends on/)).toBeInTheDocument();
-    expect(screen.getByText(/Pro ends on/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Keep Pro" })).toBeInTheDocument();
-  });
-});
-
-describe("plan banner", () => {
-  const withPlan = async (plan: ReturnType<typeof planState>) => {
-    mockApi(shell({}, { plan }));
-    await renderApp("/");
-    await screen.findByText("Good to see you");
-  };
-
-  it("warns about a failed payment with a grace date", async () => {
-    await withPlan(planState("pro", { subscription: { status: "past_due", source: "razorpay", cancelAtPeriodEnd: false, endDate: null, graceUntil: "2026-10-05T00:00:00.000Z" } }));
-    expect(screen.getByText("Your last payment did not go through")).toBeInTheDocument();
-    expect(screen.getByText(/until 5 Oct 2026/)).toBeInTheDocument();
-    expect(screen.getByText(/Check the card or UPI mandate/)).toBeInTheDocument();
-  });
-
-  it("points store subscribers to the store and has no grace date", async () => {
-    await withPlan(planState("pro", { subscription: { status: "past_due", source: "app_store", cancelAtPeriodEnd: false, endDate: null, graceUntil: null } }));
-    expect(screen.getByText(/for a few days/)).toBeInTheDocument();
-    expect(screen.getByText(/Update your payment method in the store/)).toBeInTheDocument();
-  });
-
-  it("points Play Store subscribers to the store too", async () => {
-    await withPlan(planState("pro", { subscription: { status: "past_due", source: "play_store", cancelAtPeriodEnd: false, endDate: null, graceUntil: null } }));
-    expect(screen.getByText(/Update your payment method in the store/)).toBeInTheDocument();
-  });
-
-  it("shows nothing for a cancelled plan without an end date on a paid plan", async () => {
-    await withPlan(planState("pro", { subscription: { status: "active", source: "play_store", cancelAtPeriodEnd: true, endDate: null, graceUntil: null } }));
-    expect(screen.queryByText(/ends on/)).not.toBeInTheDocument();
-    expect(screen.queryByText("You are on the Free plan")).not.toBeInTheDocument();
-  });
-
-  it("prompts Free plans below the limit", async () => {
-    await withPlan(planState("free"));
-    expect(screen.getByText("You are on the Free plan")).toBeInTheDocument();
-    expect(screen.getByText("3 of 10 leads used this month.")).toBeInTheDocument();
-    expect(screen.getByText(/Pro unlocks unlimited leads/)).toBeInTheDocument();
-  });
-
-  it("prompts Free plans without a lead limit", async () => {
-    await withPlan(planState("free", { limits: { leads: { limit: null, used: 3 }, photos: { limit: null, used: 0 } } }));
-    expect(screen.getByText("You are on the Free plan")).toBeInTheDocument();
-    expect(screen.queryByText(/leads used this month\./)).not.toBeInTheDocument();
-  });
-
-  it("falls back to the Free plan when the provider has no plan yet", async () => {
-    await withPlan(null as unknown as ReturnType<typeof planState>);
-    expect(screen.getByText("You are on the Free plan")).toBeInTheDocument();
   });
 });
 
 describe("small components", () => {
-  it("FeatureGate shows children when entitled and a locked card otherwise", async () => {
-    mockApi(signedIn({}, { plan: planState("pro") }));
-    renderWith(
-      <>
-        <FeatureGate feature="analytics">
-          <div>secret stats</div>
-        </FeatureGate>
-        <FeatureGate feature="promote" className="x">
-          <div>promo</div>
-        </FeatureGate>
-        <LockedCard feature="photos" compact />
-      </>,
-    );
-    expect(await screen.findByText("secret stats")).toBeInTheDocument();
-    expect(screen.queryByText("promo")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Upgrade to Business" })).toBeInTheDocument();
-    expect(screen.getByText("Show more of your work")).toBeInTheDocument();
-    expect(screen.queryByText(/Free listings show 3 photos/)).not.toBeInTheDocument();
-  });
-
   it("Pager, SaveBar, Stars, EmptyState, PageHeader, Panel and Logo render their states", async () => {
     const onPage = vi.fn();
     const onSave = vi.fn();
@@ -520,6 +383,7 @@ describe("small components", () => {
         <SaveBar dirty={false} saving onSave={onSave} />
         <Logo />
         <Logo light className="c" />
+        <LogoMark className="m" />
       </MemoryRouter>,
     );
     expect(screen.getByText("All changes saved")).toBeInTheDocument();

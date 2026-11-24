@@ -1,13 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import posthog from "posthog-js";
-import { api, ApiError, download, errorMessage, tokenStore, UPGRADE_EVENT } from "@/lib/api";
+import { api, ApiError, download, errorMessage, tokenStore } from "@/lib/api";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/draft";
 import { formatDate, formatPhone, formatPrice, formatRelative, initials, telLink, whatsappLink } from "@/lib/format";
-import { GST_STATES, GSTIN_PATTERN } from "@/lib/gst";
 import { FAQ } from "@/lib/help";
-import { planFor, usePlan, useEntitlement, FEATURE_COPY } from "@/lib/plan";
-import { openCheckout, openOrderCheckout } from "@/lib/razorpay";
 import { checkFile, uploadFile } from "@/lib/upload";
 import { useDebounced } from "@/lib/use-debounced";
 import { email, normalizePhone, optionalEmail, optionalInt, optionalPhone, optionalPincode, optionalUrl, orNull, password, personName, phone, pincode } from "@/lib/validation";
@@ -16,7 +13,7 @@ import { LEGAL_DOCS } from "@/lib/legal";
 import { useAppConfig } from "@/lib/app-config";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { json, mockApi, newQueryClient, providerMe, signedIn, user } from "./helpers";
+import { json, mockApi, newQueryClient, signedIn, user } from "./helpers";
 
 describe("api client", () => {
   it("sends JSON with the stored token", async () => {
@@ -30,12 +27,10 @@ describe("api client", () => {
     await api("/x", { method: "POST", body: "raw" });
     expect((fetch.mock.calls[1]![1]!.headers as Headers).get("authorization")).toBeNull();
   });
-  it("signs out on 401, redirects unconfirmed accounts and announces upgrades", async () => {
+  it("signs out on 401, redirects unconfirmed accounts and treats 402 as a plain error", async () => {
     tokenStore.set("tok");
     const logout = vi.fn();
-    const upgrade = vi.fn();
     window.addEventListener("kjv:logout", logout);
-    window.addEventListener(UPGRADE_EVENT, upgrade);
     const assign = vi.fn();
     vi.stubGlobal("location", { ...window.location, pathname: "/leads", assign });
     mockApi({
@@ -57,11 +52,9 @@ describe("api client", () => {
     await expect(api("/b")).rejects.toBeInstanceOf(ApiError);
     expect(assign).toHaveBeenCalledTimes(1);
     await expect(api("/c")).rejects.toMatchObject({ status: 402 });
-    expect((upgrade.mock.calls[0]![0] as CustomEvent).detail).toEqual({ entitlement: "provider_pro", feature: "analytics", message: "Upgrade" });
     await expect(api("/d")).rejects.toMatchObject({ message: "Something went wrong" });
     await expect(api("/e")).rejects.toBeInstanceOf(ApiError);
     await expect(api("/f")).rejects.toBeInstanceOf(ApiError);
-    expect(upgrade).toHaveBeenCalledTimes(1);
     expect(errorMessage(new Error("m"))).toBe("m");
     expect(errorMessage("x")).toBe("Something went wrong");
   });
@@ -108,7 +101,7 @@ describe("small helpers", () => {
     saveDraft("k", 1);
     clearDraft("k");
   });
-  it("format, gst, help, legal and utils", () => {
+  it("format, help, legal and utils", () => {
     expect(formatPhone("+919876543210")).toBe("+91 98765 43210");
     expect(formatPhone("123")).toBe("123");
     expect(telLink("+91 98765")).toBe("tel:+9198765");
@@ -125,14 +118,9 @@ describe("small helpers", () => {
     expect(formatRelative("2024-01-05T00:00:00Z")).toBe("5 Jan 2024");
     expect(formatDate("2024-01-05T00:00:00Z")).toBe("5 Jan 2024");
     expect(initials(" Ravi kumar singh")).toBe("RK");
-    expect(GST_STATES.find((s) => s.code === "27")?.name).toBe("Maharashtra");
-    expect(GSTIN_PATTERN.test("27ABCDE1234F1Z5")).toBe(true);
     expect(FAQ.length).toBeGreaterThan(5);
     expect(LEGAL_DOCS.terms.title).toBeTruthy();
     expect(cn("p-2", "p-4")).toBe("p-4");
-    expect(planFor("provider_business")).toBe("Business");
-    expect(planFor("provider_pro")).toBe("Pro");
-    expect(FEATURE_COPY.promote.entitlement).toBe("provider_business");
   });
   it("validation rules", () => {
     expect(normalizePhone("098765 43210")).toBe("+919876543210");
@@ -193,10 +181,10 @@ describe("analytics", () => {
     expect(posthog.init).toHaveBeenCalledWith("phc", expect.objectContaining({ api_host: "/ingest" }));
     a.track("e", { a: 1 });
     expect(posthog.capture).toHaveBeenCalledWith("e", { a: 1 });
-    a.identifyUser(user() as never, "pro");
-    expect(posthog.identify).toHaveBeenCalledWith("7", expect.objectContaining({ plan: "pro", provider_id: 3 }), { signed_up_at: "2026-01-01T00:00:00.000Z" });
+    a.identifyUser(user() as never);
+    expect(posthog.identify).toHaveBeenCalledWith("7", expect.objectContaining({ provider_id: 3 }), { signed_up_at: "2026-01-01T00:00:00.000Z" });
     a.identifyUser(user({ role: "customer", provider: null, createdAt: undefined }) as never);
-    expect(posthog.identify).toHaveBeenLastCalledWith("7", expect.not.objectContaining({ plan: expect.anything() }), undefined);
+    expect(posthog.identify).toHaveBeenLastCalledWith("7", expect.objectContaining({ provider_id: null }), undefined);
     expect(posthog.register).toHaveBeenCalledWith({ user_type: "customer" });
     a.resetUser();
     expect(posthog.reset).toHaveBeenCalled();
@@ -228,49 +216,34 @@ describe("analytics", () => {
   });
 });
 
-describe("razorpay checkout", () => {
-  it("loads the script once, resolves, dismisses and rejects", async () => {
+describe("google tag manager", () => {
+  it("maps events and pushes them once the container is set", async () => {
     vi.resetModules();
-    const mod = await import("@/lib/razorpay");
-    const append = vi.spyOn(document.body, "appendChild");
-    let options!: { handler: (r: unknown) => void; modal: { ondismiss: () => void } };
-    let failed!: (r: { error: { description: string } }) => void;
-    const open = vi.fn();
-    const pending = mod.openCheckout({ key: "k", subscription_id: "sub", name: "n", description: "d" });
-    const script = append.mock.calls[0]![0] as HTMLScriptElement;
-    window.Razorpay = vi.fn(function (o: typeof options) {
-      options = o;
-      return { open, on: (_e: string, cb: typeof failed) => (failed = cb) };
-    }) as never;
-    script.onload!(new Event("load"));
-    await waitFor(() => expect(open).toHaveBeenCalled());
-    options.handler({ razorpay_payment_id: "p" });
-    expect(await pending).toEqual({ razorpay_payment_id: "p" });
+    vi.stubEnv("VITE_GTM_ID", "");
+    const off = await import("@/lib/gtm");
+    off.pushGtmEvent("signed_up");
+    off.loadGtm();
+    expect((window as { dataLayer?: unknown[] }).dataLayer).toBeUndefined();
 
-    const dismissed = mod.openOrderCheckout({ key: "k", order_id: "o", amount: 100, name: "n", description: "d" });
-    await waitFor(() => expect(open).toHaveBeenCalledTimes(2));
-    options.modal.ondismiss();
-    expect(await dismissed).toBeNull();
-
-    const fails = openCheckout({ key: "k", subscription_id: "s", name: "n", description: "d" });
-    await waitFor(() => expect(open).toHaveBeenCalledTimes(3));
-    failed({ error: { description: "" } });
-    await expect(fails).rejects.toThrow("The payment did not go through");
-    const fails2 = openOrderCheckout({ key: "k", order_id: "o", amount: 1, name: "n", description: "d" });
-    await waitFor(() => expect(open).toHaveBeenCalledTimes(4));
-    failed({ error: { description: "Card declined" } });
-    await expect(fails2).rejects.toThrow("Card declined");
-    delete window.Razorpay;
-  });
-  it("reports when the script cannot load, and tries again next time", async () => {
     vi.resetModules();
-    const mod = await import("@/lib/razorpay");
-    const append = vi.spyOn(document.body, "appendChild");
-    const first = mod.openCheckout({ key: "k", subscription_id: "s", name: "n", description: "d" });
-    (append.mock.calls[0]![0] as HTMLScriptElement).onerror!(new Event("error"));
-    await expect(first).rejects.toThrow("Could not load the payment window");
-    void mod.openCheckout({ key: "k", subscription_id: "s", name: "n", description: "d" }).catch(() => undefined);
-    await waitFor(() => expect(append).toHaveBeenCalledTimes(2));
+    vi.stubEnv("VITE_GTM_ID", "GTM-X");
+    const g = await import("@/lib/gtm");
+    expect(g.toGtmEvent("signed_up", { role: "customer", method: "email" })).toEqual({ event: "sign_up", params: { method: "email" } });
+    expect(g.toGtmEvent("signed_up")).toEqual({ event: "provider_sign_up", params: { method: undefined } });
+    expect(g.toGtmEvent("onboarding_completed")?.params).toEqual({ listing_type: "new" });
+    expect(g.toGtmEvent("claim_submitted", { provider_id: 3 })?.params).toEqual({ listing_type: "claim", provider_id: 3 });
+    expect(g.toGtmEvent("other")).toBeNull();
+    g.loadGtm();
+    g.loadGtm();
+    expect(document.head.querySelector('script[src*="gtm.js?id=GTM-X"]')).not.toBeNull();
+    g.pushGtmEvent("other");
+    g.pushGtmEvent("claim_submitted", { provider_id: null });
+    const layer = (window as { dataLayer?: Record<string, unknown>[] }).dataLayer!;
+    expect(layer.at(-1)).toMatchObject({ event: "listing_complete", listing_type: "claim", provider_id: undefined });
+    delete (window as { dataLayer?: unknown }).dataLayer;
+    g.pushGtmEvent("onboarding_completed");
+    expect((window as { dataLayer?: unknown[] }).dataLayer).toHaveLength(1);
+    delete (window as { dataLayer?: unknown }).dataLayer;
   });
 });
 
@@ -346,25 +319,23 @@ describe("uploads", () => {
   });
 });
 
-describe("auth provider and plan hooks", () => {
+describe("auth provider", () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={newQueryClient()}>
       <AuthProvider>{children}</AuthProvider>
     </QueryClientProvider>
   );
-  const useBoth = () => ({ auth: useAuth(), plan: usePlan(), pro: useEntitlement("provider_pro"), config: useAppConfig() });
+  const useBoth = () => ({ auth: useAuth(), config: useAppConfig() });
 
   it("loads the account and business, signs in and out", async () => {
-    mockApi(signedIn({}, { plan: { ...providerMe().plan, entitlements: ["provider_pro"] } }));
+    mockApi(signedIn());
     const { result } = renderHook(useBoth, { wrapper });
     expect(result.current.auth.loading).toBe(true);
     await waitFor(() => expect(result.current.auth.user?.id).toBe(7));
-    expect(result.current.pro).toBe(true);
     await waitFor(() => expect(result.current.config.data?.support_email).toBe("help@x.co"));
     const fetch = mockApi({ "POST /auth/logout": () => Promise.reject(new Error("offline")) as never });
     act(() => result.current.auth.signOut());
     expect(result.current.auth.user).toBeNull();
-    expect(result.current.plan.plan.code).toBe("free");
     expect(localStorage.getItem("kjv_provider_token")).toBeNull();
     expect(fetch).toHaveBeenCalled();
     mockApi(signedIn({ emailVerifiedAt: null }));
@@ -395,7 +366,7 @@ describe("auth provider and plan hooks", () => {
         <A>{children}</A>
       </rq.QueryClientProvider>
     );
-    mockApi(signedIn({}, { plan: null }));
+    mockApi(signedIn());
     const { result } = rtl.renderHook(() => use(), { wrapper: W });
     await rtl.waitFor(() => expect(posthog.identify).toHaveBeenCalledTimes(1));
     await rtl.act(async () => result.current.refresh());

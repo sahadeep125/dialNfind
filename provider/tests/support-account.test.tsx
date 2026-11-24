@@ -23,7 +23,7 @@ describe("support list", () => {
   it("lists requests with statuses and pages, and shows the contacts", async () => {
     const fetch = mockApi({
       ...inApp(),
-      "/app-config": config(),
+      "/app-config": config({ office_address: "12 MG Road, Mumbai" }),
       "/support/tickets": (url: URL) =>
         json({ tickets: [ticket(), ticket({ id: 6, status: "pending" }), ticket({ id: 7, status: "resolved" }), ticket({ id: 8, status: "closed" })], page: Number(url.searchParams.get("page")), totalPages: 2 }),
     });
@@ -33,6 +33,7 @@ describe("support list", () => {
     expect(screen.getByText("Closed")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /Wrong phone number/ })[0]).toHaveAttribute("href", "/support/5");
     expect(screen.getByRole("link", { name: /support@kaajva.in/ })).toHaveAttribute("href", "mailto:support@kaajva.in");
+    expect(screen.getByText("12 MG Road, Mumbai")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /\+91 98000 12345/ })).toHaveAttribute("href", "tel:+919800012345");
     expect(screen.getByText("Mon to Sat, 10 to 6")).toBeInTheDocument();
     expect(screen.getByText("What is a lead?")).toBeInTheDocument();
@@ -285,7 +286,7 @@ describe("account settings", () => {
     let fail = true;
     const fetch = mockApi({
       ...inApp(),
-      "DELETE /auth/me": () => (fail ? json({ error: { message: "Wrong password" } }, 400) : json({ ok: true, storeSubscription: null })),
+      "DELETE /auth/me": () => (fail ? json({ error: { message: "Wrong password" } }, 400) : json({ ok: true })),
       "POST /auth/logout": { ok: true },
     });
     await renderApp("/account");
@@ -316,10 +317,8 @@ describe("account settings", () => {
     expect(lastBody(fetch, "/auth/me")).toEqual({ password: "secret123" });
   });
 
-  it("deletes a social account by typing DELETE, and points to the store subscription", async () => {
-    const open = vi.fn();
-    vi.stubGlobal("open", open);
-    const fetch = mockApi({ ...inApp({ hasPassword: false }), "DELETE /auth/me": { ok: true, storeSubscription: "play_store" }, "POST /auth/logout": { ok: true } });
+  it("deletes a social account by typing DELETE", async () => {
+    const fetch = mockApi({ ...inApp({ hasPassword: false }), "DELETE /auth/me": { ok: true }, "POST /auth/logout": { ok: true } });
     await renderApp("/account");
     await userEvent.click(await screen.findByRole("button", { name: /Delete account/ }));
     const dialog = await screen.findByRole("dialog");
@@ -331,8 +330,7 @@ describe("account settings", () => {
     await userEvent.click(within(dialog).getByRole("button", { name: /Delete permanently/ }));
     await waitFor(() => expect(where()).toMatch(/^\/login/));
     expect(lastBody(fetch, "/auth/me")).toEqual({ confirm: " delete " });
-    await userEvent.click(await screen.findByRole("button", { name: "Google Play subscriptions" }));
-    expect(open).toHaveBeenCalledWith("https://play.google.com/store/account/subscriptions", "_blank", "noopener");
+    expect(await screen.findByText("Your account has been deleted.")).toBeInTheDocument();
   });
 
   it("shows a skeleton without a signed-in account", () => {

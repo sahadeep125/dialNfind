@@ -4,16 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck,
   Clock,
-  CreditCard,
   ExternalLink,
   Images,
   Search,
-  Lock,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
   MapPinned,
-  Megaphone,
   Menu,
   MessageSquare,
   PhoneIncoming,
@@ -30,9 +27,6 @@ import { initials } from "@/lib/format";
 import type { ProviderProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
-import { PlanChip, UpgradeDialog } from "@/components/plan";
-import { usePlan } from "@/lib/plan";
-import type { Entitlement } from "@/lib/types";
 import { NotificationBell } from "@/components/notifications";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -68,13 +62,6 @@ const NAV = [
     ],
   },
   {
-    title: "Grow",
-    items: [
-      { to: "/promote", label: "Promote", icon: Megaphone, requires: "provider_business" as Entitlement },
-      { to: "/subscription", label: "Plan and billing", icon: CreditCard },
-    ],
-  },
-  {
     title: "Help",
     items: [{ to: "/support", label: "Help and support", icon: LifeBuoy }],
   },
@@ -85,7 +72,6 @@ export function useProfile() {
 }
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
-  const { entitlements } = usePlan();
   return (
     <nav className="space-y-6">
       {NAV.map((group) => (
@@ -106,7 +92,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 }
               >
                 <item.icon className="size-4" /> {item.label}
-                {"requires" in item && item.requires && !entitlements.includes(item.requires) && <Lock className="ml-auto size-3.5 text-white/40" aria-label="Needs an upgrade" />}
               </NavLink>
             ))}
           </div>
@@ -181,7 +166,6 @@ export function AppLayout() {
             {provider?.status === "pending" && <div className="text-xs text-warning">Waiting for approval</div>}
           </div>
           <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
-            <PlanChip />
             <AvailabilityToggle />
             <NotificationBell />
             <DropdownMenu>
@@ -220,7 +204,6 @@ export function AppLayout() {
         <main className="mx-auto max-w-6xl px-4 py-8 md:px-8">
           <Outlet />
         </main>
-        <UpgradeDialog />
       </div>
     </div>
   );
