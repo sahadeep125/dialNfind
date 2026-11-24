@@ -76,6 +76,9 @@ WORKDIR /app
 COPY --from=build --chown=node:node /app/web/.next/standalone ./
 COPY --from=build --chown=node:node /app/web/.next/static ./web/.next/static
 COPY --from=build --chown=node:node /app/web/public ./web/public
+COPY --from=build --chown=node:node /app/web/scripts/refresh-cache.mjs ./web/scripts/refresh-cache.mjs
 USER node
 EXPOSE 3000
-CMD ["node", "web/server.js"]
+# Pages prerendered above were built without the API, so they hold empty data. Once the server is up,
+# refresh-cache.mjs drops them (and every other cached page), so each deploy starts from fresh data.
+CMD ["sh", "-c", "node web/scripts/refresh-cache.mjs & exec node web/server.js"]

@@ -71,7 +71,7 @@ export default function FavoritesScreen() {
             if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
           }}
           ListFooterComponent={
-            isFetchingNextPage ? <ActivityIndicator color={theme.colors.brand.primary} /> : null
+            isFetchingNextPage ? <ActivityIndicator color={theme.colors.brand.primary} /> : undefined
           }
           numColumns={columns}
           keyExtractor={(item) => String(item.id)}

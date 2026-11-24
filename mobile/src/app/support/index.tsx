@@ -88,7 +88,7 @@ export default function SupportScreen() {
                 Ask the KaajVa team about your account, a provider or anything else. We usually
                 reply within one working day.
               </AppText>
-            ) : null
+            ) : undefined
           }
           ListEmptyComponent={
             <EmptyState
@@ -105,7 +105,7 @@ export default function SupportScreen() {
           ListFooterComponent={
             tickets.isFetchingNextPage ? (
               <ActivityIndicator color={theme.colors.brand.primary} />
-            ) : null
+            ) : undefined
           }
         />
       )}

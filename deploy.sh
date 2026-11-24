@@ -146,8 +146,9 @@ else
     docker compose up -d
 fi
 
-# 6c. The website is built before the API container runs, so pages built then hold empty fallback data until
-# their cache time runs out. Expire every shared cache tag now so the next visit renders real data.
+# 6c. The website is built before the API container runs, so pages built then hold empty fallback data. The web
+# container drops them itself when it starts (web/scripts/refresh-cache.mjs); this does it again from here and
+# reports the result, so a deploy never keeps serving old pages, sitemaps or category lists.
 REVALIDATE_SECRET_VALUE="$(env_value REVALIDATE_SECRET)"
 if [ -n "$REVALIDATE_SECRET_VALUE" ] && [ "$REVALIDATE_SECRET_VALUE" != "replace_with_random_hex" ]; then
     echo "🔄 Refreshing the website's cached pages..."
@@ -157,15 +158,17 @@ if [ -n "$REVALIDATE_SECRET_VALUE" ] && [ "$REVALIDATE_SECRET_VALUE" != "replace
     done
     if curl -sf -X POST http://127.0.0.1:3000/api/revalidate \
         -H "x-revalidate-secret: $REVALIDATE_SECRET_VALUE" -H "content-type: application/json" \
-        -d '{"tags":["providers","categories","app-config","plans","stats","reviews","sitemap"]}' >/dev/null; then
+        -d '{"all":true}' >/dev/null; then
         curl -s -o /dev/null http://127.0.0.1:3000/ || true
+        curl -s -o /dev/null http://127.0.0.1:3000/sitemap.xml || true
         echo "✅ Website cache refreshed"
     else
         echo "⚠️  Could not refresh the website cache; pages show real data once their cache runs out (up to an hour)."
     fi
 else
     echo "⚠️  REVALIDATE_SECRET is not set in .env: after this deploy, Home and other pages may show empty rows for up to"
-    echo "   an hour, and edits are slow to appear. Set it (openssl rand -hex 32) and deploy again."
+    echo "   an hour, edits are slow to appear, and search engine crawls can hit the API rate limit. Set it"
+    echo "   (openssl rand -hex 32) and deploy again."
 fi
 
 # 6d. Sign-up codes and password resets need working email.

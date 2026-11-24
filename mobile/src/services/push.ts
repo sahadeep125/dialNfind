@@ -54,6 +54,8 @@ export async function registerForPush({ ask }: { ask: boolean }): Promise<PushSt
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
       name: "Replies and account alerts",
+      // eslint-plugin-import cannot read expo-notifications' compiled enum exports; tsc checks this name.
+      // eslint-disable-next-line import/namespace
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
     });

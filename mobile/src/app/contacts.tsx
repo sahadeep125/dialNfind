@@ -83,10 +83,10 @@ export default function ContactsScreen() {
             <AppText variant="caption" tone="secondary">
               Tell us whether each provider got back to you. It helps rank providers fairly.
             </AppText>
-          ) : null
+          ) : undefined
         }
         ListFooterComponent={
-          isFetchingNextPage ? <ActivityIndicator color={theme.colors.brand.primary} /> : null
+          isFetchingNextPage ? <ActivityIndicator color={theme.colors.brand.primary} /> : undefined
         }
         ListEmptyComponent={
           isLoading ? (
