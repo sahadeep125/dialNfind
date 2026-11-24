@@ -37,6 +37,8 @@ interface CategoryPageData {
   imageAlt: string;
   seoContent: string;
   faqs: { q: string; a: string }[];
+  /** The suggested photo to upload in the admin console (Unsplash License); not written by bootstrap. */
+  photo?: { source: string; photographer: string; license: string };
 }
 const CATEGORY_PAGES: CategoryPageData[] = JSON.parse(readFileSync(`${DATA_DIR}/category-pages.json`, "utf8"));
 
@@ -47,10 +49,11 @@ const CATEGORY_PAGES: CategoryPageData[] = JSON.parse(readFileSync(`${DATA_DIR}/
  */
 async function fillCategoryPages() {
   let filled = 0;
-  for (const { slug, ...page } of CATEGORY_PAGES) {
+  for (const page of CATEGORY_PAGES) {
+    const { slug, seoTitle, seoDescription, seoHeading, seoContent, faqs } = page;
     const { count } = await prisma.category.updateMany({
       where: { slug, seoTitle: null, seoDescription: null, seoContent: null },
-      data: { ...page, imageAlt: undefined },
+      data: { seoTitle, seoDescription, seoHeading, seoContent, faqs },
     });
     // The photo description is only useful once a photo is uploaded; keep it ready without overwriting one.
     if (count) await prisma.category.updateMany({ where: { slug, imageAlt: null }, data: { imageAlt: page.imageAlt } });
