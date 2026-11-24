@@ -1,7 +1,6 @@
 import { Link } from "react-router";
-import { ArrowRight, BadgeCheck, CreditCard, KeyRound, LifeBuoy, Megaphone, MessageSquareWarning, PhoneIncoming, Search, Star, Store, Users } from "lucide-react";
+import { ArrowRight, BadgeCheck, KeyRound, LifeBuoy, MessageSquareWarning, PhoneIncoming, Search, Star, Store, Users } from "lucide-react";
 import { useAuth, type Module } from "@/lib/auth";
-import { formatPrice } from "@/lib/format";
 import { useOverview } from "@/layouts/app-layout";
 import { PageHeader, Panel } from "@/components/page-header";
 import { StatCard } from "@/components/admin-ui";
@@ -51,9 +50,6 @@ export function DashboardPage() {
         <StatCard label="Customers" value={data.customers.toLocaleString("en-IN")} hint={`${data.users.toLocaleString("en-IN")} accounts in total`} icon={Users} to={can("users") ? "/users" : undefined} />
         <StatCard label="Leads, last 30 days" value={data.leads30.toLocaleString("en-IN")} hint="Calls and WhatsApp taps" icon={PhoneIncoming} to={can("leads") ? "/leads" : undefined} />
         <StatCard label="Reviews, last 30 days" value={data.reviews30.toLocaleString("en-IN")} icon={Star} to={can("reviews") ? "/reviews" : undefined} />
-        <StatCard label="Revenue, last 30 days" value={formatPrice(data.revenue30)} hint="MRR and subscribers in Plans and billing" icon={CreditCard} tone="success" to={can("plans") ? "/plans?tab=overview" : undefined} />
-        <StatCard label="Active plans" value={data.activeSubscriptions} icon={CreditCard} to={can("plans") ? "/plans?tab=subscribers" : undefined} />
-        <StatCard label="Running promotions" value={data.activeSponsored} icon={Megaphone} to={can("promotions") ? "/promotions" : undefined} />
         <StatCard label="Active tickets" value={data.openTickets} icon={LifeBuoy} tone={data.openTickets ? "warning" : "default"} to={can("support") ? "/support" : undefined} />
         <StatCard
           label="Average SEO score"

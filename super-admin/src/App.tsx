@@ -14,8 +14,6 @@ import { CategoriesPage } from "@/pages/categories";
 import { BadgesPage } from "@/pages/badges";
 import { ReviewsPage } from "@/pages/reviews";
 import { LeadsPage } from "@/pages/leads";
-import { PlansPage } from "@/pages/plans";
-import { PromotionsPage } from "@/pages/promotions";
 import { UsersPage } from "@/pages/users";
 import { UserDetailPage } from "@/pages/user-detail";
 import { TicketDetailPage, TicketsPage } from "@/pages/support";
@@ -130,8 +128,6 @@ const guarded: [Module, [string, React.ReactNode][]][] = [
   ],
   ["reviews", [["/reviews", <ReviewsPage />]]],
   ["leads", [["/leads", <LeadsPage />]]],
-  ["plans", [["/plans", <PlansPage />]]],
-  ["promotions", [["/promotions", <PromotionsPage />]]],
   [
     "users",
     [

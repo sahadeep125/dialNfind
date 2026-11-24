@@ -40,7 +40,7 @@ interface TicketRow {
 
 const STATUS_LABEL: Record<Status, string> = { open: "Open", pending: "Waiting on customer", resolved: "Resolved", closed: "Closed" };
 const PRIORITIES: Priority[] = ["low", "normal", "high", "urgent"];
-const CATEGORIES = ["general", "account", "listing", "billing", "verification", "report", "technical"];
+const CATEGORIES = ["general", "account", "listing", "verification", "report", "technical"];
 const SOURCES: Record<string, string> = { web: "Website", provider_app: "Provider app", contact_form: "Contact form", app: "App", email: "Email" };
 
 export function TicketsPage() {

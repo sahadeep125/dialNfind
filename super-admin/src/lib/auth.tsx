@@ -6,8 +6,6 @@ export type Module =
   | "providers"
   | "verifications"
   | "categories"
-  | "plans"
-  | "promotions"
   | "reviews"
   | "users"
   | "leads"

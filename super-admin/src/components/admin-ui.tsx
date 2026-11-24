@@ -118,7 +118,6 @@ const TONES: Record<string, "success" | "warning" | "destructive" | "muted" | "s
   completed: "muted",
   expired: "muted",
   dismissed: "muted",
-  refunded: "muted",
   none: "muted",
   low: "muted",
   normal: "secondary",

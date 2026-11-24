@@ -104,6 +104,7 @@ describe("categories", () => {
     const aid = attr2.body.attribute.id;
     expect((await c.patch(`/api/v1/categories/attributes/${aid}`).send({ options: ["A", "B"], subcategoryId: subId })).body.attribute.optionsJson).toEqual(["A", "B"]);
     expect((await c.patch(`/api/v1/categories/attributes/${aid}`).send({ subcategoryId: null, label: "Brand" })).body.attribute.subcategoryId).toBeNull();
+    expect((await c.patch(`/api/v1/categories/attributes/${aid}`).send({ label: "Brand name" })).body.attribute.label).toBe("Brand name");
     expect((await c.delete(`/api/v1/categories/attributes/${aid}`)).body).toEqual({ ok: true });
     expect((await c.delete(`/api/v1/categories/subcategories/${subId}`)).body).toEqual({ ok: true });
     expect((await c.delete(`/api/v1/categories/${id}`)).body).toEqual({ ok: true });

@@ -5,13 +5,11 @@ import {
   Award,
   BarChart3,
   BadgeCheck,
-  CreditCard,
   FolderTree,
   KeyRound,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
-  Megaphone,
   Menu,
   MessageSquareWarning,
   PhoneIncoming,
@@ -47,10 +45,7 @@ export interface Overview {
   customers: number;
   leads30: number;
   reviews30: number;
-  revenue30: number;
-  activeSponsored: number;
   openTickets: number;
-  activeSubscriptions: number;
   leadSeries: { date: string; value: number }[];
   signupSeries: { date: string; value: number }[];
   /** Live listings by SEO score band; `hidden` are kept out of search engines by the team. */
@@ -81,13 +76,6 @@ const NAV: { title: string; items: Item[] }[] = [
       { to: "/badges", label: "Badges", icon: Award, module: "categories" },
       { to: "/reviews", label: "Reviews and reports", icon: MessageSquareWarning, module: "reviews", count: (o) => o.openFlags + o.pendingReviews },
       { to: "/leads", label: "Leads", icon: PhoneIncoming, module: "leads" },
-    ],
-  },
-  {
-    title: "Revenue",
-    items: [
-      { to: "/plans", label: "Plans and billing", icon: CreditCard, module: "plans" },
-      { to: "/promotions", label: "Promotions", icon: Megaphone, module: "promotions" },
     ],
   },
   {

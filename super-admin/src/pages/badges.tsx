@@ -36,7 +36,7 @@ export function BadgesPage() {
     <>
       <PageHeader
         title="Badges"
-        description="Trust marks shown on provider profiles. Award them from a provider's page or attach one to a plan."
+        description="Trust marks shown on provider profiles. Award them from a provider's page."
         actions={
           <Button onClick={() => setEdit("new")}>
             <Plus /> New badge
@@ -77,7 +77,7 @@ export function BadgesPage() {
           open
           onOpenChange={(o) => !o && setDel(null)}
           title={`Delete ${del.name}?`}
-          description={`It is removed from ${del._count?.providers ?? 0} providers. A badge used by an active plan cannot be deleted.`}
+          description={`It is removed from ${del._count?.providers ?? 0} providers.`}
           confirmLabel="Delete badge"
           destructive
           busy={remove.isPending}
