@@ -14,6 +14,7 @@ import { OpeningHours } from "@/components/provider/opening-hours";
 import { PhotoGallery } from "@/components/provider/photo-gallery";
 import { PhotoLightbox, PhotoTrigger } from "@/components/provider/photo-lightbox";
 import { ProfileHeader } from "@/components/provider/profile-header";
+import { fallbackDescription } from "@/components/provider/provider-profile";
 import { ProviderAvatar } from "@/components/provider/provider-avatar";
 import { OpenStatus, ProviderCard } from "@/components/provider/provider-card";
 import { ProviderTile } from "@/components/provider/provider-tile";
@@ -188,6 +189,36 @@ describe("cards and tiles", () => {
     expect(screen.getByText("Price on request")).toBeInTheDocument();
     expect(screen.queryByText("Verified")).toBeNull();
   });
+  it("cards name an individual professional by profession and a business by category", () => {
+    const one = render(<ProviderCard provider={provider({ businessName: "Deep Saha", businessType: "individual", profession: "Plumber", categoryLabel: "Plumber", serviceAreaLabel: "Ghoraguli" }) as never} />);
+    expect(screen.getByText("Individual professional")).toBeInTheDocument();
+    expect(screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "Plumber – Ghoraguli")).toBeInTheDocument();
+    one.unmount();
+    const two = render(<ProviderTile provider={provider({ businessName: "ABC Services", businessType: "company", profession: null, categoryLabel: "Plumbing & Electricians", serviceAreaLabel: "Siliguri" }) as never} />);
+    expect(screen.getByText("Business")).toBeInTheDocument();
+    expect(screen.getByText(/Plumbing & Electricians/)).toBeInTheDocument();
+    expect(screen.queryByText("Individual professional")).toBeNull();
+    two.unmount();
+  });
+  it("SimilarProviders marks who each pro is", () => {
+    render(
+      <SimilarProviders
+        providers={[
+          provider({ businessType: "individual", profession: "Plumber" }),
+          provider({ id: 2, slug: "b", businessType: "individual", profession: null, primaryCategory: { id: 1, name: "Plumbing", slug: "plumbing" } }),
+          provider({ id: 3, slug: "c", businessType: "company", categoryLabel: "Plumbing & Electricians" }),
+        ] as never}
+      />,
+    );
+    expect(screen.getAllByLabelText("Individual professional")).toHaveLength(2);
+    expect(screen.getByLabelText("Business")).toBeInTheDocument();
+    expect(screen.getByText("Plumber")).toBeInTheDocument();
+    expect(screen.getByText("Plumbing & Electricians")).toBeInTheDocument();
+  });
+  it("fallbackDescription speaks of an individual as an independent professional", () => {
+    expect(fallbackDescription(detail({ businessType: "individual", profession: "AC Technician", locality: null, addressLine: null, services: [] }) as never)).toMatch(/^Sharma TV Repair is an independent ac technician working in [^,.]+\. Call/);
+    expect(fallbackDescription(detail({ businessType: "individual", profession: null, primaryCategory: null, services: [] }) as never)).toContain("an independent local services working in");
+  });
   it("SimilarProviders", () => {
     render(<SimilarProviders providers={[provider(), provider({ id: 2, slug: "b", distanceKm: null }), provider({ id: 3, slug: "c", distanceKm: null, locality: null, primaryCategory: null })] as never} />);
     expect(screen.getAllByRole("link")).toHaveLength(3);
@@ -205,7 +236,8 @@ describe("profile sections", () => {
         facts={[{ icon: Star, value: "5 yrs", label: "Experience" }]}
       />,
     );
-    expect(screen.getByText(/Company/)).toBeInTheDocument();
+    expect(screen.getByText("Business")).toBeInTheDocument();
+    expect(screen.getByText(/A business\. Work may be done by its team/)).toBeInTheDocument();
     expect(screen.getByText("(1 review)")).toBeInTheDocument();
     expect(screen.getByText("Top Rated")).toBeInTheDocument();
     expect(screen.getByText("+2 more")).toBeInTheDocument();
@@ -213,8 +245,20 @@ describe("profile sections", () => {
     unmount();
     render(<ProfileHeader p={detail({ primaryCategory: null, totalReviews: 0, locality: null, verificationStatus: "none", badges: [] }) as never} chips={[]} extraChips={0} facts={[]} />);
     expect(screen.getByText("No reviews yet")).toBeInTheDocument();
-    render(<ProfileHeader p={detail({ totalReviews: 12 }) as never} chips={["x"]} extraChips={0} facts={[]} />);
-    expect(screen.getByText(/Individual pro/)).toBeInTheDocument();
+    render(
+      <ProfileHeader
+        p={detail({ totalReviews: 12, businessType: "individual", profession: "Plumber", verificationStatus: "verified", otherListings: [{ slug: "me-electrician", profession: "Electrician", serviceAreaLabel: "Siliguri" }, { slug: "me-x", profession: null, serviceAreaLabel: "Siliguri" }] }) as never}
+        chips={["x"]}
+        extraChips={0}
+        facts={[]}
+      />,
+    );
+    expect(screen.getAllByText("Individual professional").length).toBeGreaterThan(0);
+    expect(screen.getByText("Plumber")).toBeInTheDocument();
+    expect(screen.getAllByText(/Works independently/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Verified professional")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Electrician" })).toHaveAttribute("href", "/providers/me-electrician");
+    expect(screen.getByRole("link", { name: "Another profession" })).toBeInTheDocument();
     expect(screen.getByText("(12 reviews)")).toBeInTheDocument();
   });
   it("ContactCard, OpeningHours, ServicesList, ReviewsSummary, sections", async () => {

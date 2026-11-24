@@ -394,7 +394,7 @@ describe("provider profile page", () => {
     const { default: Page } = await import("@/app/providers/[slug]/page");
     mockApi(
       routes(
-        { primaryCategory: null, yearsExperience: null, selfReportedCompletedJobs: null, portfolio: [], serviceDetails: [], totalReviews: 0, addressLine: null, description: null, verifications: [], subcategories: [], services: [{ id: 2, category: { id: 1, name: "X", slug: "x" }, subcategory: null, startingPrice: null, priceUnit: "fixed", isPrimary: true }] },
+        { businessType: "company", primaryCategory: null, yearsExperience: null, selfReportedCompletedJobs: null, portfolio: [], serviceDetails: [], totalReviews: 0, addressLine: null, description: null, verifications: [], subcategories: [], services: [{ id: 2, category: { id: 1, name: "X", slug: "x" }, subcategory: null, startingPrice: null, priceUnit: "fixed", isPrimary: true }] },
         { "/providers/shop/similar": { results: [] } },
       ),
     );

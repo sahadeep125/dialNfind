@@ -1,5 +1,6 @@
 import { SEO_CITY as CITY } from "@/lib/seo";
 import type { ServiceSeo } from "../types";
+import { PROFESSION_SUBCATEGORY_SEO } from "./professions";
 
 /**
  * Search-focused copy for each subcategory page (/services/<category>/<sub>), keyed by subcategory slug.
@@ -827,4 +828,6 @@ export const SUBCATEGORY_SEO: Record<string, ServiceSeo> = {
       { q: "Why does my car AC smell?", a: "Mould on the cooling coil; a coil cleaning and new cabin filter usually fixes it." },
     ],
   },
+  // Professions added for individual professionals (content/seo/professions.ts).
+  ...PROFESSION_SUBCATEGORY_SEO,
 };

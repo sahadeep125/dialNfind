@@ -40,7 +40,14 @@ export interface ProviderCard {
   shortDescription: string;
   logoUrl: string | null;
   coverUrl: string | null;
+  /** "individual": an independent professional listed under their own name; "company": a business. */
   businessType: "individual" | "company";
+  /** Individuals: the title after their name ("Plumber"). Null for a business. */
+  profession?: string | null;
+  /** The middle of the card title: the profession for an individual, the categories for a business. */
+  categoryLabel?: string | null;
+  /** The area a card names: the locality, else the city. */
+  serviceAreaLabel?: string;
   yearsExperience: number | null;
   phone: string;
   /** Null when the business does not take WhatsApp messages. */
@@ -117,6 +124,8 @@ export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
   /** altText: the title plus the business and city when it lacks them (server/src/services/seo.ts photoAltText). */
   portfolio: { id: number; title: string; description: string | null; imageUrl: string; altText?: string; category: string | null }[];
   verifications: { type: string; verifiedAt: string | null }[];
+  /** An individual professional's other professions, each its own listing. */
+  otherListings?: { slug: string; profession: string | null; serviceAreaLabel: string }[];
   ratingBreakdown: { rating: number; count: number }[];
   myReview: MyReview | null;
   /** Null when the visitor already reviewed this business (see myReview). */

@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import type { Category } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { FiltersSheet } from "./filters";
+import { ACCOUNT_FILTERS } from "@/lib/account-type";
 import { useSubcategory, useUrlParams } from "./use-url-params";
 
 const RATINGS = [
@@ -24,11 +25,12 @@ export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius
   const { params, update } = useUrlParams();
   const { selected: subSlug, select: selectSub } = useSubcategory(lockedCategory, lockedSub);
   // On a category page the subcategory is the page itself, not a filter.
-  const activeCount = ["minRating", "openNow", "verified", "radius", ...(lockedCategory ? [] : ["sub", "category"])].filter((k) => params.get(k)).length;
+  const activeCount = ["minRating", "openNow", "verified", "radius", "type", ...(lockedCategory ? [] : ["sub", "category"])].filter((k) => params.get(k)).length;
   const radius = Number(params.get("radius") ?? defaultRadius);
   const minRating = params.get("minRating") ?? "";
   const openNow = params.get("openNow") === "true";
   const verified = params.get("verified") === "true";
+  const type = params.get("type") ?? "";
   const categorySlug = lockedCategory?.slug ?? params.get("category") ?? "";
   const activeCategory = lockedCategory ?? categories?.find((c) => c.slug === categorySlug);
   const activeSub = activeCategory?.subcategories.find((s) => s.slug === subSlug);
@@ -38,6 +40,21 @@ export function FilterBar({ categories, lockedCategory, lockedSub, defaultRadius
     <div className="sticky top-16 z-30 border-b bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/85">
       <div className="container-wide no-scrollbar flex items-center gap-2 overflow-x-auto py-2.5">
         <FiltersSheet categories={categories} lockedCategory={lockedCategory} lockedSub={lockedSub} defaultRadius={defaultRadius} activeCount={activeCount} />
+
+        {/* Who: individual professionals (the default audience) or businesses. */}
+        <div role="group" aria-label="Who" className="flex shrink-0 items-center gap-1">
+          {ACCOUNT_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              aria-pressed={type === f.value}
+              onClick={() => update({ type: f.value || null })}
+              className={cn(PILL, type === f.value && (f.value ? PILL_ON : "border-foreground/30 bg-muted"))}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
 
         <RadiusPill radius={radius} active={params.has("radius")} onCommit={(v) => update({ radius: String(v) })} />
 

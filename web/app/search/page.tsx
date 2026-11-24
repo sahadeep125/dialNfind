@@ -32,6 +32,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         minRating: one(sp.minRating),
         openNow: one(sp.openNow),
         verified: one(sp.verified),
+        type: one(sp.type),
         sort: one(sp.sort),
         page: one(sp.page),
         pageSize: 12,

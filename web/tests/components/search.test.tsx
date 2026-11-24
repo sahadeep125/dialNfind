@@ -238,6 +238,31 @@ describe("filters", () => {
     await u.click(screen.getByRole("button", { name: "Electronics Repair" }));
     expect(lastPush()).toBe("/search?category=electronics-repair");
   });
+  it("Who: only individual professionals or only businesses", async () => {
+    const u = userEvent.setup();
+    nav.pathname = "/search";
+    nav.search = "type=individual";
+    render(<FilterBar categories={categories} defaultRadius={15} />);
+    const who = screen.getByRole("group", { name: "Who" });
+    expect(within(who).getByRole("button", { name: "Individual professionals" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /All filters/ })).toHaveTextContent("1");
+    await u.click(within(who).getByRole("button", { name: "Businesses" }));
+    expect(lastPush()).toBe("/search?type=business");
+    await u.click(within(who).getByRole("button", { name: "Everyone" }));
+    expect(lastPush()).toBe("/search");
+  });
+  it("sheet: the Who chips", async () => {
+    const u = userEvent.setup();
+    nav.pathname = "/search";
+    nav.search = "type=business";
+    render(<FiltersSheet categories={categories} defaultRadius={15} activeCount={1} />);
+    await u.click(screen.getByRole("button", { name: /All filters/ }));
+    const sheet = screen.getByRole("dialog");
+    await u.click(within(sheet).getByRole("button", { name: "Individual professionals" }));
+    expect(lastPush()).toBe("/search?type=individual");
+    await u.click(within(sheet).getByRole("button", { name: "Everyone" }));
+    expect(lastPush()).toBe("/search");
+  });
   it("category pages: the subcategory is the page, not a filter", async () => {
     const u = userEvent.setup();
     nav.pathname = "/services/electronics-repair";

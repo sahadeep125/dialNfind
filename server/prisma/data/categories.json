@@ -541,7 +541,7 @@
     "name": "Drivers",
     "slug": "drivers",
     "description": "Personal, outstation and on-call drivers for your own car.",
-    "icon": "steering-wheel",
+    "icon": "car-front",
     "uiTemplate": "default",
     "professionName": "Driver",
     "subcategories": [

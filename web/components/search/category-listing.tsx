@@ -36,6 +36,14 @@ const AREA_NOUN: Record<string, string> = {
   "pest-control": "Pest Control",
   painting: "Painters",
   "packers-movers": "Packers & Movers",
+  locksmith: "Locksmiths",
+  tailoring: "Tailors",
+  drivers: "Drivers",
+  masonry: "Masons",
+  welding: "Welders",
+  photography: "Photographers",
+  "fitness-yoga": "Yoga & Fitness Trainers",
+  laundry: "Laundry & Dry Cleaning",
 };
 const areaNoun = (category: Category) => AREA_NOUN[category.slug] ?? category.name;
 
@@ -113,6 +121,7 @@ export async function CategoryListing({
       minRating: one(sp.minRating),
       openNow: one(sp.openNow),
       verified: one(sp.verified),
+      type: one(sp.type),
       sort: one(sp.sort),
       page: one(sp.page),
       pageSize: 12,

@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import type { Category } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useSubcategory, useUrlParams } from "./use-url-params";
+import { ACCOUNT_FILTERS } from "@/lib/account-type";
 
 const RATINGS = [
   { value: "", label: "Any" },
@@ -36,9 +37,21 @@ function FilterFields({ categories, lockedCategory, lockedSub, defaultRadius }: 
   const categorySlug = lockedCategory?.slug ?? params.get("category") ?? "";
   const activeCategory = lockedCategory ?? categories?.find((c) => c.slug === categorySlug);
   const minRating = params.get("minRating") ?? "";
+  const type = params.get("type") ?? "";
 
   return (
     <div className="space-y-7">
+      <div className="space-y-2.5">
+        <Label>Who</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {ACCOUNT_FILTERS.map((f) => (
+            <Chip key={f.value} active={type === f.value} onClick={() => update({ type: f.value || null })}>
+              {f.label}
+            </Chip>
+          ))}
+        </div>
+      </div>
+
       {categories && !lockedCategory && (
         <div className="space-y-2.5">
           <Label>Category</Label>
@@ -114,7 +127,7 @@ function FilterFields({ categories, lockedCategory, lockedSub, defaultRadius }: 
       <Button
         variant="ghost"
         className="w-full"
-        onClick={() => update({ radius: null, minRating: null, openNow: null, verified: null, ...(lockedCategory ? {} : { sub: null, category: null }) })}
+        onClick={() => update({ radius: null, minRating: null, openNow: null, verified: null, type: null, ...(lockedCategory ? {} : { sub: null, category: null }) })}
       >
         Reset filters
       </Button>

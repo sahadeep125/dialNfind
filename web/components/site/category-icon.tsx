@@ -12,6 +12,13 @@ import {
   Wrench,
   Zap,
   Briefcase,
+  Camera,
+  Dumbbell,
+  Flame,
+  BrickWall,
+  KeyRound,
+  Shirt,
+  CarFront,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,6 +36,14 @@ const ICONS: Record<string, LucideIcon> = {
   tutors: GraduationCap,
   "beauty-salon": Scissors,
   "vehicle-repair": Car,
+  locksmith: KeyRound,
+  tailoring: Scissors,
+  drivers: CarFront,
+  masonry: BrickWall,
+  welding: Flame,
+  photography: Camera,
+  "fitness-yoga": Dumbbell,
+  laundry: Shirt,
 };
 
 /** A quiet tint + a readable foreground per category, all in the same lightness band so none shouts. */
@@ -45,6 +60,14 @@ const TONES: Record<string, { bg: string; fg: string; hex: string }> = {
   tutors: { bg: "bg-[oklch(0.955_0.022_295)]", fg: "text-[oklch(0.45_0.1_295)]", hex: "oklch(0.55 0.1 295)" },
   "beauty-salon": { bg: "bg-[oklch(0.955_0.022_10)]", fg: "text-[oklch(0.45_0.1_10)]", hex: "oklch(0.55 0.1 10)" },
   "vehicle-repair": { bg: "bg-[oklch(0.955_0.022_250)]", fg: "text-[oklch(0.45_0.05_250)]", hex: "oklch(0.55 0.05 250)" },
+  locksmith: { bg: "bg-[oklch(0.955_0.022_90)]", fg: "text-[oklch(0.45_0.1_90)]", hex: "oklch(0.55 0.1 90)" },
+  tailoring: { bg: "bg-[oklch(0.955_0.022_320)]", fg: "text-[oklch(0.45_0.1_320)]", hex: "oklch(0.55 0.1 320)" },
+  drivers: { bg: "bg-[oklch(0.955_0.022_235)]", fg: "text-[oklch(0.45_0.08_235)]", hex: "oklch(0.55 0.08 235)" },
+  masonry: { bg: "bg-[oklch(0.955_0.022_30)]", fg: "text-[oklch(0.45_0.1_30)]", hex: "oklch(0.55 0.1 30)" },
+  welding: { bg: "bg-[oklch(0.955_0.022_50)]", fg: "text-[oklch(0.45_0.1_50)]", hex: "oklch(0.55 0.1 50)" },
+  photography: { bg: "bg-[oklch(0.955_0.022_280)]", fg: "text-[oklch(0.45_0.1_280)]", hex: "oklch(0.55 0.1 280)" },
+  "fitness-yoga": { bg: "bg-[oklch(0.955_0.022_155)]", fg: "text-[oklch(0.45_0.1_155)]", hex: "oklch(0.55 0.1 155)" },
+  laundry: { bg: "bg-[oklch(0.955_0.022_200)]", fg: "text-[oklch(0.45_0.1_200)]", hex: "oklch(0.55 0.1 200)" },
 };
 
 const FALLBACK = { bg: "bg-accent", fg: "text-accent-foreground", hex: "oklch(0.45 0.07 252)" };
