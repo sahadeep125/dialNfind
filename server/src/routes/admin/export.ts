@@ -9,7 +9,7 @@ import type { AdminModule } from "../../lib/permissions.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
 import { providerQuery, providerWhere } from "./providers.js";
-import { currentValues, UPDATE_COLUMNS } from "../../services/listing-bulk-update.js";
+import { currentValues, UPDATE_COLUMNS, updateInclude } from "../../services/listing-bulk-update.js";
 import { usersQuery, userWhere } from "./users.js";
 import { leadsQuery, leadWhere, reviewsQuery, reviewWhere } from "./records.js";
 
@@ -54,7 +54,7 @@ const EXPORTS = {
     query: providerQuery,
     header: UPDATE_COLUMNS,
     batch: async (q, afterId, take) =>
-      (await prisma.provider.findMany({ where: { AND: [providerWhere(q), { id: { gt: afterId } }] }, orderBy: { id: "asc" }, take })).map((p) => ({ id: p.id, values: currentValues(p) })),
+      (await prisma.provider.findMany({ where: { AND: [providerWhere(q), { id: { gt: afterId } }] }, orderBy: { id: "asc" }, take, include: updateInclude })).map((p) => ({ id: p.id, values: currentValues(p) })),
   }),
   users: exporter({
     module: "users",

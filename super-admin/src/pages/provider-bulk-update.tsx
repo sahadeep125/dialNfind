@@ -79,7 +79,7 @@ export function BulkUpdateListingsDialog({ open, onOpenChange, filters }: { open
         <DialogHeader>
           <DialogTitle>Bulk update listings</DialogTitle>
           <DialogDescription>
-            Download the current details of the listings in this view, change what you need in a spreadsheet and upload the file. Rows are matched by id, or by phone when the id is blank. Empty cells keep the current value and a single - clears an optional one. Up to 500 rows at a time. Services, photos and status are not changed here.
+            Download the current details of the listings in this view, change what you need in a spreadsheet and upload the file. Rows are matched by id, or by phone when the id is blank. Empty cells keep the current value and a single - clears an optional one. Write hours like "Mon-Sat 10:00-20:00; Sun closed" or "24x7". Up to 500 rows at a time. The services column is for reference only; services, photos and status are not changed here.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">

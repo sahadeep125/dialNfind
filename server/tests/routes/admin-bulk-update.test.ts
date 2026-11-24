@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "../../src/lib/prisma.js";
 import { parseCsv } from "../../src/lib/csv.js";
 import { api, authed, json, mockFetch } from "../helpers/app.js";
-import { createOwner, createProvider, createStaff } from "../helpers/factories.js";
+import { createCategory, createOwner, createProvider, createStaff } from "../helpers/factories.js";
 
 type Row = { row: number; status: string; errors: string[]; warnings: string[]; changes: { column: string; from: string; to: string }[]; geocoded: boolean };
 
@@ -100,5 +100,33 @@ describe("admin bulk update of listings", () => {
     expect(rows[0].errors[0]).toMatch(/more than one listing/);
     expect(rows[1]).toMatchObject({ status: "unchanged", changes: [] });
     expect(rows[1].warnings[0]).toMatch(/only for individual/);
+  });
+
+  it("updates opening hours and shows services for reference", async () => {
+    const c = await authed(await createStaff());
+    const cat = await createCategory({ name: "Plumbing" }, ["Pipe Fitting"]);
+    const p = await createProvider({ phone: "+919000000001", categoryId: cat.id, subcategoryId: cat.subcategories[0].id });
+    const q = await createProvider({ phone: "+919000000002" });
+    const csv = ["id,hours,services", `${p.id},Mon-Sat 10:00-20:00; Sun closed,anything`, `${q.id},Mon-Fri 9-18 ; Sat 10:00 to 14:00,`].join("\n");
+    const dry = (await c.post("/api/v1/admin/providers/bulk-update").send({ csv })).body;
+    expect(dry).toMatchObject({ toUpdate: 2, ignoredColumns: [] });
+    expect(dry.rows[0].changes).toEqual([{ column: "hours", from: "", to: "Mon-Sat 10:00-20:00; Sun closed" }]);
+    expect(dry.rows[1].changes[0].to).toBe("Mon-Fri 09:00-18:00; Sat 10:00-14:00; Sun closed");
+    expect((await c.post("/api/v1/admin/providers/bulk-update").send({ csv, dryRun: false })).body.updated).toBe(2);
+    expect(await prisma.providerBusinessHour.count({ where: { providerId: p.id, openTime: "10:00" } })).toBe(6);
+
+    const again = (await c.post("/api/v1/admin/providers/bulk-update").send({ csv })).body;
+    expect(again).toMatchObject({ toUpdate: 0, unchanged: 2 });
+    const bad = (await c.post("/api/v1/admin/providers/bulk-update").send({ csv: `id,hours\n${p.id},Mon-Sat 20:00-10:00` })).body;
+    expect(bad.rows[0].errors[0]).toMatch(/closing time must be after/);
+
+    const download = (await c.get("/api/v1/admin/export/provider-updates").buffer(true).parse((res, cb) => {
+      let data = "";
+      res.on("data", (d: Buffer) => (data += d.toString()));
+      res.on("end", () => cb(null, data));
+    })).body as string;
+    const [header, first] = parseCsv(download);
+    expect(header.slice(-2)).toEqual(["hours", "services"]);
+    expect(first.slice(-2)).toEqual(["Mon-Sat 10:00-20:00; Sun closed", "Plumbing / Pipe Fitting"]);
   });
 });

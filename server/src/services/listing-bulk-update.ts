@@ -1,8 +1,12 @@
-import type { Provider } from "@prisma/client";
+import type { Prisma, Provider } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { badRequest } from "../lib/errors.js";
 import { parseCsv } from "../lib/csv.js";
 import { normalizePhone } from "../lib/rules.js";
+import type { HoursRow } from "../lib/hours.js";
+import { formatHours, parseHours } from "../lib/hours-text.js";
+import { replaceHours } from "../routes/provider/shared.js";
+import { recalculateProvider } from "./ranking.js";
 import { searchPlaces } from "./geocode.js";
 import { adminListingProfileSchema, updateListingProfile } from "./listings.js";
 import { assertTypeChangeAllowed } from "./professions.js";
@@ -53,8 +57,19 @@ const COLUMNS: Column[] = [
   { column: "hidden_from_search", field: "seoNoIndex", kind: "bool" },
 ];
 
-/** The header of the bulk update file: the listing id, then every column that can be updated. */
-export const UPDATE_COLUMNS = ["id", ...COLUMNS.map((c) => c.column)];
+/**
+ * The header of the bulk update file: the listing id, every profile column that can be updated, the
+ * opening hours (see hours-text.ts), and the services, which are shown for reference and never read.
+ */
+export const UPDATE_COLUMNS = ["id", ...COLUMNS.map((c) => c.column), "hours", "services"];
+const READ_ONLY = new Set(["services"]);
+
+/** What the download and the update read for each listing. */
+export const updateInclude = {
+  businessHours: { orderBy: { dayOfWeek: "asc" } },
+  services: { orderBy: [{ isPrimary: "desc" }, { id: "asc" }], include: { category: { select: { name: true } }, subcategory: { select: { name: true } } } },
+} satisfies Prisma.ProviderInclude;
+type UpdateProvider = Prisma.ProviderGetPayload<{ include: typeof updateInclude }>;
 const ADDRESS_COLUMNS = ["address", "locality", "city", "state", "pincode"];
 const MAX_ROWS = 500;
 const CLEAR = "-";
@@ -69,8 +84,9 @@ function show(kind: Column["kind"], value: unknown): string {
 }
 
 /** One row of the download: the listing's current values in UPDATE_COLUMNS order. */
-export function currentValues(p: Provider): unknown[] {
-  return [p.id, ...COLUMNS.map((c) => show(c.kind, p[c.field as keyof Provider]))];
+export function currentValues(p: UpdateProvider): unknown[] {
+  const services = p.services.map((s) => (s.subcategory ? `${s.category.name} / ${s.subcategory.name}` : s.category.name)).join("; ");
+  return [p.id, ...COLUMNS.map((c) => show(c.kind, p[c.field as keyof Provider])), formatHours(p.businessHours), services];
 }
 
 /** A cell as the admin meant it: spreadsheets keep the ' our exports add before + and - (see csvLine). */
@@ -120,8 +136,9 @@ export interface UpdateRow {
 }
 
 interface PlannedRow extends UpdateRow {
-  provider?: Provider;
+  provider?: UpdateProvider;
   data?: ProfileInput;
+  hours?: HoursRow[];
 }
 
 export async function bulkUpdateListings(csv: string, options: { dryRun: boolean; adminId: bigint }) {
@@ -131,13 +148,13 @@ export async function bulkUpdateListings(csv: string, options: { dryRun: boolean
   if (!columns.includes("id") && !columns.includes("phone")) throw badRequest("Add an id or phone column so each row can be matched to a listing. Download the current data to get the expected header.");
   if (lines.length > MAX_ROWS) throw badRequest(`Update at most ${MAX_ROWS} rows at a time`);
   const known = new Set(UPDATE_COLUMNS);
-  const ignoredColumns = [...new Set(columns.filter((c) => c && !known.has(c)))];
+  const ignoredColumns = [...new Set(columns.filter((c) => c && !known.has(c) && !READ_ONLY.has(c)))];
   const used = COLUMNS.filter((c) => columns.includes(c.column));
 
   const rawRows = lines.map((values) => (c: string) => (columns.includes(c) ? cell(values[columns.indexOf(c)]) : ""));
   const ids = rawRows.map((get) => get("id")).filter((v) => /^\d+$/.test(v)).map(BigInt);
   const phones = rawRows.map((get) => (get("id") ? null : normalizePhone(get("phone")))).filter((v): v is string => !!v);
-  const providers = await prisma.provider.findMany({ where: { OR: [{ id: { in: ids } }, { phone: { in: phones } }] } });
+  const providers = await prisma.provider.findMany({ where: { OR: [{ id: { in: ids } }, { phone: { in: phones } }] }, include: updateInclude });
   const byId = new Map(providers.map((p) => [p.id, p]));
 
   // Phones already in use, to stop two listings ending up with the same number.
@@ -152,7 +169,7 @@ export async function bulkUpdateListings(csv: string, options: { dryRun: boolean
     rows.push(out);
 
     // Match the row to a listing.
-    let provider: Provider | undefined;
+    let provider: UpdateProvider | undefined;
     const idCell = get("id");
     if (idCell) {
       if (!/^\d+$/.test(idCell)) out.errors.push(`"${idCell}" is not a listing id`);
@@ -186,6 +203,13 @@ export async function bulkUpdateListings(csv: string, options: { dryRun: boolean
       if (error) out.errors.push(error);
       else input[c.field] = value;
     }
+    let hours: HoursRow[] | undefined;
+    const hoursCell = get("hours");
+    if (hoursCell) {
+      const parsedHours = hoursCell === CLEAR ? { hours: [] } : parseHours(hoursCell);
+      if (parsedHours.error) out.errors.push(parsedHours.error);
+      else hours = parsedHours.hours;
+    }
     if (out.errors.length) continue;
 
     const parsed = adminListingProfileSchema.partial().safeParse(input);
@@ -207,6 +231,13 @@ export async function bulkUpdateListings(csv: string, options: { dryRun: boolean
       if (from === to) continue;
       data[c.field] = next;
       out.changes.push({ column: c.column, from, to });
+    }
+
+    if (hours) {
+      const from = formatHours(provider.businessHours);
+      const to = formatHours(hours);
+      if (from !== to) out.changes.push({ column: "hours", from, to });
+      else hours = undefined;
     }
 
     // Only individual professionals carry a profession title (see updateListingProfile).
@@ -253,6 +284,7 @@ export async function bulkUpdateListings(csv: string, options: { dryRun: boolean
     if (out.changes.length) {
       out.provider = provider;
       out.data = data;
+      out.hours = hours;
     }
   }
 
@@ -260,9 +292,14 @@ export async function bulkUpdateListings(csv: string, options: { dryRun: boolean
   if (!options.dryRun) {
     for (const r of rows) {
       if (!r.provider || !r.data) continue;
+      const { businessHours: _h, services: _s, ...provider } = r.provider;
+      const hours = r.hours;
       try {
-        await updateListingProfile(r.provider, r.data as Parameters<typeof updateListingProfile>[1]); // values come from the schema's output
-        await logAdmin(options.adminId, "provider.edit", "provider", r.provider.id, { fields: Object.keys(r.data), via: "csv" });
+        if (hours) await prisma.$transaction((tx) => replaceHours(tx, provider.id, hours));
+        // updateListingProfile recalculates the listing; hours alone need it done here.
+        if (Object.keys(r.data).length) await updateListingProfile(provider, r.data as Parameters<typeof updateListingProfile>[1]); // values come from the schema's output
+        else await recalculateProvider(provider.id);
+        await logAdmin(options.adminId, "provider.edit", "provider", provider.id, { fields: [...Object.keys(r.data), ...(hours ? ["hours"] : [])], via: "csv" });
         updated++;
       } catch (err) {
         r.status = "error";
@@ -280,6 +317,6 @@ export async function bulkUpdateListings(csv: string, options: { dryRun: boolean
     failed: rows.filter((r) => r.status === "error").length,
     updated,
     ignoredColumns,
-    rows: rows.map(({ provider: _p, data: _d, ...r }) => r),
+    rows: rows.map(({ provider: _p, data: _d, hours: _h, ...r }) => r),
   };
 }
