@@ -26,7 +26,7 @@ export const FAQ_SECTIONS: { id: string; title: string; items: FaqItem[] }[] = [
     title: "Safety and verification",
     items: [
       { q: "What does Verified mean?", a: "Our team has checked the provider's identity or business documents. Always agree on price and scope before work starts." },
-      { q: "How are providers ranked?", a: "By how well they match your search, distance, ratings, reviews and how complete and responsive their profile is. Sponsored listings are labelled." },
+      { q: "How are providers ranked?", a: "By how well they match your search, distance, ratings, reviews and how complete and responsive their profile is." },
       { q: "How do I choose a good provider?", a: "Compare ratings and recent reviews, prefer verified listings, ask for a quote before work starts, and call two or three providers for bigger jobs." },
       { q: "Does KaajVa guarantee the work?", a: "No. Providers are independent businesses, and your agreement is with them. We check documents for verified listings and act on reports, but we cannot guarantee any job." },
       { q: "What should I do if a provider behaves badly?", a: "Open the listing and choose Report this listing, or contact support. Our team reviews every report and can remove listings that break our rules." },
@@ -56,10 +56,10 @@ export const FAQ_SECTIONS: { id: string; title: string; items: FaqItem[] }[] = [
     id: "business",
     title: "For businesses",
     items: [
-      { q: "How do I list my business on KaajVa?", a: "Go to List your business, create a provider account and add your services, area and hours. Basic listings are free." },
+      { q: "How do I list my business on KaajVa?", a: "Go to List your business, create a provider account and add your services, area and hours. Listing is free, with no plans, fees or commission." },
       { q: "My business is already listed. How do I claim it?", a: "Search for your listing on the Claim page and upload an ownership document such as a trade licence, GST certificate or shop registration. Our team reviews claims and gives you control of the listing." },
       { q: "How do I get the Verified badge?", a: "Upload your identity and business documents from the provider portal. Our team checks them and adds the badge when they are approved." },
-      { q: "Can I pay to rank higher?", a: "Paid plans can add sponsored placements, which are always labelled. Organic ranking depends on relevance, distance, reviews and profile quality." },
+      { q: "Can I pay to rank higher?", a: "No. KaajVa has no paid plans or sponsored placements. Ranking depends only on relevance, distance, reviews and profile quality." },
     ],
   },
   {

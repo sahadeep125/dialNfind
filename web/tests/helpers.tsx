@@ -76,8 +76,6 @@ export const provider = (over: Record<string, unknown> = {}) => ({
   serviceAreas: ["Andheri"],
   badges: [{ id: 1, name: "Top Rated" }],
   isFavorite: false,
-  isSponsored: false,
-  planTier: null,
   ...over,
 });
 

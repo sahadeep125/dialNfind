@@ -136,7 +136,6 @@ describe("home and content pages", () => {
   it("about, claim, services, help, contact, terms and privacy", async () => {
     mockApi({
       "/stats": { providers: 10, categories: 2, cities: 1, reviews: 3 },
-      "/plans": { plans: [{ id: 1, name: "Free", price: 0, leadAccessLimit: 10, featuresJson: ["Listing"] }, { id: 2, name: "Pro", price: 599, leadAccessLimit: null, featuresJson: null }] },
       "/categories": { categories },
       "/app-config": { config: { support_email: "help@x.co", support_phone: "+919876543210", support_hours: "9 to 5" } },
       "/locations": { locations: [] },
@@ -144,7 +143,7 @@ describe("home and content pages", () => {
     });
     for (const [path, text] of [
       ["about/page", /Ready to find help nearby/],
-      ["claim/page", /Choose Pro/],
+      ["claim/page", /Everything is included, at no cost/],
       ["services/page", /Find electronics repair near you/],
       ["help/page", /Our team is available 9 to 5/],
       ["contact/page", /help@x.co/],
@@ -156,7 +155,6 @@ describe("home and content pages", () => {
       expect(screen.getAllByText(text).length).toBeGreaterThan(0);
       unmount();
     }
-    expect(screen.queryByText("Start free")).toBeNull();
   });
   it("contact and help pages without support details", async () => {
     vi.resetModules();
@@ -178,10 +176,6 @@ describe("home and content pages", () => {
     const help = (await import("@/app/help/page")).default;
     rtl.render(await help());
     expect(rtl.screen.getByText(/We usually reply within one working day/)).toBeInTheDocument();
-    const claim = (await import("@/app/claim/page")).default;
-    mockApi({ "/plans": { plans: [{ id: 1, name: "Free", price: 0, leadAccessLimit: 10, featuresJson: null }] } });
-    rtl.render(await claim());
-    expect(rtl.screen.getByText("Start free")).toBeInTheDocument();
   });
   it("guides index and pages", async () => {
     const guides = await import("@/app/guides/page");

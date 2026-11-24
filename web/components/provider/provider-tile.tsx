@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, Crown, MapPin } from "lucide-react";
+import { BadgeCheck, MapPin } from "lucide-react";
 import type { ProviderCard as ProviderCardType } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -28,11 +28,7 @@ export function ProviderTile({ provider, source = "search", className }: { provi
           categorySlug={provider.primaryCategory?.slug}
           sizes="(min-width: 1024px) 19rem, (min-width: 640px) 45vw, 90vw"
         />
-        {provider.planTier ? (
-          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-white/95 px-2 py-1 text-xs font-semibold text-foreground shadow-sm">
-            <Crown className="size-3.5 text-[oklch(0.7_0.15_70)]" fill="currentColor" /> Top partner
-          </span>
-        ) : verified ? (
+        {verified ? (
           <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-white/95 px-2 py-1 text-xs font-semibold text-foreground shadow-sm">
             <BadgeCheck className="size-3.5 text-success" /> Verified
           </span>

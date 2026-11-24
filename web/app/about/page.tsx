@@ -116,7 +116,7 @@ export default async function AboutPage() {
               {[
                 { icon: BadgeCheck, t: "Verification you can see", d: "Every profile lists which checks were done: phone, business documents, location or ID." },
                 { icon: Star, t: "Reviews tied to real contact", d: "Reviews from people who contacted the provider through KaajVa carry a Verified contact tag." },
-                { icon: Scale, t: "Fair ranking", d: "Ranking weighs ratings, verification, profile quality and responsiveness. Paid plans add only a small boost." },
+                { icon: Scale, t: "Fair ranking", d: "Ranking weighs ratings, verification, profile quality and responsiveness. Nobody can pay to rank higher." },
                 { icon: Flag, t: "Report and review", d: "Anyone can report a listing or review. Our team checks every report and removes abuse." },
                 { icon: ShieldCheck, t: "Consent for phone numbers", d: "Providers agree to show their number publicly. We never sell customer data." },
                 { icon: Eye, t: "Honest labels", d: "Self-reported numbers, like jobs completed, are labelled “as reported” and never used for ranking." },

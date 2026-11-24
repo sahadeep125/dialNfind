@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 const POINTS = [
   { icon: BadgeCheck, title: "Verification you can see", text: "Every profile lists which checks were done: phone, business documents, location or ID." },
   { icon: Star, title: "Honest reviews", text: "Reviews from people who contacted a pro through KaajVa carry a Verified contact tag." },
-  { icon: Scale, title: "Fair ranking", text: "Results weigh ratings, verification and distance. Paid plans add only a small boost." },
+  { icon: Scale, title: "Fair ranking", text: "Results weigh ratings, verification and distance. Nobody can pay to rank higher." },
   { icon: PhoneCall, title: "Zero commission", text: "You agree the job and the price with the pro directly. We never add fees." },
 ];
 
