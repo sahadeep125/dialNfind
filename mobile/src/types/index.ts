@@ -43,6 +43,12 @@ export interface ProviderCard {
   logoUrl: string | null;
   coverUrl: string | null;
   businessType: "individual" | "company";
+  /** An individual's profession ("Plumber"); null for a business. Missing from older API versions. */
+  profession?: string | null;
+  /** The profession for an individual, else the business's categories ("Plumbing & Electricians"). */
+  categoryLabel?: string | null;
+  /** The locality, else the city. */
+  serviceAreaLabel?: string;
   yearsExperience: number | null;
   phone: string;
   /** Null when the business does not take WhatsApp messages. */
@@ -100,6 +106,8 @@ export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
     category: string | null;
   }[];
   verifications: { type: string; verifiedAt: string | null }[];
+  /** An individual professional's other professions, each its own listing. */
+  otherListings?: { slug: string; profession: string | null; serviceAreaLabel: string }[];
   ratingBreakdown: { rating: number; count: number }[];
   myReview: OwnReview | null;
   /** Null when the person already reviewed this business (see myReview). */
@@ -234,6 +242,8 @@ export interface SearchFilters {
   sort: SortOption;
   openNow: boolean;
   verified: boolean;
+  /** Only individual professionals, or only businesses. */
+  accountType?: "individual" | "business";
   minRating?: number;
   /** Km around the chosen location; undefined uses the default set in the admin console. */
   radiusKm?: number;

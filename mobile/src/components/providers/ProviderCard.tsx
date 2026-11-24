@@ -6,7 +6,9 @@ import { BadgeCheck, MapPin } from "lucide-react-native";
 import { AppAvatar, AppBadge, AppCard, AppDivider, AppText } from "@/components/design-system";
 import { useTheme } from "@/hooks/useTheme";
 import type { ProviderCard as ProviderCardData } from "@/types";
+import { listingLine } from "@/utils/accountType";
 import { formatDistance, formatPrice } from "@/utils/format";
+import { AccountTypeBadge } from "./AccountTypeBadge";
 import { ContactButtons } from "./ContactButtons";
 import { FavoriteButton } from "./FavoriteButton";
 import { RatingSummary } from "./RatingSummary";
@@ -23,6 +25,8 @@ export const ProviderCard = memo(function ProviderCard({ provider: p, source = "
   const price = formatPrice(p.startingPrice, p.priceUnit);
   const place = [p.locality, p.city].filter(Boolean).join(", ");
   const verified = p.verificationStatus === "verified";
+  // "Deep Saha – Plumber – Ghoraguli" or "ABC Services – Plumbing & Electrical – Siliguri".
+  const { middle, area } = listingLine(p);
 
   return (
     <AppCard
@@ -48,8 +52,7 @@ export const ProviderCard = memo(function ProviderCard({ provider: p, source = "
             ) : null}
           </View>
           <AppText variant="caption" tone="secondary" numberOfLines={1}>
-            {p.primaryCategory?.name ?? "Local service"}
-            {p.subcategories.length ? ` · ${p.subcategories.slice(0, 2).join(", ")}` : ""}
+            {[middle ?? "Local service", area].join(" – ")}
           </AppText>
           <View style={styles.meta}>
             <RatingSummary rating={p.avgRating} count={p.totalReviews} />
@@ -74,6 +77,7 @@ export const ProviderCard = memo(function ProviderCard({ provider: p, source = "
       </View>
 
       <View style={styles.badges}>
+        <AccountTypeBadge type={p.businessType} />
         <AppBadge
           dot
           label={p.isOpenNow ? "Open now" : "Closed now"}

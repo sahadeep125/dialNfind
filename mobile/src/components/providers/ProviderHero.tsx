@@ -17,7 +17,9 @@ import { useToast } from "@/hooks/useToast";
 import { errorMessage } from "@/services/api";
 import { shareProvider } from "@/services/links";
 import type { ProviderDetail } from "@/types";
+import { isIndividual, listingLine } from "@/utils/accountType";
 import { formatDistance } from "@/utils/format";
+import { AccountTypeBadge } from "./AccountTypeBadge";
 import { FavoriteButton } from "./FavoriteButton";
 
 interface Props {
@@ -142,9 +144,12 @@ export function ProviderHero({ provider: p, topInset }: Props) {
                 />
               ) : null}
             </View>
-            <AppText tone="secondary">
-              {p.primaryCategory?.name ?? "Local service"}
-              {p.subcategories.length ? ` · ${p.subcategories.slice(0, 3).join(", ")}` : ""}
+            <AccountTypeBadge type={p.businessType} />
+            <AppText variant="label">{listingLine(p).middle ?? "Local service"}</AppText>
+            <AppText variant="caption" tone="secondary">
+              {isIndividual(p)
+                ? "An independent professional who does the work themselves."
+                : `A business${p.subcategories.length ? ` offering ${p.subcategories.slice(0, 3).join(", ")}` : ""}.`}
             </AppText>
             {place ? (
               <View style={styles.metaItem}>

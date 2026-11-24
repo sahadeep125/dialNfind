@@ -2,12 +2,13 @@ import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { BadgeCheck, MapPin } from "lucide-react-native";
+import { BadgeCheck, Building2, MapPin, UserRound } from "lucide-react-native";
 
 import { AppAvatar, AppBadge, AppCard, AppSkeleton, AppText } from "@/components/design-system";
 import { CATEGORY_STYLES, FALLBACK_CATEGORY_STYLE } from "@/constants/categories";
 import { useTheme } from "@/hooks/useTheme";
 import type { ProviderCard } from "@/types";
+import { listingLine } from "@/utils/accountType";
 import { formatDistance } from "@/utils/format";
 import { FavoriteButton } from "./FavoriteButton";
 import { RatingSummary } from "./RatingSummary";
@@ -85,9 +86,16 @@ export const ProviderMiniCard = memo(function ProviderMiniCard({ provider: p, wi
             />
           ) : null}
         </View>
-        <AppText variant="caption" tone="secondary" numberOfLines={1}>
-          {p.primaryCategory?.name ?? "Local service"}
-        </AppText>
+        <View style={styles.typeRow}>
+          {p.businessType === "individual" ? (
+            <UserRound size={12} color={theme.colors.brand.accentText} accessibilityLabel="Individual professional" />
+          ) : (
+            <Building2 size={12} color={theme.colors.brand.primary} accessibilityLabel="Business" />
+          )}
+          <AppText variant="caption" tone="secondary" numberOfLines={1} style={styles.shrink}>
+            {listingLine(p).middle ?? "Local service"}
+          </AppText>
+        </View>
         <View style={[styles.meta, { marginTop: theme.spacing[1.5] }]}>
           <RatingSummary rating={p.avgRating} count={p.totalReviews} />
           {distance ? (
@@ -120,6 +128,7 @@ export function ProviderMiniCardSkeleton({ width }: { width: number }) {
 }
 
 const styles = StyleSheet.create({
+  typeRow: { alignItems: "center", flexDirection: "row", gap: 4 },
   cover: { height: COVER, overflow: "hidden" },
   status: { left: 10, position: "absolute", top: 10 },
   favorite: { position: "absolute", right: 8, top: 8 },
