@@ -10,7 +10,8 @@ import { PROVIDER_IMAGE, STEP_IMAGES, TOOLS_IMAGE } from "@/lib/stock-images";
 export const revalidate = 600;
 
 export const metadata: Metadata = pageMetadata({
-  title: "About KaajVa",
+  title: "About KaajVa: Siliguri's Local Services Directory",
+  absoluteTitle: true,
   description: "How KaajVa helps you find trusted local service providers, how listings are verified and ranked, and how businesses get listed for free.",
   path: "/about",
 });

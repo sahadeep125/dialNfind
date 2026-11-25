@@ -12,7 +12,8 @@ import { faqJsonLd } from "@/lib/structured-data";
 export const revalidate = 600;
 
 export const metadata: Metadata = pageMetadata({
-  title: "Help centre: FAQs about KaajVa",
+  title: "KaajVa Help Centre: FAQs",
+  absoluteTitle: true,
   description: "Answers to common questions about finding and contacting local service providers near you on KaajVa: prices, verification, reviews, listing your business and your account.",
   path: "/help",
 });
