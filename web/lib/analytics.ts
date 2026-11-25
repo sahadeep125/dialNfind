@@ -1,5 +1,6 @@
 import posthog from "posthog-js";
 import { LOCATION_COOKIE } from "./config";
+import { isAutomatedBrowser } from "./automation";
 import { pushGtmEvent } from "./gtm";
 import type { LocationOption, SessionUser } from "./types";
 
@@ -9,7 +10,8 @@ import type { LocationOption, SessionUser } from "./types";
  * Event names and shared properties are listed in docs/ANALYTICS.md.
  */
 const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY ?? "";
-export const analyticsEnabled = KEY.length > 0;
+// Automated browsers and bots are not counted (lib/automation.ts).
+export const analyticsEnabled = KEY.length > 0 && !isAutomatedBrowser();
 
 /** Sent with every event, and set again after sign-out clears everything. */
 const BASE = {
