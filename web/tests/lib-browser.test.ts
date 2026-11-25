@@ -28,6 +28,14 @@ describe("analytics", () => {
     expect(posthog.init).not.toHaveBeenCalled();
     expect(posthog.capture).not.toHaveBeenCalled();
   });
+  it("stays off in an automated browser", async () => {
+    Object.defineProperty(navigator, "webdriver", { value: true, configurable: true });
+    const a = await freshAnalytics();
+    expect(a.analyticsEnabled).toBe(false);
+    a.initAnalytics();
+    expect(posthog.init).not.toHaveBeenCalled();
+    Reflect.deleteProperty(navigator, "webdriver");
+  });
   it("initialises, identifies, tracks and resets", async () => {
     const a = await freshAnalytics();
     setLocationCookie(loc("Kothrud, Pune"));

@@ -3,7 +3,10 @@
  * PostHog keeps the full event list; GTM gets a short list under GA4 names, mapped from the same track()
  * calls so both tools count the same moments. The list and the key events are in docs/ANALYTICS.md.
  */
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? "";
+import { isAutomatedBrowser } from "./automation";
+
+// Empty for automated browsers and bots, so GA4 and the Meta Pixel never see them (lib/automation.ts).
+const GTM_ID = isAutomatedBrowser() ? "" : (process.env.NEXT_PUBLIC_GTM_ID ?? "");
 
 /** Every parameter the GTM container reads. Each push clears the others, so one event's values never leak into the next. */
 const GTM_PARAMS = [
