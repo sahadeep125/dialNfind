@@ -11,6 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const place = config.office_address ? ` in ${config.office_address.split(/[,\n]/).slice(0, 2).map((s) => s.trim()).filter(Boolean).join(", ")}` : "";
   return pageMetadata({
     title: "Contact KaajVa, Siliguri",
+    absoluteTitle: true,
     description: `Contact KaajVa${place}${reach ? `: ${reach}` : ""} for help with a listing, feedback or business enquiries.`,
     path: "/contact",
   });
