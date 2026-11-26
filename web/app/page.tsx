@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { publicApi } from "@/lib/api";
 import type { Category } from "@/lib/types";
 import { CategoryGrid } from "@/components/home/category-grid";
@@ -7,19 +9,23 @@ import { HomeHero } from "@/components/home/home-hero";
 import { HowItWorks } from "@/components/home/how-it-works";
 import { NearbyProviders } from "@/components/home/nearby-providers";
 import { PromoBanners } from "@/components/home/promo-banners";
+import { AppPromo } from "@/components/home/app-promo";
+import { FixGrid } from "@/components/home/fix-grid";
+import { PopularSearches } from "@/components/home/popular-searches";
+import { getCategoryAreas } from "@/lib/category-areas";
 import { Testimonials } from "@/components/home/testimonials";
 import { TrustPoints } from "@/components/home/trust-points";
 import { SectionHeading } from "@/components/site/section-heading";
 import { SEO_CITY, pageMetadata } from "@/lib/seo";
 import { serviceHref } from "@/lib/service-href";
 
-const TITLE = "KaajVa: Local Services & Businesses in Siliguri";
+const TITLE = "KaajVa: Repair & Local Services Near You in Siliguri";
 
 export const metadata: Metadata = {
   ...pageMetadata({
     title: TITLE,
     description:
-      "Siliguri's local services directory: beauty parlours, bike and car service, home tutors, mobile and TV repair, electricians and more. Compare and call directly.",
+      "Find repair technicians and local pros near you in Siliguri: appliance, AC and mobile repair, electricians, plumbers, salons and tutors. Call or WhatsApp directly.",
     path: "/",
   }),
   // The home page title already names the site, so it skips the "| KaajVa" suffix.
@@ -31,37 +37,42 @@ export const metadata: Metadata = {
  * page passes its weight to the pages that should rank, led by the services with the most listings.
  */
 const POPULAR = [
-  { label: "Beauty parlour", href: serviceHref("beauty-salon") },
-  { label: "Bike service", href: serviceHref("vehicle-repair", "bike-service") },
-  { label: "Home tutor", href: serviceHref("tutors") },
-  { label: "Mobile repair", href: serviceHref("electronics-repair", "mobile-phone-repair") },
   { label: "AC repair", href: serviceHref("home-appliances", "ac-repair-and-service") },
+  { label: "Mixer grinder repair", href: serviceHref("home-appliances", "mixer-grinder-repair") },
   { label: "Electrician", href: serviceHref("electricians") },
+  { label: "Mobile repair", href: serviceHref("electronics-repair", "mobile-phone-repair") },
+  { label: "Plumber", href: serviceHref("plumbing") },
+  { label: "Bike service", href: serviceHref("vehicle-repair", "bike-service") },
+  { label: "Beauty parlour", href: serviceHref("beauty-salon") },
+  { label: "Home tutor", href: serviceHref("tutors") },
 ];
 
 /** The same for every visitor, so it is cached; the "near you" part loads in the browser. */
 export const revalidate = 600;
 
 export default async function HomePage() {
-  const [{ categories }, stats] = await Promise.all([
+  const [{ categories }, stats, areas] = await Promise.all([
     publicApi<{ categories: Category[] }>("/categories", { revalidate: 600, tags: ["categories"] }),
     publicApi<{ providers: number; categories: number; cities: number; reviews: number }>("/stats", { revalidate: 3600, tags: ["stats"] }),
+    getCategoryAreas(),
   ]);
 
   return (
     <>
       <HomeHero stats={stats} popular={POPULAR} />
 
-      <section className="section-y">
-        <div className="container-page">
-          <SectionHeading
-            eyebrow="Services"
-            title="What do you need help with?"
-            description={`${stats.categories} categories of home and local services, from quick repairs to big moves.`}
-            action={{ href: "/services", label: "All services" }}
-          />
+      <section aria-labelledby="needs-title" className="section-y">
+        <div className="container-wide">
+          <SectionHeading id="needs-title" title="What's the problem?" description="Start from what went wrong. Each one opens the pros nearby who fix it, nearest first." />
           <div className="mt-8">
-            <CategoryGrid categories={categories} />
+            <FixGrid />
+          </div>
+          <div className="mt-10 flex justify-center">
+            <Button asChild size="lg" variant="outline" className="shadow-[var(--shadow-card)]">
+              <Link href="/search">
+                View all professionals <ArrowRight />
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -69,60 +80,56 @@ export default async function HomePage() {
       {/* Loads in the browser, since it depends on the visitor's location. */}
       <NearbyProviders />
 
-      <section id="how" className="section-y scroll-mt-16 border-y bg-card">
-        <div className="container-page">
-          <SectionHeading eyebrow="How it works" title="Hire a local pro in three steps" align="center" />
+      <section aria-labelledby="services-title" className="section-y border-y bg-surface">
+        <div className="container-wide">
+          <SectionHeading
+            id="services-title"
+            title={`All services in ${SEO_CITY}`}
+            description="Home repairs, beauty, tuition, vehicles and moving. Each service lists every business we know of, claimed or not."
+            action={{ href: "/services", label: `All ${stats.categories} services` }}
+          />
           <div className="mt-10">
-            <HowItWorks />
+            <CategoryGrid categories={categories} />
           </div>
         </div>
       </section>
 
       <section className="section-y">
-        <div className="container-page">
-          <TrustPoints />
+        <div className="container-wide">
+          <AppPromo />
+        </div>
+      </section>
+
+            {/* For pros: listing is free. High on the page, so businesses find it without scrolling to the end. */}
+      <section className="bg-surface py-14 md:py-20">
+        <div className="container-wide">
+          <PromoBanners />
+        </div>
+      </section>
+
+      <section id="how" aria-labelledby="how-title" className="section-y scroll-mt-16 border-y bg-[#eef3fc]">
+        <div className="container-wide">
+          <SectionHeading id="how-title" title="How KaajVa works" description="A directory, not a booking service: we show you the business, you deal with them directly." />
+          <div className="mt-10">
+            <HowItWorks />
+          </div>
+          <div className="mt-16">
+            <TrustPoints />
+          </div>
         </div>
       </section>
 
       <Testimonials />
 
-      {/* Popular services: plain links so every service page is one click from home ---------------- */}
-      <section className="section-y">
-        <div className="container-page">
-          <SectionHeading eyebrow="Near you" title={`Popular services in ${SEO_CITY}`} action={{ href: "/guides", label: "Service guides" }} />
-          <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-muted-foreground">
-            KaajVa helps you find trusted local professionals near you: electricians, plumbers, AC and fridge repair, TV and mobile repair, home cleaning, pest control, painters,
-            carpenters, packers and movers, home tutors, beauty services and car and bike mechanics. Compare ratings, prices and distance, then call or WhatsApp the provider
-            directly, with no booking fees or commission.
-          </p>
-          <div className="mt-8 grid gap-x-8 gap-y-8 border-t pt-8 sm:grid-cols-2 lg:grid-cols-4">
-            {categories.map((c) => (
-              <div key={c.id}>
-                <h3 className="text-[15px] font-semibold">
-                  <Link href={serviceHref(c.slug)} className="hover:text-cta-strong">
-                    {c.name}
-                  </Link>
-                </h3>
-                <ul className="mt-2.5 space-y-2">
-                  {c.subcategories.slice(0, 5).map((s) => (
-                    <li key={s.id}>
-                      <Link href={serviceHref(c.slug, s.slug)} className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline">
-                        {s.name} near me
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+      <section aria-labelledby="popular-title" className="section-y">
+        <div className="container-wide">
+          <SectionHeading id="popular-title" title={`Popular searches in ${SEO_CITY}`} />
+          <div className="mt-8">
+            <PopularSearches areas={areas} />
           </div>
         </div>
       </section>
 
-      <section>
-        <div className="container-page">
-          <PromoBanners />
-        </div>
-      </section>
     </>
   );
 }

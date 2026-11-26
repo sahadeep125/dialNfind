@@ -62,3 +62,17 @@ export function initials(name: string): string {
 export function plural(n: number, word: string, pluralWord = `${word}s`): string {
   return `${n.toLocaleString("en-IN")} ${n === 1 ? word : pluralWord}`;
 }
+
+/** Straight-line distance in km between two points. */
+export function kmBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+
+export function formatKm(km: number): string {
+  if (km < 1) return `${Math.max(100, Math.round((km * 1000) / 50) * 50)} m`;
+  return `${km.toFixed(km < 10 ? 1 : 0)} km`;
+}

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, TextInput, View, type TextInputInstance } from "react-native";
 
 import { AppText } from "@/components/design-system";
 import { fontFamily } from "@/constants/typography";
@@ -27,7 +27,7 @@ export function CodeInput({
   accessibilityLabel,
 }: Props) {
   const theme = useTheme();
-  const ref = useRef<TextInput>(null);
+  const ref = useRef<TextInputInstance>(null);
   const [focused, setFocused] = useState(!!autoFocus);
   const active = Math.min(value.length, length - 1);
 

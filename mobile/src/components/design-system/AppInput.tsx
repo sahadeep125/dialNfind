@@ -4,6 +4,7 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
+  type TextInputInstance,
   View,
   type TextInputProps,
 } from "react-native";
@@ -23,7 +24,7 @@ interface Props extends TextInputProps {
 }
 
 /** Text field: a quiet filled well that lifts to a white surface with a brand edge while focused. */
-export const AppInput = forwardRef<TextInput, Props>(function AppInput(
+export const AppInput = forwardRef<TextInputInstance, Props>(function AppInput(
   {
     label,
     helper,

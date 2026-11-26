@@ -22,6 +22,24 @@ describe("gtm", () => {
     expect(document.querySelector("script")).toBeNull();
   });
 
+  it("loads nothing in an automated browser", async () => {
+    Object.defineProperty(navigator, "webdriver", { value: true, configurable: true });
+    const g = await freshGtm();
+    g.loadGtm();
+    g.pushGtmEvent("contact_clicked", { provider_id: 1, channel: "call" });
+    expect((window as W).dataLayer).toBeUndefined();
+    expect(document.querySelector("script")).toBeNull();
+    Reflect.deleteProperty(navigator, "webdriver");
+  });
+
+  it("loads nothing for a headless or bot user agent", async () => {
+    const spy = vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Mozilla/5.0 (X11; Linux x86_64) HeadlessChrome/138.0.0.0 Safari/537.36");
+    const g = await freshGtm();
+    g.loadGtm();
+    expect(document.querySelector("script")).toBeNull();
+    spy.mockRestore();
+  });
+
   it("loads the container once", async () => {
     const g = await freshGtm();
     g.loadGtm();

@@ -9,6 +9,7 @@ import type { AdminModule } from "../../lib/permissions.js";
 import { currentUser } from "../../middleware/auth.js";
 import { logAdmin } from "../../services/audit.js";
 import { providerQuery, providerWhere } from "./providers.js";
+import { currentValues, UPDATE_COLUMNS, updateInclude } from "../../services/listing-bulk-update.js";
 import { usersQuery, userWhere } from "./users.js";
 import { leadsQuery, leadWhere, reviewsQuery, reviewWhere } from "./records.js";
 
@@ -47,6 +48,14 @@ const EXPORTS = {
         values: [p.id, p.businessName, p.phone, p.email, p.city, p.locality, p.state, p.status, p.verificationStatus, p.user?.email, num(p.avgRating), p.totalReviews, p.profileCompletenessPct, p.seoScore, p.seoNoIndex ? "yes" : "no", date(p.createdAt)],
       })),
   }),
+  // The bulk update file: every editable detail, ready to change and upload again.
+  "provider-updates": exporter({
+    module: "providers",
+    query: providerQuery,
+    header: UPDATE_COLUMNS,
+    batch: async (q, afterId, take) =>
+      (await prisma.provider.findMany({ where: { AND: [providerWhere(q), { id: { gt: afterId } }] }, orderBy: { id: "asc" }, take, include: updateInclude })).map((p) => ({ id: p.id, values: currentValues(p) })),
+  }),
   users: exporter({
     module: "users",
     query: usersQuery,
@@ -57,9 +66,9 @@ const EXPORTS = {
           where: { AND: [userWhere(q), { id: { gt: afterId } }] },
           orderBy: { id: "asc" },
           take,
-          include: { provider: { select: { businessName: true } } },
+          include: { providers: { select: { businessName: true }, orderBy: { id: "asc" } } },
         })
-      ).map((u) => ({ id: u.id, values: [u.id, u.name, u.email, u.phone, u.role, u.status, u.emailVerifiedAt ? "yes" : "no", u.provider?.businessName, date(u.createdAt), date(u.lastLoginAt)] })),
+      ).map((u) => ({ id: u.id, values: [u.id, u.name, u.email, u.phone, u.role, u.status, u.emailVerifiedAt ? "yes" : "no", u.providers.map((p) => p.businessName).join("; ") || null, date(u.createdAt), date(u.lastLoginAt)] })),
   }),
   leads: exporter({
     module: "leads",

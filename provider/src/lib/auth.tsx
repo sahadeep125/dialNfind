@@ -1,11 +1,32 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { identifyUser, resetUser } from "./analytics";
-import { api, ApiError, tokenStore } from "./api";
+import { api, ApiError, listingStore, tokenStore } from "./api";
 import type { User } from "./types";
 
-interface ProviderState {
-  provider: { id: number; slug: string; businessName: string; status: string; profileCompletenessPct: number; verificationStatus: string } | null;
+/** One of the account's listings, as GET /provider/me lists them. */
+export interface OwnListing {
+  id: number;
+  slug: string;
+  businessName: string;
+  businessType: "individual" | "company";
+  /** "Plumber": the title after an individual's name. Null for a business. */
+  professionLabel: string | null;
+  primaryCategory: { id: number; name: string } | null;
+  locality: string | null;
+  city: string;
+  status: string;
+  profileCompletenessPct: number;
+  verificationStatus: string;
+}
+
+export interface ProviderState {
+  /** The listing being worked on (the one picked with switchListing, else the first). */
+  provider: OwnListing | null;
+  /** Every listing the account owns: an individual professional has one per profession. */
+  listings?: OwnListing[];
+  accountType?: "individual" | "business" | null;
+  canAddListing?: boolean;
   claims: { id: number; status: string; method: string; provider: { id: number; businessName: string; city: string } }[];
 }
 
@@ -18,6 +39,8 @@ interface AuthContextValue {
   signIn: (token: string) => Promise<void>;
   signOut: () => void;
   refresh: () => Promise<void>;
+  /** Works on another of the account's listings: every page reloads its data for it. */
+  switchListing: (id: number) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -33,6 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { user } = await api<{ user: User }>("/auth/me");
       // Business data is closed until the email address is confirmed.
       const state = user.emailVerifiedAt ? await api<ProviderState>("/provider/me") : null;
+      // A listing picked earlier that this account no longer owns (or another account's) is forgotten.
+      const picked = listingStore.get();
+      if (picked && state && !(state.listings ?? []).some((l) => String(l.id) === picked)) listingStore.clear();
       return { user, state };
     },
     retry: false,
@@ -72,9 +98,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Ends the session on the server too; the request carries the token before it is cleared below.
     void api("/auth/logout", { method: "POST" }).catch(() => undefined);
     tokenStore.clear();
+    listingStore.clear();
     setToken(null);
     qc.clear();
   }, [qc]);
+
+  const switchListing = useCallback(
+    async (id: number) => {
+      listingStore.set(id);
+      // Everything on screen belongs to the previous listing.
+      qc.removeQueries({ predicate: (q) => q.queryKey[0] !== "auth" });
+      await qc.invalidateQueries({ queryKey: ["auth"] });
+    },
+    [qc],
+  );
 
   const refresh = useCallback(async () => {
     await qc.invalidateQueries({ queryKey: ["auth"] });
@@ -89,8 +126,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signOut,
       refresh,
+      switchListing,
     }),
-    [token, me.data, me.isLoading, me.isError, me.error, signIn, signOut, refresh],
+    [token, me.data, me.isLoading, me.isError, me.error, signIn, signOut, refresh, switchListing],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -7,6 +7,7 @@ import { api, errorMessage } from "@/lib/api";
 import { useCategoryOptions } from "@/lib/categories";
 import { normalizePhone } from "@/lib/validation";
 import { Field, fieldA11y, FormAlert } from "@/components/form";
+import { AccountTypeTabs, type BusinessType } from "@/components/account-type";
 import { LocationEditor, locationProblems, type LocationErrors, type LocationValue } from "@/components/location-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ export function AddListingDialog({ open, onOpenChange }: { open: boolean; onOpen
   const qc = useQueryClient();
   const { data: categories = [] } = useCategoryOptions();
   const [name, setName] = useState("");
+  const [businessType, setBusinessType] = useState<BusinessType>("individual");
   const [phone, setPhone] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
@@ -34,6 +36,7 @@ export function AddListingDialog({ open, onOpenChange }: { open: boolean; onOpen
         method: "POST",
         json: {
           businessName: name.trim(),
+          businessType,
           phone,
           ...location,
           pincode: location.pincode || "",
@@ -51,7 +54,7 @@ export function AddListingDialog({ open, onOpenChange }: { open: boolean; onOpen
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const next = {
-      ...(name.trim().length < 2 ? { name: "Enter the business name" } : {}),
+      ...(name.trim().length < 2 ? { name: businessType === "individual" ? "Enter the person's full name" : "Enter the business name" } : {}),
       ...(!normalizePhone(phone) ? { phone: "Enter a valid 10-digit Indian phone number" } : {}),
       ...(!categoryId ? { category: "Choose a category" } : {}),
       ...locationProblems(location),
@@ -70,7 +73,10 @@ export function AddListingDialog({ open, onOpenChange }: { open: boolean; onOpen
         <form id="add-listing" onSubmit={submit} noValidate className="space-y-4">
           <FormAlert message={save.error ? errorMessage(save.error) : null} />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="new-name" label="Business name" required error={errors.name} className="sm:col-span-2">
+            <Field id="new-type" label="Account type" className="sm:col-span-2">
+              <AccountTypeTabs id="new-type" value={businessType} onChange={setBusinessType} />
+            </Field>
+            <Field id="new-name" label={businessType === "individual" ? "Full name" : "Business name"} required error={errors.name} className="sm:col-span-2">
               <Input value={name} maxLength={100} onChange={(e) => setName(e.target.value)} {...fieldA11y("new-name", errors.name)} />
             </Field>
             <Field id="new-phone" label="Business phone" required error={errors.phone}>
@@ -138,8 +144,9 @@ export function AddListingDialog({ open, onOpenChange }: { open: boolean; onOpen
   );
 }
 
-const TEMPLATE_HEADER = "business_name,phone,category,subcategory,city,state,locality,address,pincode,latitude,longitude,whatsapp,email,website,description,service_radius_km";
-const TEMPLATE_ROW = "Sharma TV Repair,9876543210,electronics-repair,TV Repair,Siliguri,West Bengal,Sevoke Road,Shop 4 City Plaza,734001,26.7338,88.4325,,,,TV and set-top box repairs,10";
+const TEMPLATE_HEADER = "business_name,phone,category,subcategory,city,state,locality,address,pincode,latitude,longitude,whatsapp,email,website,description,service_radius_km,account_type,profession";
+/** account_type is "individual" (business_name is the person's name) or "business", the default. */
+const TEMPLATE_ROW = "Sharma TV Repair,9876543210,electronics-repair,TV Repair,Siliguri,West Bengal,Sevoke Road,Shop 4 City Plaza,734001,26.7338,88.4325,,,,TV and set-top box repairs,10,business,";
 
 interface ImportResult {
   dryRun: boolean;
@@ -188,7 +195,7 @@ export function ImportListingsDialog({ open, onOpenChange }: { open: boolean; on
         <DialogHeader>
           <DialogTitle>Import listings from CSV</DialogTitle>
           <DialogDescription>
-            Up to 500 rows. Category and service can be names or slugs. Rows without latitude and longitude are placed on the map from their address, which takes about a second per row.
+            Up to 500 rows. Category and service can be names or slugs. Set account_type to individual for a person listed under their own name (business is the default), with an optional profession title. Rows without latitude and longitude are placed on the map from their address, which takes about a second per row.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">

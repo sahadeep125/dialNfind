@@ -39,3 +39,22 @@ const CATEGORY_IMAGES: Record<string, StockImage> = {
 export function categoryImage(slug?: string | null): StockImage {
   return (slug && CATEGORY_IMAGES[slug]) || TOOLS_IMAGE;
 }
+
+/** Whether a category has a photograph of its own, rather than the shared tools photo. */
+export function hasCategoryImage(slug?: string | null): boolean {
+  return Boolean(slug && CATEGORY_IMAGES[slug]);
+}
+
+/** A category as the photo helpers need it: the photo uploaded in the admin console wins over the stock one. */
+type PhotoCategory = { slug: string; name: string; imageUrl?: string | null; imageAlt?: string | null };
+
+/** The category's photo: the one uploaded in the admin console, else its stock photo, else the tools photo. */
+export function categoryPhoto(c: PhotoCategory): StockImage {
+  if (c.imageUrl) return { src: c.imageUrl, alt: c.imageAlt?.trim() || `${c.name} in Siliguri` };
+  return categoryImage(c.slug);
+}
+
+/** Whether a category has a photograph of its own (uploaded or stock), rather than the shared tools photo. */
+export function hasCategoryPhoto(c: PhotoCategory): boolean {
+  return Boolean(c.imageUrl) || hasCategoryImage(c.slug);
+}

@@ -9,6 +9,7 @@ import { requirePermission } from "../lib/permissions.js";
 import { slugify } from "../lib/slug.js";
 import { logAdmin } from "../services/audit.js";
 import { refreshShared } from "../services/web-cache.js";
+import { optionalUploadedImageUrl } from "../storage/references.js";
 
 export const categoriesRouter = Router();
 
@@ -16,9 +17,38 @@ categoriesRouter.get("/", async (_req, res) => {
   const categories = await prisma.category.findMany({
     where: { isActive: true },
     orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+    // The page text and questions are only needed on the category page itself (GET /categories/:slug).
+    omit: { seoContent: true, faqs: true },
     include: { subcategories: { where: { isActive: true }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }] } },
   });
   res.json({ categories });
+});
+
+/**
+ * GET /categories/professions — the professions an individual can pick when creating a listing, one per
+ * category or service that has a profession name: "Plumber" (Plumbing), "AC Technician" (AC Repair & Service).
+ */
+categoriesRouter.get("/professions", async (_req, res) => {
+  const categories = await prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+    include: { subcategories: { where: { isActive: true, professionName: { not: null } }, orderBy: [{ displayOrder: "asc" }, { name: "asc" }] } },
+  });
+  const professions: { label: string; categoryId: bigint; categoryName: string; categorySlug: string; subcategoryId: bigint | null; subcategoryName: string | null }[] = [];
+  const seen = new Set<string>();
+  const add = (p: (typeof professions)[number]) => {
+    const key = p.label.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    professions.push(p);
+  };
+  for (const c of categories) {
+    const base = { categoryId: c.id, categoryName: c.name, categorySlug: c.slug };
+    if (c.professionName) add({ ...base, label: c.professionName, subcategoryId: null, subcategoryName: null });
+    for (const s of c.subcategories) add({ ...base, label: s.professionName!, subcategoryId: s.id, subcategoryName: s.name });
+  }
+  professions.sort((a, b) => a.label.localeCompare(b.label));
+  res.json({ professions });
 });
 
 categoriesRouter.get("/:slug", async (req, res) => {
@@ -37,14 +67,36 @@ categoriesRouter.get("/:slug", async (req, res) => {
 // Super-admin only: categories, subcategories and attributes are never provider-created.
 // ---------------------------------------------------------------------------
 
+/** What an individual offering it is called, "Plumber". Empty clears it. */
+const professionNameField = z.union([z.literal(""), z.null(), z.string().trim().max(60)]).transform((v) => v || null).optional();
+
+/** Optional text where an empty string clears the value. */
+const optionalText = (max: number) => z.union([z.literal(""), z.null(), z.string().trim().max(max)]).transform((v) => v || null).optional();
+
+/** The questions shown on the category page and in its FAQ structured data. */
+const faqsField = z
+  .array(z.object({ q: z.string().trim().min(5).max(200), a: z.string().trim().min(10).max(1000) }))
+  .max(15)
+  .refine((faqs) => new Set(faqs.map((f) => f.q.toLowerCase())).size === faqs.length, "Each question must be different")
+  .optional();
+
 const categorySchema = z.object({
   name: z.string().trim().min(2).max(60),
   slug: z.string().trim().max(60).optional(),
   description: z.string().max(300).nullable().optional(),
   iconUrl: z.string().nullable().optional(),
   uiTemplate: z.string().max(40).optional(),
+  professionName: professionNameField,
   displayOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
+  // Category page content for search engines; empty values fall back to the website's own copy.
+  imageUrl: optionalUploadedImageUrl.optional(),
+  imageAlt: optionalText(150),
+  seoTitle: optionalText(70),
+  seoDescription: optionalText(200),
+  seoHeading: optionalText(100),
+  seoContent: optionalText(5000),
+  faqs: faqsField,
 });
 
 categoriesRouter.post("/", requirePermission("categories"), async (req, res) => {
@@ -63,9 +115,10 @@ categoriesRouter.patch("/:id", requirePermission("categories"), async (req, res)
   const body = parse(categorySchema.partial(), req.body);
   const admin = currentUser(req);
   const id = idParam(req.params.id);
-  const before = await prisma.category.findUniqueOrThrow({ where: { id }, select: { iconUrl: true } });
+  const before = await prisma.category.findUniqueOrThrow({ where: { id }, select: { iconUrl: true, imageUrl: true } });
   const category = await prisma.category.update({ where: { id }, data: { ...body, updatedBy: admin.id } });
   if (body.iconUrl !== undefined) removeReplaced(before.iconUrl, category.iconUrl);
+  if (body.imageUrl !== undefined) removeReplaced(before.imageUrl, category.imageUrl);
   refreshShared("categories", "providers");
   await logAdmin(admin.id, "category.update", "category", id, body);
   res.json({ category });
@@ -85,6 +138,7 @@ const subcategorySchema = z.object({
   name: z.string().trim().min(2).max(60),
   slug: z.string().trim().max(80).optional(),
   iconUrl: z.string().nullable().optional(),
+  professionName: professionNameField,
   displayOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
 });

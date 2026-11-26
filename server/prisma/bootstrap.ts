@@ -19,12 +19,48 @@ interface CategoryData {
   description: string;
   icon: string;
   uiTemplate: string;
-  subcategories: { name: string; slug: string }[];
+  /** What an individual offering it is called ("Plumber"); see services/professions.ts. */
+  professionName?: string;
+  subcategories: { name: string; slug: string; professionName?: string }[];
   attributes: { label: string; appliesTo: "lead" | "provider"; fieldType: "text" | "number" | "select" | "multiselect" | "boolean"; options?: string[] }[];
 }
 
 // The default directory, shared with kaajva-provider-discovery (which maps what it finds onto these slugs).
 const CATEGORIES: CategoryData[] = JSON.parse(readFileSync(`${DATA_DIR}/categories.json`, "utf8"));
+
+/** Written search content for each default category page (title, description, heading, text, questions). */
+interface CategoryPageData {
+  slug: string;
+  seoTitle: string;
+  seoDescription: string;
+  seoHeading: string;
+  imageAlt: string;
+  seoContent: string;
+  faqs: { q: string; a: string }[];
+  /** The suggested photo to upload in the admin console (Unsplash License); not written by bootstrap. */
+  photo?: { source: string; photographer: string; license: string };
+}
+const CATEGORY_PAGES: CategoryPageData[] = JSON.parse(readFileSync(`${DATA_DIR}/category-pages.json`, "utf8"));
+
+/**
+ * Fills the page content of categories whose page has never been written, so a deploy gives every default
+ * category a full page. A category with any of title, description or text already set (written in the admin
+ * console) is left alone. Photos are uploaded in the admin console.
+ */
+async function fillCategoryPages() {
+  let filled = 0;
+  for (const page of CATEGORY_PAGES) {
+    const { slug, seoTitle, seoDescription, seoHeading, seoContent, faqs } = page;
+    const { count } = await prisma.category.updateMany({
+      where: { slug, seoTitle: null, seoDescription: null, seoContent: null },
+      data: { seoTitle, seoDescription, seoHeading, seoContent, faqs },
+    });
+    // The photo description is only useful once a photo is uploaded; keep it ready without overwriting one.
+    if (count) await prisma.category.updateMany({ where: { slug, imageAlt: null }, data: { imageAlt: page.imageAlt } });
+    filled += count;
+  }
+  return filled ? `${filled} category pages` : null;
+}
 
 const BADGES = [
   { name: "Top Rated", criteriaDescription: "Average rating of 4.5 or higher from at least 10 reviews" },
@@ -47,6 +83,52 @@ const ADMIN_ROLES = [
   { name: "Support agent", description: "Answers tickets and helps customers and providers with their accounts.", permissions: ["support", "users", "reviews"] },
 ];
 
+async function createCategory(c: CategoryData, index: number) {
+  await prisma.category.create({
+    data: {
+      name: c.name,
+      slug: c.slug,
+      description: c.description,
+      iconUrl: `lucide:${c.icon}`,
+      uiTemplate: c.uiTemplate,
+      professionName: c.professionName ?? null,
+      displayOrder: index,
+      subcategories: { create: c.subcategories.map((sub, i) => ({ name: sub.name, slug: sub.slug, professionName: sub.professionName ?? null, displayOrder: i })) },
+      attributes: {
+        create: c.attributes.map((a, i) => ({ appliesTo: a.appliesTo, label: a.label, fieldType: a.fieldType, optionsJson: a.options ?? Prisma.JsonNull, displayOrder: i })),
+      },
+    },
+  });
+}
+
+/**
+ * One-time upgrade for a directory created before individual professionals: names the profession for each
+ * existing category and service ("Plumber" for Plumbing) and adds the new profession categories (Locksmith,
+ * Tailoring, Drivers...). Runs only while no category or service has a profession name yet, so later edits
+ * and removals by the team stick.
+ */
+async function addProfessions(): Promise<string | null> {
+  const named = (await prisma.category.count({ where: { professionName: { not: null } } })) + (await prisma.subcategory.count({ where: { professionName: { not: null } } }));
+  if (named > 0) return null;
+  let created = 0;
+  let labelled = 0;
+  const lastOrder = (await prisma.category.aggregate({ _max: { displayOrder: true } }))._max.displayOrder ?? 0;
+  for (const c of CATEGORIES) {
+    const existing = await prisma.category.findUnique({ where: { slug: c.slug }, select: { id: true } });
+    if (!existing) {
+      await createCategory(c, lastOrder + 1 + created);
+      created++;
+      continue;
+    }
+    if (c.professionName) labelled += (await prisma.category.updateMany({ where: { id: existing.id, professionName: null }, data: { professionName: c.professionName } })).count;
+    for (const sub of c.subcategories) {
+      if (sub.professionName) labelled += (await prisma.subcategory.updateMany({ where: { slug: sub.slug, professionName: null }, data: { professionName: sub.professionName } })).count;
+    }
+  }
+  if (created) await recalculateCategoryCounts();
+  return created || labelled ? `${created} profession categories, ${labelled} profession names` : null;
+}
+
 async function main() {
   const log: string[] = [];
 
@@ -63,25 +145,15 @@ async function main() {
 
   // Categories only on an empty directory, so ones the team renamed or removed are not brought back.
   if ((await prisma.category.count()) === 0) {
-    for (const [index, c] of CATEGORIES.entries()) {
-      await prisma.category.create({
-        data: {
-          name: c.name,
-          slug: c.slug,
-          description: c.description,
-          iconUrl: `lucide:${c.icon}`,
-          uiTemplate: c.uiTemplate,
-          displayOrder: index,
-          subcategories: { create: c.subcategories.map((sub, i) => ({ name: sub.name, slug: sub.slug, displayOrder: i })) },
-          attributes: {
-            create: c.attributes.map((a, i) => ({ appliesTo: a.appliesTo, label: a.label, fieldType: a.fieldType, optionsJson: a.options ?? Prisma.JsonNull, displayOrder: i })),
-          },
-        },
-      });
-    }
+    for (const [index, c] of CATEGORIES.entries()) await createCategory(c, index);
     await recalculateCategoryCounts();
     log.push(`${CATEGORIES.length} categories`);
+  } else {
+    const added = await addProfessions();
+    if (added) log.push(added);
   }
+  const pages = await fillCategoryPages();
+  if (pages) log.push(pages);
 
   if ((await prisma.user.count({ where: { role: "super_admin" } })) === 0) {
     const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();

@@ -32,7 +32,7 @@ export function ProviderAvatar({
   return (
     <span className={cn("relative flex shrink-0 items-center justify-center font-display font-bold", dims, tone.bg, tone.fg, className)} aria-hidden>
       {initials(name)}
-      <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-md border-2 border-card bg-card shadow-sm" style={style}>
+      <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-md border-2 border-card bg-card text-cta-strong shadow-sm" style={style}>
         <CategoryGlyph slug={categorySlug} className="size-3.5" strokeWidth={2} />
       </span>
     </span>

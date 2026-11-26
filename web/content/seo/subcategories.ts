@@ -1,5 +1,6 @@
 import { SEO_CITY as CITY } from "@/lib/seo";
 import type { ServiceSeo } from "../types";
+import { PROFESSION_SUBCATEGORY_SEO } from "./professions";
 
 /**
  * Search-focused copy for each subcategory page (/services/<category>/<sub>), keyed by subcategory slug.
@@ -161,6 +162,49 @@ export const SUBCATEGORY_SEO: Record<string, ServiceSeo> = {
       { q: "Why is my geyser not heating?", a: "A burnt heating element or failed thermostat is the usual cause. Check that the MCB has not tripped first." },
       { q: "Why does my geyser trip the MCB?", a: "Often a shorted element or moisture in the wiring. Stop using it and call a technician." },
       { q: "How often should a geyser be serviced?", a: "Once a year, ideally before winter, including descaling and checking the anode rod and safety valve." },
+    ],
+  },
+  "mixer-grinder-repair": {
+    title: `Mixer Grinder Repair Near Me in ${CITY}`,
+    description: `Find mixer grinder repair technicians near you in ${CITY}: motor not running, burning smell, jar leaking, blade, coupler and switch repairs. Call directly.`,
+    h1: `Mixer grinder repair near you in ${CITY}`,
+    intro: [
+      `Mixer stopped mid-chutney, smells of burning, or the jar leaks? Find mixer grinder and juicer repair technicians near you in ${CITY} for Preethi, Bajaj, Philips, Sujata, Butterfly, Prestige and other brands.`,
+      "Most repairs are quick and cheap: a worn coupler, carbon brushes, the overload switch or a jar's seal and blade assembly. A burnt motor winding costs more, so ask for the price before the work starts and compare it with a new mixer.",
+    ],
+    faqs: [
+      { q: "Why is my mixer grinder not running?", a: "The overload protector may have tripped: switch off, wait a few minutes and press the reset button under the base. If it still will not start, the carbon brushes, switch or motor winding may need repair." },
+      { q: "Why does my mixer smell of burning?", a: "Running it too long or overfilling the jar overheats the motor. Stop, let it cool, and grind in short bursts. A smell that keeps coming back means the winding or brushes need checking." },
+      { q: "Can a leaking mixer jar be repaired?", a: "Yes. A leaking jar usually needs a new gasket or a new blade assembly, which is much cheaper than a new jar." },
+      { q: "How much does mixer grinder repair cost in Siliguri?", a: "Small fixes like a coupler, brushes or switch usually cost a few hundred rupees. Motor rewinding costs more; ask for a quote on the call." },
+    ],
+  },
+  "kitchen-chimney-service": {
+    title: `Kitchen Chimney Service & Repair in ${CITY}`,
+    description: `Find kitchen chimney cleaning, repair and installation near you in ${CITY}: weak suction, noise, oil dripping, filter and motor repairs. Call directly.`,
+    h1: `Kitchen chimney service near you in ${CITY}`,
+    intro: [
+      `Chimney not pulling smoke, making noise or dripping oil? Find kitchen chimney technicians near you in ${CITY} for deep cleaning, filter cleaning, motor and control panel repair, and new installations.`,
+      "Indian cooking loads the filters with oil quickly, so a deep clean every three to six months keeps suction strong. Ask whether the price includes cleaning the motor and duct, not only the filters.",
+    ],
+    faqs: [
+      { q: "Why has my chimney's suction become weak?", a: "Clogged filters or an oily motor are the usual causes. A deep clean fixes most cases; a bent duct or failing motor needs a technician." },
+      { q: "How often should a kitchen chimney be cleaned?", a: "Wash baffle filters every two to three weeks at home, and get a full service every three to six months, depending on how much frying you do." },
+      { q: "Do you install new chimneys?", a: "Many chimney technicians install and shift chimneys, including the duct and wall cut-out. Ask what is included on the call." },
+    ],
+  },
+  "gas-stove-and-induction-repair": {
+    title: `Gas Stove & Induction Repair in ${CITY}`,
+    description: `Find gas stove, hob and induction cooktop repair near you in ${CITY}: low flame, knob and burner issues, auto-ignition, induction not heating. Call directly.`,
+    h1: `Gas stove and induction repair near you in ${CITY}`,
+    intro: [
+      `Yellow or low flame, a stuck knob, auto-ignition that will not spark, or an induction cooktop showing an error? Find gas stove, hob and induction repair technicians near you in ${CITY}.`,
+      "Burner cleaning, knob and valve replacement and ignition repairs are usually done at home in one visit. If you smell gas, close the cylinder valve, open the windows, do not switch on lights, and call your gas agency first.",
+    ],
+    faqs: [
+      { q: "Why is my gas stove flame yellow or low?", a: "Blocked burner holes or a dirty nozzle. Servicing the stove cleans them and restores a steady blue flame." },
+      { q: "Why is my induction cooktop not heating?", a: "It may not detect the pan (use a flat, magnetic pan), or the coil, fan or power board has failed. Note any error code and tell the technician." },
+      { q: "Is it safe to repair a gas stove at home?", a: "Yes, with the cylinder valve closed. A technician will check for leaks with soap solution after the repair." },
     ],
   },
 
@@ -827,4 +871,6 @@ export const SUBCATEGORY_SEO: Record<string, ServiceSeo> = {
       { q: "Why does my car AC smell?", a: "Mould on the cooling coil; a coil cleaning and new cabin filter usually fixes it." },
     ],
   },
+  // Professions added for individual professionals (content/seo/professions.ts).
+  ...PROFESSION_SUBCATEGORY_SEO,
 };

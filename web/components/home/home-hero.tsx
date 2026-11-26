@@ -1,71 +1,66 @@
-import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck, PhoneCall, Star } from "lucide-react";
 import { SearchBar } from "@/components/search/search-bar";
-import { HERO_IMAGE } from "@/lib/stock-images";
 import { HeroCity } from "./hero-city";
 
-/** Photo banner with the city-specific headline, the two-field search, popular searches and headline numbers. */
+/**
+ * First screen, centred: what KaajVa does in one line, the search (the page's one job), the searches people
+ * make most, and three hard facts. No photograph: the search is the picture.
+ */
 export function HomeHero({
   popular,
   stats,
 }: {
   popular: { label: string; href: string }[];
-  stats: { providers: number; reviews: number };
+  stats: { providers: number; categories?: number; reviews: number };
 }) {
   const facts = [
-    { icon: BadgeCheck, label: `${stats.providers.toLocaleString("en-IN")}+ local professionals` },
-    // Shown only once there are reviews: "0+ customer reviews" reads as an empty site.
-    stats.reviews > 0 ? { icon: Star, label: `${stats.reviews.toLocaleString("en-IN")}+ customer reviews` } : { icon: Star, label: "Free to use, no sign-up needed" },
-    { icon: PhoneCall, label: "No booking fees or commission" },
+    `${stats.providers.toLocaleString("en-IN")} local pros${stats.categories ? ` in ${stats.categories} services` : ""}`,
+    // Shown only once there are reviews: "0 customer reviews" reads as an empty site.
+    stats.reviews > 0 ? `${stats.reviews.toLocaleString("en-IN")}+ customer reviews` : "Call or WhatsApp them directly",
+    "No booking fee, no commission",
   ];
   return (
-    <section className="relative isolate overflow-hidden bg-brand-deep">
-      <Image src={HERO_IMAGE.src} alt={HERO_IMAGE.alt} fill priority sizes="100vw" className="-z-20 object-cover object-[75%_center]" />
-      {/* Keeps the text side readable while the tradesperson stays visible on the right. */}
-      <div className="absolute inset-0 -z-10 bg-brand-deep/85 md:bg-transparent md:bg-[linear-gradient(90deg,oklch(0.21_0.1_262.5/0.96)_0%,oklch(0.21_0.1_262.5/0.88)_42%,oklch(0.21_0.1_262.5/0.35)_75%,oklch(0.21_0.1_262.5/0.15)_100%)]" />
-
-      <div className="container-page py-14 md:py-20 lg:py-24">
-        <div className="max-w-3xl">
-          <p className="inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-1.5 text-sm font-medium text-white/90 ring-1 ring-white/15">
-            <span className="size-1.5 rounded-full bg-cta" aria-hidden /> Local services directory for <HeroCity />
-          </p>
-          <h1 className="mt-5 text-[2.1rem] font-extrabold leading-[1.1] text-white sm:text-5xl lg:text-[3.5rem]">
-            Find trusted salons, mechanics, tutors &amp; repair pros in{" "}
-            <span className="text-cta">
-              <HeroCity />
-            </span>
+    <section className="relative overflow-hidden border-b border-[#dbe4f5] bg-[radial-gradient(40rem_22rem_at_88%_0%,rgb(253_128_3/0.14),transparent_70%),radial-gradient(48rem_26rem_at_8%_100%,rgb(4_33_97/0.10),transparent_70%),linear-gradient(180deg,#e2eafa_0%,#eef3fc_100%)]">
+      {/* A faint dot grid over the tint, so the band has texture without a photo. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgb(4_33_97/0.08)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(180deg,black,transparent_85%)]" />
+      <div className="container-page relative flex flex-col items-center py-14 text-center md:py-20 lg:py-24">
+        <div className="hero-enter w-full">
+          <h1 className="mx-auto max-w-4xl text-balance text-[2.25rem] font-extrabold leading-[1.06] tracking-[-0.03em] text-foreground sm:text-[3rem] lg:text-[3.5rem]">
+            Something to fix? Find a local pro near you in <HeroCity />.
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/80 md:text-lg">
-            Compare verified local professionals by rating, distance and price, then call or WhatsApp them directly. No middleman, no booking fees.
+          <p className="mx-auto mt-4 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Appliance and mobile repair, electricians, plumbers, mechanics, salons and tutors. See who is nearest and open, then call or WhatsApp them yourself.
           </p>
-        </div>
 
-        <SearchBar variant="joined" className="mt-8 max-w-4xl" />
+          <SearchBar variant="joined" className="mx-auto mt-8 max-w-3xl text-left" />
 
-        {popular.length > 0 && (
-          <div className="mt-5 flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-sm text-white/70">Popular:</span>
-            {popular.map((p) => (
-              <Link
-                key={p.href}
-                href={p.href}
-                className="rounded-md bg-white/10 px-3 py-1.5 text-sm text-white ring-1 ring-white/15 transition-colors hover:bg-white/20"
-              >
-                {p.label}
-              </Link>
+          {popular.length > 0 && (
+            <div className="mx-auto mt-5 max-w-3xl">
+              <h2 className="sr-only">Popular searches</h2>
+              <ul className="flex flex-wrap justify-center gap-2">
+                {popular.map((p) => (
+                  <li key={p.href}>
+                    <Link
+                      href={p.href}
+                      className="inline-flex h-9 items-center rounded-full border border-border bg-card px-3.5 text-sm font-medium text-foreground/80 shadow-[var(--shadow-card)] transition-colors hover:bg-secondary hover:text-primary"
+                    >
+                      {p.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-medium text-foreground/70">
+            {facts.map((f) => (
+              <li key={f} className="flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-cta" aria-hidden />
+                {f}
+              </li>
             ))}
-          </div>
-        )}
-
-        <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-white/15 pt-6 text-sm text-white/85">
-          {facts.map((f) => (
-            <li key={f.label} className="flex items-center gap-2">
-              <f.icon className="size-4 text-cta" aria-hidden />
-              {f.label}
-            </li>
-          ))}
-        </ul>
+          </ul>
+        </div>
       </div>
     </section>
   );

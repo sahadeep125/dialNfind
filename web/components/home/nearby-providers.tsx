@@ -28,10 +28,9 @@ export function NearbyProviders() {
   if (providers && providers.length === 0) return null;
   const place = location ? location.city || location.name : null;
   return (
-    // Follows the categories section, so it only needs space below.
-    <section className="container-page pb-14 md:pb-20">
+    // Follows the "What needs fixing?" section, so it only needs space below.
+    <section className="container-wide py-14 md:py-20">
       <SectionHeading
-        eyebrow="Top rated"
         title={place ? `Popular pros in ${place}` : "Popular pros near you"}
         action={{ href: location ? buildSearchHref("", location) : "/search", label: "See all" }}
       />

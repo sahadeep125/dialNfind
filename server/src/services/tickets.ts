@@ -35,17 +35,18 @@ export async function supportStaffIds(assignedToId: bigint | null): Promise<bigi
 
 /** Opens a ticket for a signed-in user (customer or provider) and tells the support team. */
 export async function openTicket(userId: bigint, input: { subject: string; category: (typeof TICKET_CATEGORIES)[number]; message: string; attachments?: string[] }) {
-  const me = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { id: true, name: true, email: true, phone: true, provider: { select: { id: true } } } });
+  const me = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { id: true, name: true, email: true, phone: true, providers: { select: { id: true }, orderBy: { id: "asc" }, take: 1 } } });
+  const provider = me.providers[0] ?? null;
   const ticket = await prisma.supportTicket.create({
     data: {
       userId: me.id,
-      providerId: me.provider?.id ?? null,
+      providerId: provider?.id ?? null,
       name: me.name,
       email: me.email,
       phone: me.phone,
       subject: input.subject,
       category: input.category,
-      source: me.provider ? "provider_app" : "web",
+      source: provider ? "provider_app" : "web",
       messages: { create: { authorId: me.id, body: input.message, attachments: input.attachments ?? [] } },
     },
   });

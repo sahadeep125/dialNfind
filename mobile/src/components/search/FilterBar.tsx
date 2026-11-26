@@ -8,12 +8,14 @@ import {
   Clock,
   MapPin,
   Star,
+  UserRound,
 } from "lucide-react-native";
 
 import { AppChip, AppListItem, AppSheet, SHEET_INSET } from "@/components/design-system";
 import { SORT_OPTIONS } from "@/constants/categories";
 import { useTheme } from "@/hooks/useTheme";
 import type { SearchFilters } from "@/types";
+import { ACCOUNT_FILTERS, accountChipLabel } from "@/utils/accountType";
 import {
   DISTANCE_OPTIONS,
   RATING_OPTIONS,
@@ -28,9 +30,10 @@ interface Props {
   inset?: number;
 }
 
-type SheetKind = "rating" | "distance" | "sort";
+type SheetKind = "rating" | "distance" | "sort" | "who";
 
 const TITLES: Record<SheetKind, string> = {
+  who: "Who you want to hire",
   rating: "Minimum rating",
   distance: "How far away",
   sort: "Sort results by",
@@ -43,7 +46,13 @@ export function FilterBar({ filters, onChange, inset = 0 }: Props) {
   const sortLabel = SORT_OPTIONS.find((o) => o.value === filters.sort)?.label ?? "Best match";
 
   const options: { label: string; selected: boolean; pick: () => void }[] =
-    sheet === "sort"
+    sheet === "who"
+      ? ACCOUNT_FILTERS.map((o) => ({
+          label: o.label,
+          selected: filters.accountType === o.value,
+          pick: () => onChange({ ...filters, accountType: o.value }),
+        }))
+      : sheet === "sort"
       ? SORT_OPTIONS.map((o) => ({
           label: o.label,
           selected: filters.sort === o.value,
@@ -78,6 +87,14 @@ export function FilterBar({ filters, onChange, inset = 0 }: Props) {
           onPress={() => setSheet("sort")}
         />
         <View style={[styles.sep, { backgroundColor: theme.colors.border.secondary }]} />
+        <AppChip
+          size="sm"
+          label={accountChipLabel(filters.accountType)}
+          icon={UserRound}
+          trailingIcon={ChevronDown}
+          selected={!!filters.accountType}
+          onPress={() => setSheet("who")}
+        />
         <AppChip
           size="sm"
           label="Open now"

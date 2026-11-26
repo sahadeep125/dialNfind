@@ -23,7 +23,7 @@ export function ExpandableGrid({
   return (
     <>
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="text-xl font-bold">{title}</h2>
+        <h2 className="text-[1.375rem] font-bold leading-tight tracking-[-0.02em] md:text-2xl">{title}</h2>
         {canExpand && <ToggleLink open={open} onClick={() => setOpen(!open)} label={moreLabel} />}
       </div>
       <div className={className}>{open ? items : items.slice(0, initial)}</div>

@@ -1,42 +1,135 @@
-import type { ProviderDetail } from "@/lib/types";
+import Link from "next/link";
+import { Check } from "lucide-react";
+import type { Category, ProviderDetail } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
+import { serviceHref } from "@/lib/service-href";
+import { cn } from "@/lib/utils";
 import { ExpandableGrid } from "./expandable";
 
-const PRICE_UNIT_LABEL = { per_visit: "per visit", per_hour: "per hour", fixed: "fixed price" } as const;
+const PRICE_UNIT_LABEL = {
+  per_visit: "per visit",
+  per_hour: "per hour",
+  fixed: "fixed price",
+} as const;
 
-/** The provider's services as a price list, primary service first. */
-export function ServicesList({ services }: { services: ProviderDetail["services"] }) {
-  const sorted = [...services].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
-  return (
-    <>
-      <ExpandableGrid
-        title="Services & pricing"
-        initial={6}
-        moreLabel={`View all ${services.length} services`}
-        className="divide-y overflow-hidden rounded-lg border bg-card"
-        items={sorted.map((s) => (
-          <div key={s.id} className="flex items-center justify-between gap-4 px-4 py-3.5">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold">{s.subcategory?.name ?? s.category.name}</span>
-                {s.isPrimary && <span className="rounded bg-cta-soft px-1.5 py-0.5 text-[11px] font-semibold text-cta-strong">Main service</span>}
-              </div>
-              {s.subcategory && <div className="mt-0.5 text-xs text-muted-foreground">{s.category.name}</div>}
-            </div>
-            <div className="shrink-0 text-right">
-              {s.startingPrice ? (
-                <>
-                  <div className="font-bold">{formatPrice(s.startingPrice)}</div>
-                  <div className="text-xs text-muted-foreground">{PRICE_UNIT_LABEL[s.priceUnit]}</div>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground">On request</div>
-              )}
-            </div>
-          </div>
-        ))}
-      />
-      <p className="mt-3 text-xs text-muted-foreground">Prices are indicative starting rates set by the provider. Confirm the final price on the call.</p>
-    </>
+/**
+ * Everything the professional does, main service first. Each service links to its own page, so visitors can
+ * compare others who do the same job, and search engines see which services this profile belongs to. Prices
+ * show only where the professional set one.
+ */
+export function ServicesList({
+  services,
+  businessName,
+  categories = [],
+}: {
+  services: ProviderDetail["services"];
+  businessName: string;
+  categories?: Category[];
+}) {
+  // A listing for a whole category ("Home Appliances") takes every job in it, so name those jobs too.
+  const offered = new Set(
+    services.map((s) => s.subcategory?.slug).filter(Boolean),
   );
+  const covers = services
+    .filter((s) => !s.subcategory)
+    .flatMap((s) => {
+      const cat = categories.find((c) => c.slug === s.category.slug);
+      return (cat?.subcategories ?? [])
+        .filter((sub) => !offered.has(sub.slug))
+        .map((sub) => ({
+          ...sub,
+          categorySlug: s.category.slug,
+          categoryName: s.category.name,
+        }));
+    });
+  const sorted = [...services].sort(
+    (a, b) => Number(b.isPrimary) - Number(a.isPrimary),
+  );
+  const anyPrice = sorted.some((s) => s.startingPrice);
+  return services.length > 1 || covers.length > 1 ? (
+    <>
+      {services.length > 1 && (
+        <div className="mb-5">
+          <ExpandableGrid
+            title={`Services offered by ${businessName}`}
+            initial={8}
+            moreLabel={`View all ${services.length} services`}
+            className="grid border-t border-border sm:grid-cols-2 sm:gap-x-8"
+            items={sorted.map((s) => {
+              const name = s.subcategory?.name ?? s.category.name;
+              const price = formatPrice(s.startingPrice);
+              return (
+                <Link
+                  key={s.id}
+                  href={serviceHref(s.category.slug, s.subcategory?.slug)}
+                  className={cn(
+                    // A rate board: ruled rows, name on the left, the starting price on the right.
+                    "group flex items-center gap-3 border-b px-1 py-3.5 transition-colors hover:bg-card",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-full",
+                      s.isPrimary
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-success-soft text-success-ink",
+                    )}
+                  >
+                    <Check className="size-3.5" strokeWidth={3} aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold decoration-1 underline-offset-4 group-hover:underline">
+                      {name}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {s.isPrimary ? "Main service" : s.category.name}
+                    </span>
+                  </span>
+                  {price && (
+                    <span className="shrink-0 text-right text-sm">
+                      <span className="block font-bold tabular-nums">
+                        {price}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {PRICE_UNIT_LABEL[s.priceUnit]}
+                      </span>
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          />
+        </div>
+      )}
+      {covers.length > 1 && (
+        <div>
+          <h3 className="text-sm font-semibold text-foreground/80">
+            Listed for all{" "}
+            {Array.from(new Set(covers.map((c) => c.categoryName)))
+              .join(" and ")
+              .toLowerCase()}{" "}
+            work, including
+          </h3>
+          <ul className="mt-2.5 flex flex-wrap gap-1.5">
+            {covers.map((c) => (
+              <li key={c.slug}>
+                <Link
+                  href={serviceHref(c.categorySlug, c.slug)}
+                  className="block rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {c.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {anyPrice && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Prices are starting rates set by the professional. Confirm the final
+          price on the call.
+        </p>
+      )}
+    </>
+  ) : null;
 }

@@ -101,7 +101,7 @@ export function ProviderResults({ filters, header, source = "search" }: Props) {
       ListFooterComponent={
         isFetchingNextPage ? (
           <ActivityIndicator color={theme.colors.brand.primary} style={styles.footer} />
-        ) : null
+        ) : undefined
       }
       onEndReachedThreshold={0.4}
       onEndReached={() => {

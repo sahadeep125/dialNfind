@@ -34,14 +34,14 @@ describe("business details", () => {
 
     await userEvent.clear(name);
     await userEvent.tab();
-    expect(await screen.findByText("Enter your business name")).toBeInTheDocument();
+    expect(await screen.findByText("Enter the name customers see")).toBeInTheDocument();
     await userEvent.click(saveButton());
     expect(await screen.findByText("Please fix the highlighted fields")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Discard" }));
     expect(name).toHaveValue("Sharma TV Repair");
 
     await userEvent.type(name, " & Sons");
-    await pickOption(screen.getByRole("combobox", { name: "Business type" }), "Company or shop");
+    await pickOption(screen.getByRole("combobox", { name: "Account type" }), "Business");
     await userEvent.clear(screen.getByLabelText("Years in business"));
     await userEvent.clear(screen.getByLabelText("Jobs completed"));
     await userEvent.clear(screen.getByLabelText(/Description/));
@@ -67,6 +67,7 @@ describe("business details", () => {
     expect(lastBody(fetch, "/provider/profile")).toMatchObject({
       businessName: "Sharma TV Repair & Sons",
       businessType: "company",
+      profession: null,
       description: null,
       yearsExperience: null,
       selfReportedCompletedJobs: null,
@@ -76,6 +77,26 @@ describe("business details", () => {
       acceptsWhatsapp: false,
       city: "Mumbai",
     });
+  });
+
+  it("edits an individual professional's name and title, and keeps the type with several listings", async () => {
+    const listing = (id: number, professionLabel: string) => ({ id, slug: `ravi-${id}`, businessName: "Ravi Kumar", businessType: "individual", professionLabel, status: "active", profileCompletenessPct: 60, verificationStatus: "none", locality: null, city: "Siliguri" });
+    const { fetch } = withProfile(
+      { businessName: "Ravi Kumar", businessType: "individual", profession: null },
+      { "PATCH /provider/profile": () => json({ ok: true }) },
+      { provider: listing(3, "Plumber"), listings: [listing(3, "Plumber"), listing(4, "Electrician")], accountType: "individual", canAddListing: true },
+    );
+    await renderApp("/profile");
+    expect(await screen.findByRole("heading", { name: "Profile details" })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Your full name/)).toHaveValue("Ravi Kumar");
+    expect(screen.getByText("Empty shows your main service: Plumber.")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Account type" })).toBeDisabled();
+    expect(screen.getByText(/stays Individual professional/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Years of experience")).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/Your title/), "Master Plumber");
+    await userEvent.click(saveButton());
+    expect(await screen.findByText("Profile updated")).toBeInTheDocument();
+    expect(lastBody(fetch, "/provider/profile")).toMatchObject({ businessType: "individual", profession: "Master Plumber" });
   });
 
   it("loads a sparse profile and sends empty optional fields as null", async () => {

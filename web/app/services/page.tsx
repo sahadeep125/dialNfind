@@ -6,7 +6,8 @@ import { SEO_CITY, pageMetadata } from "@/lib/seo";
 import { publicApi } from "@/lib/api";
 import type { Category } from "@/lib/types";
 import { SearchHero } from "@/components/search/search-hero";
-import { categoryImage } from "@/lib/stock-images";
+import { isOptimizableImage } from "@/lib/image-hosts";
+import { categoryPhoto } from "@/lib/stock-images";
 import { serviceHref } from "@/lib/service-href";
 
 export const revalidate = 600;
@@ -35,11 +36,11 @@ export default async function ServicesPage() {
       <div className="container-wide py-10 md:py-14">
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((c) => {
-            const photo = categoryImage(c.slug);
+            const photo = categoryPhoto(c);
             return (
               <li key={c.id} className="group flex flex-col overflow-hidden rounded-lg border bg-card transition-[box-shadow,border-color] hover:border-foreground/15 hover:shadow-[var(--shadow-lift)]">
                 <Link href={`/services/${c.slug}`} className="relative block aspect-[16/9] overflow-hidden bg-muted" tabIndex={-1} aria-hidden>
-                  <Image src={photo.src} alt="" fill sizes="(min-width: 1024px) 30rem, (min-width: 640px) 48vw, 100vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
+                  <Image src={photo.src} alt="" fill unoptimized={photo.src.startsWith("http") && !isOptimizableImage(photo.src)} sizes="(min-width: 1024px) 30rem, (min-width: 640px) 48vw, 100vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
                 </Link>
                 <div className="flex flex-1 flex-col p-5">
                   <div className="flex items-baseline justify-between gap-3">

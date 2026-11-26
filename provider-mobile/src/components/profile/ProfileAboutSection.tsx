@@ -12,20 +12,25 @@ interface Props {
   values: ProfileFormValues;
   errors: ProfileFormErrors;
   onChange: (patch: Partial<ProfileFormValues>) => void;
+  /** The account has several listings (one per profession), so it stays an individual's. */
+  typeLocked?: boolean;
+  /** The main service's profession name, used when no title is typed. */
+  defaultProfession?: string | null;
 }
 
 const TYPES: SelectOption<ProfileFormValues["businessType"]>[] = [
-  { value: "individual", label: "Individual" },
-  { value: "company", label: "Company or shop" },
+  { value: "individual", label: "Individual professional" },
+  { value: "company", label: "Business" },
 ];
 
-export function ProfileAboutSection({ values, errors, onChange }: Props) {
+export function ProfileAboutSection({ values, errors, onChange, typeLocked, defaultProfession }: Props) {
   const theme = useTheme();
   const length = values.description.trim().length;
+  const individual = values.businessType === "individual";
   return (
-    <FormSection title="About your business">
+    <FormSection title={individual ? "About you" : "About your business"}>
       <AppInput
-        label="Business name"
+        label={individual ? "Your full name" : "Business name"}
         required
         value={values.businessName}
         onChangeText={(businessName) => onChange({ businessName })}
@@ -35,19 +40,38 @@ export function ProfileAboutSection({ values, errors, onChange }: Props) {
       />
       <View style={{ gap: theme.spacing[1.5] }}>
         <AppText variant="caption" tone="secondary" weight="semibold">
-          Business type
+          Account type
         </AppText>
-        <AppSegmented
-          accessibilityLabel="Business type"
-          options={TYPES}
-          value={values.businessType}
-          onChange={(businessType) => onChange({ businessType })}
-        />
+        {typeLocked ? (
+          <AppText variant="meta">
+            Individual professional. You have a listing for each profession, so this account stays an
+            individual one.
+          </AppText>
+        ) : (
+          <AppSegmented
+            accessibilityLabel="Account type"
+            options={TYPES}
+            value={values.businessType}
+            onChange={(businessType) => onChange({ businessType })}
+          />
+        )}
       </View>
+      {individual ? (
+        <AppInput
+          label="Your title"
+          helper={`Shown after your name. Leave empty to use "${defaultProfession ?? "your main service"}".`}
+          value={values.profession}
+          onChangeText={(profession) => onChange({ profession })}
+          error={errors.profession}
+          maxLength={80}
+          placeholder="e.g. Senior AC Technician"
+          autoCapitalize="words"
+        />
+      ) : null}
       <View style={[styles.row, { gap: theme.spacing[3] }]}>
         <View style={styles.half}>
           <AppInput
-            label="Years in business"
+            label={individual ? "Years of experience" : "Years in business"}
             value={values.yearsExperience}
             onChangeText={(v) => onChange({ yearsExperience: v.replace(/\D/g, "") })}
             error={errors.yearsExperience}

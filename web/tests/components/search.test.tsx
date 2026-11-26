@@ -15,7 +15,6 @@ import { SearchHero } from "@/components/search/search-hero";
 import { CategoryListing, getCategory, listingMetadata } from "@/components/search/category-listing";
 import { useSubcategory } from "@/components/search/use-url-params";
 import { DEFAULT_LOCATION } from "@/lib/default-location";
-import { HERO_IMAGE } from "@/lib/stock-images";
 import { nav } from "../next-state";
 import { json, mockApi, provider } from "../helpers";
 
@@ -157,7 +156,6 @@ describe("LocationPicker", () => {
     });
     const error = vi.spyOn(toast, "error");
     render(<LocationPicker value={loc("Here")} onChange={onChange} />);
-    expect(screen.getByText("Location")).toBeInTheDocument();
     const open = () => u.click(screen.getByRole("button", { name: /Here/ }));
     await open();
     await u.click(screen.getByRole("button", { name: "Use my current location" }));
@@ -237,6 +235,31 @@ describe("filters", () => {
     await u.click(screen.getByRole("button", { name: /^Category/ }));
     await u.click(screen.getByRole("button", { name: "Electronics Repair" }));
     expect(lastPush()).toBe("/search?category=electronics-repair");
+  });
+  it("Who: only individual professionals or only businesses", async () => {
+    const u = userEvent.setup();
+    nav.pathname = "/search";
+    nav.search = "type=individual";
+    render(<FilterBar categories={categories} defaultRadius={15} />);
+    const who = screen.getByRole("group", { name: "Who" });
+    expect(within(who).getByRole("button", { name: "Individual professionals" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /All filters/ })).toHaveTextContent("1");
+    await u.click(within(who).getByRole("button", { name: "Businesses" }));
+    expect(lastPush()).toBe("/search?type=business");
+    await u.click(within(who).getByRole("button", { name: "Everyone" }));
+    expect(lastPush()).toBe("/search");
+  });
+  it("sheet: the Who chips", async () => {
+    const u = userEvent.setup();
+    nav.pathname = "/search";
+    nav.search = "type=business";
+    render(<FiltersSheet categories={categories} defaultRadius={15} activeCount={1} />);
+    await u.click(screen.getByRole("button", { name: /All filters/ }));
+    const sheet = screen.getByRole("dialog");
+    await u.click(within(sheet).getByRole("button", { name: "Individual professionals" }));
+    expect(lastPush()).toBe("/search?type=individual");
+    await u.click(within(sheet).getByRole("button", { name: "Everyone" }));
+    expect(lastPush()).toBe("/search");
   });
   it("category pages: the subcategory is the page, not a filter", async () => {
     const u = userEvent.setup();
@@ -428,14 +451,14 @@ describe("ResultsSection and the map", () => {
 });
 
 describe("SearchHero", () => {
-  it("renders the search box with popular links, or the page's own controls with an image", () => {
+  it("renders the search box with popular links, or the page's own controls, and no stock photo", () => {
     const { unmount } = render(<SearchHero title="Find" subtitle="Sub" size="lg" popular={[{ label: "TV", href: "/tv" }]} />);
     expect(screen.getByText("Popular:")).toBeInTheDocument();
     unmount();
-    render(<SearchHero title="Cat" image={HERO_IMAGE} above={<p>crumbs</p>}><p>controls</p></SearchHero>);
+    render(<SearchHero title="Cat" above={<p>crumbs</p>}><p>controls</p></SearchHero>);
     expect(screen.getByText("controls")).toBeInTheDocument();
     expect(screen.queryByText("Popular:")).toBeNull();
-    expect(screen.getByAltText(HERO_IMAGE.alt)).toBeInTheDocument();
+    expect(screen.queryByRole("img")).toBeNull();
   });
 });
 
@@ -478,5 +501,31 @@ describe("CategoryListing", () => {
     expect(String(listingMetadata(cat({ slug: "zzz", providerCount: 0 }), { id: 1, categoryId: 1, name: "Sub", slug: "zz-sub" }).description)).toContain("Compare sub providers");
     mockApi({ "/categories/x": { category: { slug: "x" } } });
     expect(await getCategory("x")).toEqual({ category: { slug: "x" } });
+  });
+});
+
+describe("CategoryGuide", () => {
+  it("answers questions from the counts, and leaves out what it cannot count", async () => {
+    const { guideFaqs, CategoryGuide } = await import("@/components/seo/category-guide");
+    const g = {
+      name: "Plumbing",
+      noun: "Plumbers",
+      total: 10,
+      individuals: 4,
+      areas: [{ area: "Hakimpara", href: "/services/plumbing/in/hakimpara", count: 5 }],
+      services: [{ name: "Leak Repair", href: "/services/plumbing/leak-repair", count: 3 }],
+      prices: { listed: 2, sampled: 10, min: 200, max: 500 },
+      updated: "1 Nov 2026",
+    };
+    const qs = guideFaqs(g).map((f) => f.q);
+    expect(qs).toContain("How many Plumbers listings are there in Siliguri?");
+    expect(guideFaqs(g).find((f) => f.q.startsWith("Which areas"))!.a).toMatch(/^Hakimpara \(5\) has/);
+    expect(guideFaqs({ ...g, individuals: 0 }).find((f) => f.q.startsWith("Are these"))!.a).toMatch(/^All 10 listings are shops/);
+    expect(guideFaqs({ ...g, individuals: 10 }).find((f) => f.q.startsWith("Are these"))!.a).toMatch(/individual professionals working/);
+    expect(guideFaqs({ ...g, prices: null, areas: [], individuals: null }).map((f) => f.q)).toHaveLength(2);
+    render(<CategoryGuide g={g} />);
+    expect(screen.getByRole("heading", { name: "Guide to Plumbers in Siliguri" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Hakimpara/ })).toHaveAttribute("href", "/services/plumbing/in/hakimpara");
+    expect(screen.getByText("What it costs")).toBeInTheDocument();
   });
 });

@@ -4,7 +4,7 @@ import { Copy, LocateFixed, MapPin, Plus, Search, Star, Trash2, X } from "lucide
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { DAYS, PRICE_UNITS } from "@/lib/format";
-import type { Category, Hours, LocationOption, PriceUnit, ProviderService, ServiceArea } from "@/lib/types";
+import type { Category, Hours, LocationOption, PriceUnit, Profession, ProviderService, ServiceArea } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export function useCategories() {
   return useQuery({ queryKey: ["categories"], queryFn: () => api<{ categories: Category[] }>("/categories").then((r) => r.categories), staleTime: Infinity });
+}
+
+/** The professions an individual can list under ("Plumber", "AC Technician"), from GET /categories/professions. */
+export function useProfessions() {
+  return useQuery({
+    queryKey: ["professions"],
+    queryFn: () => api<{ professions: Profession[] }>("/categories/professions").then((r) => r.professions),
+    staleTime: Infinity,
+  });
 }
 
 // Hours --------------------------------------------------------------------------------------
@@ -132,12 +141,26 @@ export function validateServices(value: ProviderService[]): string | null {
   return null;
 }
 
-export function ServicesEditor({ value, onChange }: { value: ProviderService[]; onChange: (s: ProviderService[]) => void }) {
-  const { data: categories = [] } = useCategories();
-  const [categoryId, setCategoryId] = useState<number | null>(value[0]?.categoryId ?? null);
+/**
+ * Picks services and starting prices. An individual professional's listing covers one profession, so
+ * `lockCategoryId` keeps it to that profession's category (other professions get their own listing).
+ */
+export function ServicesEditor({
+  value,
+  onChange,
+  lockCategoryId = null,
+}: {
+  value: ProviderService[];
+  onChange: (s: ProviderService[]) => void;
+  lockCategoryId?: number | null;
+}) {
+  const { data: all = [] } = useCategories();
+  const categories = lockCategoryId ? all.filter((c) => c.id === lockCategoryId) : all;
+  const [picked, setCategoryId] = useState<number | null>(value[0]?.categoryId ?? null);
+  const categoryId = lockCategoryId ?? picked;
   useEffect(() => {
-    if (!categoryId && value[0]) setCategoryId(value[0].categoryId);
-  }, [value, categoryId]);
+    if (!picked && value[0]) setCategoryId(value[0].categoryId);
+  }, [value, picked]);
   const category = categories.find((c) => c.id === categoryId);
   const selected = (subId: number) => value.find((s) => s.subcategoryId === subId);
 
@@ -154,6 +177,11 @@ export function ServicesEditor({ value, onChange }: { value: ProviderService[]; 
 
   return (
     <div className="space-y-6">
+      {lockCategoryId ? (
+        <p className="rounded-xl bg-muted/60 p-3 text-sm text-muted-foreground">
+          This listing is for one profession, so it shows services in {category?.name ?? "its category"} only. Offer another profession? Add it as a separate listing from the menu at the top.
+        </p>
+      ) : (
       <div className="space-y-2">
         <Label>Category</Label>
         <p className="text-xs text-muted-foreground">Categories are managed by KaajVa so customers can find you. Pick the ones that match your work.</p>
@@ -177,6 +205,7 @@ export function ServicesEditor({ value, onChange }: { value: ProviderService[]; 
           })}
         </div>
       </div>
+      )}
 
       {category && (
         <div className="space-y-2">

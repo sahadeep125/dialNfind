@@ -74,14 +74,24 @@ describe("provider shared helpers", () => {
     expect(await prisma.attributeValue.count()).toBe(0);
   });
   it("ownProvider requires a provider with a listing", async () => {
+    const req = (user: { id: bigint; role: string }, listing?: string, query: Record<string, string> = {}) =>
+      ({ user, query, get: (h: string) => (h === "x-listing-id" ? listing : undefined) }) as never;
     const customer = await createUser();
-    await expect(ownProvider({ user: { id: customer.id, role: "customer" } } as never)).rejects.toThrow("Provider account required");
+    await expect(ownProvider(req({ id: customer.id, role: "customer" }))).rejects.toThrow("Provider account required");
     const bare = await createUser({ role: "provider" });
-    await expect(ownProvider({ user: { id: bare.id, role: "provider" } } as never)).rejects.toThrow("not set up a business profile");
+    await expect(ownProvider(req({ id: bare.id, role: "provider" }))).rejects.toThrow("not set up a profile");
     const { user, provider } = await createOwner();
-    expect((await ownProvider({ user: { id: user.id, role: "provider" } } as never)).id).toBe(provider.id);
+    expect((await ownProvider(req({ id: user.id, role: "provider" }))).id).toBe(provider.id);
+    // An individual's second listing is picked with the header or ?listingId=; another account's never is.
+    const second = await createProvider({ userId: user.id, businessName: "Second" });
+    const stranger = await createProvider({ businessName: "Stranger" });
+    expect((await ownProvider(req({ id: user.id, role: "provider" }, String(second.id)))).id).toBe(second.id);
+    expect((await ownProvider(req({ id: user.id, role: "provider" }, undefined, { listingId: String(second.id) }))).id).toBe(second.id);
+    expect((await ownProvider(req({ id: user.id, role: "provider" }, ""))).id).toBe(provider.id);
+    await expect(ownProvider(req({ id: user.id, role: "provider" }, String(stranger.id)))).rejects.toThrow("Listing not found");
+    await expect(ownProvider(req({ id: user.id, role: "provider" }, "abc"))).rejects.toThrow("Listing not found");
     const admin = await createStaff();
-    await expect(ownProvider({ user: { id: admin.id, role: "super_admin" } } as never)).rejects.toThrow("not set up");
+    await expect(ownProvider(req({ id: admin.id, role: "super_admin" }))).rejects.toThrow("not set up");
   });
 });
 
@@ -326,6 +336,19 @@ describe("search", () => {
     expect(await resolveTerm("tv repair near me")).toMatchObject({ category: { id: cat.id }, subcategory: { id: tv.id } });
     expect(await resolveTerm("plumbing")).toMatchObject({ category: { id: plumbing.id }, subcategory: null });
     expect(await resolveTerm("zzzzqqq")).toEqual({ category: null, subcategory: null });
+  });
+
+  it("ignores place words and never matches a service on the word \"repair\" alone", async () => {
+    const { cat, tv } = await directory();
+    const wm = (await prisma.subcategory.findFirstOrThrow({ where: { slug: { contains: "washing" } } })).id;
+    expect(await resolveTerm("best tv repair shop in Siliguri")).toMatchObject({ subcategory: { id: tv.id } });
+    expect(await resolveTerm("washing machine repair near me")).toMatchObject({ category: { id: cat.id }, subcategory: { id: wm } });
+    // Typos still land: words are compared on their first letters.
+    expect(await resolveTerm("washng machne")).toMatchObject({ subcategory: { id: wm } });
+    // Only "repair" in common with "TV Repair" or "Appliance Repair": no service, so search falls back to text.
+    expect(await resolveTerm("mixer grinder repair")).toEqual({ category: null, subcategory: null });
+    // A query of nothing but place words still searches as typed.
+    expect(await resolveTerm("near me")).toEqual({ category: null, subcategory: null });
   });
 
   it("counts a listing that offers the whole category as offering each of its services", async () => {

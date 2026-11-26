@@ -7,7 +7,7 @@ import { request, RedirectError } from "./next-state";
 import { json, mockApi, user } from "./helpers";
 import { sitemapCategories, sitemapIds } from "@/lib/sitemap-data";
 import { clip, NO_INDEX, pageMetadata, SEO_CITY } from "@/lib/seo";
-import { categoryImage, TOOLS_IMAGE } from "@/lib/stock-images";
+import { categoryImage, categoryPhoto, hasCategoryPhoto, TOOLS_IMAGE } from "@/lib/stock-images";
 import { getGuide, guidesForSubcategory, readingMinutes, GUIDES } from "@/lib/guides";
 import { OgFrame, OG_SIZE } from "@/lib/og";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -77,6 +77,15 @@ describe("api", () => {
     expect(await publicApiOrNull("/p")).toEqual({ v: 1 });
     await publicApi("/p");
   });
+  it("publicApi identifies the website to the API's rate limit when REVALIDATE_SECRET is set", async () => {
+    const fetch = mockApi({ "/p": { v: 1 } });
+    await publicApi("/p");
+    expect((fetch.mock.calls[0]![1] as RequestInit).headers).not.toHaveProperty("x-web-secret");
+    vi.stubEnv("REVALIDATE_SECRET", "s3cret");
+    await publicApi("/p");
+    expect((fetch.mock.calls[1]![1] as RequestInit).headers).toMatchObject({ "x-web-secret": "s3cret" });
+    vi.unstubAllEnvs();
+  });
 });
 
 describe("publicApi when the API cannot be reached", () => {
@@ -93,7 +102,9 @@ describe("publicApi when the API cannot be reached (builds without an API)", () 
   it("returns empty data shaped for each endpoint", async () => {
     mockApi({});
     expect(await publicApi("/stats")).toEqual({ providers: 0, categories: 0, cities: 0, reviews: 0 });
-    expect(await publicApi("/providers/sitemap")).toMatchObject({ totalPages: 0 });
+    // The sitemap reads `results` and `total`, and the area pages `areas`: without them `next build` crashed.
+    expect(await publicApi("/providers/sitemap")).toMatchObject({ results: [], total: 0, totalPages: 0 });
+    expect(await publicApi("/locations/category-areas")).toEqual({ areas: [] });
     expect(await publicApi("/reviews/highlights")).toMatchObject({ reviews: [] });
     expect(await publicApi("/categories")).toEqual({ categories: [] });
     expect(await publicApi("/search/popular")).toEqual({ terms: [] });
@@ -108,6 +119,8 @@ describe("publicApi when the API cannot be reached (builds without an API)", () 
     expect(data.results).toEqual([]);
     expect(data.config).toEqual({ min_review_length: 10 });
     expect(data.totalPages).toBe(0);
+    expect(data.total).toBe(0);
+    expect(data.areas).toEqual([]);
     expect(data.somethingElse).toBeUndefined();
     expect(data.then).toBeUndefined();
     expect(data[Symbol.iterator]).toBeUndefined();
@@ -187,6 +200,11 @@ describe("small helpers", () => {
     expect(categoryImage("plumbing").src).toContain("plumber");
     expect(categoryImage("unknown")).toBe(TOOLS_IMAGE);
     expect(categoryImage(null)).toBe(TOOLS_IMAGE);
+    expect(categoryPhoto({ slug: "plumbing", name: "Plumbing" }).src).toContain("plumber");
+    expect(categoryPhoto({ slug: "welding", name: "Welding", imageUrl: "https://api.example/uploads/w.webp" })).toEqual({ src: "https://api.example/uploads/w.webp", alt: "Welding in Siliguri" });
+    expect(categoryPhoto({ slug: "welding", name: "Welding", imageUrl: "https://x/w.webp", imageAlt: "Welder at work" }).alt).toBe("Welder at work");
+    expect(hasCategoryPhoto({ slug: "welding", name: "Welding" })).toBe(false);
+    expect(hasCategoryPhoto({ slug: "welding", name: "Welding", imageUrl: "https://x/w.webp" })).toBe(true);
     expect(getGuide(GUIDES[0]!.slug)).toBe(GUIDES[0]);
     expect(getGuide("nope")).toBeUndefined();
     expect(guidesForSubcategory("nope", "x")).toEqual([]);

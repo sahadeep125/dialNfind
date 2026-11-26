@@ -10,10 +10,11 @@ import { ContactCard } from "@/components/provider/contact-card";
 import { ExpandableChips, ExpandableGrid } from "@/components/provider/expandable";
 import { FavoriteButton } from "@/components/provider/favorite-button";
 import { LocationMap } from "@/components/provider/location-map";
-import { OpeningHours } from "@/components/provider/opening-hours";
+import { LocationAndHours } from "@/components/provider/location-hours";
 import { PhotoGallery } from "@/components/provider/photo-gallery";
 import { PhotoLightbox, PhotoTrigger } from "@/components/provider/photo-lightbox";
 import { ProfileHeader } from "@/components/provider/profile-header";
+import { fallbackDescription } from "@/components/provider/provider-profile";
 import { ProviderAvatar } from "@/components/provider/provider-avatar";
 import { OpenStatus, ProviderCard } from "@/components/provider/provider-card";
 import { ProviderTile } from "@/components/provider/provider-tile";
@@ -71,12 +72,25 @@ describe("rating and badges", () => {
         <ProviderAvatar name="Asha Rao" size="xl" categorySlug="plumbing" />
         <ProviderAvatar name="Asha Rao" size="lg" />
         <OpenStatus provider={{ isAvailable: false, isOpenNow: false, todayHours: "" }} />
-        <OpenStatus provider={{ isAvailable: true, isOpenNow: false, todayHours: "Closed today" }} />
+        <OpenStatus provider={{ isAvailable: true, isOpenNow: false, todayHours: "9 AM - 6 PM" }} />
+        <OpenStatus provider={{ isAvailable: true, isOpenNow: false, todayHours: "Closed" }} />
+        <OpenStatus provider={{ isAvailable: true, isOpenNow: false, todayHours: "Closed", hasHours: false }} />
       </>,
     );
     expect(screen.getByAltText("Asha Rao logo")).toBeInTheDocument();
     expect(screen.getByText("Currently unavailable")).toBeInTheDocument();
     expect(screen.getByText("Closed")).toBeInTheDocument();
+    expect(screen.getByText("· 9 AM - 6 PM")).toBeInTheDocument();
+    // A day off says so once, not "Closed · Closed"; a listing with no hours never claims to be closed.
+    expect(screen.getByText("Closed today")).toBeInTheDocument();
+    expect(screen.queryByText("Hours not listed")).toBeNull();
+  });
+  it("compact open status leaves out the hours, and says nothing without hours", () => {
+    const { container } = render(<OpenStatus compact provider={{ isAvailable: true, isOpenNow: true, todayHours: "9 AM - 6 PM", hasHours: false }} />);
+    expect(container).toBeEmptyDOMElement();
+    render(<OpenStatus compact provider={{ isAvailable: true, isOpenNow: true, todayHours: "9 AM - 6 PM" }} />);
+    expect(screen.getByText("Open now")).toBeInTheDocument();
+    expect(screen.queryByText(/9 AM/)).toBeNull();
   });
 });
 
@@ -161,8 +175,8 @@ describe("FavoriteButton", () => {
 
 describe("cards and tiles", () => {
   it("ProviderCard shows a full result", () => {
-    render(<ProviderCard provider={provider({ subcategories: ["TV Repair", "AC Repair", "Fridge", "Washer"] }) as never} highlight="Fridge" topMatch />);
-    expect(screen.getByText("Top match")).toBeInTheDocument();
+    render(<ProviderCard provider={provider({ subcategories: ["TV Repair", "AC Repair", "Fridge", "Washer"] }) as never} highlight="Fridge" />);
+    expect(screen.queryByText("Top match")).toBeNull();
     expect(screen.getByLabelText("Verified")).toBeInTheDocument();
     expect(screen.getByText("5+ yrs")).toBeInTheDocument();
     expect(screen.getByText("+1 more")).toBeInTheDocument();
@@ -173,7 +187,9 @@ describe("cards and tiles", () => {
   it("ProviderCard shows a bare result", () => {
     render(<ProviderCard provider={provider({ yearsExperience: null, shortDescription: "", subcategories: [], locality: null, distanceKm: null, startingPrice: null, priceUnit: null, verificationStatus: "none", primaryCategory: null, coverUrl: "https://x/c.png" }) as never} />);
     expect(screen.queryByText("Top match")).toBeNull();
-    expect(screen.getByText("Price on request")).toBeInTheDocument();
+    // No price set and no distance known: the card says nothing rather than "Price on request".
+    expect(screen.queryByText("Price on request")).toBeNull();
+    expect(screen.queryByText("away")).toBeNull();
     expect(screen.queryByRole("list", { name: "Services" })).toBeNull();
   });
   it("ProviderCard with a price but no unit", () => {
@@ -182,16 +198,45 @@ describe("cards and tiles", () => {
   });
   it("ProviderTile variants", () => {
     const second = render(<ProviderTile provider={provider() as never} source="category_browse" />);
-    expect(screen.getByText("Verified")).toBeInTheDocument();
+    expect(screen.getByLabelText("Verified")).toBeInTheDocument();
     second.unmount();
     render(<ProviderTile provider={provider({ verificationStatus: "none", primaryCategory: null, startingPrice: null, locality: null }) as never} />);
     expect(screen.getByText("Price on request")).toBeInTheDocument();
-    expect(screen.queryByText("Verified")).toBeNull();
+    expect(screen.queryByLabelText("Verified")).toBeNull();
+  });
+  it("cards name an individual professional by profession and a business by category", () => {
+    const one = render(<ProviderCard provider={provider({ businessName: "Deep Saha", businessType: "individual", profession: "Plumber", categoryLabel: "Plumber", serviceAreaLabel: "Ghoraguli" }) as never} />);
+    expect(screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "Plumber – Ghoraguli")).toBeInTheDocument();
+    one.unmount();
+    const two = render(<ProviderTile provider={provider({ businessName: "ABC Services", businessType: "company", profession: null, categoryLabel: "Plumbing & Electricians", serviceAreaLabel: "Siliguri" }) as never} />);
+    expect(screen.getByText(/Plumbing & Electricians/)).toBeInTheDocument();
+    expect(screen.queryByText("Individual professional")).toBeNull();
+    two.unmount();
+  });
+  it("SimilarProviders marks who each pro is", () => {
+    render(
+      <SimilarProviders
+        providers={[
+          provider({ businessType: "individual", profession: "Plumber" }),
+          provider({ id: 2, slug: "b", businessType: "individual", profession: null, primaryCategory: { id: 1, name: "Plumbing", slug: "plumbing" } }),
+          provider({ id: 3, slug: "c", businessType: "company", categoryLabel: "Plumbing & Electricians" }),
+        ] as never}
+      />,
+    );
+    expect(screen.getAllByLabelText("Individual professional")).toHaveLength(2);
+    expect(screen.getByLabelText("Business")).toBeInTheDocument();
+    expect(screen.getByText("Plumber")).toBeInTheDocument();
+    expect(screen.getByText("Plumbing & Electricians")).toBeInTheDocument();
+  });
+  it("fallbackDescription speaks of an individual as an independent professional", () => {
+    expect(fallbackDescription(detail({ businessType: "individual", profession: "AC Technician", locality: null, addressLine: null, services: [] }) as never)).toMatch(/^Sharma TV Repair is an independent ac technician working in [^,.]+\. Call/);
+    expect(fallbackDescription(detail({ businessType: "individual", profession: null, primaryCategory: null, services: [] }) as never)).toContain("an independent local services working in");
   });
   it("SimilarProviders", () => {
     render(<SimilarProviders providers={[provider(), provider({ id: 2, slug: "b", distanceKm: null }), provider({ id: 3, slug: "c", distanceKm: null, locality: null, primaryCategory: null })] as never} />);
     expect(screen.getAllByRole("link")).toHaveLength(3);
-    expect(screen.getByText("1.2 km away")).toBeInTheDocument();
+    expect(screen.getByText(/1\.2 km away/)).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Call/ }).length).toBe(3);
   });
 });
 
@@ -205,16 +250,27 @@ describe("profile sections", () => {
         facts={[{ icon: Star, value: "5 yrs", label: "Experience" }]}
       />,
     );
-    expect(screen.getByText(/Company/)).toBeInTheDocument();
     expect(screen.getByText("(1 review)")).toBeInTheDocument();
     expect(screen.getByText("Top Rated")).toBeInTheDocument();
     expect(screen.getByText("+2 more")).toBeInTheDocument();
     expect(screen.getByText("Experience")).toBeInTheDocument();
     unmount();
     render(<ProfileHeader p={detail({ primaryCategory: null, totalReviews: 0, locality: null, verificationStatus: "none", badges: [] }) as never} chips={[]} extraChips={0} facts={[]} />);
-    expect(screen.getByText("No reviews yet")).toBeInTheDocument();
-    render(<ProfileHeader p={detail({ totalReviews: 12 }) as never} chips={["x"]} extraChips={0} facts={[]} />);
-    expect(screen.getByText(/Individual pro/)).toBeInTheDocument();
+    // No reviews: nothing about reviews at all, not a "No reviews yet" placeholder.
+    expect(screen.queryByText(/review/i)).toBeNull();
+    render(
+      <ProfileHeader
+        p={detail({ totalReviews: 12, businessType: "individual", profession: "Plumber", verificationStatus: "verified", otherListings: [{ slug: "me-electrician", profession: "Electrician", serviceAreaLabel: "Siliguri" }, { slug: "me-x", profession: null, serviceAreaLabel: "Siliguri" }] }) as never}
+        chips={["x"]}
+        extraChips={0}
+        facts={[]}
+      />,
+    );
+    // The trade is on the name plate and in the line under the name.
+    expect(screen.getAllByText("Plumber").length).toBeGreaterThan(0);
+    expect(screen.getByText("Verified professional")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Electrician" })).toHaveAttribute("href", "/providers/me-electrician");
+    expect(screen.getByRole("link", { name: "Another profession" })).toBeInTheDocument();
     expect(screen.getByText("(12 reviews)")).toBeInTheDocument();
   });
   it("ContactCard, OpeningHours, ServicesList, ReviewsSummary, sections", async () => {
@@ -224,10 +280,10 @@ describe("profile sections", () => {
         <ContactCard p={detail() as never} />
         <ContactCard p={detail({ startingPrice: null, email: null, website: null, isAvailable: false }) as never} />
         <ContactCard p={detail({ priceUnit: null }) as never} />
-        <OpeningHours p={detail({ is24x7: true }) as never} />
-        <OpeningHours p={detail({ isAvailable: false }) as never} />
-        <OpeningHours p={detail({ hours: [{ dayOfWeek: 0, day: "Sunday", label: "Closed", openTime: null, closeTime: null, isToday: false }] }) as never} />
-        <ServicesList services={detail().services as never} />
+        <LocationAndHours p={detail({ is24x7: true }) as never} />
+        <LocationAndHours p={detail({ isAvailable: false }) as never} />
+        <LocationAndHours p={detail({ hours: [{ dayOfWeek: 0, day: "Sunday", label: "Closed", openTime: null, closeTime: null, isToday: false }] }) as never} />
+        <ServicesList services={detail().services as never} businessName="Sharma TV Repair" />
         <ReviewsSummary p={detail({ totalReviews: 1 }) as never} />
         <ReviewsSummary p={{ avgRating: 0, totalReviews: 0, ratingBreakdown: [{ rating: 5, count: 0 }] }} />
         <ProfileSection title="Title" action={<span>act</span>}>body</ProfileSection>
@@ -236,12 +292,14 @@ describe("profile sections", () => {
       </SessionProvider>,
     );
     await act(async () => undefined);
-    expect(screen.getAllByText("Price on request")).toHaveLength(1);
-    expect(screen.getByText("Available 24x7 for emergencies")).toBeInTheDocument();
-    expect(screen.getByText("Hours not added yet. Call to check when they are open.")).toBeInTheDocument();
-    expect(screen.getAllByText("(today)")).toHaveLength(2);
+    expect(screen.queryByText("Price on request")).toBeNull();
+    expect(screen.getAllByText(/^Starting from/).length).toBe(2);
+    expect(screen.getAllByRole("link", { name: /Get directions/ }).length).toBeGreaterThan(3);
+    // A 24x7 listing and one with no hours show no weekly table; only the one with hours does.
+    expect(screen.getAllByText("Working hours")).toHaveLength(1);
+    expect(screen.getAllByText("(today)")).toHaveLength(1);
     expect(screen.getByText("Main service")).toBeInTheDocument();
-    expect(screen.getByText("On request")).toBeInTheDocument();
+    expect(screen.queryByText("On request")).toBeNull();
     expect(screen.getByLabelText("5 stars: 75%")).toBeInTheDocument();
     expect(screen.getByLabelText("5 stars: 0%")).toBeInTheDocument();
     expect(screen.getByText("1 review")).toBeInTheDocument();
@@ -326,9 +384,9 @@ describe("profile sections", () => {
 describe("photos", () => {
   const photos = (n: number) => Array.from({ length: n }, (_, i) => ({ id: i, title: i ? `P${i}` : "", imageUrl: `https://img.test/${i}.webp` }));
 
-  it("shows a stock photo when there are none", () => {
-    render(<PhotoGallery photos={[]} businessName="Shop" categorySlug="plumbing" />);
-    expect(screen.getByText("Representative photo")).toBeInTheDocument();
+  it("shows nothing, not a stock photo, when there are none", () => {
+    const { container } = render(<PhotoGallery photos={[]} businessName="Shop" categorySlug="plumbing" />);
+    expect(container).toBeEmptyDOMElement();
   });
   it.each([1, 2, 3, 4, 5, 7])("lays out %i photos", (n) => {
     render(

@@ -31,6 +31,16 @@ export interface Category {
   uiTemplate: string;
   providerCount: number;
   subcategories: Subcategory[];
+  /** Page content written in the admin console; empty values fall back to content/seo/categories.ts. */
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoHeading?: string | null;
+  /** Paragraphs separated by a blank line. Only on GET /categories/:slug. */
+  seoContent?: string | null;
+  /** Only on GET /categories/:slug. */
+  faqs?: { q: string; a: string }[] | null;
 }
 
 export interface ProviderCard {
@@ -40,7 +50,14 @@ export interface ProviderCard {
   shortDescription: string;
   logoUrl: string | null;
   coverUrl: string | null;
+  /** "individual": an independent professional listed under their own name; "company": a business. */
   businessType: "individual" | "company";
+  /** Individuals: the title after their name ("Plumber"). Null for a business. */
+  profession?: string | null;
+  /** The middle of the card title: the profession for an individual, the categories for a business. */
+  categoryLabel?: string | null;
+  /** The area a card names: the locality, else the city. */
+  serviceAreaLabel?: string;
   yearsExperience: number | null;
   phone: string;
   /** Null when the business does not take WhatsApp messages. */
@@ -60,6 +77,8 @@ export interface ProviderCard {
   isClaimed: boolean;
   isOpenNow: boolean;
   todayHours: string;
+  /** False when no opening hours are listed (older APIs leave it out). */
+  hasHours?: boolean;
   primaryCategory: { id: number; name: string; slug: string } | null;
   subcategories: string[];
   startingPrice: number | null;
@@ -117,6 +136,8 @@ export interface ProviderDetail extends Omit<ProviderCard, "serviceAreas"> {
   /** altText: the title plus the business and city when it lacks them (server/src/services/seo.ts photoAltText). */
   portfolio: { id: number; title: string; description: string | null; imageUrl: string; altText?: string; category: string | null }[];
   verifications: { type: string; verifiedAt: string | null }[];
+  /** An individual professional's other professions, each its own listing. */
+  otherListings?: { slug: string; profession: string | null; serviceAreaLabel: string }[];
   ratingBreakdown: { rating: number; count: number }[];
   myReview: MyReview | null;
   /** Null when the visitor already reviewed this business (see myReview). */

@@ -102,6 +102,8 @@ services:
       PORT: 3000
       API_URL: http://server:4000/api/v1
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}
+      # Header holding the visitor's address (cf-connecting-ip behind Cloudflare; see .env.production.example).
+      CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}
       GOOGLE_SITE_VERIFICATION: ${GOOGLE_SITE_VERIFICATION:-}
       BING_SITE_VERIFICATION: ${BING_SITE_VERIFICATION:-}
     depends_on:

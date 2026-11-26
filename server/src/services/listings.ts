@@ -8,12 +8,19 @@ import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, servic
 import { recalculateCategoryCounts, recalculateProvider } from "./ranking.js";
 import { refreshProviderSlugs } from "./web-cache.js";
 import { seoFieldsSchema } from "./seo.js";
+import { assertOneProfession, assertTypeChangeAllowed, professionFor } from "./professions.js";
+
+/** "Plumber" after an individual's name. Empty means the main service names it. */
+const professionField = z.union([z.literal(""), z.null(), z.string().trim().min(2).max(80)]).transform((v) => v || null);
 
 /** Everything needed to create a listing: provider onboarding, admin "Add listing" and CSV import. */
 export const newListingSchema = z.object({
+  /** The person's full name for an individual professional, the business name for a business. */
   businessName: z.string().trim().min(2).max(100),
   description: z.string().trim().max(2000).optional(),
-  businessType: z.enum(["individual", "company"]).default("individual"),
+  /** "individual" for an independent professional, "company" for a business (the default, as before). */
+  businessType: z.enum(["individual", "company"]).default("company"),
+  profession: professionField.optional(),
   yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
   phone,
   whatsappNumber: optionalPhone,
@@ -42,7 +49,9 @@ export async function createListing(
   options: { ownerId: bigint | null; status: ProviderStatus; refreshCategoryCounts?: boolean },
 ): Promise<Provider> {
   const { services, serviceAreas, hours, ...profile } = input;
-  const slug = await uniqueProviderSlug(profile.businessName, profile.city);
+  assertOneProfession(profile.businessType, services);
+  if (profile.businessType !== "individual") profile.profession = null;
+  const slug = await uniqueProviderSlug(await slugName(profile.businessName, profile.businessType, profile.profession, services[0]), profile.city);
   const provider = await prisma.$transaction(async (tx) => {
     const created = await tx.provider.create({
       data: {
@@ -65,11 +74,26 @@ export async function createListing(
   return provider;
 }
 
-/** The editable business profile, shared by the provider apps and the admin console. */
+/**
+ * The name part of a listing's address. An individual's listings share their name, so the profession
+ * goes in too: /providers/deep-saha-plumber-siliguri and /providers/deep-saha-electrician-siliguri.
+ */
+async function slugName(
+  name: string,
+  businessType: "individual" | "company",
+  profession: string | null | undefined,
+  primary: { categoryId: number | bigint; subcategoryId?: number | bigint | null } | null | undefined,
+): Promise<string> {
+  const label = await professionFor(businessType, profession, primary);
+  return label ? `${name} ${label}` : name;
+}
+
+/** The editable profile, shared by the provider apps and the admin console. */
 export const listingProfileSchema = z.object({
   businessName: z.string().trim().min(2).max(100),
   description: z.string().trim().max(2000).nullable(),
   businessType: z.enum(["individual", "company"]),
+  profession: professionField,
   yearsExperience: z.number().int().min(0).max(80).nullable(),
   selfReportedCompletedJobs: z.number().int().min(0).max(1_000_000).nullable(),
   phone,
@@ -95,10 +119,26 @@ export const listingProfileSchema = z.object({
 /** The admin team may also hide a profile from search engines; providers' requests drop this field. */
 export const adminListingProfileSchema = listingProfileSchema.extend({ seoNoIndex: z.boolean() });
 
-/** Saves profile changes: a new name or city gets a new slug, and replaced logo or cover files are deleted. */
+/**
+ * Saves profile changes: a new name, city, account type or profession gets a new slug, and replaced logo
+ * or cover files are deleted. A listing switched to "business" drops its profession title.
+ */
 export async function updateListingProfile(provider: Provider, body: Partial<z.infer<typeof adminListingProfileSchema>>) {
-  const renamed = (body.businessName && body.businessName !== provider.businessName) || (body.city && body.city !== provider.city);
-  const slug = renamed ? await uniqueProviderSlug(body.businessName ?? provider.businessName, body.city ?? provider.city, provider.id) : undefined;
+  await assertTypeChangeAllowed(provider, body.businessType);
+  const businessType = body.businessType ?? provider.businessType;
+  if (businessType !== "individual" && (provider.profession !== null || body.profession !== undefined)) body = { ...body, profession: null };
+  const profession = body.profession !== undefined ? body.profession : provider.profession;
+  const renamed =
+    (body.businessName && body.businessName !== provider.businessName) ||
+    (body.city && body.city !== provider.city) ||
+    businessType !== provider.businessType ||
+    (businessType === "individual" && (profession ?? null) !== (provider.profession ?? null));
+  let slug: string | undefined;
+  if (renamed) {
+    const primary = await prisma.providerService.findFirst({ where: { providerId: provider.id }, orderBy: [{ isPrimary: "desc" }, { id: "asc" }], select: { categoryId: true, subcategoryId: true } });
+    slug = await uniqueProviderSlug(await slugName(body.businessName ?? provider.businessName, businessType, profession, primary), body.city ?? provider.city, provider.id);
+    if (slug === provider.slug) slug = undefined;
+  }
   await prisma.provider.update({ where: { id: provider.id }, data: { ...body, ...(slug ? { slug } : {}) } });
   for (const key of ["logoUrl", "coverUrl"] as const) {
     if (body[key] !== undefined && provider[key] && body[key] !== provider[key]) void releaseFile(provider[key]);

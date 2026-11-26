@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import { professionLabel } from "./professions.js";
 
 /**
  * SEO for one provider profile page (/providers/:slug): the <title> and meta description the website shows to
@@ -729,7 +730,12 @@ type Db = Prisma.TransactionClient | typeof prisma;
 
 export const seoInclude = {
   services: {
-    select: { startingPrice: true, isPrimary: true, category: { select: { slug: true, name: true } }, subcategory: { select: { name: true } } },
+    select: {
+      startingPrice: true,
+      isPrimary: true,
+      category: { select: { slug: true, name: true, professionName: true } },
+      subcategory: { select: { name: true, professionName: true } },
+    },
     orderBy: [{ isPrimary: "desc" }, { id: "asc" }],
   },
   portfolio: { select: { title: true } },
@@ -742,7 +748,8 @@ export function seoInputOf(p: SeoRow, duplicateTitles: number): SeoInput {
   const primary = p.services.find((s) => s.isPrimary) ?? p.services[0];
   return {
     name: p.businessName,
-    service: serviceTermOf(primary),
+    // An individual is found for what they are: "Deep Saha: Plumber in Siliguri".
+    service: professionLabel(p, primary) ?? serviceTermOf(primary),
     city: p.city,
     locality: p.locality,
     seoTitle: p.seoTitle,

@@ -7,7 +7,7 @@ import { idParam, parse } from "../../lib/validate.js";
 import { email, optionalPhone, personName } from "../../lib/rules.js";
 import { privateFileUrl } from "../../lib/private-files.js";
 import { temporaryPassword } from "../../lib/passwords.js";
-import { badRequest, conflict, notFound } from "../../lib/errors.js";
+import { badRequest, conflict, forbidden, notFound } from "../../lib/errors.js";
 import { adminPaginationSchema, pageMeta } from "../../lib/pagination.js";
 import { parseCsv } from "../../lib/csv.js";
 import { currentUser } from "../../middleware/auth.js";
@@ -18,11 +18,13 @@ import { sendListingClaimedForYou } from "../../services/emails.js";
 import { recalculateCategoryCounts, recalculateProvider } from "../../services/ranking.js";
 import { adminListingProfileSchema, createListing, newListingSchema, updateListingProfile, type NewListing } from "../../services/listings.js";
 import { searchPlaces } from "../../services/geocode.js";
-import { releaseFile } from "../../storage/references.js";
 import { hoursSchema, replaceHours, replaceServiceAreas, replaceServices, serviceAreaSchema, serviceSchema } from "../provider/shared.js";
 import { loadProfile } from "../provider/profile.js";
 import { checkSeoDraft, seoDraftSchema } from "../../services/seo.js";
 import { previewUrl, refreshProviderSlugs, refreshShared } from "../../services/web-cache.js";
+import { assertCanOwnAnother } from "../../services/professions.js";
+import { deleteListings } from "../../services/listing-removal.js";
+import { bulkUpdateListings } from "../../services/listing-bulk-update.js";
 
 /** Listing management in the admin console: list, status, edit, create, import, ownership and delete. */
 export const adminProvidersRouter = Router();
@@ -31,6 +33,8 @@ export const providerQuery = adminPaginationSchema.extend({
   status: z.enum(["pending", "active", "rejected", "suspended"]).optional(),
   verification: z.enum(["none", "partial", "verified"]).optional(),
   claimed: z.enum(["yes", "no"]).optional(),
+  /** Individual professionals or businesses. */
+  type: z.enum(["individual", "business"]).optional(),
   city: z.string().trim().max(60).optional(),
   q: z.string().trim().max(100).optional(),
   /** SEO score band: good 80+, fair 50-79, poor under 50; "noindex" lists pages hidden from search. */
@@ -57,6 +61,7 @@ export function providerWhere(q: z.infer<typeof providerQuery>): Prisma.Provider
     ...(q.status ? { status: q.status } : {}),
     ...(q.verification ? { verificationStatus: q.verification } : {}),
     ...(q.claimed ? { userId: q.claimed === "yes" ? { not: null } : null } : {}),
+    ...(q.type ? { businessType: q.type === "individual" ? ("individual" as const) : ("company" as const) } : {}),
     ...(q.city ? { city: { equals: q.city, mode: "insensitive" as const } } : {}),
     ...(q.q ? { OR: [{ businessName: { contains: q.q, mode: "insensitive" as const } }, { phone: { contains: q.q } }] } : {}),
     ...(q.seo ? SEO_BANDS[q.seo] : {}),
@@ -76,6 +81,8 @@ adminProvidersRouter.get("/providers", async (req, res) => {
         id: true,
         slug: true,
         businessName: true,
+        businessType: true,
+        profession: true,
         city: true,
         locality: true,
         phone: true,
@@ -103,7 +110,7 @@ adminProvidersRouter.get("/provider-signups", async (req, res) => {
   const q = parse(adminPaginationSchema.extend({ q: z.string().trim().max(100).optional() }), req.query);
   const where: Prisma.UserWhereInput = {
     role: "provider",
-    provider: null,
+    providers: { none: {} },
     status: { not: "deleted" },
     ...(q.q ? { OR: [{ name: { contains: q.q, mode: "insensitive" as const } }, { email: { contains: q.q, mode: "insensitive" as const } }, { phone: { contains: q.q } }] } : {}),
   };
@@ -274,7 +281,14 @@ adminProvidersRouter.put("/providers/:id/service-areas", async (req, res) => {
 adminProvidersRouter.get("/providers/:id/owner-candidates", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
   const { q } = parse(z.object({ q: z.string().trim().max(100).optional() }), req.query);
-  const select = { id: true, name: true, email: true, phone: true, role: true, provider: { select: { id: true, businessName: true } } } as const;
+  const select = {
+    id: true,
+    name: true,
+    email: true,
+    phone: true,
+    role: true,
+    providers: { select: { id: true, businessName: true, businessType: true }, orderBy: { id: "asc" } },
+  } satisfies Prisma.UserSelect;
   const claims = await prisma.providerClaim.findMany({
     where: { providerId: provider.id, status: "pending", user: { status: "active" } },
     orderBy: { createdAt: "asc" },
@@ -293,7 +307,9 @@ adminProvidersRouter.get("/providers/:id/owner-candidates", async (req, res) => 
           select,
         })
       : [];
-  res.json({ claims, users });
+  // `provider` (the first listing) is kept for older admin builds.
+  const withFirst = <T extends { providers: unknown[] }>(u: T) => ({ ...u, provider: u.providers[0] ?? null });
+  res.json({ claims: claims.map((c) => ({ ...c, user: withFirst(c.user) })), users: users.map(withFirst) });
 });
 
 const ownerSchema = z
@@ -317,7 +333,7 @@ const ownerSchema = z
 adminProvidersRouter.post("/providers/:id/owner", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
   const body = parse(ownerSchema, req.body);
-  const include = { provider: { select: { id: true, businessName: true } } } as const;
+  const include = { providers: { select: { id: true, businessName: true } } } as const;
   let user = await prisma.user.findUnique({ where: body.userId !== undefined ? { id: BigInt(body.userId) } : { email: body.email! }, include });
   let password: string | null = null;
   if (!user && body.userId === undefined) {
@@ -326,7 +342,10 @@ adminProvidersRouter.post("/providers/:id/owner", async (req, res) => {
   } else {
     if (!user || user.status !== "active") throw notFound("No active account matches. Enter an email to create one instead.");
     if (user.role === "admin" || user.role === "super_admin") throw badRequest("Team accounts cannot own a listing");
-    if (user.provider && user.provider.id !== provider.id) throw conflict(`This account already manages ${user.provider.businessName}`);
+    if (!user.providers.some((p) => p.id === provider.id)) {
+      const primary = await prisma.providerService.findFirst({ where: { providerId: provider.id }, orderBy: [{ isPrimary: "desc" }, { id: "asc" }], select: { categoryId: true, subcategoryId: true } });
+      await assertCanOwnAnother(user.id, { businessType: provider.businessType, profession: provider.profession, primary }, provider.id);
+    }
   }
   const admin = currentUser(req);
   const now = new Date();
@@ -369,34 +388,29 @@ adminProvidersRouter.delete("/providers/:id/owner", async (req, res) => {
 });
 
 /**
- * DELETE /admin/providers/:id — removes the listing with its leads, reviews and history. The admin
- * types the business name to confirm; the audit log keeps a snapshot of the main details.
+ * DELETE /admin/providers/:id — removes the listing with its leads, reviews, history and photos. The
+ * admin types the business name to confirm; the audit log keeps a snapshot of the main details, and the
+ * old profile address redirects to the category (see deleteListings).
  */
 adminProvidersRouter.delete("/providers/:id", async (req, res) => {
   const provider = await findProvider(req.params.id as string);
   const { confirmName } = parse(z.object({ confirmName: z.string() }), req.body ?? {});
   if (confirmName.trim().toLowerCase() !== provider.businessName.trim().toLowerCase()) throw badRequest("Type the business name exactly to confirm");
-  const [portfolio, reviewPhotos, verifications, claims, counts] = await Promise.all([
-    prisma.providerPortfolio.findMany({ where: { providerId: provider.id }, select: { imageUrl: true } }),
-    prisma.reviewPhoto.findMany({ where: { review: { providerId: provider.id } }, select: { photoUrl: true } }),
-    prisma.verification.findMany({ where: { providerId: provider.id }, select: { documentUrl: true } }),
-    prisma.providerClaim.findMany({ where: { providerId: provider.id }, select: { documentUrl: true } }),
-    prisma.provider.findUniqueOrThrow({ where: { id: provider.id }, select: { _count: { select: { leads: true, reviews: true } } } }),
-  ]);
-  await prisma.provider.delete({ where: { id: provider.id } });
-  const files = [provider.logoUrl, provider.coverUrl, ...portfolio.map((p) => p.imageUrl), ...reviewPhotos.map((p) => p.photoUrl), ...verifications.map((v) => v.documentUrl), ...claims.map((c) => c.documentUrl)];
-  for (const url of files) void releaseFile(url);
-  refreshProviderSlugs([provider.slug], ["providers", "reviews"]);
-  await recalculateCategoryCounts();
-  await logAdmin(currentUser(req).id, "provider.delete", "provider", provider.id, {
-    businessName: provider.businessName,
-    phone: provider.phone,
-    city: provider.city,
-    ownerId: provider.userId ? Number(provider.userId) : null,
-    leads: counts._count.leads,
-    reviews: counts._count.reviews,
-  });
+  await deleteListings([provider], currentUser(req).id);
   res.json({ ok: true });
+});
+
+/**
+ * POST /admin/providers/bulk-delete — deletes up to 100 listings at once, the same way as one. Super
+ * admins only, because nothing asks for the names.
+ */
+adminProvidersRouter.post("/providers/bulk-delete", async (req, res) => {
+  const user = currentUser(req);
+  if (user.role !== "super_admin") throw forbidden("Only a super admin can delete listings in bulk");
+  const { ids } = parse(z.object({ ids: z.array(z.number().int().positive()).min(1).max(100) }), req.body);
+  const providers = await prisma.provider.findMany({ where: { id: { in: [...new Set(ids)].map(BigInt) } } });
+  const deleted = await deleteListings(providers, user.id, { bulk: true });
+  res.json({ deleted });
 });
 
 // CSV import -------------------------------------------------------------------------------------
@@ -418,6 +432,9 @@ export const IMPORT_COLUMNS = [
   "website",
   "description",
   "service_radius_km",
+  // "individual" (an independent professional, business_name is their name) or "business" (the default).
+  "account_type",
+  "profession",
 ] as const;
 const REQUIRED = ["business_name", "phone", "category", "city", "state"];
 const MAX_ROWS = 500;
@@ -475,8 +492,12 @@ adminProvidersRouter.post("/providers/import", async (req, res) => {
       } else errors.push("Add latitude and longitude; the address could not be found on the map");
     }
 
+    const accountType = get("account_type").toLowerCase();
+    if (accountType && !["individual", "business", "company"].includes(accountType)) errors.push(`Account type must be "individual" or "business", not "${get("account_type")}"`);
     const candidate = {
       businessName: get("business_name"),
+      businessType: accountType === "individual" ? ("individual" as const) : ("company" as const),
+      profession: accountType === "individual" ? get("profession") : null,
       description: get("description") || undefined,
       phone: get("phone"),
       whatsappNumber: get("whatsapp"),
@@ -517,4 +538,15 @@ adminProvidersRouter.post("/providers/import", async (req, res) => {
     created,
     rows: rows.map(({ listing: _l, ...r }) => r),
   });
+});
+
+/**
+ * POST /admin/providers/bulk-update — updates existing listings from a CSV (see bulkUpdateListings). With
+ * dryRun, every row is matched and checked and the changes are listed without saving. Super admins only.
+ */
+adminProvidersRouter.post("/providers/bulk-update", async (req, res) => {
+  const user = currentUser(req);
+  if (user.role !== "super_admin") throw forbidden("Only a super admin can update listings in bulk");
+  const body = parse(z.object({ csv: z.string().min(1, "Choose a CSV file").max(2_000_000, "The file is too large"), dryRun: z.boolean().default(true) }), req.body);
+  res.json(await bulkUpdateListings(body.csv, { dryRun: body.dryRun, adminId: user.id }));
 });

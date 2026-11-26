@@ -16,6 +16,7 @@ import {
   SearchX,
   Star,
   Tag,
+  UserRound,
   Users,
 } from "lucide-react-native";
 
@@ -153,6 +154,25 @@ export default function ProviderScreen() {
         </AppText>
       </DetailSection>
     ) : null;
+
+  // An individual professional lists each profession separately; link the others from here.
+  const otherListings = p.otherListings?.length ? (
+    <DetailSection title="Also works as" icon={UserRound}>
+      <View>
+        {p.otherListings.map((o, i) => (
+          <View key={o.slug}>
+            {i > 0 ? <AppDivider /> : null}
+            <AppListItem
+              title={o.profession ?? "Another profession"}
+              subtitle={o.serviceAreaLabel}
+              inset={0}
+              onPress={() => router.push(`/provider/${o.slug}`)}
+            />
+          </View>
+        ))}
+      </View>
+    </DetailSection>
+  ) : null;
 
   const services = p.services.length ? (
     <DetailSection title="Services and prices" icon={Tag}>
@@ -362,6 +382,7 @@ export default function ProviderScreen() {
             <View style={[styles.columns, { gap: theme.spacing[5] }]}>
               <View style={[styles.main, gap]}>
                 {about}
+                {otherListings}
                 {services}
                 {details}
                 {portfolio}
@@ -377,6 +398,7 @@ export default function ProviderScreen() {
           ) : (
             <View style={gap}>
               {about}
+              {otherListings}
               {services}
               {hours}
               {details}

@@ -1,6 +1,7 @@
 import { API_URL } from "@/constants/config";
 import type { ApiErrorBody } from "@/types";
 import { reportError } from "@/services/monitoring";
+import { STORAGE_KEYS, storage } from "@/services/storage";
 import { logError } from "@/utils/log";
 
 export class ApiError extends Error {
@@ -53,6 +54,9 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   const headers: Record<string, string> = { accept: "application/json" };
   if (options.body !== undefined) headers["content-type"] = "application/json";
   if (token) headers.authorization = `Bearer ${token}`;
+  // Picks which of the account's listings provider routes act on; without it the first one is used.
+  const listingId = token ? storage.getString(STORAGE_KEYS.listingId) : undefined;
+  if (listingId) headers["x-listing-id"] = listingId;
 
   let res: Response;
   try {

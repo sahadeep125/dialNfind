@@ -7,9 +7,9 @@ const ITEMS = [
   { id: "overview", label: "Overview" },
   { id: "services", label: "Services" },
   { id: "photos", label: "Photos" },
+  { id: "location", label: "Location & hours" },
   { id: "reviews", label: "Reviews" },
-  { id: "location", label: "Location" },
-  { id: "similar", label: "Similar pros" },
+  { id: "similar", label: "Nearby pros" },
 ];
 
 /** Sticky anchor tabs under the header; highlights whichever section is nearest the top of the viewport. */

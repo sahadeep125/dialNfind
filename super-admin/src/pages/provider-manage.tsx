@@ -11,6 +11,7 @@ import { PageHeader, Panel } from "@/components/page-header";
 import { PageSkeleton, SaveBar } from "@/components/common";
 import { ConfirmDialog } from "@/components/admin-ui";
 import { Field, fieldA11y, FormAlert } from "@/components/form";
+import { AccountTypeTabs } from "@/components/account-type";
 import { LocationEditor, locationProblems, type LocationErrors, type LocationValue } from "@/components/location-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -316,40 +317,72 @@ function ClaimForProviderDialog({ open, onOpenChange, providerId, businessName, 
   );
 }
 
-export function DeleteListingPanel({ providerId, businessName }: { providerId: number; businessName: string }) {
-  const navigate = useNavigate();
+/**
+ * Asks the admin to type the listing's name, then deletes it for good with its leads, reviews,
+ * claims and photos (the same hard delete everywhere; the audit log keeps a snapshot).
+ */
+export function DeleteListingDialog({
+  providerId,
+  businessName,
+  open,
+  onOpenChange,
+  onDeleted,
+}: {
+  providerId: number;
+  businessName: string;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onDeleted?: () => void;
+}) {
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const del = useMutation({
     mutationFn: () => api(`/admin/providers/${providerId}`, { method: "DELETE", json: { confirmName: typed } }),
     onSuccess: () => {
       toast.success(`${businessName} was deleted`);
       void qc.invalidateQueries({ queryKey: ["admin-providers"] });
-      navigate("/providers", { replace: true });
+      setTyped("");
+      onOpenChange(false);
+      onDeleted?.();
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
+  const matches = typed.trim().toLowerCase() === businessName.trim().toLowerCase();
+  return (
+    <ConfirmDialog
+      open={open}
+      onOpenChange={(o) => (onOpenChange(o), setTyped(""))}
+      title={`Delete ${businessName}?`}
+      description="This removes the listing with its leads, reviews, claims and photos, and cannot be undone. Its old page redirects to its category, and the audit log keeps the name, phone and city. Suspend it instead if it may come back."
+      confirmLabel={del.isPending ? "Deleting…" : "Delete for good"}
+      destructive
+      busy={del.isPending || !matches}
+      onConfirm={() => del.mutate()}
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (matches && !del.isPending) del.mutate();
+        }}
+      >
+        <Field id={`confirm-name-${providerId}`} label={`Type "${businessName}" to confirm`}>
+          <Input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoFocus {...fieldA11y(`confirm-name-${providerId}`)} />
+        </Field>
+      </form>
+    </ConfirmDialog>
+  );
+}
+
+export function DeleteListingPanel({ providerId, businessName }: { providerId: number; businessName: string }) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
   return (
     <Panel title="Delete listing">
       <p className="text-sm text-muted-foreground">Removes the listing with its leads, reviews and photos. Suspend it instead if it may come back.</p>
       <Button variant="outline" className="mt-4 w-full text-destructive" onClick={() => setOpen(true)}>
         <Trash2 /> Delete listing
       </Button>
-      <ConfirmDialog
-        open={open}
-        onOpenChange={(o) => (setOpen(o), setTyped(""))}
-        title={`Delete ${businessName}?`}
-        description="This cannot be undone. The audit log keeps the name, phone and city."
-        confirmLabel="Delete for good"
-        destructive
-        busy={del.isPending || typed.trim().toLowerCase() !== businessName.trim().toLowerCase()}
-        onConfirm={() => del.mutate()}
-      >
-        <Field id="confirm-name" label={`Type "${businessName}" to confirm`}>
-          <Input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" {...fieldA11y("confirm-name")} />
-        </Field>
-      </ConfirmDialog>
+      <DeleteListingDialog providerId={providerId} businessName={businessName} open={open} onOpenChange={setOpen} onDeleted={() => navigate("/providers", { replace: true })} />
     </Panel>
   );
 }
@@ -363,6 +396,8 @@ interface Profile {
   businessName: string;
   description: string | null;
   businessType: "individual" | "company";
+  /** An individual's title; null uses their main service's profession name. */
+  profession: string | null;
   yearsExperience: number | null;
   phone: string;
   whatsappNumber: string | null;
@@ -390,7 +425,7 @@ interface Profile {
   seo: SeoAnalysis;
 }
 
-type Details = Pick<Profile, "businessName" | "description" | "businessType" | "yearsExperience" | "phone" | "whatsappNumber" | "email" | "website" | "acceptsCalls" | "acceptsWhatsapp" | "isAvailable">;
+type Details = Pick<Profile, "businessName" | "description" | "businessType" | "profession" | "yearsExperience" | "phone" | "whatsappNumber" | "email" | "website" | "acceptsCalls" | "acceptsWhatsapp" | "isAvailable">;
 
 function useSection<T>(initial: T | undefined) {
   const [value, setValue] = useState<T | undefined>(initial);
@@ -492,6 +527,7 @@ function DetailsSection({ id, profile, onSaved }: SectionProps) {
     businessName: p.businessName,
     description: p.description,
     businessType: p.businessType,
+    profession: p.profession ?? null,
     yearsExperience: p.yearsExperience,
     phone: p.phone,
     whatsappNumber: p.whatsappNumber,
@@ -505,14 +541,14 @@ function DetailsSection({ id, profile, onSaved }: SectionProps) {
   const s = useSection<Details>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof Details, string>>>({});
   const save = useMutation({
-    mutationFn: (v: Details) => api<{ provider: Profile }>(`/admin/providers/${id}/profile`, { method: "PATCH", json: { ...v, email: v.email ?? "", website: v.website || null, whatsappNumber: v.whatsappNumber ?? "" } }),
+    mutationFn: (v: Details) => api<{ provider: Profile }>(`/admin/providers/${id}/profile`, { method: "PATCH", json: { ...v, profession: v.businessType === "individual" ? v.profession?.trim() || null : null, email: v.email ?? "", website: v.website || null, whatsappNumber: v.whatsappNumber ?? "" } }),
     onSuccess: onSaved,
   });
   const v = s.value!;
   const set = (patch: Partial<Details>) => s.set({ ...v, ...patch });
   function submit() {
     const next: typeof errors = {};
-    if (v.businessName.trim().length < 2) next.businessName = "Enter the business name";
+    if (v.businessName.trim().length < 2) next.businessName = v.businessType === "individual" ? "Enter the person's full name" : "Enter the business name";
     if (!normalizePhone(v.phone)) next.phone = "Enter a valid 10-digit Indian phone number";
     if (v.whatsappNumber && !normalizePhone(v.whatsappNumber)) next.whatsappNumber = "Enter a valid number or leave it empty";
     if (v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)) next.email = "Enter a valid email or leave it empty";
@@ -524,7 +560,7 @@ function DetailsSection({ id, profile, onSaved }: SectionProps) {
     <Panel title="Business details">
       <FormAlert message={save.error ? errorMessage(save.error) : null} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="e-name" label="Business name" required error={errors.businessName} className="sm:col-span-2">
+        <Field id="e-name" label={v.businessType === "individual" ? "Full name" : "Business name"} required error={errors.businessName} className="sm:col-span-2">
           <Input value={v.businessName} maxLength={100} onChange={(e) => set({ businessName: e.target.value })} {...fieldA11y("e-name", errors.businessName)} />
         </Field>
         <Field id="e-desc" label="About" optional className="sm:col-span-2">
@@ -542,17 +578,14 @@ function DetailsSection({ id, profile, onSaved }: SectionProps) {
         <Field id="e-web" label="Website" optional error={errors.website}>
           <Input value={v.website ?? ""} placeholder="https://" onChange={(e) => set({ website: e.target.value || null })} {...fieldA11y("e-web", errors.website)} />
         </Field>
-        <Field id="e-type" label="Type">
-          <Select value={v.businessType} onValueChange={(t) => set({ businessType: t as Details["businessType"] })}>
-            <SelectTrigger id="e-type" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="individual">Individual</SelectItem>
-              <SelectItem value="company">Company or shop</SelectItem>
-            </SelectContent>
-          </Select>
+        <Field id="e-type" label="Account type">
+          <AccountTypeTabs id="e-type" value={v.businessType} onChange={(businessType) => set({ businessType })} />
         </Field>
+        {v.businessType === "individual" && (
+          <Field id="e-profession" label="Profession title" optional hint="Shown after the name. Leave empty to use the main service's profession.">
+            <Input value={v.profession ?? ""} maxLength={80} placeholder="e.g. AC Technician" onChange={(e) => set({ profession: e.target.value || null })} {...fieldA11y("e-profession")} />
+          </Field>
+        )}
         <Field id="e-years" label="Years of experience" optional>
           <Input inputMode="numeric" value={v.yearsExperience ?? ""} onChange={(e) => set({ yearsExperience: e.target.value ? Math.min(80, Number(e.target.value.replace(/\D/g, ""))) : null })} {...fieldA11y("e-years")} />
         </Field>

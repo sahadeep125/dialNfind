@@ -32,6 +32,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         minRating: one(sp.minRating),
         openNow: one(sp.openNow),
         verified: one(sp.verified),
+        type: one(sp.type),
         sort: one(sp.sort),
         page: one(sp.page),
         pageSize: 12,
@@ -39,6 +40,24 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     }),
     api<{ categories: Category[] }>("/categories"),
   ]);
+
+  // Nothing in range: show the nearest pros for the same service further out, so the visitor still has someone to call.
+  const alternatives =
+    data.total === 0 && data.resolved.category
+      ? await api<SearchResponse>("/search/providers", {
+          query: {
+            category: data.resolved.category.slug,
+            subcategory: data.resolved.subcategory?.slug,
+            lat: location.latitude,
+            lng: location.longitude,
+            radiusKm: 60,
+            sort: "distance",
+            pageSize: 6,
+          },
+        })
+          .then((r) => r.results)
+          .catch(() => [])
+      : [];
 
   const what = data.resolved.subcategory?.name ?? data.resolved.category?.name ?? (q ? q : null);
   const heading = (
@@ -58,7 +77,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     <div>
       <SearchHero
         title={what ? `${what} near ${location.label}` : "Find trusted local professionals"}
-        subtitle="Compare ratings, reviews and prices, then call or WhatsApp the pro you prefer directly."
+        subtitle="Compare distance, working hours and reviews, then call or WhatsApp the one you prefer. No booking fee."
         initialQuery={q}
         initialLocation={location}
         popular={popular}
@@ -72,6 +91,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         radiusKm={data.radiusKm}
         categories={categories}
         source="search"
+        alternatives={alternatives}
       />
     </div>
   );

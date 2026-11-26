@@ -20,7 +20,7 @@ describe("provider onboarding", () => {
     const cat = await createCategory();
     const customer = await createUser();
     const c = await authed(customer);
-    expect((await c.get("/api/v1/provider/me")).body).toEqual({ provider: null, claims: [] });
+    expect((await c.get("/api/v1/provider/me")).body).toEqual({ provider: null, listings: [], accountType: null, canAddListing: true, maxListings: 10, claims: [] });
     const res = await c.post("/api/v1/provider/onboarding").send(listing(cat.id));
     expect(res.status).toBe(201);
     // Not production and no setting: listings go live straight away.

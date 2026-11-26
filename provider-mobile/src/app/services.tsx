@@ -46,6 +46,14 @@ export default function ServicesScreen() {
 
   const services = useMemo(() => profile.data?.services ?? [], [profile.data]);
   const takenKeys = useMemo(() => new Set(services.map(serviceKey)), [services]);
+  // An individual's listing is one profession: new services come from its category only.
+  const lockedCategoryId =
+    profile.data?.businessType === "individual" ? services[0]?.categoryId : undefined;
+  const offered = useMemo(
+    () =>
+      (categories.data ?? []).filter((c) => lockedCategoryId === undefined || c.id === lockedCategoryId),
+    [categories.data, lockedCategoryId],
+  );
 
   const persist = (next: ServiceInput[], message: string, done: () => void): void => {
     save.mutate(next, {
@@ -187,7 +195,7 @@ export default function ServicesScreen() {
         visible={adding || editing !== null}
         editingName={editing ? serviceName(editing) : null}
         draft={draft}
-        categories={categories.data ?? []}
+        categories={offered}
         takenKeys={takenKeys}
         saving={save.isPending}
         onSave={submitDraft}

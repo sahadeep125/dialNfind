@@ -4,7 +4,7 @@ import path from "node:path";
 import { prisma } from "../../src/lib/prisma.js";
 import { env } from "../../src/env.js";
 import { uploadDir } from "../../src/storage/index.js";
-import { authed, json, mockFetch, sentMails, settle } from "../helpers/app.js";
+import { api, authed, json, mockFetch, sentMails, settle } from "../helpers/app.js";
 import { createCategory, createLead, createOwner, createProvider, createReview, createStaff, createUser } from "../helpers/factories.js";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -68,7 +68,7 @@ describe("admin providers", () => {
     expect((await give("nobody@example.com")).body.error.message).toBe("Enter the owner's name to create their account");
     expect((await give("off@example.com")).status).toBe(404);
     expect((await give("staff@example.com")).body.error.message).toBe("Team accounts cannot own a listing");
-    expect((await give("busy@example.com")).body.error.message).toBe("This account already manages Other Biz");
+    expect((await give("busy@example.com")).body.error.message).toContain("This account already manages Other Biz");
     expect((await give("new@example.com")).body).toMatchObject({ ok: true });
     expect((await give("busy@example.com", owner.provider.id)).body).toMatchObject({ ok: true });
     await settle();
@@ -140,6 +140,48 @@ describe("admin providers", () => {
     expect(log.detailsJson).toMatchObject({ businessName: "Zeta Repairs", leads: 1, reviews: 1 });
     const unowned = await createProvider({ businessName: "Eta" });
     expect((await c.delete(`/api/v1/admin/providers/${unowned.id}`).send({ confirmName: "Eta" })).status).toBe(200);
+  });
+  it("lets only a super admin delete listings in bulk, removing files and redirecting their old pages", async () => {
+    const cat = await createCategory({ name: "Plumbing", slug: "plumbing" });
+    for (const f of ["b1.webp", "b2.webp", "shared.webp"]) await writeFile(path.join(uploadDir, f), "x");
+    const a = await createProvider({ businessName: "Alpha", slug: "alpha-siliguri", logoUrl: pub("b1.webp"), categoryId: cat.id });
+    const b = await createProvider({ businessName: "Beta", slug: "beta-siliguri", coverUrl: pub("shared.webp") });
+    await prisma.providerPortfolio.create({ data: { providerId: b.id, title: "t", imageUrl: pub("b2.webp") } });
+    // Another listing still uses this file, so it must stay.
+    const keep = await createProvider({ businessName: "Gamma", logoUrl: pub("shared.webp") });
+    await createLead(a.id);
+
+    const team = await authed(await createStaff(["providers"]));
+    expect((await team.post("/api/v1/admin/providers/bulk-delete").send({ ids: [Number(a.id)] })).status).toBe(403);
+    expect(await prisma.provider.count()).toBe(3);
+
+    const boss = await authed(await createStaff("super"));
+    expect((await boss.post("/api/v1/admin/providers/bulk-delete").send({ ids: [] })).status).toBe(400);
+    const res = await boss.post("/api/v1/admin/providers/bulk-delete").send({ ids: [Number(a.id), Number(b.id), Number(a.id), 999999] });
+    expect(res.body).toEqual({ deleted: 2 });
+    expect((await prisma.provider.findMany()).map((p) => p.id)).toEqual([keep.id]);
+    for (const f of ["b1.webp", "b2.webp"]) await vi.waitFor(() => expect(stat(path.join(uploadDir, f))).rejects.toThrow(), { timeout: 3000 });
+    expect((await stat(path.join(uploadDir, "shared.webp"))).isFile()).toBe(true);
+    const logs = await prisma.adminActivityLog.findMany({ where: { action: "provider.delete" }, orderBy: { id: "asc" } });
+    expect(logs.map((l) => l.detailsJson)).toMatchObject([
+      { businessName: "Alpha", slug: "alpha-siliguri", leads: 1, bulk: true },
+      { businessName: "Beta", slug: "beta-siliguri", bulk: true },
+    ]);
+
+    // Old addresses send people to the category (or every service when there was none), never a 404.
+    expect((await api().get("/api/v1/providers/alpha-siliguri")).status).toBe(404);
+    expect((await api().get("/api/v1/providers/removed/alpha-siliguri")).body).toEqual({ path: "/services/plumbing" });
+    expect((await api().get("/api/v1/providers/removed/beta-siliguri")).body).toEqual({ path: "/services" });
+    expect((await api().get("/api/v1/providers/removed/never-existed")).status).toBe(404);
+    await prisma.category.update({ where: { id: cat.id }, data: { isActive: false } });
+    expect((await api().get("/api/v1/providers/removed/alpha-siliguri")).body).toEqual({ path: "/services" });
+  });
+  it("remembers the old address when one listing is deleted too", async () => {
+    const c = await authed(await createStaff(["providers"]));
+    const cat = await createCategory({ name: "Electrician", slug: "electrician" });
+    const p = await createProvider({ businessName: "Omega", slug: "omega", categoryId: cat.id });
+    expect((await c.delete(`/api/v1/admin/providers/${p.id}`).send({ confirmName: "Omega" })).body).toEqual({ ok: true });
+    expect((await api().get("/api/v1/providers/removed/omega")).body).toEqual({ path: "/services/electrician" });
   });
   it("imports listings from CSV, dry run first", async () => {
     const c = await authed(await createStaff(["providers"]));

@@ -32,6 +32,7 @@ export function useSearchProviders(
           sort: filters.sort,
           openNow: filters.openNow || undefined,
           verified: filters.verified || undefined,
+          type: filters.accountType,
           minRating: filters.minRating,
           radiusKm: filters.radiusKm,
           lat: location.latitude,

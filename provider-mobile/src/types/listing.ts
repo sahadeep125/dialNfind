@@ -7,6 +7,8 @@ import type { Hours, PriceUnit, ProviderProfile, ServiceArea } from "@/types";
 export interface ProfileFormValues {
   businessName: string;
   businessType: "individual" | "company";
+  /** An individual's title; empty uses their main service's profession name. */
+  profession: string;
   description: string;
   yearsExperience: string;
   selfReportedCompletedJobs: string;
@@ -33,6 +35,7 @@ export type ProfileFormErrors = Partial<Record<keyof ProfileFormValues, string |
 export interface ProfileUpdateBody {
   businessName?: string;
   businessType?: "individual" | "company";
+  profession?: string | null;
   description?: string | null;
   yearsExperience?: number | null;
   selfReportedCompletedJobs?: number | null;

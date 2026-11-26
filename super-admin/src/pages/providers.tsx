@@ -1,9 +1,10 @@
 import { useState, type MouseEvent } from "react";
 import { Link, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Award, BadgeCheck, ExternalLink, EyeOff, Search, MapPin, Pencil, Phone, Plus, Star, Store, Upload, X } from "lucide-react";
+import { ArrowLeft, Award, BadgeCheck, Building2, ExternalLink, EyeOff, FileUp, Search, MapPin, Pencil, Phone, Plus, Star, Store, Trash2, Upload, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { WEB_URL } from "@/lib/config";
 import { formatDate, formatPhone, formatPrice, formatRelative } from "@/lib/format";
 import { type Badge as BadgeT, type Paged, type ProviderRow, VERIFICATION_LABEL } from "@/lib/types";
@@ -13,7 +14,9 @@ import { ConfirmDialog, EmptyRow, Facts, FilterSelect, SearchInput, StatCard, St
 import { Button } from "@/components/ui/button";
 import { BulkBar, ExportButton, SelectAllBox, SelectRowBox, useSelection } from "@/components/bulk";
 import { AddListingDialog, ImportListingsDialog } from "./provider-create";
-import { DeleteListingPanel, OwnerActions } from "./provider-manage";
+import { BulkUpdateListingsDialog } from "./provider-bulk-update";
+import { DeleteListingDialog, DeleteListingPanel, OwnerActions } from "./provider-manage";
+import { AccountTypeFilterTabs } from "@/components/account-type";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NotIndexedNote, SearchPreview, SeoCompletion, SeoReport, SeoScoreBadge, SeoScoreRing } from "@/components/seo";
 import type { SeoAnalysis } from "@/lib/seo";
@@ -26,17 +29,31 @@ const STATUS_OPTIONS = [
 ];
 
 export function ProvidersPage() {
-  const [f, setF] = useUrlState({ q: "", status: "", verification: "", claimed: "", seo: "", sort: "", page: "1", pageSize: DEFAULT_PAGE_SIZE });
+  const [f, setF] = useUrlState({ q: "", type: "", status: "", verification: "", claimed: "", seo: "", sort: "", page: "1", pageSize: DEFAULT_PAGE_SIZE });
   const qs = new URLSearchParams({ ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)), pageSize: String(pageSizeOf(f.pageSize)) });
   const { data, isLoading } = useQuery({ queryKey: ["admin-providers", qs.toString()], queryFn: () => api<{ providers: ProviderRow[] } & Paged>(`/admin/providers?${qs}`) });
   const selection = useSelection(data?.providers.map((p) => p.id) ?? []);
-  const [dialog, setDialog] = useState<"add" | "import" | null>(null);
+  const [dialog, setDialog] = useState<"add" | "import" | "update" | null>(null);
+  const [deleting, setDeleting] = useState<{ id: number; businessName: string } | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "super_admin";
   const qc = useQueryClient();
   const bulk = useMutation({
     mutationFn: (action: "approve" | "suspend" | "reject" | "verify" | "hide_from_search" | "show_in_search") => api<{ updated: number }>("/admin/providers/bulk", { method: "POST", json: { ids: selection.selected, action } }),
     onSuccess: ({ updated }) => {
       toast.success(`${updated} listing${updated === 1 ? "" : "s"} updated`);
       selection.clear();
+      void qc.invalidateQueries({ queryKey: ["admin-providers"] });
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  });
+  const bulkDelete = useMutation({
+    mutationFn: () => api<{ deleted: number }>("/admin/providers/bulk-delete", { method: "POST", json: { ids: selection.selected } }),
+    onSuccess: ({ deleted }) => {
+      toast.success(`${deleted} listing${deleted === 1 ? "" : "s"} deleted`);
+      selection.clear();
+      setBulkDeleting(false);
       void qc.invalidateQueries({ queryKey: ["admin-providers"] });
     },
     onError: (err) => toast.error(errorMessage(err)),
@@ -53,6 +70,11 @@ export function ProvidersPage() {
             <Button variant="outline" size="sm" onClick={() => setDialog("import")}>
               <Upload /> Import CSV
             </Button>
+            {isSuperAdmin && (
+              <Button variant="outline" size="sm" onClick={() => setDialog("update")}>
+                <FileUp /> Bulk update
+              </Button>
+            )}
             <Button size="sm" onClick={() => setDialog("add")}>
               <Plus /> Add listing
             </Button>
@@ -61,8 +83,10 @@ export function ProvidersPage() {
       />
       <AddListingDialog open={dialog === "add"} onOpenChange={(o) => setDialog(o ? "add" : null)} />
       <ImportListingsDialog open={dialog === "import"} onOpenChange={(o) => setDialog(o ? "import" : null)} />
+      {isSuperAdmin && <BulkUpdateListingsDialog open={dialog === "update"} onOpenChange={(o) => setDialog(o ? "update" : null)} filters={f} />}
       <Toolbar>
         <SearchInput value={f.q} onChange={(q) => setF({ q, page: "1" })} placeholder="Search name or phone" />
+        <AccountTypeFilterTabs value={f.type} onChange={(type) => setF({ type, page: "1" })} />
         <FilterSelect label="Status" allLabel="Any status" value={f.status} onChange={(status) => setF({ status, page: "1" })} options={STATUS_OPTIONS} />
         <FilterSelect
           label="Verification"
@@ -124,7 +148,22 @@ export function ProvidersPage() {
             {label}
           </Button>
         ))}
+        {isSuperAdmin && (
+          <Button size="sm" variant="destructive" disabled={bulkDelete.isPending} onClick={() => setBulkDeleting(true)}>
+            <Trash2 /> Delete
+          </Button>
+        )}
       </BulkBar>
+      <ConfirmDialog
+        open={bulkDeleting}
+        onOpenChange={setBulkDeleting}
+        title={`Delete ${selection.count} listing${selection.count === 1 ? "" : "s"}?`}
+        description="They are removed for good with their leads, reviews, claims and photos. Their old pages redirect to their category, so search engines don't find a 404."
+        confirmLabel={bulkDelete.isPending ? "Deleting…" : "Delete for good"}
+        destructive
+        busy={bulkDelete.isPending}
+        onConfirm={() => bulkDelete.mutate()}
+      />
       <Table>
         <thead>
           <tr>
@@ -132,17 +171,20 @@ export function ProvidersPage() {
               <SelectAllBox selection={selection} />
             </Th>
             <Th>Business</Th>
-            <Th>Category</Th>
+            <Th>Type and profession</Th>
             <Th>Owner</Th>
             <Th>Rating</Th>
             <Th>SEO</Th>
             <Th>Status</Th>
             <Th>Added</Th>
+            <Th className="w-12">
+              <span className="sr-only">Actions</span>
+            </Th>
           </tr>
         </thead>
         <tbody>
-          {isLoading && <TableSkeleton cols={8} />}
-          {data?.providers.length === 0 && <EmptyRow cols={8} text="No providers match these filters." />}
+          {isLoading && <TableSkeleton cols={9} />}
+          {data?.providers.length === 0 && <EmptyRow cols={9} text="No providers match these filters." />}
           {data?.providers.map((p) => (
             <tr key={p.id} className="hover:bg-muted/40">
               <Td>
@@ -165,7 +207,12 @@ export function ProvidersPage() {
                   </span>
                 </Link>
               </Td>
-              <Td className="text-muted-foreground">{p.services[0]?.category.name ?? "Not set"}</Td>
+              <Td>
+                <AccountType type={p.businessType} />
+                <span className="mt-0.5 block max-w-44 truncate text-xs text-muted-foreground">
+                  {(p.businessType === "individual" ? p.profession : null) ?? p.services[0]?.category.name ?? "No category"}
+                </span>
+              </Td>
               <Td>{p.user ? <span className="block max-w-44 truncate">{p.user.email}</span> : <span className="text-muted-foreground">Unclaimed</span>}</Td>
               <Td>
                 {p.totalReviews ? (
@@ -186,10 +233,32 @@ export function ProvidersPage() {
                 <StatusBadge status={p.status} label={p.status === "active" ? "Live" : undefined} />
               </Td>
               <Td className="whitespace-nowrap text-muted-foreground">{formatDate(p.createdAt)}</Td>
+              <Td>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  aria-label={`Delete ${p.businessName}`}
+                  title="Delete listing"
+                  onClick={() => setDeleting({ id: p.id, businessName: p.businessName })}
+                >
+                  <Trash2 />
+                </Button>
+              </Td>
             </tr>
           ))}
         </tbody>
       </Table>
+      {deleting && (
+        <DeleteListingDialog
+          key={deleting.id}
+          providerId={deleting.id}
+          businessName={deleting.businessName}
+          open
+          onOpenChange={(o) => !o && setDeleting(null)}
+          onDeleted={() => selection.clear()}
+        />
+      )}
       {data && <Pager page={data.page} totalPages={data.totalPages} total={data.total} onPage={(p) => setF({ page: String(p) })} pageSize={pageSizeOf(f.pageSize)} onPageSize={(n) => setF({ pageSize: String(n), page: "1" })} />}
       {!f.status && !f.verification && f.claimed !== "no" && <ProviderSignups key={f.q} q={f.q} />}
     </>
@@ -299,6 +368,7 @@ interface ProviderDetail {
     logoUrl: string | null;
     coverUrl: string | null;
     businessType: string;
+    profession?: string | null;
     phone: string;
     whatsappNumber: string | null;
     email: string | null;
@@ -461,7 +531,8 @@ export function ProviderDetailPage() {
                 ["Website", p.website],
                 ["Address", [p.addressLine, p.locality, p.city, p.state, p.pincode].filter(Boolean).join(", ")],
                 ["Travel distance", `${p.serviceRadiusKm} km`],
-                ["Type", p.businessType === "company" ? "Company or shop" : "Individual"],
+                ["Account type", p.businessType === "company" ? "Business" : "Individual professional"],
+                ["Profession", p.businessType === "individual" ? (p.profession ?? "From the main service") : null],
                 ["Listed", formatDate(p.createdAt)],
               ]}
             />
@@ -611,5 +682,17 @@ export function ProviderDetailPage() {
         />
       )}
     </>
+  );
+}
+
+/** Individual professional (a person) or business, the same words and icons as the customer apps. */
+function AccountType({ type }: { type: ProviderRow["businessType"] }) {
+  const individual = type === "individual";
+  const Icon = individual ? UserRound : Building2;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium ${individual ? "bg-warning/15 text-foreground" : "bg-accent text-primary"}`}>
+      <Icon className="size-3.5" aria-hidden />
+      {individual ? "Individual" : "Business"}
+    </span>
   );
 }

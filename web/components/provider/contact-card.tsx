@@ -1,52 +1,88 @@
-import { Globe, Mail } from "lucide-react";
+import { Check, Globe, Mail, MapPin, Navigation } from "lucide-react";
 import type { ProviderDetail } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ContactButtons } from "./contact-buttons";
 import { OpenStatus } from "./provider-card";
+import { fullAddress } from "./profile-header";
 import { ProfileFavoriteButton } from "./viewer-state";
 
 const PRICE_UNIT_LABEL: Record<string, string> = { per_visit: "per visit", per_hour: "per hour", fixed: "fixed price" };
 
-const SECONDARY =
-  "flex h-10 flex-1 items-center justify-center gap-2 rounded-md border border-input bg-card text-sm font-medium text-foreground transition-colors hover:border-foreground/25 hover:bg-muted";
+const VERIFICATION_LABEL: Record<string, string> = { phone: "Phone number", business: "Business documents", location: "Location", id_proof: "ID proof" };
 
-/** The sidebar's first card: starting price and the ways to get in touch. On small screens Call and WhatsApp live in the bottom bar instead. */
+export const SECONDARY_ACTION =
+  "flex h-10 flex-1 items-center justify-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-[var(--shadow-card)] transition-colors hover:bg-muted";
+
+export const directionsHref = (p: Pick<ProviderDetail, "latitude" | "longitude">) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
+
+/**
+ * The desktop sidebar: everything needed to get in touch, and only that. Phones get the same actions from
+ * the bottom call bar and the row under the profile header.
+ */
 export function ContactCard({ p }: { p: ProviderDetail }) {
   const price = formatPrice(p.startingPrice);
+  const hasHours = p.is24x7 || p.hours.some((h) => h.openTime);
+  const verified = Array.from(new Set(p.verifications.map((v) => v.type))).filter((t) => t in VERIFICATION_LABEL);
   return (
-    <div className="rounded-lg border bg-card p-5 shadow-[var(--shadow-lift)]">
+    // A ticket: inked border, a torn-off line, and the contact details on the counterfoil.
+    <div className="rounded-xl border border-border bg-card p-5 shadow-[0_2px_4px_-1px_rgb(16_24_40/0.05),0_18px_40px_-16px_rgb(16_24_40/0.22)]">
       <div className="flex items-start justify-between gap-3">
-        {price ? (
-          <div>
-            <div className="text-xs text-muted-foreground">Starting from</div>
-            <div className="text-2xl font-extrabold leading-tight">
-              {price}
-              {p.priceUnit && <span className="ml-1.5 text-sm font-normal text-muted-foreground">{PRICE_UNIT_LABEL[p.priceUnit]}</span>}
-            </div>
-          </div>
-        ) : (
-          <div className="text-base font-semibold">Price on request</div>
-        )}
-        {p.isAvailable && <OpenStatus provider={p} className="mt-1 [&>span:last-child]:hidden" />}
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-cta-strong">Get in touch</p>
+          <p className="mt-0.5 truncate font-display text-xl font-bold leading-snug tracking-[-0.01em]">{p.businessName}</p>
+        </div>
+        {hasHours && <OpenStatus provider={{ ...p, hasHours: true }} compact className="mt-1 shrink-0 text-sm" />}
       </div>
 
-      <ContactButtons provider={p} source="profile" categorySlug={p.primaryCategory?.slug} size="lg" layout="stack" variant="profile" className="mt-5 hidden lg:flex" />
-      <p className="mt-3 hidden text-center text-xs text-muted-foreground lg:block">Mention KaajVa when you call. No booking fees.</p>
+      {price && (
+        <p className="mt-3 text-sm">
+          <span className="text-muted-foreground">Starting from </span>
+          <span className="font-bold tabular-nums">{price}</span>
+          {p.priceUnit && <span className="text-muted-foreground"> {PRICE_UNIT_LABEL[p.priceUnit]}</span>}
+        </p>
+      )}
 
-      <div className={cn("flex gap-2", "mt-5 border-t pt-4")}>
+      <ContactButtons provider={p} source="profile" categorySlug={p.primaryCategory?.slug} size="lg" layout="stack" variant="profile" className="mt-4" />
+
+      <a href={directionsHref(p)} target="_blank" rel="noopener noreferrer" className={cn(SECONDARY_ACTION, "mt-2 h-12 w-full text-[15px]")}>
+        <Navigation className="size-4" aria-hidden /> Get directions
+      </a>
+
+      <p className="-mx-5 mt-5 flex items-start gap-2 border-t border-dashed border-border px-5 pt-4 text-sm text-foreground/80">
+        <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+        <span>{fullAddress(p)}</span>
+      </p>
+
+      <div className="mt-4 flex gap-2 border-t pt-4">
         {p.email && (
-          <a href={`mailto:${p.email}`} className={SECONDARY}>
+          <a href={`mailto:${p.email}`} className={SECONDARY_ACTION}>
             <Mail className="size-4" aria-hidden /> Email
           </a>
         )}
         {p.website && (
-          <a href={p.website} target="_blank" rel="noopener noreferrer" className={SECONDARY}>
+          <a href={p.website} target="_blank" rel="noopener noreferrer" className={SECONDARY_ACTION}>
             <Globe className="size-4" aria-hidden /> Website
           </a>
         )}
-        <ProfileFavoriteButton providerId={p.id} className={cn(SECONDARY, "rounded-md")} />
+        <ProfileFavoriteButton providerId={p.id} className={cn(SECONDARY_ACTION, "rounded-md")} />
       </div>
+
+      {verified.length > 0 && (
+        <ul className="mt-4 space-y-1.5 border-t pt-4 text-sm" aria-label="Checked by KaajVa">
+          {verified.map((type) => (
+            <li key={type} className="flex items-center gap-2">
+              <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-success text-white">
+                <Check className="size-2.5" strokeWidth={3.5} aria-hidden />
+              </span>
+              {VERIFICATION_LABEL[type]} verified
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="mt-4 text-center text-xs text-muted-foreground">Mention KaajVa when you call. No booking fees.</p>
     </div>
   );
 }

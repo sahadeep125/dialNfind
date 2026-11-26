@@ -3,7 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, FolderTree, ListChecks, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, FileText, FolderTree, ListChecks, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -18,10 +18,14 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CategorySeoDialog } from "./category-seo-dialog";
+import { pageContentGaps, type CategoryPageContent } from "@/lib/category-page";
 
 interface Sub {
   id: number;
   name: string;
+  /** What an individual offering it is called ("AC Technician"); null uses the category's. */
+  professionName?: string | null;
   slug: string;
   iconUrl: string | null;
   displayOrder: number;
@@ -38,9 +42,11 @@ interface Attr {
   isRequired: boolean;
   displayOrder: number;
 }
-interface Category {
+interface Category extends CategoryPageContent {
   id: number;
   name: string;
+  /** What an individual in it is called ("Plumber"): their title and a choice when they list. */
+  professionName?: string | null;
   slug: string;
   description: string | null;
   iconUrl: string | null;
@@ -115,6 +121,8 @@ function CategoryCard({ category: c, expanded, onToggle, onEdit }: { category: C
   const [editSub, setEditSub] = useState<Sub | "new" | null>(null);
   const [editAttr, setEditAttr] = useState<Attr | "new" | null>(null);
   const [deleteAttr, setDeleteAttr] = useState<Attr | null>(null);
+  const [editPage, setEditPage] = useState(false);
+  const gaps = pageContentGaps(c);
   const invalidate = useInvalidate();
   const removeAttr = useMutation({
     mutationFn: (id: number) => api(`/categories/attributes/${id}`, { method: "DELETE" }),
@@ -141,9 +149,19 @@ function CategoryCard({ category: c, expanded, onToggle, onEdit }: { category: C
             <span className="block text-xs text-muted-foreground">
               {c.subcategories.filter((s) => s.isActive).length} services, {c.providerCount} live providers, {c._count.leads.toLocaleString("en-IN")} leads
             </span>
+            <span className={cn("mt-0.5 flex items-center gap-1 text-xs", gaps.length ? "text-[oklch(0.5_0.12_60)]" : "text-success")}>
+              {gaps.length ? `Page needs: ${gaps.join(", ")}` : (
+                <>
+                  <CheckCircle2 className="size-3.5" /> Page content complete
+                </>
+              )}
+            </span>
           </span>
           <ChevronDown className={cn("ml-auto size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} />
         </button>
+        <Button variant="outline" size="sm" onClick={() => setEditPage(true)} aria-label={`Edit the ${c.name} page: photo, text and questions`}>
+          <FileText /> <span className="hidden sm:inline">Page &amp; SEO</span>
+        </Button>
         <Button variant="ghost" size="icon-sm" onClick={onEdit} aria-label={`Edit ${c.name}`}>
           <Pencil />
         </Button>
@@ -203,6 +221,7 @@ function CategoryCard({ category: c, expanded, onToggle, onEdit }: { category: C
           </div>
         </div>
       )}
+      {editPage && <CategorySeoDialog category={c} onClose={() => setEditPage(false)} />}
       {editSub && <SubDialog categoryId={c.id} sub={editSub === "new" ? null : editSub} onClose={() => setEditSub(null)} />}
       {editAttr && <AttrDialog category={c} attr={editAttr === "new" ? null : editAttr} onClose={() => setEditAttr(null)} />}
       {deleteAttr && (
@@ -225,6 +244,7 @@ const categorySchema = z.object({
   name: z.string().trim().min(2, "Enter at least 2 characters").max(60, "Keep it under 60 characters"),
   slug: slugRule,
   description: z.string().trim().max(300, "Keep it under 300 characters"),
+  professionName: z.string().trim().max(60, "Keep it under 60 characters"),
   iconUrl: z.string(),
   uiTemplate: z.string(),
   displayOrder: z.string().refine((v) => /^\d{1,4}$/.test(v), "Use a whole number from 0 to 9999"),
@@ -243,6 +263,7 @@ function CategoryDialog({ category, onClose }: { category: Category | null; onCl
       name: category?.name ?? "",
       slug: category?.slug ?? "",
       description: category?.description ?? "",
+      professionName: category?.professionName ?? "",
       iconUrl: category?.iconUrl?.startsWith("http") ? category.iconUrl : "",
       uiTemplate: category?.uiTemplate ?? "default",
       displayOrder: String(category?.displayOrder ?? 0),
@@ -252,7 +273,7 @@ function CategoryDialog({ category, onClose }: { category: Category | null; onCl
   const { errors, isSubmitting } = formState;
   const onSubmit = handleSubmit(async (v) => {
     setError(null);
-    const json = { ...v, slug: v.slug || undefined, description: v.description || null, iconUrl: v.iconUrl || (category?.iconUrl?.startsWith("lucide:") ? undefined : null), displayOrder: Number(v.displayOrder) };
+    const json = { ...v, slug: v.slug || undefined, description: v.description || null, professionName: v.professionName || null, iconUrl: v.iconUrl || (category?.iconUrl?.startsWith("lucide:") ? undefined : null), displayOrder: Number(v.displayOrder) };
     try {
       if (category) await api(`/categories/${category.id}`, { method: "PATCH", json });
       else await api("/categories", { method: "POST", json });
@@ -284,6 +305,9 @@ function CategoryDialog({ category, onClose }: { category: Category | null; onCl
           </Field>
           <Field id="cat-desc" label="Description" error={errors.description} optional className="sm:col-span-2">
             <Textarea {...fieldA11y("cat-desc", errors.description)} rows={2} maxLength={300} {...register("description")} />
+          </Field>
+          <Field id="cat-profession" label="Profession" error={errors.professionName} hint="What an individual in this category is called, e.g. Plumber. They pick it when they list." optional className="sm:col-span-2">
+            <Input {...fieldA11y("cat-profession", errors.professionName, true)} maxLength={60} placeholder="e.g. Plumber" {...register("professionName")} />
           </Field>
           <Field id="cat-icon" label="Icon" hint="Square image. Leave empty to use the built-in icon." optional className="sm:col-span-2">
             <Controller control={control} name="iconUrl" render={({ field }) => <FileUpload id="cat-icon" purpose="logo" value={field.value} onChange={field.onChange} previewClassName="size-16 rounded-xl" onUploadingChange={setUploading} />} />
@@ -335,6 +359,7 @@ function CategoryDialog({ category, onClose }: { category: Category | null; onCl
 const subSchema = z.object({
   name: z.string().trim().min(2, "Enter at least 2 characters").max(60, "Keep it under 60 characters"),
   slug: slugRule,
+  professionName: z.string().trim().max(60, "Keep it under 60 characters"),
   displayOrder: z.string().refine((v) => /^\d{1,4}$/.test(v), "Use a whole number from 0 to 9999"),
   isActive: z.boolean(),
 });
@@ -346,12 +371,12 @@ function SubDialog({ categoryId, sub, onClose }: { categoryId: number; sub: Sub 
   const { register, control, handleSubmit, formState } = useForm<SubValues>({
     resolver: zodResolver(subSchema),
     mode: "onTouched",
-    defaultValues: { name: sub?.name ?? "", slug: sub?.slug ?? "", displayOrder: String(sub?.displayOrder ?? 0), isActive: sub?.isActive ?? true },
+    defaultValues: { name: sub?.name ?? "", slug: sub?.slug ?? "", professionName: sub?.professionName ?? "", displayOrder: String(sub?.displayOrder ?? 0), isActive: sub?.isActive ?? true },
   });
   const { errors, isSubmitting } = formState;
   const onSubmit = handleSubmit(async (v) => {
     setError(null);
-    const json = { ...v, slug: v.slug || undefined, displayOrder: Number(v.displayOrder) };
+    const json = { ...v, slug: v.slug || undefined, professionName: v.professionName || null, displayOrder: Number(v.displayOrder) };
     try {
       if (sub) await api(`/categories/subcategories/${sub.id}`, { method: "PATCH", json });
       else await api(`/categories/${categoryId}/subcategories`, { method: "POST", json });
@@ -377,6 +402,9 @@ function SubDialog({ categoryId, sub, onClose }: { categoryId: number; sub: Sub 
           )}
           <Field id="sub-name" label="Name" error={errors.name} required className="sm:col-span-2">
             <Input {...fieldA11y("sub-name", errors.name)} maxLength={60} placeholder="e.g. Sofa cleaning" {...register("name")} />
+          </Field>
+          <Field id="sub-profession" label="Profession" error={errors.professionName} hint="e.g. AC Technician. Leave empty to use the category's." optional className="sm:col-span-2">
+            <Input {...fieldA11y("sub-profession", errors.professionName, true)} maxLength={60} {...register("professionName")} />
           </Field>
           <Field id="sub-slug" label="Web address" error={errors.slug} optional>
             <Input {...fieldA11y("sub-slug", errors.slug)} maxLength={80} {...register("slug")} />
