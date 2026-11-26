@@ -114,7 +114,7 @@ export function ClaimSearch({ providerAppUrl }: { providerAppUrl: string }) {
                 </span>
               ) : (
                 <Button asChild size="sm">
-                  <a href={`${providerAppUrl}/claim?listing=${p.id}`} onClick={() => track("claim_clicked", { provider_id: p.id })}>Claim</a>
+                  <a href={`${providerAppUrl}/claim?listing=${p.id}`} rel="nofollow" onClick={() => track("claim_clicked", { provider_id: p.id })}>Claim</a>
                 </Button>
               )}
             </div>

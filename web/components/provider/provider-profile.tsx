@@ -490,7 +490,7 @@ export function ProviderProfile({
                       Is this your business?
                     </span>
                     <Button asChild size="sm" variant="outline">
-                      <a href={`${PROVIDER_APP_URL}/claim?listing=${p.id}`}>
+                      <a href={`${PROVIDER_APP_URL}/claim?listing=${p.id}`} rel="nofollow">
                         Claim it for free
                       </a>
                     </Button>

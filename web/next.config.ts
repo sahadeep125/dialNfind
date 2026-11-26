@@ -19,6 +19,18 @@ const securityHeaders = [
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
+// The public address (lib/config.ts SITE_URL). Read here too, because next.config cannot import app code.
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://kaajva.in").replace(/\/$/, "");
+
+/**
+ * Cloudflare tells the origin which scheme the visitor used in the cf-visitor header ({"scheme":"http"}).
+ * A plain-http request gets a permanent redirect to the https address, so Google stops finding a second,
+ * http copy of every page (Search Console listed hundreds of them as "Alternative page with proper canonical").
+ */
+const httpsRedirect = SITE_URL.startsWith("https://")
+  ? [{ source: "/:path*", has: [{ type: "header" as const, key: "cf-visitor", value: '.*"scheme":"http".*' }], destination: `${SITE_URL}/:path*`, permanent: true }]
+  : [];
+
 // Docker images (web/Dockerfile) run the self-contained server that `standalone` produces. Tracing starts at
 // the workspace root because pnpm keeps packages there. `next start` does not work with it, so it is opt-in.
 const standalone = process.env.NEXT_OUTPUT_STANDALONE === "1";
@@ -48,7 +60,12 @@ const nextConfig: NextConfig = {
   // It is turned off, and the redirect below does the same job for every other path.
   skipTrailingSlashRedirect: true,
   async redirects() {
-    return [{ source: "/:path((?!ingest/).+)/", destination: "/:path", permanent: true }];
+    return [
+      ...httpsRedirect,
+      { source: "/:path((?!ingest/).+)/", destination: "/:path", permanent: true },
+      // Crawlers ask for /apple-icon (no extension); the file is served at /apple-icon.png.
+      { source: "/apple-icon", destination: "/apple-icon.png", permanent: true },
+    ];
   },
   async rewrites() {
     return [
