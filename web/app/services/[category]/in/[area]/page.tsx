@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CategoryListing, areaMetadata, getCategory } from "@/components/search/category-listing";
+import { CategoryListing, areaMetadata, getCategory, listingPage } from "@/components/search/category-listing";
 import { fetchCategoryAreas } from "@/lib/category-areas";
 import type { SearchParamsRecord } from "@/components/search/results-section";
 import { TrackView } from "@/components/site/track-view";
@@ -18,11 +18,11 @@ async function load(categorySlug: string, areaSlug: string) {
   return data && area ? { category: data.category, area } : null;
 }
 
-export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const { category, area } = await params;
+export async function generateMetadata({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<SearchParamsRecord> }): Promise<Metadata> {
+  const [{ category, area }, sp] = await Promise.all([params, searchParams]);
   const found = await load(category, area);
   if (!found) return { title: "Services", robots: { index: false, follow: true } };
-  return areaMetadata(found.category, found.area);
+  return areaMetadata(found.category, found.area, listingPage(sp));
 }
 
 export default async function AreaListingPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<SearchParamsRecord> }) {

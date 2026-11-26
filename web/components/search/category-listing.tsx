@@ -59,9 +59,24 @@ function areaCopy(category: Category, area: CategoryArea, names: string[] = [], 
   };
 }
 
-export function areaMetadata(category: Category, area: CategoryArea): Metadata {
+/**
+ * The results page number from ?page=, or 1. Pages 2 and up are their own canonical URL (with a "Page N"
+ * title), so Google crawls and keeps them, and through them finds every listing past the first twelve. When
+ * they all pointed back to page 1, Google dropped them as duplicates and most profiles were left unlinked.
+ */
+export function listingPage(sp: SearchParamsRecord): number {
+  const n = Number(one(sp.page));
+  return Number.isInteger(n) && n > 1 ? n : 1;
+}
+
+function paged(meta: { title: string; description: string; path: string }, page: number) {
+  if (page <= 1) return pageMetadata(meta);
+  return pageMetadata({ title: `${meta.title} (Page ${page})`, description: clip(`Page ${page}. ${meta.description}`), path: `${meta.path}?page=${page}` });
+}
+
+export function areaMetadata(category: Category, area: CategoryArea, page = 1): Metadata {
   const copy = areaCopy(category, area);
-  return pageMetadata({ title: copy.title, description: copy.description, path: areaHref(category.slug, area.slug) });
+  return paged({ title: copy.title, description: copy.description, path: areaHref(category.slug, area.slug) }, page);
 }
 
 /** Editorial copy for the page, or text generated from the category when none is written yet. */
@@ -79,10 +94,10 @@ function pageCopy(category: Category, sub: Subcategory | undefined) {
   };
 }
 
-export function listingMetadata(category: Category, sub: Subcategory | undefined): Metadata {
+export function listingMetadata(category: Category, sub: Subcategory | undefined, page = 1): Metadata {
   const copy = pageCopy(category, sub);
-  // Location, filters and paging all point back to the plain category or subcategory address.
-  return pageMetadata({ title: copy.title, description: copy.description, path: serviceHref(category.slug, sub?.slug) });
+  // Location and filters point back to the plain category or subcategory address; each results page keeps its own.
+  return paged({ title: copy.title, description: copy.description, path: serviceHref(category.slug, sub?.slug) }, page);
 }
 
 /** A category page, or one of its subcategories: hero, results near the visitor, then the written guide. */

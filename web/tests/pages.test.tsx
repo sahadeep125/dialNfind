@@ -274,14 +274,21 @@ describe("search and service pages", () => {
     const cat = await import("@/app/services/[category]/page");
     const sub = await import("@/app/services/[category]/[sub]/page");
     mockApi({ "/categories/electronics-repair": { category: categories[0] }, "/categories/nope": json({}, 404), "/search/providers": searchResponse() });
-    expect(await cat.generateMetadata({ params: sp({ category: "nope" }) })).toEqual({ title: "Services" });
-    expect((await cat.generateMetadata({ params: sp({ category: "electronics-repair" }) })).alternates).toEqual({ canonical: "/services/electronics-repair" });
+    expect(await cat.generateMetadata({ params: sp({ category: "nope" }), searchParams: sp({}) })).toEqual({ title: "Services" });
+    expect((await cat.generateMetadata({ params: sp({ category: "electronics-repair" }), searchParams: sp({}) })).alternates).toEqual({ canonical: "/services/electronics-repair" });
     await expect(cat.default({ params: sp({ category: "nope" }), searchParams: sp({}) })).rejects.toBeInstanceOf(NotFoundError);
     const a = await renderAsync(await cat.default({ params: sp({ category: "electronics-repair" }), searchParams: sp({}) }));
     a.unmount();
-    expect((await sub.generateMetadata({ params: sp({ category: "electronics-repair", sub: "nope" }) })).robots).toEqual({ index: false, follow: true });
-    expect((await sub.generateMetadata({ params: sp({ category: "nope", sub: "tv-repair" }) })).title).toBe("Services");
-    expect((await sub.generateMetadata({ params: sp({ category: "electronics-repair", sub: "tv-repair" }) })).alternates).toEqual({ canonical: "/services/electronics-repair/tv-repair" });
+    expect((await sub.generateMetadata({ params: sp({ category: "electronics-repair", sub: "nope" }), searchParams: sp({}) })).robots).toEqual({ index: false, follow: true });
+    expect((await sub.generateMetadata({ params: sp({ category: "nope", sub: "tv-repair" }), searchParams: sp({}) })).title).toBe("Services");
+    expect((await sub.generateMetadata({ params: sp({ category: "electronics-repair", sub: "tv-repair" }), searchParams: sp({}) })).alternates).toEqual({ canonical: "/services/electronics-repair/tv-repair" });
+    // Results pages 2 and up keep their own address and say which page they are; page 1 and junk values do not.
+    const p3 = await sub.generateMetadata({ params: sp({ category: "electronics-repair", sub: "tv-repair" }), searchParams: sp({ page: "3" }) });
+    expect(p3.alternates).toEqual({ canonical: "/services/electronics-repair/tv-repair?page=3" });
+    expect(String(p3.title)).toMatch(/\(Page 3\)$/);
+    expect((await cat.generateMetadata({ params: sp({ category: "electronics-repair" }), searchParams: sp({ page: "2" }) })).alternates).toEqual({ canonical: "/services/electronics-repair?page=2" });
+    for (const page of ["1", "0", "abc", "2.5"])
+      expect((await cat.generateMetadata({ params: sp({ category: "electronics-repair" }), searchParams: sp({ page }) })).alternates).toEqual({ canonical: "/services/electronics-repair" });
     await expect(sub.default({ params: sp({ category: "electronics-repair", sub: "nope" }), searchParams: sp({}) })).rejects.toBeInstanceOf(NotFoundError);
     await renderAsync(await sub.default({ params: sp({ category: "electronics-repair", sub: "tv%2Drepair" }), searchParams: sp({}) }));
     expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toHaveTextContent("TV Repair");
@@ -298,10 +305,11 @@ describe("search and service pages", () => {
       "/locations/category-areas": { areas },
       "/search/providers": searchResponse(),
     });
-    const meta = await page.generateMetadata({ params: sp({ category: "electronics-repair", area: "hakimpara" }) });
+    const meta = await page.generateMetadata({ params: sp({ category: "electronics-repair", area: "hakimpara" }), searchParams: sp({}) });
     expect(meta.title).toBe("Mobile & TV Repair in Hakimpara, Siliguri");
     expect(meta.alternates).toEqual({ canonical: "/services/electronics-repair/in/hakimpara" });
-    expect((await page.generateMetadata({ params: sp({ category: "electronics-repair", area: "nowhere" }) })).robots).toEqual({ index: false, follow: true });
+    expect((await page.generateMetadata({ params: sp({ category: "electronics-repair", area: "hakimpara" }), searchParams: sp({ page: "2" }) })).alternates).toEqual({ canonical: "/services/electronics-repair/in/hakimpara?page=2" });
+    expect((await page.generateMetadata({ params: sp({ category: "electronics-repair", area: "nowhere" }), searchParams: sp({}) })).robots).toEqual({ index: false, follow: true });
     await expect(page.default({ params: sp({ category: "electronics-repair", area: "nowhere" }), searchParams: sp({}) })).rejects.toBeInstanceOf(NotFoundError);
     const a = await renderAsync(await page.default({ params: sp({ category: "electronics-repair", area: "hakimpara" }), searchParams: sp({}) }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Mobile & TV Repair in Hakimpara, Siliguri");

@@ -366,7 +366,7 @@ export function ProviderProfile({ p, reviews, similar, minReviewLength, previewS
                   </div>
                   <p className="mt-1.5 text-sm text-muted-foreground">Claim it for free to update details, reply to reviews and see who is calling.</p>
                   <Button asChild size="sm" variant="outline" className="mt-3">
-                    <a href={`${PROVIDER_APP_URL}/claim?listing=${p.id}`}>Claim this listing</a>
+                    <a href={`${PROVIDER_APP_URL}/claim?listing=${p.id}`} rel="nofollow">Claim this listing</a>
                   </Button>
                 </div>
               )}

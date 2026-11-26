@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CategoryListing, getCategory, listingMetadata } from "@/components/search/category-listing";
+import { CategoryListing, getCategory, listingMetadata, listingPage } from "@/components/search/category-listing";
 import type { SearchParamsRecord } from "@/components/search/results-section";
 import { TrackView } from "@/components/site/track-view";
 
@@ -13,11 +13,11 @@ async function load(categorySlug: string, subSlug: string) {
   return data && sub ? { category: data.category, sub } : null;
 }
 
-export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const { category, sub } = await params;
+export async function generateMetadata({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<SearchParamsRecord> }): Promise<Metadata> {
+  const [{ category, sub }, sp] = await Promise.all([params, searchParams]);
   const found = await load(category, sub);
   if (!found) return { title: "Services", robots: { index: false, follow: true } };
-  return listingMetadata(found.category, found.sub);
+  return listingMetadata(found.category, found.sub, listingPage(sp));
 }
 
 export default async function SubcategoryListingPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<SearchParamsRecord> }) {
